@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { tenants, users, roles } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
-import { registerSchema, formatZodErrors } from "@/lib/validation";
+import { signAccessToken } from "@/lib/jwt";
+import { generateRefreshToken, hashToken } from "@/lib/tokens";
+import { sessions } from "@/db/schema";
 import { logAuditEvent } from "@/lib/audit";
+import { setAuthCookies } from "@/lib/cookies";
 import { getClientIp, getUserAgent } from "@/lib/request";
+import { registerSchema, formatZodErrors } from "@/lib/validation";
 
 function slugify(name: string): string {
   return name
@@ -21,39 +26,46 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatZodErrors(parsed.error) },
+        { error: { code: "VALIDATION_ERROR", message: "Validation failed", details: parsed.error } },
         { status: 422 }
       );
     }
 
-    const { email, password, tenantName, displayName } = parsed.data;
+    const { email, password, tenantName, displayName, country, timezone } = parsed.data;
     const ip = getClientIp(request);
     const ua = getUserAgent(request);
 
-    // Create tenant
+    // Map country to region/currency
+    const regionMap: Record<string, string> = { QA: "qa", AE: "ae", SA: "sa", IN: "in" };
+    const currencyMap: Record<string, string> = { QA: "QAR", AE: "AED", SA: "SAR", IN: "INR" };
+
     const slug = slugify(tenantName) + "-" + Date.now().toString(36);
+
+    // Create tenant
     const [tenant] = await db
       .insert(tenants)
       .values({
         name: tenantName,
         slug,
         plan: "starter",
-        region: "global",
+        region: (regionMap[country || "QA"] || "global") as "qa" | "ae" | "sa" | "in" | "global",
         status: "trial",
+        country: country || "QA",
+        timezone: timezone || "Asia/Qatar",
+        currency: currencyMap[country || "QA"] || "QAR",
       })
       .returning({ id: tenants.id });
 
-    // Create admin role for the tenant
+    // Find the seeded tenant_admin system role
     const [adminRole] = await db
-      .insert(roles)
-      .values({
-        tenantId: tenant.id,
-        name: "Admin",
-        description: "Tenant administrator with full access",
-        isSystem: true,
-        permissions: ["*"],
-      })
-      .returning({ id: roles.id });
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.name, "tenant_admin"))
+      .limit(1);
+
+    if (!adminRole) {
+      throw new Error("tenant_admin role not found. Run RBAC seed.");
+    }
 
     // Hash password and create user
     const passwordHash = await hashPassword(password);
@@ -65,15 +77,10 @@ export async function POST(request: NextRequest) {
         displayName: displayName || email.split("@")[0],
         passwordHash,
         roleId: adminRole.id,
-        status: "pending_verification",
+        status: "active",
         emailVerified: false,
       })
       .returning({ id: users.id });
-
-    // Stub: log verification email to console
-    console.log(
-      `[email-stub] Verification email for ${email}, user=${user.id}`
-    );
 
     await logAuditEvent({
       tenantId: tenant.id,
@@ -84,14 +91,41 @@ export async function POST(request: NextRequest) {
       metadata: { email, tenantName },
     });
 
-    return NextResponse.json(
-      { message: "Verification email sent" },
+    // Auto-login: generate tokens
+    const accessToken = await signAccessToken({
+      sub: user.id,
+      tid: tenant.id,
+      email,
+      role: "tenant_admin",
+    });
+
+    const refreshToken = generateRefreshToken();
+    await db.insert(sessions).values({
+      userId: user.id,
+      tenantId: tenant.id,
+      refreshTokenHash: hashToken(refreshToken),
+      userAgent: ua,
+      ipAddress: ip,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+
+    const response = NextResponse.json(
+      {
+        data: {
+          userId: user.id,
+          tenantId: tenant.id,
+          redirect: "/onboarding",
+        },
+      },
       { status: 201 }
     );
+
+    setAuthCookies(response, accessToken, refreshToken);
+    return response;
   } catch (error) {
     console.error("[register]", error);
     return NextResponse.json(
-      { error: "Registration failed" },
+      { error: { code: "INTERNAL_ERROR", message: "Registration failed" } },
       { status: 500 }
     );
   }

@@ -18,6 +18,8 @@ export const registerSchema = z.object({
   password: passwordSchema,
   tenantName: z.string().min(2, "Organization name must be at least 2 characters").max(255),
   displayName: z.string().min(1, "Display name is required").max(255).optional(),
+  country: z.enum(["QA", "AE", "SA", "IN"]).optional(),
+  timezone: z.string().max(50).optional(),
 });
 
 export const loginSchema = z.object({
