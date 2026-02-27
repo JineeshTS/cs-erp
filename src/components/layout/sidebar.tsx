@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
+  Database,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,12 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             {hasAny(perms, "reports:") && (
               <NavItem href="/reports" label="Reports" icon={BarChart3} collapsed={collapsed} />
             )}
+          </NavGroup>
+        )}
+
+        {(hasAny(perms, "vessels:") || hasAny(perms, "containers:") || hasAny(perms, "bookings:") || hasAny(perms, "finance:")) && (
+          <NavGroup label="Master Data" collapsed={collapsed}>
+            <NavItem href="/master-data-management" label="Master Data" icon={Database} collapsed={collapsed} />
           </NavGroup>
         )}
 

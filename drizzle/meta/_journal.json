@@ -15,6 +15,13 @@
       "when": 1772205650628,
       "tag": "0001_curious_baron_zemo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772213101014,
+      "tag": "0002_conscious_annihilus",
+      "breakpoints": true
     }
   ]
 }
