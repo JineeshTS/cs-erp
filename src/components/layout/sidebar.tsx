@@ -22,6 +22,8 @@ import {
   ChevronRight,
   Building2,
   Database,
+  Workflow,
+  Bell,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -115,6 +117,17 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             )}
             {hasAny(perms, "reports:") && (
               <NavItem href="/reports" label="Reports" icon={BarChart3} collapsed={collapsed} />
+            )}
+          </NavGroup>
+        )}
+
+        {(hasAny(perms, "workflows:") || hasAny(perms, "notifications:")) && (
+          <NavGroup label="Automation" collapsed={collapsed}>
+            {hasAny(perms, "workflows:") && (
+              <NavItem href="/workflow-notification-engine" label="Workflows" icon={Workflow} collapsed={collapsed} />
+            )}
+            {hasAny(perms, "notifications:") && (
+              <NavItem href="/workflow-notification-engine/notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
             )}
           </NavGroup>
         )}
