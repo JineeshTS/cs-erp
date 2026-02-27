@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from "next/server";
+import { eq, and, isNull } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { wneSlaDefinitions } from "@/db/schema";
+import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
+import { hasPermission } from "@/lib/rbac";
+import { updateSlaDefinitionSchema } from "@/lib/workflow-notification-engine/validation";
+
+type RouteParams = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "workflows:read"))) return forbiddenResponse();
+
+    const { id } = await params;
+    const [record] = await db.select().from(wneSlaDefinitions)
+      .where(and(eq(wneSlaDefinitions.id, id), eq(wneSlaDefinitions.tenantId, user.tenantId), isNull(wneSlaDefinitions.deletedAt))).limit(1);
+
+    if (!record) return NextResponse.json({ error: { code: "NOT_FOUND", message: "SLA definition not found" } }, { status: 404 });
+    return NextResponse.json({ data: record });
+  } catch (err) {
+    console.error("SLA definition get error:", err);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to fetch SLA definition" } },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "workflows:edit"))) return forbiddenResponse();
+
+    const { id } = await params;
+    const body = await request.json();
+    const parsed = updateSlaDefinitionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    }
+
+    const [updated] = await db.update(wneSlaDefinitions).set(parsed.data)
+      .where(and(eq(wneSlaDefinitions.id, id), eq(wneSlaDefinitions.tenantId, user.tenantId), isNull(wneSlaDefinitions.deletedAt))).returning();
+
+    if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "SLA definition not found" } }, { status: 404 });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    console.error("SLA definition update error:", err);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to update SLA definition" } },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "workflows:delete"))) return forbiddenResponse();
+
+    const { id } = await params;
+    const [deleted] = await db.update(wneSlaDefinitions).set({ deletedAt: new Date() })
+      .where(and(eq(wneSlaDefinitions.id, id), eq(wneSlaDefinitions.tenantId, user.tenantId), isNull(wneSlaDefinitions.deletedAt))).returning({ id: wneSlaDefinitions.id });
+
+    if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "SLA definition not found" } }, { status: 404 });
+    return NextResponse.json({ data: { id: deleted.id, deleted: true } });
+  } catch (err) {
+    console.error("SLA definition delete error:", err);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to delete SLA definition" } },
+      { status: 500 }
+    );
+  }
+}
