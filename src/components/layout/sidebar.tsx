@@ -33,6 +33,10 @@ import {
   Wrench,
   Snowflake,
   LayoutGrid,
+  Target,
+  Megaphone,
+  Handshake,
+  UserPlus,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -104,6 +108,16 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             )}
           </NavGroup>
         ) : null}
+
+        {hasAny(perms, "sales:") && (
+          <NavGroup label="Sales & CRM" collapsed={collapsed}>
+            <NavItem href="/sales-crm" label="Customers" icon={Users} collapsed={collapsed} />
+            <NavItem href="/sales-crm/opportunities" label="Opportunities" icon={Target} collapsed={collapsed} />
+            <NavItem href="/sales-crm/contracts" label="Contracts" icon={Handshake} collapsed={collapsed} />
+            <NavItem href="/sales-crm/leads" label="Leads" icon={UserPlus} collapsed={collapsed} />
+            <NavItem href="/sales-crm/campaigns" label="Campaigns" icon={Megaphone} collapsed={collapsed} />
+          </NavGroup>
+        )}
 
         {hasAny(perms, "customs:") ? (
           <NavGroup label="Customs & Compliance" collapsed={collapsed}>
