@@ -7,3 +7,4 @@ export * from "./permissions";
 export * from "./master-data-management";
 export * from "./workflow-notification-engine";
 export * from "./document-management-system";
+export * from "./admin-portal";
