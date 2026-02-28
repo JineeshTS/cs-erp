@@ -10,3 +10,4 @@ export * from "./document-management-system";
 export * from "./admin-portal";
 export * from "./multi-entity-legal-structure";
 export * from "./chartering-vessel-management";
+export * from "./capacity-voyage-management";
