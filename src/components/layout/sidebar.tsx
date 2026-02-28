@@ -28,6 +28,7 @@ import {
   SlidersHorizontal,
   Landmark,
   Anchor,
+  Navigation,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -154,6 +155,15 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/chartering-vessel-management/fixtures" label="Fixtures" icon={FileCheck} collapsed={collapsed} />
             <NavItem href="/chartering-vessel-management/tc-contracts" label="TC Contracts" icon={FileText} collapsed={collapsed} />
             <NavItem href="/chartering-vessel-management/coa-contracts" label="COA Contracts" icon={FileText} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "capacity:") && (
+          <NavGroup label="Capacity & Voyage" collapsed={collapsed}>
+            <NavItem href="/capacity-voyage-management" label="Vessel Schedules" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/capacity-voyage-management/trade-allocations" label="Trade Allocations" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/capacity-voyage-management/space-controls" label="Space Controls" icon={Container} collapsed={collapsed} />
+            <NavItem href="/capacity-voyage-management/stowage-plans" label="Stowage Plans" icon={Package} collapsed={collapsed} />
           </NavGroup>
         )}
 
