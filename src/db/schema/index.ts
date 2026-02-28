@@ -13,3 +13,4 @@ export * from "./chartering-vessel-management";
 export * from "./capacity-voyage-management";
 export * from "./equipment-control-yard-managem";
 export * from "./sales-crm";
+export * from "./commercial-pricing-management";
