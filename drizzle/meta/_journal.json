@@ -43,6 +43,13 @@
       "when": 1772268132432,
       "tag": "0005_thin_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772269937807,
+      "tag": "0006_amused_living_tribunal",
+      "breakpoints": true
     }
   ]
 }
