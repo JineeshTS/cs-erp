@@ -24,6 +24,7 @@ import {
   Database,
   Workflow,
   Bell,
+  FolderOpen,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,12 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             {hasAny(perms, "notifications:") && (
               <NavItem href="/workflow-notification-engine/notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
             )}
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "documents:") && (
+          <NavGroup label="Documents" collapsed={collapsed}>
+            <NavItem href="/document-management-system" label="Document Hub" icon={FolderOpen} collapsed={collapsed} />
           </NavGroup>
         )}
 
