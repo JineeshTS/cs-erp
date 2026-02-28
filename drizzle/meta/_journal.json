@@ -92,6 +92,13 @@
       "when": 1772295677948,
       "tag": "0012_mature_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772305312012,
+      "tag": "0013_wakeful_silverclaw",
+      "breakpoints": true
     }
   ]
 }

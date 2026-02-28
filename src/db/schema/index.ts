@@ -15,3 +15,4 @@ export * from "./equipment-control-yard-managem";
 export * from "./sales-crm";
 export * from "./commercial-pricing-management";
 export * from "./customer-service-operations";
+export * from "./operations-documentation";
