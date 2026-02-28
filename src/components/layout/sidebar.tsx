@@ -37,6 +37,10 @@ import {
   Megaphone,
   Handshake,
   UserPlus,
+  BadgeDollarSign,
+  Scale,
+  Timer,
+  Brain,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -191,6 +195,16 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/equipment-control-yard-managem/maintenance-repairs" label="MNR" icon={Wrench} collapsed={collapsed} />
             <NavItem href="/equipment-control-yard-managem/reefer-containers" label="Reefer Mgmt" icon={Snowflake} collapsed={collapsed} />
             <NavItem href="/equipment-control-yard-managem/yard-slots" label="Yard Planning" icon={LayoutGrid} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "commercial:") && (
+          <NavGroup label="Commercial & Pricing" collapsed={collapsed}>
+            <NavItem href="/commercial-pricing-management" label="Tariffs" icon={BadgeDollarSign} collapsed={collapsed} />
+            <NavItem href="/commercial-pricing-management/special-rates" label="Special Rates" icon={Scale} collapsed={collapsed} />
+            <NavItem href="/commercial-pricing-management/surcharges" label="Surcharges" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/commercial-pricing-management/detention-demurrage" label="D&D Tariffs" icon={Timer} collapsed={collapsed} />
+            <NavItem href="/commercial-pricing-management/ai-pricing-models" label="AI Pricing" icon={Brain} collapsed={collapsed} />
           </NavGroup>
         )}
 
