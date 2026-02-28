@@ -138,12 +138,20 @@ export default function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </Button>
-          <Link
-            href="/forgot-password"
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Forgot your password?
-          </Link>
+          <div className="flex items-center justify-between text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              Forgot your password?
+            </Link>
+            <Link
+              href="/register"
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Create account
+            </Link>
+          </div>
         </CardFooter>
       </form>
     </Card>
