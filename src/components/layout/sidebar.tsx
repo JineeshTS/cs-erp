@@ -25,6 +25,7 @@ import {
   Workflow,
   Bell,
   FolderOpen,
+  SlidersHorizontal,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -145,8 +146,11 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
-        {(hasAny(perms, "users:") || hasAny(perms, "roles:") || hasAny(perms, "tenants:")) && (
+        {(hasAny(perms, "users:") || hasAny(perms, "roles:") || hasAny(perms, "tenants:") || hasAny(perms, "admin:")) && (
           <NavGroup label="Administration" collapsed={collapsed}>
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal" label="Admin Portal" icon={SlidersHorizontal} collapsed={collapsed} />
+            )}
             {hasAny(perms, "users:") && (
               <NavItem href="/admin/users" label="Users" icon={UserCog} collapsed={collapsed} />
             )}
