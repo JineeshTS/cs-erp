@@ -29,6 +29,10 @@ import {
   Landmark,
   Anchor,
   Navigation,
+  Boxes,
+  Wrench,
+  Snowflake,
+  LayoutGrid,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -164,6 +168,15 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/capacity-voyage-management/trade-allocations" label="Trade Allocations" icon={BarChart3} collapsed={collapsed} />
             <NavItem href="/capacity-voyage-management/space-controls" label="Space Controls" icon={Container} collapsed={collapsed} />
             <NavItem href="/capacity-voyage-management/stowage-plans" label="Stowage Plans" icon={Package} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "equipment:") && (
+          <NavGroup label="Equipment & Yard" collapsed={collapsed}>
+            <NavItem href="/equipment-control-yard-managem" label="Container Fleet" icon={Boxes} collapsed={collapsed} />
+            <NavItem href="/equipment-control-yard-managem/maintenance-repairs" label="MNR" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/equipment-control-yard-managem/reefer-containers" label="Reefer Mgmt" icon={Snowflake} collapsed={collapsed} />
+            <NavItem href="/equipment-control-yard-managem/yard-slots" label="Yard Planning" icon={LayoutGrid} collapsed={collapsed} />
           </NavGroup>
         )}
 
