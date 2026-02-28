@@ -41,6 +41,11 @@ import {
   Scale,
   Timer,
   Brain,
+  Clock,
+  HeadphonesIcon,
+  AlertOctagon,
+  ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -205,6 +210,16 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/commercial-pricing-management/surcharges" label="Surcharges" icon={DollarSign} collapsed={collapsed} />
             <NavItem href="/commercial-pricing-management/detention-demurrage" label="D&D Tariffs" icon={Timer} collapsed={collapsed} />
             <NavItem href="/commercial-pricing-management/ai-pricing-models" label="AI Pricing" icon={Brain} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "customer_service:") && (
+          <NavGroup label="Customer Service" collapsed={collapsed}>
+            <NavItem href="/customer-service-operations" label="Inquiries" icon={HeadphonesIcon} collapsed={collapsed} />
+            <NavItem href="/customer-service-operations/complaints" label="Complaints" icon={AlertOctagon} collapsed={collapsed} />
+            <NavItem href="/customer-service-operations/service-requests" label="Service Requests" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/customer-service-operations/sla-policies" label="SLA Policies" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/customer-service-operations/knowledge-articles" label="Knowledge Base" icon={BookOpen} collapsed={collapsed} />
           </NavGroup>
         )}
 
