@@ -4,13 +4,19 @@ import { hasPermission } from "@/lib/rbac";
 import { getMdmOverview } from "@/lib/master-data-management/service";
 
 export async function GET(request: NextRequest) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "masterdata:read")))
+      return forbiddenResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "vessels:read"))) {
-    return forbiddenResponse();
+    const overview = await getMdmOverview(user.tenantId);
+    return NextResponse.json({ data: overview });
+  } catch (err) {
+    console.error("MDM overview error:", err);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to fetch overview" } },
+      { status: 500 }
+    );
   }
-
-  const overview = await getMdmOverview(user.tenantId);
-  return NextResponse.json({ data: overview });
 }

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { costCentres } from "@/db/schema";
+import { terminals } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { updateCostCentreSchema } from "@/lib/master-data-management/validation";
+import { updateTerminalSchema } from "@/lib/master-data-management/validation";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -15,13 +15,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:read"))) return forbiddenResponse();
 
     const { id } = await params;
-    const [record] = await db.select().from(costCentres)
-      .where(and(eq(costCentres.id, id), eq(costCentres.tenantId, user.tenantId), isNull(costCentres.deletedAt))).limit(1);
+    const [record] = await db.select().from(terminals)
+      .where(and(eq(terminals.id, id), eq(terminals.tenantId, user.tenantId), isNull(terminals.deletedAt))).limit(1);
 
-    if (!record) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Cost centre not found" } }, { status: 404 });
+    if (!record) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Terminal not found" } }, { status: 404 });
     return NextResponse.json({ data: record });
   } catch (error) {
-    console.error("Failed to fetch cost centre:", error);
+    console.error("Failed to get terminal:", error);
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
       { status: 500 }
@@ -37,18 +37,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const parsed = updateCostCentreSchema.safeParse(body);
+    const parsed = updateTerminalSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
-    const [updated] = await db.update(costCentres).set(parsed.data)
-      .where(and(eq(costCentres.id, id), eq(costCentres.tenantId, user.tenantId), isNull(costCentres.deletedAt))).returning();
+    const [updated] = await db.update(terminals).set(parsed.data)
+      .where(and(eq(terminals.id, id), eq(terminals.tenantId, user.tenantId), isNull(terminals.deletedAt))).returning();
 
-    if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Cost centre not found" } }, { status: 404 });
+    if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Terminal not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch (error) {
-    console.error("Failed to update cost centre:", error);
+    console.error("Failed to update terminal:", error);
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
       { status: 500 }
@@ -63,13 +63,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:delete"))) return forbiddenResponse();
 
     const { id } = await params;
-    const [deleted] = await db.update(costCentres).set({ deletedAt: new Date() })
-      .where(and(eq(costCentres.id, id), eq(costCentres.tenantId, user.tenantId), isNull(costCentres.deletedAt))).returning({ id: costCentres.id });
+    const [deleted] = await db.update(terminals).set({ deletedAt: new Date() })
+      .where(and(eq(terminals.id, id), eq(terminals.tenantId, user.tenantId), isNull(terminals.deletedAt))).returning({ id: terminals.id });
 
-    if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Cost centre not found" } }, { status: 404 });
+    if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Terminal not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
-    console.error("Failed to delete cost centre:", error);
+    console.error("Failed to delete terminal:", error);
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
       { status: 500 }
