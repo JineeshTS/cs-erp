@@ -26,6 +26,7 @@ import {
   Bell,
   FolderOpen,
   SlidersHorizontal,
+  Landmark,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,12 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
         {hasAny(perms, "documents:") && (
           <NavGroup label="Documents" collapsed={collapsed}>
             <NavItem href="/document-management-system" label="Document Hub" icon={FolderOpen} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "entities:") && (
+          <NavGroup label="Corporate Structure" collapsed={collapsed}>
+            <NavItem href="/multi-entity-legal-structure" label="Legal Entities" icon={Landmark} collapsed={collapsed} />
           </NavGroup>
         )}
 
