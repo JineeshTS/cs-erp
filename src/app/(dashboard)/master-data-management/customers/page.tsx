@@ -11,13 +11,13 @@ import { Badge } from "@/components/ui/badge";
 export default async function CustomersListPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "bookings:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const canCreate = await hasPermission(
     session.id,
     session.tenantId,
-    "bookings:create"
+    "masterdata:create"
   );
 
   const data = await db

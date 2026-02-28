@@ -50,7 +50,7 @@ const GL_ACCOUNT_FIELDS = [
 export default async function NewGlAccountPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/gl-accounts");
 
   return (

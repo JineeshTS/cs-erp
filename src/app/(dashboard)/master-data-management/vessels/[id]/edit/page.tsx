@@ -43,7 +43,7 @@ export default async function EditVesselPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "vessels:edit")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/vessels");
 
   const { id } = await params;

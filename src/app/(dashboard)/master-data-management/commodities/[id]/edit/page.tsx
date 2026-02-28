@@ -30,7 +30,7 @@ export default async function EditCommodityPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "vessels:edit")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/commodities");
 
   const { id } = await params;

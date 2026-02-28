@@ -15,7 +15,7 @@ export default async function CommodityDetailPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "vessels:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const { id } = await params;
@@ -38,7 +38,7 @@ export default async function CommodityDetailPage({
   const canEdit = await hasPermission(
     session.id,
     session.tenantId,
-    "vessels:edit"
+    "masterdata:edit"
   );
 
   return (

@@ -16,13 +16,13 @@ export default async function ExchangeRateDetailPage({
   const { id } = await params;
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const canEdit = await hasPermission(
     session.id,
     session.tenantId,
-    "finance:approve"
+    "masterdata:edit"
   );
 
   const [rate] = await db

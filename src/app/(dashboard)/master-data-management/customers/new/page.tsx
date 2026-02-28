@@ -39,7 +39,7 @@ const CUSTOMER_FIELDS = [
 export default async function NewCustomerPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "bookings:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/customers");
 
   return (

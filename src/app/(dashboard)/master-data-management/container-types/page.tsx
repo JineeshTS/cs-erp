@@ -11,13 +11,13 @@ import { Badge } from "@/components/ui/badge";
 export default async function ContainerTypesListPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "containers:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const canCreate = await hasPermission(
     session.id,
     session.tenantId,
-    "containers:create"
+    "masterdata:create"
   );
 
   const data = await db

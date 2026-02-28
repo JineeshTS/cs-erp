@@ -22,7 +22,7 @@ export default async function EditCostCentrePage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:approve")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/cost-centres");
 
   const { id } = await params;

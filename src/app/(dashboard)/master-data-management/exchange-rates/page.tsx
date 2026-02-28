@@ -11,13 +11,13 @@ import { Badge } from "@/components/ui/badge";
 export default async function ExchangeRatesListPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const canCreate = await hasPermission(
     session.id,
     session.tenantId,
-    "finance:create"
+    "masterdata:create"
   );
 
   const data = await db

@@ -46,7 +46,7 @@ export default async function EditCustomerPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "bookings:edit")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/customers");
 
   const { id } = await params;

@@ -24,7 +24,7 @@ const CONTAINER_TYPE_FIELDS = [
 export default async function NewContainerTypePage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "containers:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/container-types");
 
   return (

@@ -25,7 +25,7 @@ const PORT_FIELDS = [
 export default async function NewPortPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "vessels:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/ports");
 
   return (

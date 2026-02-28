@@ -15,7 +15,7 @@ export default async function CustomerDetailPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "bookings:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const { id } = await params;
@@ -38,7 +38,7 @@ export default async function CustomerDetailPage({
   const canEdit = await hasPermission(
     session.id,
     session.tenantId,
-    "bookings:edit"
+    "masterdata:edit"
   );
 
   return (

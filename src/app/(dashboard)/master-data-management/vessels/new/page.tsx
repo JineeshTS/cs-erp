@@ -36,7 +36,7 @@ const VESSEL_FIELDS = [
 export default async function NewVesselPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "vessels:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/vessels");
 
   return (

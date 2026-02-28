@@ -15,7 +15,7 @@ export default async function CostCentreDetailPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
     redirect("/master-data-management");
 
   const { id } = await params;
@@ -38,7 +38,7 @@ export default async function CostCentreDetailPage({
   const canEdit = await hasPermission(
     session.id,
     session.tenantId,
-    "finance:approve"
+    "masterdata:edit"
   );
 
   return (

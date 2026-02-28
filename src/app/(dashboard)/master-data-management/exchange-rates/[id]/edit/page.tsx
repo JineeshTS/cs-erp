@@ -26,7 +26,7 @@ export default async function EditExchangeRatePage({
   const { id } = await params;
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:approve")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/exchange-rates");
 
   const [rate] = await db

@@ -15,7 +15,7 @@ const COST_CENTRE_FIELDS = [
 export default async function NewCostCentrePage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "finance:create")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/cost-centres");
 
   return (

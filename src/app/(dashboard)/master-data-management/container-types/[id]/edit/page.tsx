@@ -33,7 +33,7 @@ export default async function EditContainerTypePage({
 
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "containers:edit")))
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/container-types");
 
   const [containerType] = await db

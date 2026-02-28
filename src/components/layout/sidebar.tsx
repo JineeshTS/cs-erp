@@ -147,7 +147,7 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
-        {(hasAny(perms, "vessels:") || hasAny(perms, "containers:") || hasAny(perms, "bookings:") || hasAny(perms, "finance:")) && (
+        {hasAny(perms, "masterdata:") && (
           <NavGroup label="Master Data" collapsed={collapsed}>
             <NavItem href="/master-data-management" label="Master Data" icon={Database} collapsed={collapsed} />
           </NavGroup>
