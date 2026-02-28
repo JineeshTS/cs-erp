@@ -1,0 +1,73 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { hasPermission } from "@/lib/rbac";
+import { OdmForm } from "@/components/operations-documentation/odm-form";
+import type { FieldConfig } from "@/components/operations-documentation/odm-form";
+
+const FILING_FIELDS: FieldConfig[] = [
+  { name: "filingReference", label: "Filing Reference", type: "text", required: true },
+  { name: "filingType", label: "Filing Type", type: "select", required: true, options: [
+    { value: "ams", label: "AMS" },
+    { value: "isf", label: "ISF" },
+    { value: "ics2", label: "ICS2" },
+    { value: "ens", label: "ENS" },
+    { value: "edi", label: "EDI" },
+    { value: "customs_entry", label: "Customs Entry" },
+  ]},
+  { name: "regulatoryBody", label: "Regulatory Body", type: "text", required: true },
+  { name: "country", label: "Country", type: "text", required: true, placeholder: "US" },
+  { name: "blNumber", label: "BL Number", type: "text" },
+  { name: "vesselName", label: "Vessel Name", type: "text" },
+  { name: "voyageNumber", label: "Voyage Number", type: "text" },
+  { name: "portOfLoading", label: "Port of Loading", type: "text" },
+  { name: "portOfDischarge", label: "Port of Discharge", type: "text" },
+  { name: "filingDeadline", label: "Filing Deadline", type: "datetime-local" },
+  { name: "status", label: "Status", type: "select", options: [
+    { value: "pending", label: "Pending" },
+    { value: "filed", label: "Filed" },
+    { value: "accepted", label: "Accepted" },
+    { value: "rejected", label: "Rejected" },
+    { value: "amended", label: "Amended" },
+    { value: "cancelled", label: "Cancelled" },
+  ]},
+  { name: "shipperName", label: "Shipper Name", type: "text" },
+  { name: "consigneeName", label: "Consignee Name", type: "text" },
+  { name: "hsCode", label: "HS Code", type: "text" },
+  { name: "containerNumber", label: "Container Number", type: "text" },
+  { name: "grossWeight", label: "Gross Weight", type: "number" },
+  { name: "notes", label: "Notes", type: "textarea" },
+];
+
+export default async function NewRegulatoryFilingPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!(await hasPermission(session.id, session.tenantId, "operations:create")))
+    redirect("/operations-documentation");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/operations-documentation/regulatory-filings"
+          className="rounded-md p-1 hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-500" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">
+          New Regulatory Filing
+        </h1>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6">
+        <OdmForm
+          entityType="Regulatory Filing"
+          apiPath="/api/v1/operations-documentation/regulatory-filings"
+          fields={FILING_FIELDS}
+          returnPath="/operations-documentation/regulatory-filings"
+        />
+      </div>
+    </div>
+  );
+}

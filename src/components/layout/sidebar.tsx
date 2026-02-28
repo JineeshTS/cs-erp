@@ -46,6 +46,10 @@ import {
   AlertOctagon,
   ClipboardList,
   BookOpen,
+  ScrollText,
+  Weight,
+  FileWarning,
+  MapPin,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -220,6 +224,16 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/customer-service-operations/service-requests" label="Service Requests" icon={ClipboardList} collapsed={collapsed} />
             <NavItem href="/customer-service-operations/sla-policies" label="SLA Policies" icon={Clock} collapsed={collapsed} />
             <NavItem href="/customer-service-operations/knowledge-articles" label="Knowledge Base" icon={BookOpen} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "operations:") && (
+          <NavGroup label="Operations & Docs" collapsed={collapsed}>
+            <NavItem href="/operations-documentation" label="Bills of Lading" icon={ScrollText} collapsed={collapsed} />
+            <NavItem href="/operations-documentation/manifests" label="Manifests" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/operations-documentation/regulatory-filings" label="Regulatory Filings" icon={FileWarning} collapsed={collapsed} />
+            <NavItem href="/operations-documentation/vgm-records" label="VGM Records" icon={Weight} collapsed={collapsed} />
+            <NavItem href="/operations-documentation/cargo-tracking-events" label="Cargo Tracking" icon={MapPin} collapsed={collapsed} />
           </NavGroup>
         )}
 
