@@ -73,6 +73,13 @@ import {
   Leaf,
   Droplets,
   Calculator,
+  TrendingUp,
+  Banknote,
+  PieChart,
+  GitCompare,
+  Building,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -214,6 +221,23 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/bunker-fuel-management/sulphur-records" label="Sulphur" icon={Droplets} collapsed={collapsed} />
             <NavItem href="/bunker-fuel-management/cost-allocations" label="Cost Alloc." icon={Calculator} collapsed={collapsed} />
             <NavItem href="/bunker-fuel-management/optimization-runs" label="AI Optimize" icon={Brain} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "costing:") && (
+          <NavGroup label="Costing & Financial" collapsed={collapsed}>
+            <NavItem href="/costing-financial-management" label="Voyage Budgets" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/port-disbursements" label="Disbursements" icon={Banknote} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/revenue-recognitions" label="Revenue" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/agency-commissions" label="Commissions" icon={Wallet} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/voyage-pnl" label="Voyage P&L" icon={PieChart} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/container-costs" label="Container Costs" icon={Container} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/overhead-allocations" label="Overhead Alloc." icon={Layers} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/variance-analyses" label="Variance" icon={GitCompare} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/cost-centres" label="Cost Centres" icon={Building} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/capex-items" label="CAPEX" icon={Landmark} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/anomaly-detections" label="Anomalies" icon={Zap} collapsed={collapsed} />
+            <NavItem href="/costing-financial-management/kpi-reports" label="KPI Reports" icon={BarChart3} collapsed={collapsed} />
           </NavGroup>
         )}
 
