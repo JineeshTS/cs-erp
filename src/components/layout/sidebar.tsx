@@ -65,6 +65,7 @@ import {
   Cable,
   FileCode,
   RefreshCcw,
+  ShoppingCart,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -191,6 +192,17 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/infrastructure-security/encryption-keys" label="Encryption Keys" icon={Lock} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/audit-events" label="Audit Log" icon={Activity} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/compliance-reports" label="Compliance" icon={ClipboardCheck} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "portal:") && (
+          <NavGroup label="Customer Portal" collapsed={collapsed}>
+            <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
+            <NavItem href="/customer-portal/bookings" label="Bookings" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/customer-portal/tracking" label="Tracking" icon={MapPin} collapsed={collapsed} />
+            <NavItem href="/customer-portal/documents" label="Documents" icon={FolderOpen} collapsed={collapsed} />
+            <NavItem href="/customer-portal/invoices" label="Invoices" icon={Receipt} collapsed={collapsed} />
+            <NavItem href="/customer-portal/payments" label="Payments" icon={CreditCard} collapsed={collapsed} />
           </NavGroup>
         )}
 
