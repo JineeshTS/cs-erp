@@ -66,6 +66,13 @@ import {
   FileCode,
   RefreshCcw,
   ShoppingCart,
+  Fuel,
+  FlaskConical,
+  AlertTriangle,
+  Gauge,
+  Leaf,
+  Droplets,
+  Calculator,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -192,6 +199,21 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/infrastructure-security/encryption-keys" label="Encryption Keys" icon={Lock} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/audit-events" label="Audit Log" icon={Activity} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/compliance-reports" label="Compliance" icon={ClipboardCheck} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "bunker:") && (
+          <NavGroup label="Bunker & Fuel" collapsed={collapsed}>
+            <NavItem href="/bunker-fuel-management" label="Orders" icon={Fuel} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/stems" label="Stems" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/quality-tests" label="Quality Tests" icon={FlaskConical} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/quality-claims" label="Claims" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/fuel-rob" label="Fuel ROB" icon={Gauge} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/reconciliations" label="Reconciliation" icon={Scale} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/emissions" label="Emissions" icon={Leaf} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/sulphur-records" label="Sulphur" icon={Droplets} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/cost-allocations" label="Cost Alloc." icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/bunker-fuel-management/optimization-runs" label="AI Optimize" icon={Brain} collapsed={collapsed} />
           </NavGroup>
         )}
 
