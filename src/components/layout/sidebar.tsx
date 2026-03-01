@@ -56,6 +56,12 @@ import {
   GitBranch,
   Layers,
   AlertCircle,
+  Server,
+  Rocket,
+  Key,
+  Lock,
+  ClipboardCheck,
+  Activity,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -170,6 +176,18 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/ai-agent-framework/escalations" label="Escalations" icon={AlertCircle} collapsed={collapsed} />
             <NavItem href="/ai-agent-framework/documents" label="Documents" icon={FileSearch2} collapsed={collapsed} />
             <NavItem href="/ai-agent-framework/workflows" label="Workflows" icon={GitBranch} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "infra:") && (
+          <NavGroup label="Infrastructure & Security" collapsed={collapsed}>
+            <NavItem href="/infrastructure-security" label="Clusters" icon={Server} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/deployments" label="Deployments" icon={Rocket} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/iam-policies" label="IAM Policies" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/service-accounts" label="Service Accounts" icon={Key} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/encryption-keys" label="Encryption Keys" icon={Lock} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/audit-events" label="Audit Log" icon={Activity} collapsed={collapsed} />
+            <NavItem href="/infrastructure-security/compliance-reports" label="Compliance" icon={ClipboardCheck} collapsed={collapsed} />
           </NavGroup>
         )}
 
