@@ -62,6 +62,9 @@ import {
   Lock,
   ClipboardCheck,
   Activity,
+  Cable,
+  FileCode,
+  RefreshCcw,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -188,6 +191,15 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/infrastructure-security/encryption-keys" label="Encryption Keys" icon={Lock} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/audit-events" label="Audit Log" icon={Activity} collapsed={collapsed} />
             <NavItem href="/infrastructure-security/compliance-reports" label="Compliance" icon={ClipboardCheck} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "integration:") && (
+          <NavGroup label="Integrations & EDI" collapsed={collapsed}>
+            <NavItem href="/integration-edi-layer" label="Connections" icon={Cable} collapsed={collapsed} />
+            <NavItem href="/integration-edi-layer/edi-messages" label="EDI Messages" icon={FileCode} collapsed={collapsed} />
+            <NavItem href="/integration-edi-layer/customs-filings" label="Customs Filings" icon={FileArchive} collapsed={collapsed} />
+            <NavItem href="/integration-edi-layer/oracle-sync-jobs" label="Oracle Sync" icon={RefreshCcw} collapsed={collapsed} />
           </NavGroup>
         )}
 
