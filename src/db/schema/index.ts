@@ -22,3 +22,4 @@ export * from "./integration-edi-layer";
 export * from "./customer-portal";
 export * from "./bunker-fuel-management";
 export * from "./costing-financial-management";
+export * from "./freight-invoice-revenue-management";

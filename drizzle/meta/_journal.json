@@ -141,6 +141,13 @@
       "when": 1772379366568,
       "tag": "0019_huge_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1772386505586,
+      "tag": "0020_friendly_ozymandias",
+      "breakpoints": true
     }
   ]
 }
