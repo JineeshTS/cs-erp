@@ -23,3 +23,4 @@ export * from "./customer-portal";
 export * from "./bunker-fuel-management";
 export * from "./costing-financial-management";
 export * from "./freight-invoice-revenue-management";
+export * from "./accounts-receivable-credit-control";
