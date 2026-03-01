@@ -241,6 +241,21 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "invoice:") && (
+          <NavGroup label="Invoice & Revenue" collapsed={collapsed}>
+            <NavItem href="/freight-invoice-revenue-management" label="Freight Invoices" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/invoice-line-items" label="Line Items" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/debit-credit-notes" label="Debit/Credit Notes" icon={CreditCard} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/invoice-amendments" label="Amendments" icon={RefreshCcw} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/proforma-invoices" label="Proforma" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/revenue-accruals" label="Revenue Accruals" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/invoice-disputes" label="Disputes" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/dunning-runs" label="Dunning Runs" icon={Bell} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/dunning-actions" label="Dunning Actions" icon={Activity} collapsed={collapsed} />
+            <NavItem href="/freight-invoice-revenue-management/revenue-forecast-entries" label="Forecasts" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
