@@ -21,3 +21,4 @@ export * from "./infrastructure-security";
 export * from "./integration-edi-layer";
 export * from "./customer-portal";
 export * from "./bunker-fuel-management";
+export * from "./costing-financial-management";

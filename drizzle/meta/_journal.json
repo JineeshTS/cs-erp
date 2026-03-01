@@ -134,6 +134,13 @@
       "when": 1772371961863,
       "tag": "0018_mute_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1772379366568,
+      "tag": "0019_huge_warbound",
+      "breakpoints": true
     }
   ]
 }
