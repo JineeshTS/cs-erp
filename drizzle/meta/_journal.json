@@ -120,6 +120,13 @@
       "when": 1772357242336,
       "tag": "0016_messy_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1772364550431,
+      "tag": "0017_glorious_synch",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { cspPortalBookingContainers } from "@/db/schema";
+import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
+import { hasPermission } from "@/lib/rbac";
+import { listBookingContainers } from "@/lib/customer-portal/service";
+import { createBookingContainerSchema } from "@/lib/customer-portal/validation";
+
+type RouteParams = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "portal:read"))) return forbiddenResponse();
+
+    const { id: bookingId } = await params;
+    const data = await listBookingContainers(user.tenantId, bookingId);
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error("Failed to list booking containers:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "portal:create"))) return forbiddenResponse();
+
+    const { id: bookingId } = await params;
+
+    const body = await request.json();
+    const parsed = createBookingContainerSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { status: 422 }
+      );
+    }
+
+    const [created] = await db.insert(cspPortalBookingContainers).values({
+      tenantId: user.tenantId,
+      ...parsed.data,
+      bookingId,
+    }).returning();
+
+    return NextResponse.json({ data: created }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to add booking container:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+      { status: 500 }
+    );
+  }
+}
