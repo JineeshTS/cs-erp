@@ -256,6 +256,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "receivable:") && (
+          <NavGroup label="AR & Credit Control" collapsed={collapsed}>
+            <NavItem href="/accounts-receivable-credit-control" label="Customer Accounts" icon={Users} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/credit-limits" label="Credit Limits" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/aging-reports" label="Aging Reports" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/cash-applications" label="Cash Application" icon={CreditCard} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/collection-workflows" label="Collections" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/bad-debt-provisions" label="Bad Debt" icon={AlertOctagon} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/payment-predictions" label="AI Predictions" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/accounts-receivable-credit-control/cash-flow-forecasts" label="Cash Flow" icon={TrendingUp} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
