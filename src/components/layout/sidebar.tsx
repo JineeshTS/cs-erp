@@ -50,6 +50,12 @@ import {
   Weight,
   FileWarning,
   MapPin,
+  Cpu,
+  Play,
+  FileSearch2,
+  GitBranch,
+  Layers,
+  AlertCircle,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -154,6 +160,16 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             {hasAny(perms, "reports:") && (
               <NavItem href="/reports" label="Reports" icon={BarChart3} collapsed={collapsed} />
             )}
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "ai:") && (
+          <NavGroup label="AI & Agents" collapsed={collapsed}>
+            <NavItem href="/ai-agent-framework" label="Agents" icon={Cpu} collapsed={collapsed} />
+            <NavItem href="/ai-agent-framework/runs" label="Runs" icon={Play} collapsed={collapsed} />
+            <NavItem href="/ai-agent-framework/escalations" label="Escalations" icon={AlertCircle} collapsed={collapsed} />
+            <NavItem href="/ai-agent-framework/documents" label="Documents" icon={FileSearch2} collapsed={collapsed} />
+            <NavItem href="/ai-agent-framework/workflows" label="Workflows" icon={GitBranch} collapsed={collapsed} />
           </NavGroup>
         )}
 
