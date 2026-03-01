@@ -18,3 +18,4 @@ export * from "./customer-service-operations";
 export * from "./operations-documentation";
 export * from "./ai-agent-framework";
 export * from "./infrastructure-security";
+export * from "./integration-edi-layer";
