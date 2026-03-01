@@ -80,6 +80,9 @@ import {
   Building,
   Wallet,
   Zap,
+  CheckSquare,
+  Calendar,
+  ScanLine,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -266,6 +269,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/accounts-receivable-credit-control/bad-debt-provisions" label="Bad Debt" icon={AlertOctagon} collapsed={collapsed} />
             <NavItem href="/accounts-receivable-credit-control/payment-predictions" label="AI Predictions" icon={Brain} collapsed={collapsed} />
             <NavItem href="/accounts-receivable-credit-control/cash-flow-forecasts" label="Cash Flow" icon={TrendingUp} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "payable:") && (
+          <NavGroup label="AP & Vendor Mgmt" collapsed={collapsed}>
+            <NavItem href="/accounts-payable-vendor-management" label="Vendors" icon={Users} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/purchase-orders" label="Purchase Orders" icon={ShoppingCart} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/vendor-invoices" label="Vendor Invoices" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/three-way-matches" label="3-Way Match" icon={CheckSquare} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/payment-schedules" label="Payments" icon={Calendar} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/vendor-reconciliations" label="Reconciliation" icon={Scale} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/ocr-extractions" label="OCR Extraction" icon={ScanLine} collapsed={collapsed} />
+            <NavItem href="/accounts-payable-vendor-management/spend-analytics" label="Spend Analytics" icon={PieChart} collapsed={collapsed} />
           </NavGroup>
         )}
 
