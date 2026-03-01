@@ -20,3 +20,4 @@ export * from "./ai-agent-framework";
 export * from "./infrastructure-security";
 export * from "./integration-edi-layer";
 export * from "./customer-portal";
+export * from "./bunker-fuel-management";
