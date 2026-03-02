@@ -442,6 +442,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "insurance:") && (
+          <NavGroup label="Insurance & Claims" collapsed={collapsed}>
+            <NavItem href="/insurance-claims-management" label="P&I Policies" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/hull-machinery-insurances" label="H&M Insurance" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/cargo-insurance-policies" label="Cargo Insurance" icon={Package} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/survey-appointments" label="Survey Appts" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/claims-registrations" label="Claims" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/claims-recoveries" label="Recoveries" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/claims-predictions" label="Predictions" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/insurance-claims-management/loss-prevention-reports" label="Loss Prevention" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
