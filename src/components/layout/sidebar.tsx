@@ -97,6 +97,8 @@ import {
   ArrowRightLeft,
   Ruler,
   DoorOpen,
+  MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -452,6 +454,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/insurance-claims-management/claims-recoveries" label="Recoveries" icon={ArrowRightLeft} collapsed={collapsed} />
             <NavItem href="/insurance-claims-management/claims-predictions" label="Predictions" icon={Brain} collapsed={collapsed} />
             <NavItem href="/insurance-claims-management/loss-prevention-reports" label="Loss Prevention" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "port_agency:") && (
+          <NavGroup label="Port Agency" collapsed={collapsed}>
+            <NavItem href="/port-agency-management" label="Port Calls" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/husbandry-services" label="Husbandry" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/pre-arrival-checklists" label="Pre-Arrival" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/port-authority-communications" label="Port Comms" icon={MessageSquare} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/crew-change-coordinations" label="Crew Changes" icon={Users} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/cash-to-masters" label="Cash to Master" icon={Banknote} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/vessel-clearances" label="Clearances" icon={ShieldCheck} collapsed={collapsed} />
+            <NavItem href="/port-agency-management/disbursement-accounts" label="Disbursements" icon={Receipt} collapsed={collapsed} />
           </NavGroup>
         )}
 
