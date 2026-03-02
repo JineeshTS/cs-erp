@@ -399,6 +399,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "intermodal:") && (
+          <NavGroup label="Intermodal & ICD" collapsed={collapsed}>
+            <NavItem href="/intermodal-icd-operations" label="Dry Ports" icon={Landmark} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/rail-plans" label="Rail Plans" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/truck-bookings" label="Truck Bookings" icon={Boxes} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/bonded-warehouses" label="Warehouses" icon={Building} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/last-mile-deliveries" label="Last Mile" icon={MapPin} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/multimodal-bols" label="Multimodal B/L" icon={ScrollText} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/haulage-rates" label="Haulage Rates" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/intermodal-icd-operations/route-optimizations" label="Route AI" icon={Brain} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
