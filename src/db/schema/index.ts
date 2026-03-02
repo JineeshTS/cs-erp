@@ -36,3 +36,4 @@ export * from "./oog-special-cargo-management";
 export * from "./intermodal-icd-operations";
 export * from "./customs-compliance-regulatory";
 export * from "./survey-inspection-management";
+export * from "./insurance-claims-management";
