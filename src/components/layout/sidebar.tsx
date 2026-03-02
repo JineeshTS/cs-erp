@@ -93,6 +93,8 @@ import {
   Flame,
   Thermometer,
   Plug,
+  FileOutput,
+  ArrowRightLeft,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -409,6 +411,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/intermodal-icd-operations/multimodal-bols" label="Multimodal B/L" icon={ScrollText} collapsed={collapsed} />
             <NavItem href="/intermodal-icd-operations/haulage-rates" label="Haulage Rates" icon={Calculator} collapsed={collapsed} />
             <NavItem href="/intermodal-icd-operations/route-optimizations" label="Route AI" icon={Brain} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "customs:") && (
+          <NavGroup label="Customs & Regulatory" collapsed={collapsed}>
+            <NavItem href="/customs-compliance-regulatory" label="Import Clearances" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/export-filings" label="Export Filings" icon={FileOutput} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/transit-procedures" label="Transit Procedures" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/duty-calculations" label="Duty Calculations" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/aeo-compliances" label="AEO Compliance" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/isps-compliances" label="ISPS Compliance" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/psc-preparations" label="PSC Preparations" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/customs-compliance-regulatory/imo-regulations" label="IMO Regulations" icon={BookOpen} collapsed={collapsed} />
           </NavGroup>
         )}
 
