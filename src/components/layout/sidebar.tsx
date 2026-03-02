@@ -87,6 +87,8 @@ import {
   Award,
   Plane,
   Heart,
+  Globe,
+  Route,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -325,6 +327,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/crew-management/visa-travel-records" label="Visa & Travel" icon={Plane} collapsed={collapsed} />
             <NavItem href="/crew-management/welfare-medical-records" label="Welfare & Medical" icon={Heart} collapsed={collapsed} />
             <NavItem href="/crew-management/mlc-compliance" label="MLC Compliance" icon={FileCheck} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "liner:") && (
+          <NavGroup label="Liner Trade Routes" collapsed={collapsed}>
+            <NavItem href="/liner-trade-route-management" label="Service Loops" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/port-pair-trade-lanes" label="Trade Lanes" icon={GitBranch} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/trade-lane-pnl" label="Trade Lane P&L" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/slot-agreements" label="Slot Agreements" icon={Handshake} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/alliance-agreements" label="Alliances" icon={Globe} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/port-stay-analyses" label="Port Stay" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/route-optimizations" label="AI Optimization" icon={Route} collapsed={collapsed} />
+            <NavItem href="/liner-trade-route-management/market-intelligence" label="Market Intel" icon={BarChart3} collapsed={collapsed} />
           </NavGroup>
         )}
 
