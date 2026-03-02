@@ -37,3 +37,4 @@ export * from "./intermodal-icd-operations";
 export * from "./customs-compliance-regulatory";
 export * from "./survey-inspection-management";
 export * from "./insurance-claims-management";
+export * from "./port-agency-management";
