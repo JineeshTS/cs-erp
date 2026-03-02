@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { icdRouteOptimizations } from "@/db/schema";
+import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
+import { hasPermission } from "@/lib/rbac";
+import { createRouteOptimizationSchema } from "@/lib/intermodal-icd-operations/validation";
+import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import crypto from "crypto";
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "intermodal:read")))
+      return forbiddenResponse();
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") ?? "";
+    const status = searchParams.get("status") ?? "";
+    const cursor = searchParams.get("cursor") ?? "";
+    const limit = 50;
+
+    const conditions = [
+      eq(icdRouteOptimizations.tenantId, user.tenantId),
+      isNull(icdRouteOptimizations.deletedAt),
+    ];
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(icdRouteOptimizations.optimizationRef, `%${search}%`),
+          ilike(icdRouteOptimizations.originLocation, `%${search}%`),
+          ilike(icdRouteOptimizations.destinationLocation, `%${search}%`)
+        )!
+      );
+    }
+
+    if (status) {
+      conditions.push(eq(icdRouteOptimizations.status, status));
+    }
+
+    if (cursor) {
+      conditions.push(gt(icdRouteOptimizations.createdAt, new Date(cursor)));
+    }
+
+    const results = await db
+      .select()
+      .from(icdRouteOptimizations)
+      .where(and(...conditions))
+      .orderBy(desc(icdRouteOptimizations.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = results.length > limit;
+    const data = hasMore ? results.slice(0, limit) : results;
+
+    return NextResponse.json({
+      data,
+      meta: {
+        cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined,
+        hasMore,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to list route optimizations:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "intermodal:create")))
+      return forbiddenResponse();
+
+    const body = await request.json();
+    const parsed = createRouteOptimizationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { status: 422 }
+      );
+    }
+
+    const optimizationRef = `IRO-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+    const [record] = await db
+      .insert(icdRouteOptimizations)
+      .values({
+        ...parsed.data,
+        optimizationRef,
+        tenantId: user.tenantId,
+      })
+      .returning();
+
+    return NextResponse.json({ data: record }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create route optimization:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+      { status: 500 }
+    );
+  }
+}
