@@ -89,6 +89,8 @@ import {
   Heart,
   Globe,
   Route,
+  Radiation,
+  Flame,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -353,6 +355,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/demurrage-detention-management/waivers" label="Waivers" icon={Scale} collapsed={collapsed} />
             <NavItem href="/demurrage-detention-management/predictions" label="AI Predictions" icon={Brain} collapsed={collapsed} />
             <NavItem href="/demurrage-detention-management/notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "dangerous_goods:") && (
+          <NavGroup label="Dangerous Goods" collapsed={collapsed}>
+            <NavItem href="/dangerous-goods-management" label="IMDG Compliance" icon={Radiation} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/booking-screenings" label="Booking Screening" icon={ScanLine} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/segregation-rules" label="Segregation Rules" icon={Layers} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/placard-requirements" label="Placards & Labels" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/manifests" label="DG Manifests" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/emergency-procedures" label="Emergency Procs" icon={Flame} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/chemical-safety-data" label="Chemical Safety" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/dangerous-goods-management/incident-reports" label="Incidents" icon={AlertOctagon} collapsed={collapsed} />
           </NavGroup>
         )}
 
