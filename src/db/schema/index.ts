@@ -29,3 +29,4 @@ export * from "./port-disbursement-accounting";
 export * from "./vessel-technical-management";
 export * from "./crew-management";
 export * from "./liner-trade-route-management";
+export * from "./demurrage-detention-management";

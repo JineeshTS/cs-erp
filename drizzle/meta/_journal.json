@@ -190,6 +190,13 @@
       "when": 1772430120638,
       "tag": "0026_previous_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1772437379771,
+      "tag": "0027_tearful_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }
