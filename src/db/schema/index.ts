@@ -38,3 +38,4 @@ export * from "./customs-compliance-regulatory";
 export * from "./survey-inspection-management";
 export * from "./insurance-claims-management";
 export * from "./port-agency-management";
+export * from "./analytics-business-intelligence";
