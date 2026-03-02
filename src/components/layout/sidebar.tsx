@@ -343,6 +343,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "demurrage:") && (
+          <NavGroup label="Demurrage & Detention" collapsed={collapsed}>
+            <NavItem href="/demurrage-detention-management" label="Calculations" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/free-time-rules" label="Free Time Rules" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/detention-trackings" label="Detention Tracking" icon={Timer} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/invoices" label="D&D Invoices" icon={Receipt} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/disputes" label="Disputes" icon={FileWarning} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/waivers" label="Waivers" icon={Scale} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/predictions" label="AI Predictions" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/demurrage-detention-management/notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
