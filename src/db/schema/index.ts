@@ -28,3 +28,4 @@ export * from "./accounts-payable-vendor-management";
 export * from "./port-disbursement-accounting";
 export * from "./vessel-technical-management";
 export * from "./crew-management";
+export * from "./liner-trade-route-management";
