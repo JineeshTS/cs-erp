@@ -83,6 +83,7 @@ import {
   CheckSquare,
   Calendar,
   ScanLine,
+  CheckCircle,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -282,6 +283,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/accounts-payable-vendor-management/vendor-reconciliations" label="Reconciliation" icon={Scale} collapsed={collapsed} />
             <NavItem href="/accounts-payable-vendor-management/ocr-extractions" label="OCR Extraction" icon={ScanLine} collapsed={collapsed} />
             <NavItem href="/accounts-payable-vendor-management/spend-analytics" label="Spend Analytics" icon={PieChart} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "disbursement:") && (
+          <NavGroup label="Port Disbursement" collapsed={collapsed}>
+            <NavItem href="/port-disbursement-accounting" label="Proforma DAs" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/final-das" label="Final DAs" icon={CheckCircle} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/port-costs" label="Port Costs" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/agent-statements" label="Agent Statements" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/expense-allocations" label="Expense Alloc." icon={Layers} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/variance-analyses" label="Variance" icon={GitCompare} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/cost-benchmarks" label="Benchmarks" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/port-disbursement-accounting/consolidated-reports" label="Reports" icon={PieChart} collapsed={collapsed} />
           </NavGroup>
         )}
 
