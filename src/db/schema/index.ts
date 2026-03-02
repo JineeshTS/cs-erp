@@ -34,3 +34,4 @@ export * from "./dangerous-goods-management";
 export * from "./reefer-container-management";
 export * from "./oog-special-cargo-management";
 export * from "./intermodal-icd-operations";
+export * from "./customs-compliance-regulatory";
