@@ -99,6 +99,7 @@ import {
   DoorOpen,
   MessageSquare,
   ShieldCheck,
+  FileBarChart,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -467,6 +468,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/port-agency-management/cash-to-masters" label="Cash to Master" icon={Banknote} collapsed={collapsed} />
             <NavItem href="/port-agency-management/vessel-clearances" label="Clearances" icon={ShieldCheck} collapsed={collapsed} />
             <NavItem href="/port-agency-management/disbursement-accounts" label="Disbursements" icon={Receipt} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "analytics:") && (
+          <NavGroup label="Analytics & BI" collapsed={collapsed}>
+            <NavItem href="/analytics-business-intelligence" label="KPI Dashboards" icon={Gauge} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/voyage-analytics" label="Voyage Analytics" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/trade-lane-analytics" label="Trade Lanes" icon={Route} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/customer-revenue-analytics" label="Customer Revenue" icon={Users} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/predictive-forecasts" label="Predictions" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/market-intelligence-reports" label="Market Intel" icon={Globe} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/operational-efficiencies" label="Efficiency" icon={Activity} collapsed={collapsed} />
+            <NavItem href="/analytics-business-intelligence/bi-reports" label="BI Reports" icon={FileBarChart} collapsed={collapsed} />
           </NavGroup>
         )}
 
