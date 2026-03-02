@@ -32,3 +32,4 @@ export * from "./liner-trade-route-management";
 export * from "./demurrage-detention-management";
 export * from "./dangerous-goods-management";
 export * from "./reefer-container-management";
+export * from "./oog-special-cargo-management";
