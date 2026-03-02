@@ -27,3 +27,4 @@ export * from "./accounts-receivable-credit-control";
 export * from "./accounts-payable-vendor-management";
 export * from "./port-disbursement-accounting";
 export * from "./vessel-technical-management";
+export * from "./crew-management";
