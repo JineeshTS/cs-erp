@@ -84,6 +84,9 @@ import {
   Calendar,
   ScanLine,
   CheckCircle,
+  Award,
+  Plane,
+  Heart,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -309,6 +312,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/vessel-technical-management/technical-procurements" label="Procurement" icon={ShoppingCart} collapsed={collapsed} />
             <NavItem href="/vessel-technical-management/compliance-records" label="Compliance" icon={ClipboardCheck} collapsed={collapsed} />
             <NavItem href="/vessel-technical-management/predictive-maintenance" label="AI Predictive" icon={Brain} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "crew:") && (
+          <NavGroup label="Crew Management" collapsed={collapsed}>
+            <NavItem href="/crew-management" label="Rotations" icon={Users} collapsed={collapsed} />
+            <NavItem href="/crew-management/certificate-trackings" label="Certificates" icon={Award} collapsed={collapsed} />
+            <NavItem href="/crew-management/payroll-allotments" label="Payroll" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/crew-management/flag-state-compliance" label="Flag State" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/crew-management/manning-agencies" label="Manning Agencies" icon={Building} collapsed={collapsed} />
+            <NavItem href="/crew-management/visa-travel-records" label="Visa & Travel" icon={Plane} collapsed={collapsed} />
+            <NavItem href="/crew-management/welfare-medical-records" label="Welfare & Medical" icon={Heart} collapsed={collapsed} />
+            <NavItem href="/crew-management/mlc-compliance" label="MLC Compliance" icon={FileCheck} collapsed={collapsed} />
           </NavGroup>
         )}
 
