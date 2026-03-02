@@ -386,6 +386,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "oog_special:") && (
+          <NavGroup label="OOG & Special Cargo" collapsed={collapsed}>
+            <NavItem href="/oog-special-cargo-management" label="Cargo Acceptances" icon={Package} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/stowage-plans" label="Stowage Plans" icon={LayoutGrid} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/special-equipment" label="Special Equipment" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/securing-plans" label="Securing Plans" icon={Lock} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/heavy-lifts" label="Heavy Lifts" icon={Weight} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/multi-modal-logistics" label="Multi-Modal" icon={Route} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/doc-permits" label="Docs & Permits" icon={FileWarning} collapsed={collapsed} />
+            <NavItem href="/oog-special-cargo-management/port-approvals" label="Port Approvals" icon={Anchor} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
