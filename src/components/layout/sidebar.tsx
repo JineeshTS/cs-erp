@@ -95,6 +95,8 @@ import {
   Plug,
   FileOutput,
   ArrowRightLeft,
+  Ruler,
+  DoorOpen,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -424,6 +426,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/customs-compliance-regulatory/isps-compliances" label="ISPS Compliance" icon={Anchor} collapsed={collapsed} />
             <NavItem href="/customs-compliance-regulatory/psc-preparations" label="PSC Preparations" icon={ClipboardList} collapsed={collapsed} />
             <NavItem href="/customs-compliance-regulatory/imo-regulations" label="IMO Regulations" icon={BookOpen} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "survey:") && (
+          <NavGroup label="Survey & Inspection" collapsed={collapsed}>
+            <NavItem href="/survey-inspection-management" label="Cargo Surveys" icon={Package} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/container-surveys" label="Container Surveys" icon={Container} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/draft-surveys" label="Draft Surveys" icon={Ruler} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/hire-surveys" label="Hire Surveys" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/hatch-inspections" label="Hatch Inspections" icon={DoorOpen} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/reefer-pti-surveys" label="Reefer PTI" icon={Thermometer} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/classification-surveys" label="Classification" icon={Award} collapsed={collapsed} />
+            <NavItem href="/survey-inspection-management/survey-reports" label="Survey Reports" icon={FileText} collapsed={collapsed} />
           </NavGroup>
         )}
 
