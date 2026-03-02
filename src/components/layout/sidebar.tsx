@@ -91,6 +91,8 @@ import {
   Route,
   Radiation,
   Flame,
+  Thermometer,
+  Plug,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -368,6 +370,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/dangerous-goods-management/emergency-procedures" label="Emergency Procs" icon={Flame} collapsed={collapsed} />
             <NavItem href="/dangerous-goods-management/chemical-safety-data" label="Chemical Safety" icon={AlertTriangle} collapsed={collapsed} />
             <NavItem href="/dangerous-goods-management/incident-reports" label="Incidents" icon={AlertOctagon} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "reefer:") && (
+          <NavGroup label="Reefer Containers" collapsed={collapsed}>
+            <NavItem href="/reefer-container-management" label="Reefer Bookings" icon={Snowflake} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/temp-monitorings" label="Temp Monitoring" icon={Thermometer} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/pti-inspections" label="PTI Inspections" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/power-management" label="Power Mgmt" icon={Plug} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/cold-chain-docs" label="Cold Chain Docs" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/breakdown-responses" label="Breakdowns" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/temp-alerts" label="Temp Alerts" icon={Bell} collapsed={collapsed} />
+            <NavItem href="/reefer-container-management/claim-analytics" label="Claim Analytics" icon={BarChart3} collapsed={collapsed} />
           </NavGroup>
         )}
 
