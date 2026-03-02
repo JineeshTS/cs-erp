@@ -169,6 +169,13 @@
       "when": 1772408303680,
       "tag": "0023_gorgeous_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1772415630756,
+      "tag": "0024_legal_norrin_radd",
+      "breakpoints": true
     }
   ]
 }
