@@ -45,3 +45,4 @@ export * from "./procurement-supply-chain";
 export * from "./fixed-assets-management";
 export * from "./treasury-cash-management";
 export * from "./general-ledger-financial-reporting";
+export * from "./vessel-performance-efficiency";
