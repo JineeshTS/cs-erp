@@ -106,6 +106,8 @@ import {
   CalendarRange,
   Trash2,
   FileKey,
+  Lightbulb,
+  Warehouse,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -604,6 +606,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/container-leasing-management/container-redeliveries" label="Redeliveries" icon={DoorOpen} collapsed={collapsed} />
             <NavItem href="/container-leasing-management/lease-vs-buy-analyses" label="Lease vs Buy" icon={TrendingUp} collapsed={collapsed} />
             <NavItem href="/container-leasing-management/fleet-optimizers" label="Fleet Optimizer" icon={Cpu} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "ptt:") && (
+          <NavGroup label="Port Tariff" collapsed={collapsed}>
+            <NavItem href="/port-tariff-terminal-billing" label="Overview" icon={Receipt} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/terminal-handling-charges" label="THC" icon={Receipt} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/port-dues-wharfages" label="Port Dues" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/pilotage-towage-charges" label="Pilotage/Towage" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/storage-demurrage-tariffs" label="Storage Tariffs" icon={Warehouse} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/tariff-comparisons" label="Comparisons" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/invoice-validations" label="Invoice Valid." icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/cost-optimizations" label="Cost Optim." icon={Lightbulb} collapsed={collapsed} />
+            <NavItem href="/port-tariff-terminal-billing/budget-plannings" label="Budget Plan" icon={Wallet} collapsed={collapsed} />
           </NavGroup>
         )}
 

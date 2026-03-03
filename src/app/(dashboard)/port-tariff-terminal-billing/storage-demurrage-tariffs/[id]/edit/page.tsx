@@ -1,0 +1,120 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { redirect, notFound } from "next/navigation";
+import { hasPermission } from "@/lib/rbac";
+import { getStorageDemurrageTariff } from "@/lib/port-tariff-terminal-billing/service";
+import {
+  PttForm,
+  type FieldConfig,
+} from "@/components/port-tariff-terminal-billing/ptt-form";
+
+const STORAGE_DEMURRAGE_FIELDS: FieldConfig[] = [
+  {
+    name: "tariffType",
+    label: "Tariff Type",
+    type: "select",
+    required: true,
+    options: [
+      { value: "import_storage", label: "Import Storage" },
+      { value: "export_storage", label: "Export Storage" },
+      { value: "demurrage", label: "Demurrage" },
+      { value: "detention", label: "Detention" },
+      { value: "combined", label: "Combined" },
+    ],
+  },
+  { name: "portCode", label: "Port Code", type: "text" },
+  { name: "portName", label: "Port Name", type: "text" },
+  { name: "terminalName", label: "Terminal Name", type: "text" },
+  { name: "containerSize", label: "Container Size", type: "text" },
+  { name: "containerType", label: "Container Type", type: "text" },
+  { name: "freeDays", label: "Free Days", type: "number" },
+  { name: "dailyRateTier1", label: "Daily Rate Tier 1", type: "number" },
+  { name: "tier1DaysFrom", label: "Tier 1 Days From", type: "number" },
+  { name: "tier1DaysTo", label: "Tier 1 Days To", type: "number" },
+  { name: "dailyRateTier2", label: "Daily Rate Tier 2", type: "number" },
+  { name: "tier2DaysFrom", label: "Tier 2 Days From", type: "number" },
+  { name: "tier2DaysTo", label: "Tier 2 Days To", type: "number" },
+  { name: "dailyRateTier3", label: "Daily Rate Tier 3", type: "number" },
+  { name: "tariffCurrency", label: "Tariff Currency", type: "text" },
+  { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
+  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+  { name: "notes", label: "Notes", type: "textarea" },
+];
+
+export default async function EditStorageDemurrageTariffPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!(await hasPermission(session.id, session.tenantId, "ptt:edit")))
+    redirect("/");
+
+  const { id } = await params;
+  const record = await getStorageDemurrageTariff(id, session.tenantId);
+  if (!record) notFound();
+
+  const initialData: Record<string, string> = {
+    tariffType: record.tariffType ?? "",
+    portCode: record.portCode ?? "",
+    portName: record.portName ?? "",
+    terminalName: record.terminalName ?? "",
+    containerSize: record.containerSize ?? "",
+    containerType: record.containerType ?? "",
+    freeDays: record.freeDays != null ? String(record.freeDays) : "",
+    dailyRateTier1: record.dailyRateTier1 ?? "",
+    tier1DaysFrom:
+      record.tier1DaysFrom != null ? String(record.tier1DaysFrom) : "",
+    tier1DaysTo:
+      record.tier1DaysTo != null ? String(record.tier1DaysTo) : "",
+    dailyRateTier2: record.dailyRateTier2 ?? "",
+    tier2DaysFrom:
+      record.tier2DaysFrom != null ? String(record.tier2DaysFrom) : "",
+    tier2DaysTo:
+      record.tier2DaysTo != null ? String(record.tier2DaysTo) : "",
+    dailyRateTier3: record.dailyRateTier3 ?? "",
+    tariffCurrency: record.tariffCurrency ?? "",
+    effectiveFrom: record.effectiveFrom
+      ? new Date(record.effectiveFrom).toISOString().slice(0, 16)
+      : "",
+    effectiveTo: record.effectiveTo
+      ? new Date(record.effectiveTo).toISOString().slice(0, 16)
+      : "",
+    notes: record.notes ?? "",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/port-tariff-terminal-billing/storage-demurrage-tariffs/${id}`}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Edit {record.tariffRef}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Update storage &amp; demurrage tariff details
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-md border p-6">
+        <PttForm
+          entityType="Storage & Demurrage Tariff"
+          apiPath={`/api/v1/port-tariff-terminal-billing/storage-demurrage-tariffs/${id}`}
+          returnPath="/port-tariff-terminal-billing/storage-demurrage-tariffs"
+          fields={STORAGE_DEMURRAGE_FIELDS}
+          initialData={initialData}
+          isEdit
+        />
+      </div>
+    </div>
+  );
+}
