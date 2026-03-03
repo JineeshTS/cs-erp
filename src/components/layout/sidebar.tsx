@@ -103,6 +103,9 @@ import {
   CalendarOff,
   Star,
   Stamp,
+  CalendarRange,
+  Trash2,
+  FileKey,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -523,6 +526,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/procurement-supply-chain/goods-receipt-inspections" label="Goods Receipt" icon={ClipboardCheck} collapsed={collapsed} />
             <NavItem href="/procurement-supply-chain/spend-analytics" label="Spend Analytics" icon={TrendingUp} collapsed={collapsed} />
             <NavItem href="/procurement-supply-chain/supplier-scorecards" label="Scorecards" icon={Star} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "asset:") && (
+          <NavGroup label="Fixed Assets" collapsed={collapsed}>
+            <NavItem href="/fixed-assets-management" label="Asset Registry" icon={Boxes} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/depreciation-schedules" label="Depreciation" icon={CalendarRange} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/asset-disposals" label="Disposals" icon={Trash2} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/insurance-valuations" label="Insurance" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/maintenance-schedules" label="Maintenance" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/capex-opex-classifications" label="CAPEX/OPEX" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/impairment-tests" label="Impairment" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/fixed-assets-management/lease-accounting" label="Lease Accounting" icon={FileKey} collapsed={collapsed} />
           </NavGroup>
         )}
 
