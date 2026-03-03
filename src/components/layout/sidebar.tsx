@@ -484,6 +484,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "audit:") && (
+          <NavGroup label="Audit & Compliance" collapsed={collapsed}>
+            <NavItem href="/audit-compliance-management" label="Internal Audits" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/regulatory-compliance-calendars" label="Compliance Calendar" icon={Calendar} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/risk-registers" label="Risk Registers" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/policy-procedures" label="Policies" icon={BookOpen} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/regulatory-reporting-submissions" label="Reg. Submissions" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/sox-financial-controls" label="SOX Controls" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/iso-certification-trackings" label="ISO Certifications" icon={Award} collapsed={collapsed} />
+            <NavItem href="/audit-compliance-management/ai-risk-detections" label="AI Risk Detection" icon={Bot} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
