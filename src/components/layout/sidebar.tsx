@@ -568,6 +568,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "vpe:") && (
+          <NavGroup label="Vessel Performance" collapsed={collapsed}>
+            <NavItem href="/vessel-performance-efficiency" label="Speed Consumptions" icon={Gauge} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/cii-ratings" label="CII Ratings" icon={Activity} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/eexi-compliances" label="EEXI Compliance" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/noon-reports" label="Noon Reports" icon={ScrollText} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/voyage-performances" label="Voyage Perf." icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/weather-routings" label="Weather Routing" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/carbon-emissions" label="Carbon Emissions" icon={Leaf} collapsed={collapsed} />
+            <NavItem href="/vessel-performance-efficiency/fuel-benchmarks" label="Fuel Benchmarks" icon={Fuel} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
