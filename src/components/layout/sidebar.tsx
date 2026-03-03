@@ -594,6 +594,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "clm:") && (
+          <NavGroup label="Container Leasing" collapsed={collapsed}>
+            <NavItem href="/container-leasing-management" label="Lease Agreements" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/onhire-offhires" label="On/Off-Hire" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/mnr-damage-billings" label="MNR Billing" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/lease-cost-allocations" label="Cost Allocation" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/lessor-reconciliations" label="Reconciliation" icon={CheckSquare} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/container-redeliveries" label="Redeliveries" icon={DoorOpen} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/lease-vs-buy-analyses" label="Lease vs Buy" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/container-leasing-management/fleet-optimizers" label="Fleet Optimizer" icon={Cpu} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
