@@ -42,3 +42,4 @@ export * from "./analytics-business-intelligence";
 export * from "./audit-compliance-management";
 export * from "./hr-payroll-shore-staff";
 export * from "./procurement-supply-chain";
+export * from "./fixed-assets-management";
