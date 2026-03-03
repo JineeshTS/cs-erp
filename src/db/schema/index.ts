@@ -40,3 +40,4 @@ export * from "./insurance-claims-management";
 export * from "./port-agency-management";
 export * from "./analytics-business-intelligence";
 export * from "./audit-compliance-management";
+export * from "./hr-payroll-shore-staff";
