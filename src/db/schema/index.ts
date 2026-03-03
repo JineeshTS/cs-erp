@@ -39,3 +39,4 @@ export * from "./survey-inspection-management";
 export * from "./insurance-claims-management";
 export * from "./port-agency-management";
 export * from "./analytics-business-intelligence";
+export * from "./audit-compliance-management";

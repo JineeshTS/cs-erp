@@ -260,6 +260,13 @@
       "when": 1772489316159,
       "tag": "0036_left_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1772500272791,
+      "tag": "0037_rapid_reavers",
+      "breakpoints": true
     }
   ]
 }
