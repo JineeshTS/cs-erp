@@ -1,0 +1,90 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { hasPermission } from "@/lib/rbac";
+import { GlfrForm } from "@/components/general-ledger-financial-reporting/glfr-form";
+import type { FieldConfig } from "@/components/general-ledger-financial-reporting/glfr-form";
+
+const CONSOLIDATED_STATEMENT_FIELDS: FieldConfig[] = [
+  {
+    name: "consolidationType",
+    label: "Consolidation Type",
+    type: "select",
+    required: true,
+    options: [
+      { value: "full", label: "Full" },
+      { value: "proportional", label: "Proportional" },
+      { value: "equity_method", label: "Equity Method" },
+      { value: "elimination", label: "Elimination" },
+    ],
+  },
+  { name: "periodStart", label: "Period Start", type: "datetime-local" },
+  { name: "periodEnd", label: "Period End", type: "datetime-local" },
+  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
+  { name: "parentEntity", label: "Parent Entity", type: "text" },
+  { name: "minorityInterest", label: "Minority Interest", type: "text" },
+  {
+    name: "consolidatedRevenue",
+    label: "Consolidated Revenue",
+    type: "text",
+  },
+  {
+    name: "consolidatedNetIncome",
+    label: "Consolidated Net Income",
+    type: "text",
+  },
+  {
+    name: "consolidatedAssets",
+    label: "Consolidated Assets",
+    type: "text",
+  },
+  {
+    name: "consolidatedLiabilities",
+    label: "Consolidated Liabilities",
+    type: "text",
+  },
+  {
+    name: "consolidatedEquity",
+    label: "Consolidated Equity",
+    type: "text",
+  },
+  { name: "preparedBy", label: "Prepared By", type: "text" },
+  { name: "approvedBy", label: "Approved By", type: "text" },
+  { name: "notes", label: "Notes", type: "textarea" },
+];
+
+export default async function NewConsolidatedStatementPage(): Promise<React.ReactNode> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (
+    !(await hasPermission(session.id, session.tenantId, "gl:create"))
+  )
+    redirect("/general-ledger-financial-reporting/consolidated-statements");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/general-ledger-financial-reporting/consolidated-statements"
+          className="rounded-md p-1 hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-500" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">
+          New Consolidated Statement
+        </h1>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6">
+        <GlfrForm
+          entityType="Consolidated Statement"
+          apiPath="/api/v1/general-ledger-financial-reporting/consolidated-statements"
+          fields={CONSOLIDATED_STATEMENT_FIELDS}
+          returnPath="/general-ledger-financial-reporting/consolidated-statements"
+        />
+      </div>
+    </div>
+  );
+}

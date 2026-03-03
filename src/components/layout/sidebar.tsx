@@ -555,6 +555,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "gl:") && (
+          <NavGroup label="General Ledger" collapsed={collapsed}>
+            <NavItem href="/general-ledger-financial-reporting" label="Chart of Accounts" icon={BookOpen} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/journal-entries" label="Journal Entries" icon={ScrollText} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/period-closures" label="Period Closures" icon={CalendarOff} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/financial-statements" label="Fin. Statements" icon={FileBarChart} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/segment-reports" label="Segment Reports" icon={PieChart} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/consolidated-statements" label="Consolidations" icon={Building2} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/budgets" label="Budgets" icon={Wallet} collapsed={collapsed} />
+            <NavItem href="/general-ledger-financial-reporting/variance-analyses" label="Variance Analysis" icon={GitCompare} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
