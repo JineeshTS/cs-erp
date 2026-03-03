@@ -288,6 +288,13 @@
       "when": 1772522316657,
       "tag": "0040_concerned_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1772531110971,
+      "tag": "0041_deep_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }
