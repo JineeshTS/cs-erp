@@ -100,6 +100,9 @@ import {
   MessageSquare,
   ShieldCheck,
   FileBarChart,
+  CalendarOff,
+  Star,
+  Stamp,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -494,6 +497,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/audit-compliance-management/sox-financial-controls" label="SOX Controls" icon={Shield} collapsed={collapsed} />
             <NavItem href="/audit-compliance-management/iso-certification-trackings" label="ISO Certifications" icon={Award} collapsed={collapsed} />
             <NavItem href="/audit-compliance-management/ai-risk-detections" label="AI Risk Detection" icon={Bot} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "hr:") && (
+          <NavGroup label="HR & Payroll" collapsed={collapsed}>
+            <NavItem href="/hr-payroll-shore-staff" label="Employees" icon={Users} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/leave-absences" label="Leave & Absence" icon={CalendarOff} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/attendance-time-trackings" label="Attendance" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/performance-appraisals" label="Appraisals" icon={Star} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/payroll-processings" label="Payroll" icon={Banknote} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/social-insurance-records" label="Social Insurance" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/gratuity-calculations" label="Gratuity" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/hr-payroll-shore-staff/visa-residency-records" label="Visa & Residency" icon={Stamp} collapsed={collapsed} />
           </NavGroup>
         )}
 
