@@ -108,6 +108,8 @@ import {
   FileKey,
   Lightbulb,
   Warehouse,
+  RotateCcw,
+  ArrowUpCircle,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -620,6 +622,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/port-tariff-terminal-billing/invoice-validations" label="Invoice Valid." icon={FileCheck} collapsed={collapsed} />
             <NavItem href="/port-tariff-terminal-billing/cost-optimizations" label="Cost Optim." icon={Lightbulb} collapsed={collapsed} />
             <NavItem href="/port-tariff-terminal-billing/budget-plannings" label="Budget Plan" icon={Wallet} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "loc:") && (
+          <NavGroup label="Liner Operations" collapsed={collapsed}>
+            <NavItem href="/liner-operations-control" label="Overview" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/cargo-cutoffs" label="Cargo Cutoffs" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/overbooking-rollovers" label="Rollovers" icon={RotateCcw} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/rolling-upgrades" label="Upgrades" icon={ArrowUpCircle} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/revenue-integrity-audits" label="Revenue Audit" icon={ShieldCheck} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/slot-swap-coordinations" label="Slot Swaps" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/schedule-deviations" label="Deviations" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/cargo-mix-optimizations" label="Cargo Mix" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/liner-operations-control/load-factor-reports" label="Load Factor" icon={BarChart3} collapsed={collapsed} />
           </NavGroup>
         )}
 
