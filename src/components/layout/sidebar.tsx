@@ -581,6 +581,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "ccm:") && (
+          <NavGroup label="Cargo Claims" collapsed={collapsed}>
+            <NavItem href="/cargo-claims-management" label="Claim Registry" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/liability-assessments" label="Liability" icon={Scale} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/damage-surveys" label="Damage Surveys" icon={FileSearch2} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/time-bar-trackings" label="Time Bars" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/claim-settlements" label="Settlements" icon={Banknote} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/subrogation-recoveries" label="Subrogation" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/claim-predictions" label="Predictions" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/cargo-claims-management/portfolio-analytics" label="Portfolio" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
