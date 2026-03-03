@@ -542,6 +542,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "treasury:") && (
+          <NavGroup label="Treasury & Cash" collapsed={collapsed}>
+            <NavItem href="/treasury-cash-management" label="Bank Accounts" icon={Landmark} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/cash-positions" label="Cash Positions" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/bank-reconciliations" label="Reconciliations" icon={CheckSquare} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/cash-pooling-sweeps" label="Cash Pooling" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/fx-hedging-exposures" label="FX Hedging" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/letters-of-credit" label="Letters of Credit" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/bank-guarantees" label="Bank Guarantees" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/treasury-cash-management/intercompany-loans" label="IC Loans" icon={Building2} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
