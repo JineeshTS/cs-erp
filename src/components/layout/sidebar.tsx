@@ -672,6 +672,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "iot:") && (
+          <NavGroup label="IoT & Asset Tracking" collapsed={collapsed}>
+            <NavItem href="/real-time-iot-asset-tracking" label="Overview" icon={Cpu} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/container-gps-trackings" label="Container GPS" icon={MapPin} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/reefer-monitorings" label="Reefer Monitor" icon={Thermometer} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/electronic-seals" label="E-Seals" icon={Lock} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/shock-detections" label="Shock Detection" icon={Activity} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/vessel-positions" label="Vessel AIS" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/port-equipments" label="Port Equipment" icon={Wrench} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/predictive-alerts" label="Pred. Alerts" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/real-time-iot-asset-tracking/data-lake-analytics" label="Data Analytics" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
