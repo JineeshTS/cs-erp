@@ -110,6 +110,7 @@ import {
   Warehouse,
   RotateCcw,
   ArrowUpCircle,
+  Gift,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -636,6 +637,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/liner-operations-control/schedule-deviations" label="Deviations" icon={AlertTriangle} collapsed={collapsed} />
             <NavItem href="/liner-operations-control/cargo-mix-optimizations" label="Cargo Mix" icon={Brain} collapsed={collapsed} />
             <NavItem href="/liner-operations-control/load-factor-reports" label="Load Factor" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "anm:") && (
+          <NavGroup label="Agent Network" collapsed={collapsed}>
+            <NavItem href="/agent-network-management" label="Overview" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/ga-agreements" label="GA Agreements" icon={Handshake} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/sub-agent-configs" label="Sub-Agents" icon={Users} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/agent-commissions" label="Commissions" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/agency-documents" label="Documents" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/performance-kpis" label="KPIs" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/portal-configs" label="Portal Config" icon={Globe} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/booking-authorities" label="Authorities" icon={ShieldCheck} collapsed={collapsed} />
+            <NavItem href="/agent-network-management/agent-incentives" label="Incentives" icon={Gift} collapsed={collapsed} />
           </NavGroup>
         )}
 
