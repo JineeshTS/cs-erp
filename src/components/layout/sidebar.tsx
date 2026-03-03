@@ -111,6 +111,10 @@ import {
   RotateCcw,
   ArrowUpCircle,
   Gift,
+  Footprints,
+  Factory,
+  Compass,
+  MapPinned,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -651,6 +655,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/agent-network-management/portal-configs" label="Portal Config" icon={Globe} collapsed={collapsed} />
             <NavItem href="/agent-network-management/booking-authorities" label="Authorities" icon={ShieldCheck} collapsed={collapsed} />
             <NavItem href="/agent-network-management/agent-incentives" label="Incentives" icon={Gift} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "ser:") && (
+          <NavGroup label="Sustainability & ESG" collapsed={collapsed}>
+            <NavItem href="/sustainability-esg-reporting" label="Overview" icon={Leaf} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/carbon-footprints" label="Carbon Footprints" icon={Footprints} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/ghg-reports" label="GHG Reports" icon={Factory} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/sea-cargo-charters" label="Sea Cargo Charters" icon={Ship} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/poseidon-alignments" label="POSEIDON" icon={Compass} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/decarb-roadmaps" label="Decarb Roadmaps" icon={MapPinned} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/alt-fuel-trackings" label="Alt Fuels" icon={Fuel} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/esg-kpis" label="ESG KPIs" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/sustainability-esg-reporting/tcfd-reports" label="TCFD Reports" icon={FileBarChart} collapsed={collapsed} />
           </NavGroup>
         )}
 
