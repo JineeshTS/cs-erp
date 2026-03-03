@@ -513,6 +513,19 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "procurement:") && (
+          <NavGroup label="Procurement & Supply" collapsed={collapsed}>
+            <NavItem href="/procurement-supply-chain" label="Requisitions" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/vendor-sourcings" label="Vendor Sourcing" icon={Users} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/purchase-orders" label="Purchase Orders" icon={ShoppingCart} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/procurement-contracts" label="Contracts" icon={Handshake} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/inventory-stock-controls" label="Inventory" icon={Package} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/goods-receipt-inspections" label="Goods Receipt" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/spend-analytics" label="Spend Analytics" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/procurement-supply-chain/supplier-scorecards" label="Scorecards" icon={Star} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
