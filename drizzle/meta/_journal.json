@@ -407,6 +407,13 @@
       "when": 1772644534964,
       "tag": "0057_material_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1772655378990,
+      "tag": "0058_tough_master_chief",
+      "breakpoints": true
     }
   ]
 }
