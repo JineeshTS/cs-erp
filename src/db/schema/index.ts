@@ -54,3 +54,4 @@ export * from "./agent-network-management";
 export * from "./sustainability-esg-reporting";
 export * from "./real-time-iot-asset-tracking";
 export * from "./mobile-operations-app";
+export * from "./liner-revenue-management";
