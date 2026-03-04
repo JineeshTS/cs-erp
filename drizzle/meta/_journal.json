@@ -372,6 +372,13 @@
       "when": 1772590254829,
       "tag": "0052_flaky_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1772597484461,
+      "tag": "0053_first_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }
