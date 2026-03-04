@@ -121,6 +121,7 @@ import {
   BrainCircuit,
   FileSignature,
   SearchX,
+  Cloud,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -717,6 +718,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/liner-revenue-management/rate-integrities" label="Rate Integrity" icon={ShieldCheck} collapsed={collapsed} />
             <NavItem href="/liner-revenue-management/revenue-accruals" label="Rev. Accruals" icon={Calculator} collapsed={collapsed} />
             <NavItem href="/liner-revenue-management/maximization-engines" label="AI Engine" icon={Zap} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "svp:") && (
+          <NavGroup label="Schedule & Voyage" collapsed={collapsed}>
+            <NavItem href="/schedule-voyage-planning" label="Overview" icon={CalendarRange} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/service-schedules" label="Schedules" icon={CalendarRange} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/port-sequences" label="Port Sequence" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/canal-transits" label="Canal Transit" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/eta-managements" label="ETA Management" icon={Clock} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/voyage-optimizations" label="Voyage Optimize" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/speed-fuel-analyses" label="Speed vs Fuel" icon={Gauge} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/weather-routings" label="Weather Routing" icon={Cloud} collapsed={collapsed} />
+            <NavItem href="/schedule-voyage-planning/deployment-plans" label="Deployment Plan" icon={Ship} collapsed={collapsed} />
           </NavGroup>
         )}
 
