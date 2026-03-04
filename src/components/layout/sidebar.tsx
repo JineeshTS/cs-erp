@@ -710,6 +710,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "vrs:") && (
+          <NavGroup label="Voyage Results" collapsed={collapsed}>
+            <NavItem href="/voyage-results-settlement" label="Overview" icon={CheckCircle} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/voyage-closes" label="Voyage Closes" icon={CheckCircle} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/tc-settlements" label="TC Settlements" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/voyage-pnls" label="Voyage P&L" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/hire-reconciliations" label="Hire Recon." icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/result-workflows" label="Workflows" icon={Workflow} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/interco-settlements" label="Intercompany" icon={Building2} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/profit-benchmarks" label="Benchmarks" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/voyage-results-settlement/voyage-analytics" label="Analytics" icon={TrendingUp} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "icm:") && (
           <NavGroup label="Implementation & Change" collapsed={collapsed}>
             <NavItem href="/implementation-change-management" label="Overview" icon={ClipboardList} collapsed={collapsed} />
