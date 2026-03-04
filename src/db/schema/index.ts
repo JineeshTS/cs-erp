@@ -59,3 +59,4 @@ export * from "./schedule-voyage-planning";
 export * from "./transshipment-hub-management";
 export * from "./knowledge-management-training";
 export * from "./implementation-change-management";
+export * from "./voyage-results-settlement";
