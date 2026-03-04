@@ -61,3 +61,4 @@ export * from "./knowledge-management-training";
 export * from "./implementation-change-management";
 export * from "./voyage-results-settlement";
 export * from "./fleet-deployment-planning";
+export * from "./empty-container-repositioning-ai";
