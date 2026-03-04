@@ -735,6 +735,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "thm:") && (
+          <NavGroup label="Transshipment Hub" collapsed={collapsed}>
+            <NavItem href="/transshipment-hub-management" label="Overview" icon={Package} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/cargo-plans" label="Cargo Plans" icon={Package} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/feeder-coordinations" label="Feeder Coord." icon={Ship} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/cargo-trackings" label="Cargo Tracking" icon={MapPin} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/missed-connections" label="Missed Conn." icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/revenue-attributions" label="Revenue Attr." icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/hub-efficiencies" label="Hub Efficiency" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/optimization-engines" label="Optimization" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/transshipment-hub-management/penalty-trackings" label="Penalties" icon={Timer} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
