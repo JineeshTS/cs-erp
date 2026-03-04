@@ -124,6 +124,7 @@ import {
   Cloud,
   GraduationCap,
   Video,
+  TestTube2,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -706,6 +707,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/knowledge-management-training/regulatory-alerts" label="Reg. Alerts" icon={Bell} collapsed={collapsed} />
             <NavItem href="/knowledge-management-training/lessons-learned" label="Lessons" icon={Lightbulb} collapsed={collapsed} />
             <NavItem href="/knowledge-management-training/video-libraries" label="Videos" icon={Video} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "icm:") && (
+          <NavGroup label="Implementation & Change" collapsed={collapsed}>
+            <NavItem href="/implementation-change-management" label="Overview" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/project-plans" label="Project Plans" icon={ClipboardList} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/data-migrations" label="Migrations" icon={Database} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/uat-managements" label="UAT" icon={TestTube2} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/go-live-checklists" label="Go-Live" icon={Rocket} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/change-requests" label="Changes" icon={GitBranch} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/system-configs" label="Configs" icon={Settings} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/training-completions" label="Training" icon={GraduationCap} collapsed={collapsed} />
+            <NavItem href="/implementation-change-management/hypercare-supports" label="Hypercare" icon={HeadphonesIcon} collapsed={collapsed} />
           </NavGroup>
         )}
 
