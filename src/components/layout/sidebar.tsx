@@ -122,6 +122,8 @@ import {
   FileSignature,
   SearchX,
   Cloud,
+  GraduationCap,
+  Video,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -690,6 +692,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/transshipment-hub-management/hub-efficiencies" label="Hub Efficiency" icon={BarChart3} collapsed={collapsed} />
             <NavItem href="/transshipment-hub-management/optimization-engines" label="Optimization" icon={Brain} collapsed={collapsed} />
             <NavItem href="/transshipment-hub-management/penalty-trackings" label="Penalties" icon={Timer} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "kmt:") && (
+          <NavGroup label="Knowledge & Training" collapsed={collapsed}>
+            <NavItem href="/knowledge-management-training" label="Overview" icon={GraduationCap} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/sop-libraries" label="SOP Library" icon={BookOpen} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/training-modules" label="Training" icon={GraduationCap} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/competency-assessments" label="Assessments" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/onboarding-workflows" label="Onboarding" icon={UserPlus} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/knowledge-assistants" label="AI Assistant" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/regulatory-alerts" label="Reg. Alerts" icon={Bell} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/lessons-learned" label="Lessons" icon={Lightbulb} collapsed={collapsed} />
+            <NavItem href="/knowledge-management-training/video-libraries" label="Videos" icon={Video} collapsed={collapsed} />
           </NavGroup>
         )}
 
