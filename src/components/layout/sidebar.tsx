@@ -115,6 +115,9 @@ import {
   Factory,
   Compass,
   MapPinned,
+  Camera,
+  Truck,
+  Smartphone,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -683,6 +686,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/real-time-iot-asset-tracking/port-equipments" label="Port Equipment" icon={Wrench} collapsed={collapsed} />
             <NavItem href="/real-time-iot-asset-tracking/predictive-alerts" label="Pred. Alerts" icon={AlertTriangle} collapsed={collapsed} />
             <NavItem href="/real-time-iot-asset-tracking/data-lake-analytics" label="Data Analytics" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "mob:") && (
+          <NavGroup label="Mobile Operations" collapsed={collapsed}>
+            <NavItem href="/mobile-operations-app" label="Overview" icon={Smartphone} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/gate-processings" label="Gate Processing" icon={DoorOpen} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/yard-inspections" label="Yard Inspections" icon={ClipboardCheck} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/container-surveys" label="Container Survey" icon={Container} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/offline-syncs" label="Offline Sync" icon={RefreshCcw} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/damage-assessments" label="Damage AI" icon={Camera} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/driver-deliveries" label="Driver POD" icon={Truck} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/executive-dashboards" label="Exec Dashboard" icon={LayoutDashboard} collapsed={collapsed} />
+            <NavItem href="/mobile-operations-app/push-notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
           </NavGroup>
         )}
 
