@@ -738,6 +738,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "fdp:") && (
+          <NavGroup label="Fleet Deployment" collapsed={collapsed}>
+            <NavItem href="/fleet-deployment-planning" label="Overview" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/deployment-decisions" label="Decisions" icon={Navigation} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/fleet-utilizations" label="Utilization" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/network-designs" label="Networks" icon={Globe} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/deployment-optimizers" label="AI Optimizer" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/fleet-financials" label="Financials" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/vessel-swaps" label="Swaps" icon={ArrowRightLeft} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/deployment-contracts" label="Contracts" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/fleet-deployment-planning/market-intelligence" label="Market Intel" icon={TrendingUp} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
