@@ -163,37 +163,6 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
       <nav className="flex-1 space-y-4 overflow-y-auto p-3">
         <NavItem href="/" label="Dashboard" icon={LayoutDashboard} collapsed={collapsed} />
 
-        {hasAny(perms, "vessels:") || hasAny(perms, "bookings:") || hasAny(perms, "containers:") || hasAny(perms, "cargo:") ? (
-          <NavGroup label="Operations" collapsed={collapsed}>
-            {hasAny(perms, "vessels:") && (
-              <NavItem href="/vessels" label="Vessels" icon={Ship} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "bookings:") && (
-              <NavItem href="/bookings" label="Bookings" icon={FileText} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "containers:") && (
-              <NavItem href="/containers" label="Containers" icon={Container} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "cargo:") && (
-              <NavItem href="/cargo" label="Cargo" icon={Package} collapsed={collapsed} />
-            )}
-          </NavGroup>
-        ) : null}
-
-        {has(perms, "users:read") || hasAny(perms, "finance:") ? (
-          <NavGroup label="Commercial" collapsed={collapsed}>
-            {has(perms, "users:read") && (
-              <NavItem href="/customers" label="Customers" icon={Users} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "finance:") && (
-              <NavItem href="/rates" label="Rates & Tariffs" icon={DollarSign} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "finance:") && (
-              <NavItem href="/contracts" label="Contracts" icon={FileCheck} collapsed={collapsed} />
-            )}
-          </NavGroup>
-        ) : null}
-
         {hasAny(perms, "sales:") && (
           <NavGroup label="Sales & CRM" collapsed={collapsed}>
             <NavItem href="/sales-crm" label="Customers" icon={Users} collapsed={collapsed} />
@@ -201,31 +170,6 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/sales-crm/contracts" label="Contracts" icon={Handshake} collapsed={collapsed} />
             <NavItem href="/sales-crm/leads" label="Leads" icon={UserPlus} collapsed={collapsed} />
             <NavItem href="/sales-crm/campaigns" label="Campaigns" icon={Megaphone} collapsed={collapsed} />
-          </NavGroup>
-        )}
-
-        {hasAny(perms, "customs:") ? (
-          <NavGroup label="Customs & Compliance" collapsed={collapsed}>
-            <NavItem href="/customs" label="Customs Declarations" icon={FileArchive} collapsed={collapsed} />
-            <NavItem href="/documents" label="Documents" icon={FileText} collapsed={collapsed} />
-          </NavGroup>
-        ) : null}
-
-        {hasAny(perms, "finance:") ? (
-          <NavGroup label="Finance" collapsed={collapsed}>
-            <NavItem href="/invoices" label="Invoices" icon={Receipt} collapsed={collapsed} />
-            <NavItem href="/payments" label="Payments" icon={CreditCard} collapsed={collapsed} />
-          </NavGroup>
-        ) : null}
-
-        {(hasAny(perms, "ai:") || hasAny(perms, "reports:")) && (
-          <NavGroup label="Intelligence" collapsed={collapsed}>
-            {hasAny(perms, "ai:") && (
-              <NavItem href="/ai" label="AI Assistant" icon={Bot} collapsed={collapsed} />
-            )}
-            {hasAny(perms, "reports:") && (
-              <NavItem href="/reports" label="Reports" icon={BarChart3} collapsed={collapsed} />
-            )}
           </NavGroup>
         )}
 
