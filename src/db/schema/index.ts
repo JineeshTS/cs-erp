@@ -56,3 +56,4 @@ export * from "./real-time-iot-asset-tracking";
 export * from "./mobile-operations-app";
 export * from "./liner-revenue-management";
 export * from "./schedule-voyage-planning";
+export * from "./transshipment-hub-management";
