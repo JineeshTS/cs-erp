@@ -118,6 +118,9 @@ import {
   Camera,
   Truck,
   Smartphone,
+  BrainCircuit,
+  FileSignature,
+  SearchX,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -700,6 +703,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/mobile-operations-app/driver-deliveries" label="Driver POD" icon={Truck} collapsed={collapsed} />
             <NavItem href="/mobile-operations-app/executive-dashboards" label="Exec Dashboard" icon={LayoutDashboard} collapsed={collapsed} />
             <NavItem href="/mobile-operations-app/push-notifications" label="Notifications" icon={Bell} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
+        {hasAny(perms, "lrm:") && (
+          <NavGroup label="Liner Revenue" collapsed={collapsed}>
+            <NavItem href="/liner-revenue-management" label="Overview" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/teu-maximizations" label="TEU Strategy" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/cargo-mixes" label="Cargo Mix" icon={PieChart} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/demand-forecasts" label="Demand Forecast" icon={BrainCircuit} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/freight-contracts" label="Freight Contracts" icon={FileSignature} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/leakage-detections" label="Leakage Detection" icon={SearchX} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/rate-integrities" label="Rate Integrity" icon={ShieldCheck} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/revenue-accruals" label="Rev. Accruals" icon={Calculator} collapsed={collapsed} />
+            <NavItem href="/liner-revenue-management/maximization-engines" label="AI Engine" icon={Zap} collapsed={collapsed} />
           </NavGroup>
         )}
 
