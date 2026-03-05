@@ -428,6 +428,13 @@
       "when": 1772680854409,
       "tag": "0060_known_bushwacker",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1772695427080,
+      "tag": "0061_aromatic_overlord",
+      "breakpoints": true
     }
   ]
 }
