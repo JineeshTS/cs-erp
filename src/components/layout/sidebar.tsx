@@ -183,6 +183,7 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             <NavItem href="/ai-agent-framework/escalations" label="Escalations" icon={AlertCircle} collapsed={collapsed} />
             <NavItem href="/ai-agent-framework/documents" label="Documents" icon={FileSearch2} collapsed={collapsed} />
             <NavItem href="/ai-agent-framework/workflows" label="Workflows" icon={GitBranch} collapsed={collapsed} />
+            <NavItem href="/ai-agent-framework/processes" label="Processes" icon={Workflow} collapsed={collapsed} />
           </NavGroup>
         )}
 
