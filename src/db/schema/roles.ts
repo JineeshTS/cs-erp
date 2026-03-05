@@ -17,6 +17,8 @@ export const roles = pgTable("roles", {
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isSystem: boolean("is_system").notNull().default(false),
+  country: varchar("country", { length: 10 }),
+  region: varchar("region", { length: 50 }),
   permissions: jsonb("permissions").notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
 const createRoleSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
+  country: z.string().max(10).optional(),
+  region: z.string().max(50).optional(),
   permissionIds: z.array(z.string().uuid()),
 });
 
@@ -54,6 +56,9 @@ export async function POST(request: NextRequest) {
     return forbiddenResponse();
   }
 
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   const body = await request.json();
   const parsed = createRoleSchema.safeParse(body);
   if (!parsed.success) {
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { name, description, permissionIds } = parsed.data;
+  const { name, description, country, region, permissionIds } = parsed.data;
 
   const [role] = await db
     .insert(roles)
@@ -71,6 +76,8 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       name,
       description,
+      country: country || null,
+      region: region || null,
       isSystem: false,
       permissions: [],
     })

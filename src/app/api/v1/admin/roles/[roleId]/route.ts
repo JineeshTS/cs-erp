@@ -12,6 +12,8 @@ type RouteParams = { params: Promise<{ roleId: string }> };
 const updateRoleSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
+  country: z.string().max(10).optional().nullable(),
+  region: z.string().max(50).optional().nullable(),
   permissionIds: z.array(z.string().uuid()).optional(),
 });
 
