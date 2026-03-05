@@ -780,6 +780,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "lpr:") && (
+          <NavGroup label="Loss Prevention" collapsed={collapsed}>
+            <NavItem href="/loss-prevention-risk-management" label="Overview" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/risk-registers" label="Risk Register" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/hsse-records" label="HSSE" icon={Heart} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/near-miss-reports" label="Near-Miss" icon={AlertTriangle} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/incident-investigations" label="Investigations" icon={Target} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/pi-club-scorings" label="P&I Scoring" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/continuity-plans" label="Continuity" icon={FileCheck} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/emergency-procedures" label="Emergency" icon={AlertOctagon} collapsed={collapsed} />
+            <NavItem href="/loss-prevention-risk-management/risk-kpi-dashboards" label="Risk KPIs" icon={BarChart3} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
