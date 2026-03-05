@@ -766,6 +766,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "mec:") && (
+          <NavGroup label="MARPOL Compliance" collapsed={collapsed}>
+            <NavItem href="/marpol-environmental-compliance" label="Overview" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/annex-compliances" label="Annex" icon={Shield} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/ballast-waters" label="Ballast Water" icon={Droplets} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/anti-foulings" label="Anti-Fouling" icon={Anchor} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/waste-managements" label="Waste" icon={Trash2} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/sulphur-caps" label="Sulphur Cap" icon={Fuel} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/cii-ratings" label="CII Ratings" icon={Gauge} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/cargo-charters" label="Cargo Charter" icon={ScrollText} collapsed={collapsed} />
+            <NavItem href="/marpol-environmental-compliance/environmental-incidents" label="Incidents" icon={AlertTriangle} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
