@@ -421,6 +421,13 @@
       "when": 1772666569628,
       "tag": "0059_spooky_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1772680854409,
+      "tag": "0060_known_bushwacker",
+      "breakpoints": true
     }
   ]
 }
