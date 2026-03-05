@@ -752,6 +752,20 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           </NavGroup>
         )}
 
+        {hasAny(perms, "ecr:") && (
+          <NavGroup label="Empty Repositioning" collapsed={collapsed}>
+            <NavItem href="/empty-container-repositioning-ai" label="Overview" icon={Package} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/inventory-snapshots" label="Inventory" icon={Package} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/repositioning-plans" label="Repo Plans" icon={BarChart3} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/cost-trackings" label="Cost Tracking" icon={DollarSign} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/route-optimizers" label="Route AI" icon={Brain} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/demand-forecasts" label="Forecasts" icon={TrendingUp} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/leasing-decisions" label="Leasing" icon={FileText} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/return-incentives" label="Incentives" icon={Gift} collapsed={collapsed} />
+            <NavItem href="/empty-container-repositioning-ai/pnl-attributions" label="P&L" icon={PieChart} collapsed={collapsed} />
+          </NavGroup>
+        )}
+
         {hasAny(perms, "portal:") && (
           <NavGroup label="Customer Portal" collapsed={collapsed}>
             <NavItem href="/customer-portal" label="Portal Home" icon={ShoppingCart} collapsed={collapsed} />
