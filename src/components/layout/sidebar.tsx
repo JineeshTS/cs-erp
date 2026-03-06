@@ -125,6 +125,9 @@ import {
   GraduationCap,
   Video,
   TestTube2,
+  Download,
+  Sparkles,
+  Hash,
 } from "lucide-react";
 import { NavItem, NavGroup } from "./nav-item";
 import { cn } from "@/lib/utils";
@@ -905,6 +908,18 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
           <NavGroup label="Administration" collapsed={collapsed}>
             {hasAny(perms, "admin:") && (
               <NavItem href="/admin-portal" label="Admin Portal" icon={SlidersHorizontal} collapsed={collapsed} />
+            )}
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal/ai-providers" label="AI Providers" icon={Sparkles} collapsed={collapsed} />
+            )}
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal/ai-models" label="AI Models" icon={Hash} collapsed={collapsed} />
+            )}
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal/ai-usage" label="AI Usage" icon={Activity} collapsed={collapsed} />
+            )}
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal/downloads" label="Downloads" icon={Download} collapsed={collapsed} />
             )}
             {hasAny(perms, "users:") && (
               <NavItem href="/admin/users" label="Users" icon={UserCog} collapsed={collapsed} />
