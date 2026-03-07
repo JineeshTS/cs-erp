@@ -55,10 +55,10 @@ export default async function DashboardPage() {
           <h3 className="text-sm font-semibold text-gray-900">Quick Actions</h3>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {[
-              { label: "New Booking", href: "/bookings", icon: FileText },
-              { label: "Track Container", href: "/containers", icon: Container },
-              { label: "Vessel Schedule", href: "/vessels", icon: Ship },
-              { label: "AI Assistant", href: "/ai", icon: FileArchive },
+              { label: "New Booking", href: "/bookings-hub", icon: FileText },
+              { label: "Track Container", href: "/containers-hub", icon: Container },
+              { label: "Vessel Schedule", href: "/vessels-hub", icon: Ship },
+              { label: "AI Assistant", href: "/admin-hub", icon: FileArchive },
             ].map((action) => (
               <Link
                 key={action.href}

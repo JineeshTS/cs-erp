@@ -48,6 +48,23 @@ export function ScmForm({
   const [formData, setFormData] = useState<Record<string, unknown>>(processedInitial);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [aiPrefilled, setAiPrefilled] = useState(false);
+
+  // Check for AI pre-fill data on mount
+  useState(() => {
+    if (typeof window === "undefined") return;
+    const prefill = sessionStorage.getItem("ai-prefill");
+    if (prefill) {
+      try {
+        const data = JSON.parse(prefill) as Record<string, unknown>;
+        setFormData((prev) => ({ ...prev, ...data }));
+        setAiPrefilled(true);
+      } catch {
+        // Invalid JSON, ignore
+      }
+      sessionStorage.removeItem("ai-prefill");
+    }
+  });
 
   function handleChange(name: string, value: unknown) {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -92,6 +109,12 @@ export function ScmForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {aiPrefilled && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
+          Pre-filled by AI Assistant — review and submit
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}

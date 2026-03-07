@@ -456,6 +456,13 @@
       "when": 1772899596730,
       "tag": "0064_flimsy_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1772911999400,
+      "tag": "0065_majestic_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

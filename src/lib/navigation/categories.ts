@@ -1,0 +1,695 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  Users,
+  Ship,
+  Container,
+  DollarSign,
+  BadgeDollarSign,
+  Truck,
+  ShieldCheck,
+  Settings,
+} from "lucide-react";
+
+export interface ModuleCard {
+  title: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  permissionPrefix: string;
+}
+
+export interface NavCategory {
+  slug: string;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  permissionPrefixes: string[];
+  modules: ModuleCard[];
+}
+
+export const CATEGORIES: NavCategory[] = [
+  {
+    slug: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    href: "/",
+    permissionPrefixes: [],
+    modules: [],
+  },
+  {
+    slug: "bookings",
+    label: "Bookings & Operations",
+    icon: FileText,
+    href: "/bookings-hub",
+    permissionPrefixes: ["portal:", "operations:"],
+    modules: [
+      {
+        title: "Bookings",
+        description: "Create and manage cargo bookings",
+        href: "/customer-portal/bookings",
+        icon: FileText,
+        permissionPrefix: "portal:",
+      },
+      {
+        title: "Bills of Lading",
+        description: "Issue, amend, and track B/L documents",
+        href: "/operations-documentation",
+        icon: FileText,
+        permissionPrefix: "operations:",
+      },
+      {
+        title: "Manifests",
+        description: "Cargo and container manifests",
+        href: "/operations-documentation/manifests",
+        icon: Ship,
+        permissionPrefix: "operations:",
+      },
+      {
+        title: "Cargo Tracking",
+        description: "Track cargo movement events",
+        href: "/operations-documentation/cargo-tracking-events",
+        icon: Truck,
+        permissionPrefix: "operations:",
+      },
+      {
+        title: "VGM Records",
+        description: "Verified Gross Mass submissions",
+        href: "/operations-documentation/vgm-records",
+        icon: Container,
+        permissionPrefix: "operations:",
+      },
+      {
+        title: "Regulatory Filings",
+        description: "Customs and regulatory submissions",
+        href: "/operations-documentation/regulatory-filings",
+        icon: ShieldCheck,
+        permissionPrefix: "operations:",
+      },
+      {
+        title: "Portal Home",
+        description: "Customer portal dashboard",
+        href: "/customer-portal",
+        icon: Users,
+        permissionPrefix: "portal:",
+      },
+      {
+        title: "Tracking",
+        description: "Shipment tracking for customers",
+        href: "/customer-portal/tracking",
+        icon: Truck,
+        permissionPrefix: "portal:",
+      },
+      {
+        title: "Documents",
+        description: "Customer document access",
+        href: "/customer-portal/documents",
+        icon: FileText,
+        permissionPrefix: "portal:",
+      },
+      {
+        title: "Customer Invoices",
+        description: "View and download invoices",
+        href: "/customer-portal/invoices",
+        icon: DollarSign,
+        permissionPrefix: "portal:",
+      },
+      {
+        title: "Payments",
+        description: "Online payment portal",
+        href: "/customer-portal/payments",
+        icon: DollarSign,
+        permissionPrefix: "portal:",
+      },
+    ],
+  },
+  {
+    slug: "sales",
+    label: "Sales & CRM",
+    icon: Users,
+    href: "/sales-hub",
+    permissionPrefixes: ["sales:", "customer_service:"],
+    modules: [
+      {
+        title: "Customers",
+        description: "Customer accounts and contacts",
+        href: "/sales-crm",
+        icon: Users,
+        permissionPrefix: "sales:",
+      },
+      {
+        title: "Opportunities",
+        description: "Sales pipeline and deal tracking",
+        href: "/sales-crm/opportunities",
+        icon: Users,
+        permissionPrefix: "sales:",
+      },
+      {
+        title: "Contracts",
+        description: "Customer contracts and renewals",
+        href: "/sales-crm/contracts",
+        icon: FileText,
+        permissionPrefix: "sales:",
+      },
+      {
+        title: "Leads",
+        description: "Lead capture and qualification",
+        href: "/sales-crm/leads",
+        icon: Users,
+        permissionPrefix: "sales:",
+      },
+      {
+        title: "Campaigns",
+        description: "Marketing campaigns and outreach",
+        href: "/sales-crm/campaigns",
+        icon: Users,
+        permissionPrefix: "sales:",
+      },
+      {
+        title: "Inquiries",
+        description: "Customer inquiries and quotation requests",
+        href: "/customer-service-operations",
+        icon: Users,
+        permissionPrefix: "customer_service:",
+      },
+      {
+        title: "Complaints",
+        description: "Customer complaints and resolution",
+        href: "/customer-service-operations/complaints",
+        icon: Users,
+        permissionPrefix: "customer_service:",
+      },
+      {
+        title: "Service Requests",
+        description: "Service request management",
+        href: "/customer-service-operations/service-requests",
+        icon: Users,
+        permissionPrefix: "customer_service:",
+      },
+    ],
+  },
+  {
+    slug: "vessels",
+    label: "Vessels & Fleet",
+    icon: Ship,
+    href: "/vessels-hub",
+    permissionPrefixes: ["technical:", "crew:", "chartering:", "capacity:", "fdp:", "vpe:", "vrs:"],
+    modules: [
+      {
+        title: "Vessel Technical (PMS)",
+        description: "Planned maintenance, dry docks, defect repairs",
+        href: "/vessel-technical-management",
+        icon: Ship,
+        permissionPrefix: "technical:",
+      },
+      {
+        title: "Crew Management",
+        description: "Crew rotations, certificates, payroll",
+        href: "/crew-management",
+        icon: Users,
+        permissionPrefix: "crew:",
+      },
+      {
+        title: "Charter Parties",
+        description: "Charter party agreements, fixtures, TC/COA contracts",
+        href: "/chartering-vessel-management",
+        icon: FileText,
+        permissionPrefix: "chartering:",
+      },
+      {
+        title: "Vessel Schedules",
+        description: "Trade allocations, space controls, stowage plans",
+        href: "/capacity-voyage-management",
+        icon: Ship,
+        permissionPrefix: "capacity:",
+      },
+      {
+        title: "Fleet Deployment",
+        description: "Deployment decisions, fleet utilization, network design",
+        href: "/fleet-deployment-planning",
+        icon: Ship,
+        permissionPrefix: "fdp:",
+      },
+      {
+        title: "Vessel Performance",
+        description: "Speed, fuel, CII ratings, noon reports",
+        href: "/vessel-performance-efficiency",
+        icon: Ship,
+        permissionPrefix: "vpe:",
+      },
+      {
+        title: "Voyage Results",
+        description: "Voyage closes, TC settlements, P&L",
+        href: "/voyage-results-settlement",
+        icon: DollarSign,
+        permissionPrefix: "vrs:",
+      },
+    ],
+  },
+  {
+    slug: "containers",
+    label: "Containers & Equipment",
+    icon: Container,
+    href: "/containers-hub",
+    permissionPrefixes: ["equipment:", "reefer:", "oog_special:", "dangerous_goods:", "clm:", "ecr:"],
+    modules: [
+      {
+        title: "Container Fleet",
+        description: "Container inventory, MNR, yard planning",
+        href: "/equipment-control-yard-managem",
+        icon: Container,
+        permissionPrefix: "equipment:",
+      },
+      {
+        title: "Reefer Management",
+        description: "Temperature monitoring, PTI inspections, power",
+        href: "/reefer-container-management",
+        icon: Container,
+        permissionPrefix: "reefer:",
+      },
+      {
+        title: "OOG & Special Cargo",
+        description: "Oversized cargo, heavy lifts, securing plans",
+        href: "/oog-special-cargo-management",
+        icon: Container,
+        permissionPrefix: "oog_special:",
+      },
+      {
+        title: "Dangerous Goods",
+        description: "IMDG compliance, DG manifests, segregation",
+        href: "/dangerous-goods-management",
+        icon: Container,
+        permissionPrefix: "dangerous_goods:",
+      },
+      {
+        title: "Container Leasing",
+        description: "Lease agreements, on/off-hire, MNR billing",
+        href: "/container-leasing-management",
+        icon: FileText,
+        permissionPrefix: "clm:",
+      },
+      {
+        title: "Empty Repositioning",
+        description: "Inventory snapshots, repo plans, cost tracking",
+        href: "/empty-container-repositioning-ai",
+        icon: Container,
+        permissionPrefix: "ecr:",
+      },
+    ],
+  },
+  {
+    slug: "finance",
+    label: "Finance & Accounting",
+    icon: DollarSign,
+    href: "/finance-hub",
+    permissionPrefixes: ["costing:", "invoice:", "receivable:", "payable:", "disbursement:", "gl:", "treasury:", "asset:"],
+    modules: [
+      {
+        title: "Voyage Budgets",
+        description: "Costing, revenue recognition, voyage P&L",
+        href: "/costing-financial-management",
+        icon: DollarSign,
+        permissionPrefix: "costing:",
+      },
+      {
+        title: "Freight Invoices",
+        description: "Invoicing, debit/credit notes, dunning",
+        href: "/freight-invoice-revenue-management",
+        icon: FileText,
+        permissionPrefix: "invoice:",
+      },
+      {
+        title: "AR & Credit Control",
+        description: "Customer accounts, credit limits, aging reports",
+        href: "/accounts-receivable-credit-control",
+        icon: Users,
+        permissionPrefix: "receivable:",
+      },
+      {
+        title: "AP & Vendors",
+        description: "Vendor management, POs, 3-way match",
+        href: "/accounts-payable-vendor-management",
+        icon: Users,
+        permissionPrefix: "payable:",
+      },
+      {
+        title: "Port Disbursement",
+        description: "Proforma/final DAs, port costs, agent statements",
+        href: "/port-disbursement-accounting",
+        icon: DollarSign,
+        permissionPrefix: "disbursement:",
+      },
+      {
+        title: "General Ledger",
+        description: "Chart of accounts, journal entries, period closures",
+        href: "/general-ledger-financial-reporting",
+        icon: DollarSign,
+        permissionPrefix: "gl:",
+      },
+      {
+        title: "Treasury & Cash",
+        description: "Bank accounts, reconciliations, FX hedging",
+        href: "/treasury-cash-management",
+        icon: DollarSign,
+        permissionPrefix: "treasury:",
+      },
+      {
+        title: "Fixed Assets",
+        description: "Asset registry, depreciation, lease accounting",
+        href: "/fixed-assets-management",
+        icon: DollarSign,
+        permissionPrefix: "asset:",
+      },
+    ],
+  },
+  {
+    slug: "commercial",
+    label: "Commercial & Pricing",
+    icon: BadgeDollarSign,
+    href: "/commercial-hub",
+    permissionPrefixes: ["commercial:", "demurrage:", "lrm:", "ptt:"],
+    modules: [
+      {
+        title: "Tariffs",
+        description: "Freight tariffs and rate management",
+        href: "/commercial-pricing-management",
+        icon: BadgeDollarSign,
+        permissionPrefix: "commercial:",
+      },
+      {
+        title: "Special Rates",
+        description: "Contract rates and special pricing",
+        href: "/commercial-pricing-management/special-rates",
+        icon: BadgeDollarSign,
+        permissionPrefix: "commercial:",
+      },
+      {
+        title: "Surcharges",
+        description: "BAF, CAF, THC, and other surcharges",
+        href: "/commercial-pricing-management/surcharges",
+        icon: DollarSign,
+        permissionPrefix: "commercial:",
+      },
+      {
+        title: "Demurrage & Detention",
+        description: "Free time rules, D&D calculations, waivers",
+        href: "/demurrage-detention-management",
+        icon: DollarSign,
+        permissionPrefix: "demurrage:",
+      },
+      {
+        title: "Liner Revenue",
+        description: "TEU strategy, demand forecasts, rate integrity",
+        href: "/liner-revenue-management",
+        icon: DollarSign,
+        permissionPrefix: "lrm:",
+      },
+      {
+        title: "Port Tariffs",
+        description: "THC, port dues, pilotage/towage charges",
+        href: "/port-tariff-terminal-billing",
+        icon: DollarSign,
+        permissionPrefix: "ptt:",
+      },
+    ],
+  },
+  {
+    slug: "logistics",
+    label: "Logistics & Trade",
+    icon: Truck,
+    href: "/logistics-hub",
+    permissionPrefixes: ["liner:", "intermodal:", "customs:", "thm:", "svp:", "bunker:", "loc:", "port_agency:", "analytics:"],
+    modules: [
+      {
+        title: "Trade Routes",
+        description: "Service loops, trade lanes, slot agreements",
+        href: "/liner-trade-route-management",
+        icon: Ship,
+        permissionPrefix: "liner:",
+      },
+      {
+        title: "Intermodal & ICD",
+        description: "Dry ports, rail, trucking, last mile",
+        href: "/intermodal-icd-operations",
+        icon: Truck,
+        permissionPrefix: "intermodal:",
+      },
+      {
+        title: "Customs & Regulatory",
+        description: "Import/export clearances, duty calculations",
+        href: "/customs-compliance-regulatory",
+        icon: ShieldCheck,
+        permissionPrefix: "customs:",
+      },
+      {
+        title: "Transshipment Hub",
+        description: "Cargo plans, feeder coordination, connections",
+        href: "/transshipment-hub-management",
+        icon: Ship,
+        permissionPrefix: "thm:",
+      },
+      {
+        title: "Schedule & Voyage",
+        description: "Service schedules, port sequences, ETA management",
+        href: "/schedule-voyage-planning",
+        icon: Ship,
+        permissionPrefix: "svp:",
+      },
+      {
+        title: "Bunker & Fuel",
+        description: "Fuel orders, stems, quality, emissions",
+        href: "/bunker-fuel-management",
+        icon: Ship,
+        permissionPrefix: "bunker:",
+      },
+      {
+        title: "Liner Operations",
+        description: "Cargo cutoffs, rollovers, revenue audits",
+        href: "/liner-operations-control",
+        icon: Ship,
+        permissionPrefix: "loc:",
+      },
+      {
+        title: "Port Agency",
+        description: "Port calls, husbandry, crew changes",
+        href: "/port-agency-management",
+        icon: Ship,
+        permissionPrefix: "port_agency:",
+      },
+      {
+        title: "Analytics & BI",
+        description: "KPI dashboards, voyage analytics, market intel",
+        href: "/analytics-business-intelligence",
+        icon: DollarSign,
+        permissionPrefix: "analytics:",
+      },
+    ],
+  },
+  {
+    slug: "compliance",
+    label: "Compliance & Risk",
+    icon: ShieldCheck,
+    href: "/compliance-hub",
+    permissionPrefixes: ["audit:", "insurance:", "survey:", "mec:", "lpr:", "ser:", "ccm:"],
+    modules: [
+      {
+        title: "Audit & Compliance",
+        description: "Internal audits, risk registers, ISO certifications",
+        href: "/audit-compliance-management",
+        icon: ShieldCheck,
+        permissionPrefix: "audit:",
+      },
+      {
+        title: "Insurance & Claims",
+        description: "P&I policies, H&M, cargo insurance, claims",
+        href: "/insurance-claims-management",
+        icon: ShieldCheck,
+        permissionPrefix: "insurance:",
+      },
+      {
+        title: "Survey & Inspection",
+        description: "Cargo, container, draft, and hire surveys",
+        href: "/survey-inspection-management",
+        icon: FileText,
+        permissionPrefix: "survey:",
+      },
+      {
+        title: "MARPOL Compliance",
+        description: "Annex compliance, ballast water, sulphur cap",
+        href: "/marpol-environmental-compliance",
+        icon: ShieldCheck,
+        permissionPrefix: "mec:",
+      },
+      {
+        title: "Loss Prevention",
+        description: "Risk registers, HSSE, near-miss, emergency procedures",
+        href: "/loss-prevention-risk-management",
+        icon: ShieldCheck,
+        permissionPrefix: "lpr:",
+      },
+      {
+        title: "Sustainability & ESG",
+        description: "Carbon footprints, GHG reports, ESG KPIs",
+        href: "/sustainability-esg-reporting",
+        icon: ShieldCheck,
+        permissionPrefix: "ser:",
+      },
+      {
+        title: "Cargo Claims",
+        description: "Claim registry, liability, settlements, subrogation",
+        href: "/cargo-claims-management",
+        icon: FileText,
+        permissionPrefix: "ccm:",
+      },
+    ],
+  },
+  {
+    slug: "admin",
+    label: "Administration",
+    icon: Settings,
+    href: "/admin-hub",
+    permissionPrefixes: [
+      "admin:", "ai:", "infra:", "hr:", "procurement:", "masterdata:",
+      "kmt:", "icm:", "integration:", "users:", "roles:", "tenants:",
+      "workflows:", "notifications:", "documents:", "entities:", "mob:", "iot:", "anm:",
+    ],
+    modules: [
+      {
+        title: "Admin Portal",
+        description: "System configuration and administration",
+        href: "/admin-portal",
+        icon: Settings,
+        permissionPrefix: "admin:",
+      },
+      {
+        title: "AI Agents",
+        description: "AI agent framework, runs, and workflows",
+        href: "/ai-agent-framework",
+        icon: Settings,
+        permissionPrefix: "ai:",
+      },
+      {
+        title: "Infrastructure",
+        description: "Clusters, deployments, IAM, encryption",
+        href: "/infrastructure-security",
+        icon: Settings,
+        permissionPrefix: "infra:",
+      },
+      {
+        title: "HR & Payroll",
+        description: "Employees, leave, attendance, payroll",
+        href: "/hr-payroll-shore-staff",
+        icon: Users,
+        permissionPrefix: "hr:",
+      },
+      {
+        title: "Procurement",
+        description: "Requisitions, vendor sourcing, purchase orders",
+        href: "/procurement-supply-chain",
+        icon: FileText,
+        permissionPrefix: "procurement:",
+      },
+      {
+        title: "Master Data",
+        description: "Ports, currencies, vessel types, and more",
+        href: "/master-data-management",
+        icon: Settings,
+        permissionPrefix: "masterdata:",
+      },
+      {
+        title: "Knowledge & Training",
+        description: "SOPs, training modules, onboarding",
+        href: "/knowledge-management-training",
+        icon: Settings,
+        permissionPrefix: "kmt:",
+      },
+      {
+        title: "Implementation & Change",
+        description: "Project plans, data migrations, UAT, go-live",
+        href: "/implementation-change-management",
+        icon: Settings,
+        permissionPrefix: "icm:",
+      },
+      {
+        title: "Users",
+        description: "User accounts and access management",
+        href: "/admin/users",
+        icon: Users,
+        permissionPrefix: "users:",
+      },
+      {
+        title: "Roles",
+        description: "Role definitions and permission assignments",
+        href: "/admin/roles",
+        icon: ShieldCheck,
+        permissionPrefix: "roles:",
+      },
+      {
+        title: "Integrations & EDI",
+        description: "Connections, EDI messages, customs filings",
+        href: "/integration-edi-layer",
+        icon: Settings,
+        permissionPrefix: "integration:",
+      },
+      {
+        title: "Automation",
+        description: "Workflow engine and notification rules",
+        href: "/workflow-notification-engine",
+        icon: Settings,
+        permissionPrefix: "workflows:",
+      },
+      {
+        title: "Document Hub",
+        description: "Document management and storage",
+        href: "/document-management-system",
+        icon: FileText,
+        permissionPrefix: "documents:",
+      },
+      {
+        title: "Corporate Structure",
+        description: "Legal entities and organizational setup",
+        href: "/multi-entity-legal-structure",
+        icon: Settings,
+        permissionPrefix: "entities:",
+      },
+      {
+        title: "IoT & Tracking",
+        description: "Container GPS, e-seals, vessel AIS",
+        href: "/real-time-iot-asset-tracking",
+        icon: Settings,
+        permissionPrefix: "iot:",
+      },
+      {
+        title: "Mobile Operations",
+        description: "Gate processing, yard inspections, driver POD",
+        href: "/mobile-operations-app",
+        icon: Settings,
+        permissionPrefix: "mob:",
+      },
+      {
+        title: "Agent Network",
+        description: "GA agreements, sub-agents, commissions",
+        href: "/agent-network-management",
+        icon: Users,
+        permissionPrefix: "anm:",
+      },
+    ],
+  },
+];
+
+/** Check if user can see a category (has ANY of its permission prefixes). Dashboard is always visible. */
+export function canSeeCategory(permissions: string[], prefixes: string[]): boolean {
+  if (prefixes.length === 0) return true; // Dashboard
+  return prefixes.some((prefix) => permissions.some((p) => p.startsWith(prefix)));
+}
+
+/** Check if user can see a specific module (has any permission with its prefix). */
+export function canSeeModule(permissions: string[], prefix: string): boolean {
+  return permissions.some((p) => p.startsWith(prefix));
+}
+
+/** Get a category by its slug. */
+export function getCategoryBySlug(slug: string): NavCategory | undefined {
+  return CATEGORIES.find((c) => c.slug === slug);
+}

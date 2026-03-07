@@ -6,6 +6,7 @@ import { tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { ChatPanel } from "@/components/ai-chat/chat-panel";
 
 export default async function DashboardLayout({
   children,
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
         <Topbar userName={userName} userEmail={session.email} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <ChatPanel />
     </div>
   );
 }
