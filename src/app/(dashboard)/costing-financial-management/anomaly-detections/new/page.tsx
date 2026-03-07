@@ -7,6 +7,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewAnomalyDetectionPage() {
   const session = await getSession();
@@ -14,6 +15,8 @@ export default async function NewAnomalyDetectionPage() {
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const fields: FieldConfig[] = [
     {
       name: "detectedEntity",
@@ -52,8 +55,7 @@ export default async function NewAnomalyDetectionPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "expectedAmount", label: "Expected Amount", type: "number" },
     { name: "actualAmount", label: "Actual Amount", type: "number" },

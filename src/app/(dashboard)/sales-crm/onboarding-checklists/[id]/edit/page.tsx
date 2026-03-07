@@ -8,34 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { scmOnboardingChecklists } from "@/db/schema";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const ONBOARDING_CHECKLIST_FIELDS: FieldConfig[] = [
-  { name: "customerId", label: "Customer ID", type: "text", required: true, placeholder: "UUID of the customer" },
-  { name: "taskName", label: "Task Name", type: "text", required: true },
-  { name: "taskCategory", label: "Task Category", type: "select", required: true, options: [
-    { value: "kyc", label: "KYC" },
-    { value: "credit_check", label: "Credit Check" },
-    { value: "documentation", label: "Documentation" },
-    { value: "system_setup", label: "System Setup" },
-    { value: "rate_setup", label: "Rate Setup" },
-    { value: "training", label: "Training" },
-    { value: "other", label: "Other" },
-  ]},
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "assignedTo", label: "Assigned To", type: "text" },
-  { name: "dueDate", label: "Due Date", type: "datetime-local" },
-  { name: "sortOrder", label: "Sort Order", type: "number" },
-  { name: "isRequired", label: "Required", type: "checkbox" },
-  { name: "documentRequired", label: "Document Required", type: "checkbox" },
-  { name: "documentUrl", label: "Document URL", type: "text" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
-    { value: "skipped", label: "Skipped" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditOnboardingChecklistPage({
   params,
@@ -47,6 +20,35 @@ export default async function EditOnboardingChecklistPage({
   if (!(await hasPermission(session.id, session.tenantId, "sales:edit")))
     redirect("/sales-crm");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const ONBOARDING_CHECKLIST_FIELDS: FieldConfig[] = [
+    { name: "customerId", label: "Customer ID", type: "select", options: customerOpts, required: true },
+    { name: "taskName", label: "Task Name", type: "text", required: true },
+    { name: "taskCategory", label: "Task Category", type: "select", required: true, options: [
+      { value: "kyc", label: "KYC" },
+      { value: "credit_check", label: "Credit Check" },
+      { value: "documentation", label: "Documentation" },
+      { value: "system_setup", label: "System Setup" },
+      { value: "rate_setup", label: "Rate Setup" },
+      { value: "training", label: "Training" },
+      { value: "other", label: "Other" },
+    ]},
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "assignedTo", label: "Assigned To", type: "text" },
+    { name: "dueDate", label: "Due Date", type: "datetime-local" },
+    { name: "sortOrder", label: "Sort Order", type: "number" },
+    { name: "isRequired", label: "Required", type: "checkbox" },
+    { name: "documentRequired", label: "Document Required", type: "checkbox" },
+    { name: "documentUrl", label: "Document URL", type: "text" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "pending", label: "Pending" },
+      { value: "in_progress", label: "In Progress" },
+      { value: "completed", label: "Completed" },
+      { value: "skipped", label: "Skipped" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

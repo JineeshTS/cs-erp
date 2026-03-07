@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditAnomalyDetectionPage({
   params,
@@ -19,6 +20,8 @@ export default async function EditAnomalyDetectionPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const anomaly = await getAnomalyDetection(id, session.tenantId);
   if (!anomaly) notFound();
@@ -61,8 +64,7 @@ export default async function EditAnomalyDetectionPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "expectedAmount", label: "Expected Amount", type: "number" },
     { name: "actualAmount", label: "Actual Amount", type: "number" },

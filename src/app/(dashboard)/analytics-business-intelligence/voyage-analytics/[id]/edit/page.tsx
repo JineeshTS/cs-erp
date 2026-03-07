@@ -6,58 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getVoyageAnalytic } from "@/lib/analytics-business-intelligence/service";
 import { AbiForm } from "@/components/analytics-business-intelligence/abi-form";
 import type { FieldConfig } from "@/components/analytics-business-intelligence/abi-form";
-
-const VOYAGE_FIELDS: FieldConfig[] = [
-  {
-    name: "analyticsType",
-    label: "Analytics Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "voyage_performance", label: "Voyage Performance" },
-      { value: "service_comparison", label: "Service Comparison" },
-      { value: "route_profitability", label: "Route Profitability" },
-      { value: "schedule_adherence", label: "Schedule Adherence" },
-    ],
-  },
-  {
-    name: "voyageRef",
-    label: "Voyage Ref",
-    type: "text",
-    placeholder: "e.g. VOY-2026-001",
-  },
-  { name: "serviceName", label: "Service Name", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "routeOrigin", label: "Route Origin", type: "text" },
-  { name: "routeDestination", label: "Route Destination", type: "text" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "totalTeu", label: "Total TEU", type: "number" },
-  { name: "revenue", label: "Revenue", type: "number" },
-  { name: "costs", label: "Costs", type: "number" },
-  { name: "profit", label: "Profit", type: "number" },
-  { name: "profitMarginPct", label: "Profit Margin %", type: "number" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "e.g. USD, QAR, AED",
-  },
-  { name: "utilizationPct", label: "Utilization %", type: "number" },
-  {
-    name: "scheduleReliabilityPct",
-    label: "Schedule Reliability %",
-    type: "number",
-  },
-  { name: "avgTransitDays", label: "Avg Transit Days", type: "number" },
-  {
-    name: "dwellTimeHours",
-    label: "Dwell Time (hours)",
-    type: "number",
-  },
-  { name: "portCallCount", label: "Port Call Count", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditVoyageAnalyticPage({
   params,
@@ -68,6 +17,62 @@ export default async function EditVoyageAnalyticPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "analytics:edit")))
     redirect("/analytics-business-intelligence/voyage-analytics");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const VOYAGE_FIELDS: FieldConfig[] = [
+    {
+      name: "analyticsType",
+      label: "Analytics Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "voyage_performance", label: "Voyage Performance" },
+        { value: "service_comparison", label: "Service Comparison" },
+        { value: "route_profitability", label: "Route Profitability" },
+        { value: "schedule_adherence", label: "Schedule Adherence" },
+      ],
+    },
+    {
+      name: "voyageRef",
+      label: "Voyage Ref",
+      type: "text",
+      placeholder: "e.g. VOY-2026-001",
+    },
+    { name: "serviceName", label: "Service Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "routeOrigin", label: "Route Origin", type: "text" },
+    { name: "routeDestination", label: "Route Destination", type: "text" },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "totalTeu", label: "Total TEU", type: "number" },
+    { name: "revenue", label: "Revenue", type: "number" },
+    { name: "costs", label: "Costs", type: "number" },
+    { name: "profit", label: "Profit", type: "number" },
+    { name: "profitMarginPct", label: "Profit Margin %", type: "number" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "utilizationPct", label: "Utilization %", type: "number" },
+    {
+      name: "scheduleReliabilityPct",
+      label: "Schedule Reliability %",
+      type: "number",
+    },
+    { name: "avgTransitDays", label: "Avg Transit Days", type: "number" },
+    {
+      name: "dwellTimeHours",
+      label: "Dwell Time (hours)",
+      type: "number",
+    },
+    { name: "portCallCount", label: "Port Call Count", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

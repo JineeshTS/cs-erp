@@ -6,49 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getBankGuarantee } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const BANK_GUARANTEE_FIELDS: FieldConfig[] = [
-  {
-    name: "bgType",
-    label: "BG Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "performance", label: "Performance" },
-      { value: "advance_payment", label: "Advance Payment" },
-      { value: "bid_bond", label: "Bid Bond" },
-      { value: "financial", label: "Financial" },
-      { value: "customs", label: "Customs" },
-      { value: "retention", label: "Retention" },
-    ],
-  },
-  { name: "issuingBank", label: "Issuing Bank", type: "text" },
-  { name: "applicant", label: "Applicant", type: "text" },
-  { name: "beneficiary", label: "Beneficiary", type: "text" },
-  { name: "guaranteeAmount", label: "Guarantee Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "issueDate", label: "Issue Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "claimDeadline", label: "Claim Deadline", type: "datetime-local" },
-  { name: "marginPercentage", label: "Margin Percentage", type: "text" },
-  { name: "marginAmount", label: "Margin Amount", type: "text" },
-  { name: "commissionRate", label: "Commission Rate", type: "text" },
-  { name: "commissionAmount", label: "Commission Amount", type: "text" },
-  {
-    name: "linkedContractRef",
-    label: "Linked Contract Ref",
-    type: "text",
-  },
-  { name: "purpose", label: "Purpose", type: "textarea" },
-  {
-    name: "termsAndConditions",
-    label: "Terms and Conditions",
-    type: "textarea",
-  },
-  { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
-  { name: "renewalCount", label: "Renewal Count", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBankGuaranteePage({
   params,
@@ -60,6 +18,50 @@ export default async function EditBankGuaranteePage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/bank-guarantees");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const BANK_GUARANTEE_FIELDS: FieldConfig[] = [
+    {
+      name: "bgType",
+      label: "BG Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "performance", label: "Performance" },
+        { value: "advance_payment", label: "Advance Payment" },
+        { value: "bid_bond", label: "Bid Bond" },
+        { value: "financial", label: "Financial" },
+        { value: "customs", label: "Customs" },
+        { value: "retention", label: "Retention" },
+      ],
+    },
+    { name: "issuingBank", label: "Issuing Bank", type: "text" },
+    { name: "applicant", label: "Applicant", type: "text" },
+    { name: "beneficiary", label: "Beneficiary", type: "text" },
+    { name: "guaranteeAmount", label: "Guarantee Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "issueDate", label: "Issue Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "claimDeadline", label: "Claim Deadline", type: "datetime-local" },
+    { name: "marginPercentage", label: "Margin Percentage", type: "text" },
+    { name: "marginAmount", label: "Margin Amount", type: "text" },
+    { name: "commissionRate", label: "Commission Rate", type: "text" },
+    { name: "commissionAmount", label: "Commission Amount", type: "text" },
+    {
+      name: "linkedContractRef",
+      label: "Linked Contract Ref",
+      type: "text",
+    },
+    { name: "purpose", label: "Purpose", type: "textarea" },
+    {
+      name: "termsAndConditions",
+      label: "Terms and Conditions",
+      type: "textarea",
+    },
+    { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
+    { name: "renewalCount", label: "Renewal Count", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getBankGuarantee(id, session.tenantId);
   if (!record) notFound();

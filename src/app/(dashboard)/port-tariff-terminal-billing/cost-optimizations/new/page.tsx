@@ -7,34 +7,7 @@ import {
   PttForm,
   type FieldConfig,
 } from "@/components/port-tariff-terminal-billing/ptt-form";
-
-const OPTIMIZATION_FIELDS: FieldConfig[] = [
-  {
-    name: "optimizationType",
-    label: "Optimization Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "route_optimization", label: "Route Optimization" },
-      { value: "terminal_switch", label: "Terminal Switch" },
-      { value: "timing_optimization", label: "Timing Optimization" },
-      { value: "volume_discount", label: "Volume Discount" },
-      { value: "negotiation_leverage", label: "Negotiation Leverage" },
-    ],
-  },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "currentCost", label: "Current Cost", type: "number" },
-  { name: "optimizedCost", label: "Optimized Cost", type: "number" },
-  { name: "projectedSavings", label: "Projected Savings", type: "number" },
-  { name: "savingsPercentage", label: "Savings Percentage", type: "number" },
-  { name: "optimizationCurrency", label: "Currency", type: "text" },
-  { name: "confidenceScore", label: "Confidence Score", type: "number" },
-  { name: "implementationDifficulty", label: "Implementation Difficulty", type: "text" },
-  { name: "timelineWeeks", label: "Timeline (Weeks)", type: "number" },
-  { name: "recommendation", label: "Recommendation", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function NewCostOptimizationPage() {
   const session = await getSession();
@@ -42,6 +15,35 @@ export default async function NewCostOptimizationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "ptt:create")))
     redirect("/");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const OPTIMIZATION_FIELDS: FieldConfig[] = [
+    {
+      name: "optimizationType",
+      label: "Optimization Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "route_optimization", label: "Route Optimization" },
+        { value: "terminal_switch", label: "Terminal Switch" },
+        { value: "timing_optimization", label: "Timing Optimization" },
+        { value: "volume_discount", label: "Volume Discount" },
+        { value: "negotiation_leverage", label: "Negotiation Leverage" },
+      ],
+    },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "currentCost", label: "Current Cost", type: "number" },
+    { name: "optimizedCost", label: "Optimized Cost", type: "number" },
+    { name: "projectedSavings", label: "Projected Savings", type: "number" },
+    { name: "savingsPercentage", label: "Savings Percentage", type: "number" },
+    { name: "optimizationCurrency", label: "Currency", type: "text" },
+    { name: "confidenceScore", label: "Confidence Score", type: "number" },
+    { name: "implementationDifficulty", label: "Implementation Difficulty", type: "text" },
+    { name: "timelineWeeks", label: "Timeline (Weeks)", type: "number" },
+    { name: "recommendation", label: "Recommendation", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

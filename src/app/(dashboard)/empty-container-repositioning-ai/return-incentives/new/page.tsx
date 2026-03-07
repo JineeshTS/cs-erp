@@ -7,6 +7,7 @@ import {
   EcrForm,
   type FieldConfig,
 } from "@/components/empty-container-repositioning-ai/ecr-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewReturnIncentivePage() {
   const session = await getSession();
@@ -14,6 +15,11 @@ export default async function NewReturnIncentivePage() {
   if (!(await hasPermission(session.id, session.tenantId, "ecr:create")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const fields: FieldConfig[] = [
     {
       name: "incentiveType",
@@ -32,7 +38,7 @@ export default async function NewReturnIncentivePage() {
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
     },
     { name: "tradeLane", label: "Trade Lane", type: "text", required: true },
@@ -54,7 +60,7 @@ export default async function NewReturnIncentivePage() {
       type: "text",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts, required: true },
     {
       name: "validFrom",
       label: "Valid From",

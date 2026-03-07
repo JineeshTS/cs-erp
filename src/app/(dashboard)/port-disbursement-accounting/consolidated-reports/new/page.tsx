@@ -5,45 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { PdaForm } from "@/components/port-disbursement-accounting/pda-form";
 import type { FieldConfig } from "@/components/port-disbursement-accounting/pda-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "monthly", label: "Monthly" },
-      { value: "quarterly", label: "Quarterly" },
-      { value: "annual", label: "Annual" },
-      { value: "voyage", label: "Voyage" },
-      { value: "port", label: "Port" },
-      { value: "agent", label: "Agent" },
-      { value: "custom", label: "Custom" },
-    ],
-  },
-  {
-    name: "reportPeriod",
-    label: "Report Period",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "reportYear",
-    label: "Report Year",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "reportMonth",
-    label: "Report Month",
-    type: "number",
-    required: true,
-  },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "aiModelVersion", label: "AI Model Version", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewConsolidatedReportPage() {
   const session = await getSession();
@@ -56,6 +18,47 @@ export default async function NewConsolidatedReportPage() {
     ))
   )
     redirect("/port-disbursement-accounting/consolidated-reports");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "monthly", label: "Monthly" },
+        { value: "quarterly", label: "Quarterly" },
+        { value: "annual", label: "Annual" },
+        { value: "voyage", label: "Voyage" },
+        { value: "port", label: "Port" },
+        { value: "agent", label: "Agent" },
+        { value: "custom", label: "Custom" },
+      ],
+    },
+    {
+      name: "reportPeriod",
+      label: "Report Period",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "reportYear",
+      label: "Report Year",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "reportMonth",
+      label: "Report Month",
+      type: "number",
+      required: true,
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "aiModelVersion", label: "AI Model Version", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

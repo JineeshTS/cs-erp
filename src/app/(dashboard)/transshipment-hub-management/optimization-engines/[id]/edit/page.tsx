@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getOptimizationEngine } from "@/lib/transshipment-hub-management/service";
 import { ThmForm, type FieldConfig } from "@/components/transshipment-hub-management/thm-form";
-
-const OPTIMIZATION_ENGINE_FIELDS: FieldConfig[] = [
-  {
-    name: "engineType",
-    label: "Engine Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "connection_optimizer", label: "Connection Optimizer" },
-      { value: "yard_allocation", label: "Yard Allocation" },
-      { value: "vessel_pairing", label: "Vessel Pairing" },
-      { value: "load_sequencing", label: "Load Sequencing" },
-      { value: "dwell_minimizer", label: "Dwell Minimizer" },
-    ],
-  },
-  { name: "hubPort", label: "Hub Port", type: "text" },
-  { name: "scenarioName", label: "Scenario Name", type: "text" },
-  { name: "currentCost", label: "Current Cost", type: "text" },
-  { name: "optimizedCost", label: "Optimized Cost", type: "text" },
-  { name: "savingsAmount", label: "Savings Amount", type: "text" },
-  { name: "savingsPct", label: "Savings %", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "modelVersion", label: "Model Version", type: "text" },
-  { name: "confidenceScore", label: "Confidence Score", type: "text" },
-  { name: "accepted", label: "Accepted", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditOptimizationEnginePage({
   params,
@@ -43,6 +17,34 @@ export default async function EditOptimizationEnginePage({
   if (!(await hasPermission(session.id, session.tenantId, "thm:edit")))
     redirect("/transshipment-hub-management/optimization-engines");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const OPTIMIZATION_ENGINE_FIELDS: FieldConfig[] = [
+    {
+      name: "engineType",
+      label: "Engine Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "connection_optimizer", label: "Connection Optimizer" },
+        { value: "yard_allocation", label: "Yard Allocation" },
+        { value: "vessel_pairing", label: "Vessel Pairing" },
+        { value: "load_sequencing", label: "Load Sequencing" },
+        { value: "dwell_minimizer", label: "Dwell Minimizer" },
+      ],
+    },
+    { name: "hubPort", label: "Hub Port", type: "text" },
+    { name: "scenarioName", label: "Scenario Name", type: "text" },
+    { name: "currentCost", label: "Current Cost", type: "text" },
+    { name: "optimizedCost", label: "Optimized Cost", type: "text" },
+    { name: "savingsAmount", label: "Savings Amount", type: "text" },
+    { name: "savingsPct", label: "Savings %", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "modelVersion", label: "Model Version", type: "text" },
+    { name: "confidenceScore", label: "Confidence Score", type: "text" },
+    { name: "accepted", label: "Accepted", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getOptimizationEngine(id, session.tenantId);

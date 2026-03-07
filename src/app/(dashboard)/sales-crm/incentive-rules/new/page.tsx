@@ -5,34 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const INCENTIVE_RULE_FIELDS: FieldConfig[] = [
-  { name: "ruleName", label: "Rule Name", type: "text", required: true },
-  { name: "ruleCode", label: "Rule Code", type: "text", required: true },
-  { name: "targetType", label: "Target Type", type: "select", required: true, options: [
-    { value: "revenue", label: "Revenue" },
-    { value: "teu", label: "TEU" },
-    { value: "new_customer", label: "New Customer" },
-    { value: "retention", label: "Retention" },
-  ]},
-  { name: "thresholdPercent", label: "Threshold %", type: "number", required: true },
-  { name: "commissionRate", label: "Commission Rate", type: "number", required: true },
-  { name: "bonusAmount", label: "Bonus Amount", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "cappedAt", label: "Capped At", type: "number" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "appliesTo", label: "Applies To", type: "select", options: [
-    { value: "all", label: "All" },
-    { value: "individual", label: "Individual" },
-    { value: "team", label: "Team" },
-    { value: "region", label: "Region" },
-  ]},
-  { name: "region", label: "Region", type: "text" },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "isActive", label: "Is Active", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewIncentiveRulePage() {
   const session = await getSession();
@@ -40,6 +13,35 @@ export default async function NewIncentiveRulePage() {
   if (!(await hasPermission(session.id, session.tenantId, "sales:create")))
     redirect("/sales-crm");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const INCENTIVE_RULE_FIELDS: FieldConfig[] = [
+    { name: "ruleName", label: "Rule Name", type: "text", required: true },
+    { name: "ruleCode", label: "Rule Code", type: "text", required: true },
+    { name: "targetType", label: "Target Type", type: "select", required: true, options: [
+      { value: "revenue", label: "Revenue" },
+      { value: "teu", label: "TEU" },
+      { value: "new_customer", label: "New Customer" },
+      { value: "retention", label: "Retention" },
+    ]},
+    { name: "thresholdPercent", label: "Threshold %", type: "number", required: true },
+    { name: "commissionRate", label: "Commission Rate", type: "number", required: true },
+    { name: "bonusAmount", label: "Bonus Amount", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "cappedAt", label: "Capped At", type: "number" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "appliesTo", label: "Applies To", type: "select", options: [
+      { value: "all", label: "All" },
+      { value: "individual", label: "Individual" },
+      { value: "team", label: "Team" },
+      { value: "region", label: "Region" },
+    ]},
+    { name: "region", label: "Region", type: "text" },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "isActive", label: "Is Active", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

@@ -7,16 +7,7 @@ import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { exchangeRates } from "@/db/schema";
 import { MdmForm } from "@/components/master-data-management/mdm-form";
-
-const EXCHANGE_RATE_FIELDS = [
-  { name: "baseCurrency", label: "Base Currency", type: "text" as const, required: true, placeholder: "USD" },
-  { name: "targetCurrency", label: "Target Currency", type: "text" as const, required: true, placeholder: "QAR" },
-  { name: "rate", label: "Rate", type: "text" as const, required: true },
-  { name: "inverseRate", label: "Inverse Rate", type: "text" as const },
-  { name: "source", label: "Source", type: "text" as const, placeholder: "manual" },
-  { name: "effectiveDate", label: "Effective Date", type: "date" as const, required: true },
-  { name: "validUntil", label: "Valid Until", type: "date" as const },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditExchangeRatePage({
   params,
@@ -29,6 +20,17 @@ export default async function EditExchangeRatePage({
   if (!(await hasPermission(session.id, session.tenantId, "masterdata:edit")))
     redirect("/master-data-management/exchange-rates");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const EXCHANGE_RATE_FIELDS = [
+    { name: "baseCurrency", label: "Base Currency", type: "select" as const, options: currencyOpts, required: true },
+    { name: "targetCurrency", label: "Target Currency", type: "select" as const, options: currencyOpts, required: true },
+    { name: "rate", label: "Rate", type: "text" as const, required: true },
+    { name: "inverseRate", label: "Inverse Rate", type: "text" as const },
+    { name: "source", label: "Source", type: "text" as const, placeholder: "manual" },
+    { name: "effectiveDate", label: "Effective Date", type: "date" as const, required: true },
+    { name: "validUntil", label: "Valid Until", type: "date" as const },
+  ];
   const [rate] = await db
     .select()
     .from(exchangeRates)

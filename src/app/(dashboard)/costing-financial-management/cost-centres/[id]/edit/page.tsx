@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCostCentrePage({
   params,
@@ -19,6 +20,8 @@ export default async function EditCostCentrePage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const centre = await getCostCentre(id, session.tenantId);
   if (!centre) notFound();
@@ -46,8 +49,7 @@ export default async function EditCostCentrePage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "annualBudget", label: "Annual Budget", type: "number" },
     { name: "isActive", label: "Active", type: "checkbox" },

@@ -5,6 +5,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCashFlowForecast } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCashFlowForecastPage({
   params,
@@ -15,6 +16,8 @@ export default async function EditCashFlowForecastPage({
   if (!session || !(await hasPermission(session.id, session.tenantId, "receivable:edit"))) {
     redirect("/login");
   }
+
+  const currencyOpts = await getCurrencyOptions();
 
   const { id } = await params;
   const record = await getCashFlowForecast(id, session.tenantId);
@@ -28,7 +31,7 @@ export default async function EditCashFlowForecastPage({
     { name: "forecastYear", label: "Forecast Year", type: "number", required: true },
     { name: "forecastMonth", label: "Forecast Month", type: "number", required: true },
     { name: "forecastWeek", label: "Forecast Week", type: "number" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "openingBalance", label: "Opening Balance", type: "number" },
     { name: "expectedInflows", label: "Expected Inflows", type: "number" },
     { name: "confirmedInflows", label: "Confirmed Inflows", type: "number" },

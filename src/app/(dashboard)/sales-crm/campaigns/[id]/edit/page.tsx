@@ -8,38 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { scmCampaigns } from "@/db/schema";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const CAMPAIGN_FIELDS: FieldConfig[] = [
-  { name: "campaignName", label: "Campaign Name", type: "text", required: true },
-  { name: "campaignCode", label: "Campaign Code", type: "text", required: true },
-  { name: "campaignType", label: "Campaign Type", type: "select", required: true, options: [
-    { value: "email", label: "Email" },
-    { value: "trade_show", label: "Trade Show" },
-    { value: "webinar", label: "Webinar" },
-    { value: "print", label: "Print" },
-    { value: "digital_ads", label: "Digital Ads" },
-    { value: "referral_program", label: "Referral Program" },
-    { value: "other", label: "Other" },
-  ]},
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "targetAudience", label: "Target Audience", type: "text" },
-  { name: "channel", label: "Channel", type: "text" },
-  { name: "budgetAmount", label: "Budget Amount", type: "number" },
-  { name: "spentAmount", label: "Spent Amount", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "startDate", label: "Start Date", type: "datetime-local", required: true },
-  { name: "endDate", label: "End Date", type: "datetime-local" },
-  { name: "region", label: "Region", type: "text" },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "draft", label: "Draft" },
-    { value: "active", label: "Active" },
-    { value: "paused", label: "Paused" },
-    { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCampaignPage({
   params,
@@ -51,6 +20,39 @@ export default async function EditCampaignPage({
   if (!(await hasPermission(session.id, session.tenantId, "sales:edit")))
     redirect("/sales-crm");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CAMPAIGN_FIELDS: FieldConfig[] = [
+    { name: "campaignName", label: "Campaign Name", type: "text", required: true },
+    { name: "campaignCode", label: "Campaign Code", type: "text", required: true },
+    { name: "campaignType", label: "Campaign Type", type: "select", required: true, options: [
+      { value: "email", label: "Email" },
+      { value: "trade_show", label: "Trade Show" },
+      { value: "webinar", label: "Webinar" },
+      { value: "print", label: "Print" },
+      { value: "digital_ads", label: "Digital Ads" },
+      { value: "referral_program", label: "Referral Program" },
+      { value: "other", label: "Other" },
+    ]},
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "targetAudience", label: "Target Audience", type: "text" },
+    { name: "channel", label: "Channel", type: "text" },
+    { name: "budgetAmount", label: "Budget Amount", type: "number" },
+    { name: "spentAmount", label: "Spent Amount", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "startDate", label: "Start Date", type: "datetime-local", required: true },
+    { name: "endDate", label: "End Date", type: "datetime-local" },
+    { name: "region", label: "Region", type: "text" },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "draft", label: "Draft" },
+      { value: "active", label: "Active" },
+      { value: "paused", label: "Paused" },
+      { value: "completed", label: "Completed" },
+      { value: "cancelled", label: "Cancelled" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

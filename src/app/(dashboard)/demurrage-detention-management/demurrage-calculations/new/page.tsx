@@ -5,53 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { DdmForm } from "@/components/demurrage-detention-management/ddm-form";
 import type { FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
-
-const CALCULATION_FIELDS: FieldConfig[] = [
-  { name: "containerNumber", label: "Container Number", type: "text", required: true },
-  {
-    name: "containerSize",
-    label: "Container Size",
-    type: "select",
-    required: true,
-    options: [
-      { value: "20", label: "20" },
-      { value: "40", label: "40" },
-      { value: "40HC", label: "40HC" },
-      { value: "45", label: "45" },
-    ],
-  },
-  {
-    name: "containerType",
-    label: "Container Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "dry", label: "Dry" },
-      { value: "reefer", label: "Reefer" },
-      { value: "open_top", label: "Open Top" },
-      { value: "flat_rack", label: "Flat Rack" },
-      { value: "tank", label: "Tank" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "blNumber", label: "BL Number", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  { name: "portCountry", label: "Port Country", type: "text" },
-  { name: "terminalName", label: "Terminal Name", type: "text" },
-  { name: "dischargeDate", label: "Discharge Date", type: "datetime-local", required: true },
-  { name: "gateOutDate", label: "Gate Out Date", type: "datetime-local" },
-  { name: "freeTimeDays", label: "Free Time Days", type: "number", required: true },
-  { name: "freeTimeExpiry", label: "Free Time Expiry", type: "datetime-local", required: true },
-  { name: "demurrageDays", label: "Demurrage Days", type: "number" },
-  { name: "dailyRate", label: "Daily Rate", type: "text", required: true },
-  { name: "totalAmount", label: "Total Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "tariffName", label: "Tariff Name", type: "text" },
-  { name: "autoCalculated", label: "Auto Calculated", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewDemurrageCalculationPage() {
   const session = await getSession();
@@ -60,6 +14,59 @@ export default async function NewDemurrageCalculationPage() {
     !(await hasPermission(session.id, session.tenantId, "demurrage:create"))
   )
     redirect("/demurrage-detention-management/demurrage-calculations");
+
+  const [portOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const CALCULATION_FIELDS: FieldConfig[] = [
+    { name: "containerNumber", label: "Container Number", type: "text", required: true },
+    {
+      name: "containerSize",
+      label: "Container Size",
+      type: "select",
+      required: true,
+      options: [
+        { value: "20", label: "20" },
+        { value: "40", label: "40" },
+        { value: "40HC", label: "40HC" },
+        { value: "45", label: "45" },
+      ],
+    },
+    {
+      name: "containerType",
+      label: "Container Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "dry", label: "Dry" },
+        { value: "reefer", label: "Reefer" },
+        { value: "open_top", label: "Open Top" },
+        { value: "flat_rack", label: "Flat Rack" },
+        { value: "tank", label: "Tank" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "blNumber", label: "BL Number", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    { name: "portCountry", label: "Port Country", type: "text" },
+    { name: "terminalName", label: "Terminal Name", type: "text" },
+    { name: "dischargeDate", label: "Discharge Date", type: "datetime-local", required: true },
+    { name: "gateOutDate", label: "Gate Out Date", type: "datetime-local" },
+    { name: "freeTimeDays", label: "Free Time Days", type: "number", required: true },
+    { name: "freeTimeExpiry", label: "Free Time Expiry", type: "datetime-local", required: true },
+    { name: "demurrageDays", label: "Demurrage Days", type: "number" },
+    { name: "dailyRate", label: "Daily Rate", type: "text", required: true },
+    { name: "totalAmount", label: "Total Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "tariffName", label: "Tariff Name", type: "text" },
+    { name: "autoCalculated", label: "Auto Calculated", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

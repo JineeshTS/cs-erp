@@ -5,34 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getFreightContract } from "@/lib/liner-revenue-management/service";
 import { LrmForm, type FieldConfig } from "@/components/liner-revenue-management/lrm-form";
-
-const FREIGHT_CONTRACT_FIELDS: FieldConfig[] = [
-  {
-    name: "contractType",
-    label: "Contract Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "spot_rate", label: "Spot Rate" },
-      { value: "long_term", label: "Long Term" },
-      { value: "ffa_settlement", label: "FFA Settlement" },
-      { value: "index_linked", label: "Index Linked" },
-      { value: "hybrid_contract", label: "Hybrid Contract" },
-    ],
-  },
-  { name: "counterparty", label: "Counterparty", type: "text" },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "contractedRate", label: "Contracted Rate", type: "text" },
-  { name: "spotRate", label: "Spot Rate", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "volumeTeu", label: "Volume TEU", type: "number" },
-  { name: "startDate", label: "Start Date", type: "datetime-local" },
-  { name: "endDate", label: "End Date", type: "datetime-local" },
-  { name: "settlementBasis", label: "Settlement Basis", type: "text" },
-  { name: "indexReference", label: "Index Reference", type: "text" },
-  { name: "markToMarketValue", label: "Mark to Market Value", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditFreightContractPage({
   params,
@@ -44,6 +17,35 @@ export default async function EditFreightContractPage({
   if (!(await hasPermission(session.id, session.tenantId, "lrm:edit")))
     redirect("/liner-revenue-management/freight-contracts");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const FREIGHT_CONTRACT_FIELDS: FieldConfig[] = [
+    {
+      name: "contractType",
+      label: "Contract Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "spot_rate", label: "Spot Rate" },
+        { value: "long_term", label: "Long Term" },
+        { value: "ffa_settlement", label: "FFA Settlement" },
+        { value: "index_linked", label: "Index Linked" },
+        { value: "hybrid_contract", label: "Hybrid Contract" },
+      ],
+    },
+    { name: "counterparty", label: "Counterparty", type: "text" },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "contractedRate", label: "Contracted Rate", type: "text" },
+    { name: "spotRate", label: "Spot Rate", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "volumeTeu", label: "Volume TEU", type: "number" },
+    { name: "startDate", label: "Start Date", type: "datetime-local" },
+    { name: "endDate", label: "End Date", type: "datetime-local" },
+    { name: "settlementBasis", label: "Settlement Basis", type: "text" },
+    { name: "indexReference", label: "Index Reference", type: "text" },
+    { name: "markToMarketValue", label: "Mark to Market Value", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getFreightContract(id, session.tenantId);

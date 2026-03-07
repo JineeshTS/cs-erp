@@ -1,0 +1,61 @@
+{
+  "node_type": "decision",
+  "id": "D-002",
+  "name": "Master Data Wiring Strategy for All Forms",
+  "created_at": "2026-03-07",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "F-002", "relationship_type": "informs" },
+    { "target_id": "F-003", "relationship_type": "informs" }
+  ],
+  "content": {
+    "topic": "Form Fields Disconnected from Master Data Tables",
+    "decision": "Create a shared lookups module with server-side query functions for all master data types. Each form page (server component) fetches options at render time and passes them to the client form component. No new API routes needed — direct DB queries in server components.",
+    "rationale": "60+ form pages use plain text inputs or hardcoded enums for fields that should be dropdowns from master data tables (mdm_ports, mdm_customers, mdm_vessels, mdm_container_types, mdm_commodities, mdm_terminals). The master data tables exist with real data, the form components already support select fields, but the wiring is missing. Server-side fetching avoids permission complexity (no need for portal users to have masterdata:read).",
+    "alternatives_considered": [
+      "Client-side API calls to existing MDM endpoints — requires granting masterdata:read to all users or creating duplicate endpoints with different permissions",
+      "Shared React context with cached master data — adds client complexity, hydration issues with server components",
+      "Inline DB queries in each page — duplicates query logic across 60+ files",
+      "Centralized lookup module (CHOSEN) — single source of truth, reusable across all modules, server-side only"
+    ],
+    "impacts": [
+      "New file: src/lib/lookups.ts with ~10 lookup functions",
+      "60+ form pages updated to import lookups and pass options to form components",
+      "Validation schemas relaxed from hardcoded enums to string where needed",
+      "Data integrity improves — users select from valid options instead of typing",
+      "No new API routes or permissions needed"
+    ],
+    "scope": {
+      "lookup_functions_needed": [
+        { "name": "getPortOptions", "table": "mdm_ports", "returns": "unLocode + name", "exists": true },
+        { "name": "getCustomerOptions", "table": "mdm_customers", "returns": "name + shortName", "exists": true },
+        { "name": "getContainerTypeOptions", "table": "mdm_container_types", "returns": "isoCode + description", "exists": true },
+        { "name": "getVesselOptions", "table": "mdm_vessels", "returns": "name + imoNumber", "exists": false },
+        { "name": "getCommodityOptions", "table": "mdm_commodities", "returns": "hsCode + description", "exists": false },
+        { "name": "getTerminalOptions", "table": "mdm_terminals", "returns": "name + code", "exists": false },
+        { "name": "getCurrencyOptions", "returns": "hardcoded ISO 4217 list (USD, EUR, GBP, AED, SAR, QAR, INR, etc.)", "exists": false },
+        { "name": "getCountryOptions", "returns": "hardcoded ISO 3166-1 alpha-2 list", "exists": false }
+      ],
+      "modules_affected": [
+        { "module": "customer-portal", "forms": 2, "status": "DONE (F-002)" },
+        { "module": "sales-crm", "forms": 5, "fields": ["customerId", "originPort", "destinationPort", "currency", "tradeLane"] },
+        { "module": "chartering-vessel-management", "forms": 4, "fields": ["vesselName", "counterpartyName", "originPort", "destinationPort", "currency"] },
+        { "module": "bunker-fuel-management", "forms": 3, "fields": ["vesselName", "supplierName", "port", "currency"] },
+        { "module": "cargo-claims-management", "forms": 2, "fields": ["vesselName", "portOfLoading", "portOfDischarge", "currency"] },
+        { "module": "container-leasing-management", "forms": 2, "fields": ["containerType", "containerSize", "pickupLocation", "dropoffLocation"] },
+        { "module": "dangerous-goods-management", "forms": 2, "fields": ["vesselName", "portOfLoading", "portOfDischarge"] },
+        { "module": "demurrage-detention-management", "forms": 3, "fields": ["customerName", "depotName", "depotLocation"] },
+        { "module": "freight-invoice-revenue-management", "forms": 3, "fields": ["chargeCode", "containerType", "currency"] },
+        { "module": "integration-edi-layer", "forms": 2, "fields": ["portCode", "hsCode", "countryCode"] },
+        { "module": "oog-special-cargo-management", "forms": 2, "fields": ["customerName", "originPort", "destinationPort", "vesselName"] },
+        { "module": "port-tariff-terminal-billing", "forms": 3, "fields": ["portCode", "portName", "vesselName", "currency"] },
+        { "module": "schedule-voyage-planning", "forms": 2, "fields": ["portCode", "portName", "terminalName"] },
+        { "module": "master-data-management", "forms": 3, "fields": ["country", "currency"] }
+      ],
+      "total_forms_to_update": 36,
+      "priority_order": "P1: sales-crm, chartering, bunker (high-use modules). P2: remaining operational modules. P3: admin/master-data modules."
+    }
+  }
+}

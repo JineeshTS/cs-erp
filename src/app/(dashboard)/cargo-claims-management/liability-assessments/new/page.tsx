@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CcmForm } from "@/components/cargo-claims-management/ccm-form";
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewLiabilityAssessmentPage() {
   const session = await getSession();
@@ -11,6 +12,8 @@ export default async function NewLiabilityAssessmentPage() {
   if (!(await hasPermission(session.id, session.tenantId, "ccm:create")))
     redirect("/");
 
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
   const fields = [
     {
       name: "assessmentType",
@@ -25,7 +28,7 @@ export default async function NewLiabilityAssessmentPage() {
       ],
     },
     { name: "claimId", label: "Claim ID", type: "text" as const },
-    { name: "vesselName", label: "Vessel Name", type: "text" as const },
+    { name: "vesselName", label: "Vessel Name", type: "select" as const, options: vesselOpts },
     {
       name: "applicableConvention",
       label: "Applicable Convention",

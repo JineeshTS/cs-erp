@@ -6,56 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getSurveyTracking } from "@/lib/vessel-technical-management/service";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const fields: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "surveyType",
-    label: "Survey Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual", label: "Annual" },
-      { value: "intermediate", label: "Intermediate" },
-      { value: "special", label: "Special" },
-      { value: "renewal", label: "Renewal" },
-      { value: "docking", label: "Docking" },
-      { value: "bottom", label: "Bottom" },
-      { value: "class_renewal", label: "Class Renewal" },
-      { value: "flag_state", label: "Flag State" },
-    ],
-  },
-  {
-    name: "surveyAuthority",
-    label: "Survey Authority",
-    type: "text",
-    required: true,
-  },
-  { name: "surveyorName", label: "Surveyor Name", type: "text" },
-  {
-    name: "dueDate",
-    label: "Due Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "windowStartDate", label: "Window Start Date", type: "datetime-local" },
-  { name: "windowEndDate", label: "Window End Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "certificateName", label: "Certificate Name", type: "text" },
-  { name: "certificateNumber", label: "Certificate Number", type: "text" },
-  { name: "issuedBy", label: "Issued By", type: "text" },
-  {
-    name: "remediationRequired",
-    label: "Remediation Required",
-    type: "checkbox",
-  },
-  {
-    name: "remediationDeadline",
-    label: "Remediation Deadline",
-    type: "datetime-local",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditSurveyTrackingPage({
   params,
@@ -66,6 +17,58 @@ export default async function EditSurveyTrackingPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:edit")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "surveyType",
+      label: "Survey Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual", label: "Annual" },
+        { value: "intermediate", label: "Intermediate" },
+        { value: "special", label: "Special" },
+        { value: "renewal", label: "Renewal" },
+        { value: "docking", label: "Docking" },
+        { value: "bottom", label: "Bottom" },
+        { value: "class_renewal", label: "Class Renewal" },
+        { value: "flag_state", label: "Flag State" },
+      ],
+    },
+    {
+      name: "surveyAuthority",
+      label: "Survey Authority",
+      type: "text",
+      required: true,
+    },
+    { name: "surveyorName", label: "Surveyor Name", type: "text" },
+    {
+      name: "dueDate",
+      label: "Due Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "windowStartDate", label: "Window Start Date", type: "datetime-local" },
+    { name: "windowEndDate", label: "Window End Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "certificateName", label: "Certificate Name", type: "text" },
+    { name: "certificateNumber", label: "Certificate Number", type: "text" },
+    { name: "issuedBy", label: "Issued By", type: "text" },
+    {
+      name: "remediationRequired",
+      label: "Remediation Required",
+      type: "checkbox",
+    },
+    {
+      name: "remediationDeadline",
+      label: "Remediation Deadline",
+      type: "datetime-local",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getSurveyTracking(id, session.tenantId);

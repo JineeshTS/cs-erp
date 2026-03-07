@@ -8,27 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { scmAccountPlans } from "@/db/schema";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const ACCOUNT_PLAN_FIELDS: FieldConfig[] = [
-  { name: "customerId", label: "Customer ID", type: "text", required: true, placeholder: "UUID of the customer" },
-  { name: "planName", label: "Plan Name", type: "text", required: true },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number", required: true },
-  { name: "accountManagerId", label: "Account Manager ID", type: "text", required: true, placeholder: "UUID of the account manager" },
-  { name: "revenueTargetAmount", label: "Revenue Target", type: "number" },
-  { name: "teuTarget", label: "TEU Target", type: "number" },
-  { name: "retentionStrategy", label: "Retention Strategy", type: "textarea" },
-  { name: "growthStrategy", label: "Growth Strategy", type: "textarea" },
-  { name: "riskAssessment", label: "Risk Assessment", type: "textarea" },
-  { name: "competitiveAnalysis", label: "Competitive Analysis", type: "textarea" },
-  { name: "reviewDate", label: "Review Date", type: "date" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "draft", label: "Draft" },
-    { value: "active", label: "Active" },
-    { value: "reviewed", label: "Reviewed" },
-    { value: "archived", label: "Archived" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditAccountPlanPage({
   params,
@@ -40,6 +20,28 @@ export default async function EditAccountPlanPage({
   if (!(await hasPermission(session.id, session.tenantId, "sales:edit")))
     redirect("/sales-crm");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const ACCOUNT_PLAN_FIELDS: FieldConfig[] = [
+    { name: "customerId", label: "Customer ID", type: "select", options: customerOpts, required: true },
+    { name: "planName", label: "Plan Name", type: "text", required: true },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number", required: true },
+    { name: "accountManagerId", label: "Account Manager ID", type: "text", required: true, placeholder: "UUID of the account manager" },
+    { name: "revenueTargetAmount", label: "Revenue Target", type: "number" },
+    { name: "teuTarget", label: "TEU Target", type: "number" },
+    { name: "retentionStrategy", label: "Retention Strategy", type: "textarea" },
+    { name: "growthStrategy", label: "Growth Strategy", type: "textarea" },
+    { name: "riskAssessment", label: "Risk Assessment", type: "textarea" },
+    { name: "competitiveAnalysis", label: "Competitive Analysis", type: "textarea" },
+    { name: "reviewDate", label: "Review Date", type: "date" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "draft", label: "Draft" },
+      { value: "active", label: "Active" },
+      { value: "reviewed", label: "Reviewed" },
+      { value: "archived", label: "Archived" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

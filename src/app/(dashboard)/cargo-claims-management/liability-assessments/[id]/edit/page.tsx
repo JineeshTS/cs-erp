@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getLiabilityAssessment } from "@/lib/cargo-claims-management/service";
 import { CcmForm } from "@/components/cargo-claims-management/ccm-form";
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditLiabilityAssessmentPage({
   params,
@@ -16,6 +17,8 @@ export default async function EditLiabilityAssessmentPage({
   if (!(await hasPermission(session.id, session.tenantId, "ccm:edit")))
     redirect("/");
 
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
   const { id } = await params;
   const record = await getLiabilityAssessment(id, session.tenantId);
   if (!record) notFound();
@@ -34,7 +37,7 @@ export default async function EditLiabilityAssessmentPage({
       ],
     },
     { name: "claimId", label: "Claim ID", type: "text" as const },
-    { name: "vesselName", label: "Vessel Name", type: "text" as const },
+    { name: "vesselName", label: "Vessel Name", type: "select" as const, options: vesselOpts },
     {
       name: "applicableConvention",
       label: "Applicable Convention",

@@ -8,34 +8,7 @@ import {
   FirmForm,
   type FieldConfig,
 } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const LINE_ITEM_FIELDS: FieldConfig[] = [
-  { name: "invoiceId", label: "Invoice ID", type: "text", required: true },
-  { name: "lineNumber", label: "Line Number", type: "number", required: true },
-  { name: "chargeCode", label: "Charge Code", type: "text", required: true },
-  {
-    name: "description",
-    label: "Description",
-    type: "textarea",
-    required: true,
-  },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "quantity", label: "Quantity", type: "number" },
-  { name: "unitPrice", label: "Unit Price", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "amount", label: "Amount", type: "number", required: true },
-  { name: "taxRate", label: "Tax Rate", type: "number" },
-  { name: "taxAmount", label: "Tax Amount", type: "number" },
-  {
-    name: "totalAmount",
-    label: "Total Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "tariffRef", label: "Tariff Ref", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditInvoiceLineItemPage({
   params,
@@ -47,6 +20,35 @@ export default async function EditInvoiceLineItemPage({
   if (!(await hasPermission(session.id, session.tenantId, "invoice:edit")))
     redirect("/freight-invoice-revenue-management/invoice-line-items");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const LINE_ITEM_FIELDS: FieldConfig[] = [
+    { name: "invoiceId", label: "Invoice ID", type: "text", required: true },
+    { name: "lineNumber", label: "Line Number", type: "number", required: true },
+    { name: "chargeCode", label: "Charge Code", type: "text", required: true },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      required: true,
+    },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "unitPrice", label: "Unit Price", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "amount", label: "Amount", type: "number", required: true },
+    { name: "taxRate", label: "Tax Rate", type: "number" },
+    { name: "taxAmount", label: "Tax Amount", type: "number" },
+    {
+      name: "totalAmount",
+      label: "Total Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "tariffRef", label: "Tariff Ref", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const lineItem = await getInvoiceLineItem(id, session.tenantId);

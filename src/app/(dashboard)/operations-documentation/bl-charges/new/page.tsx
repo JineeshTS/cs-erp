@@ -5,20 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { OdmForm } from "@/components/operations-documentation/odm-form";
 import type { FieldConfig } from "@/components/operations-documentation/odm-form";
-
-const CHARGE_FIELDS: FieldConfig[] = [
-  { name: "blId", label: "BL ID", type: "text", required: true },
-  { name: "chargeCode", label: "Charge Code", type: "text", required: true },
-  { name: "chargeName", label: "Charge Name", type: "text", required: true },
-  { name: "chargeType", label: "Charge Type", type: "text", required: true },
-  { name: "amount", label: "Amount", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "prepaidCollect", label: "Prepaid/Collect", type: "select", options: [
-    { value: "prepaid", label: "Prepaid" },
-    { value: "collect", label: "Collect" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewBlChargePage() {
   const session = await getSession();
@@ -26,6 +13,21 @@ export default async function NewBlChargePage() {
   if (!(await hasPermission(session.id, session.tenantId, "operations:create")))
     redirect("/operations-documentation/bl-charges");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CHARGE_FIELDS: FieldConfig[] = [
+    { name: "blId", label: "BL ID", type: "text", required: true },
+    { name: "chargeCode", label: "Charge Code", type: "text", required: true },
+    { name: "chargeName", label: "Charge Name", type: "text", required: true },
+    { name: "chargeType", label: "Charge Type", type: "text", required: true },
+    { name: "amount", label: "Amount", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "prepaidCollect", label: "Prepaid/Collect", type: "select", options: [
+      { value: "prepaid", label: "Prepaid" },
+      { value: "collect", label: "Collect" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

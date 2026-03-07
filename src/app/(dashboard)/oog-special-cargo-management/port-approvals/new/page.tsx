@@ -5,50 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { OogForm } from "@/components/oog-special-cargo-management/oog-form";
 import type { FieldConfig } from "@/components/oog-special-cargo-management/oog-form";
-
-const PORT_APPROVAL_FIELDS: FieldConfig[] = [
-  { name: "acceptanceRef", label: "Acceptance Ref", type: "text" },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  {
-    name: "portAuthority",
-    label: "Port Authority",
-    type: "text",
-    required: true,
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text" },
-  {
-    name: "approvalType",
-    label: "Approval Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "loading", label: "Loading" },
-      { value: "discharge", label: "Discharge" },
-      { value: "transit", label: "Transit" },
-      { value: "storage", label: "Storage" },
-      { value: "transport", label: "Transport" },
-    ],
-  },
-  { name: "submittedAt", label: "Submitted At", type: "datetime-local" },
-  { name: "submittedByName", label: "Submitted By", type: "text" },
-  { name: "applicationNumber", label: "Application Number", type: "text" },
-  { name: "approvedAt", label: "Approved At", type: "datetime-local" },
-  {
-    name: "approvedByAuthority",
-    label: "Approved By Authority",
-    type: "text",
-  },
-  { name: "rejectionReason", label: "Rejection Reason", type: "textarea" },
-  { name: "validFrom", label: "Valid From", type: "datetime-local" },
-  { name: "validTo", label: "Valid To", type: "datetime-local" },
-  { name: "fees", label: "Fees", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewPortApprovalPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -57,6 +14,56 @@ export default async function NewPortApprovalPage(): Promise<React.ReactNode> {
     !(await hasPermission(session.id, session.tenantId, "oog_special:create"))
   )
     redirect("/oog-special-cargo-management/port-approvals");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const PORT_APPROVAL_FIELDS: FieldConfig[] = [
+    { name: "acceptanceRef", label: "Acceptance Ref", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    {
+      name: "portAuthority",
+      label: "Port Authority",
+      type: "text",
+      required: true,
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text" },
+    {
+      name: "approvalType",
+      label: "Approval Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "loading", label: "Loading" },
+        { value: "discharge", label: "Discharge" },
+        { value: "transit", label: "Transit" },
+        { value: "storage", label: "Storage" },
+        { value: "transport", label: "Transport" },
+      ],
+    },
+    { name: "submittedAt", label: "Submitted At", type: "datetime-local" },
+    { name: "submittedByName", label: "Submitted By", type: "text" },
+    { name: "applicationNumber", label: "Application Number", type: "text" },
+    { name: "approvedAt", label: "Approved At", type: "datetime-local" },
+    {
+      name: "approvedByAuthority",
+      label: "Approved By Authority",
+      type: "text",
+    },
+    { name: "rejectionReason", label: "Rejection Reason", type: "textarea" },
+    { name: "validFrom", label: "Valid From", type: "datetime-local" },
+    { name: "validTo", label: "Valid To", type: "datetime-local" },
+    { name: "fees", label: "Fees", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

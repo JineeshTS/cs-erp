@@ -5,67 +5,74 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "surchargeCode", label: "Surcharge Code", type: "text", required: true },
-  { name: "surchargeName", label: "Surcharge Name", type: "text", required: true },
-  {
-    name: "surchargeType",
-    label: "Surcharge Type",
-    type: "select",
-    options: [
-      { label: "BAF", value: "baf" },
-      { label: "CAF", value: "caf" },
-      { label: "PSS", value: "pss" },
-      { label: "EFS", value: "efs" },
-      { label: "War Risk", value: "war_risk" },
-      { label: "Piracy", value: "piracy" },
-      { label: "Congestion", value: "congestion" },
-      { label: "Low Sulphur", value: "low_sulphur" },
-      { label: "Other", value: "other" },
-    ],
-  },
-  {
-    name: "calculationBasis",
-    label: "Calculation Basis",
-    type: "select",
-    options: [
-      { label: "Fixed", value: "fixed" },
-      { label: "Percentage", value: "percentage" },
-      { label: "Per TEU", value: "per_teu" },
-      { label: "Per Container", value: "per_container" },
-      { label: "Per B/L", value: "per_bl" },
-    ],
-  },
-  { name: "amount", label: "Amount", type: "number" },
-  { name: "percentage", label: "Percentage", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "e.g. USD" },
-  {
-    name: "applicableTo",
-    label: "Applicable To",
-    type: "select",
-    options: [
-      { label: "All", value: "all" },
-      { label: "Import", value: "import" },
-      { label: "Export", value: "export" },
-      { label: "Transhipment", value: "transhipment" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "originPort", label: "Origin Port", type: "text" },
-  { name: "destinationPort", label: "Destination Port", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "isMandatory", label: "Mandatory", type: "checkbox" },
-  { name: "isActive", label: "Active", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewSurchargePage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    { name: "surchargeCode", label: "Surcharge Code", type: "text", required: true },
+    { name: "surchargeName", label: "Surcharge Name", type: "text", required: true },
+    {
+      name: "surchargeType",
+      label: "Surcharge Type",
+      type: "select",
+      options: [
+        { label: "BAF", value: "baf" },
+        { label: "CAF", value: "caf" },
+        { label: "PSS", value: "pss" },
+        { label: "EFS", value: "efs" },
+        { label: "War Risk", value: "war_risk" },
+        { label: "Piracy", value: "piracy" },
+        { label: "Congestion", value: "congestion" },
+        { label: "Low Sulphur", value: "low_sulphur" },
+        { label: "Other", value: "other" },
+      ],
+    },
+    {
+      name: "calculationBasis",
+      label: "Calculation Basis",
+      type: "select",
+      options: [
+        { label: "Fixed", value: "fixed" },
+        { label: "Percentage", value: "percentage" },
+        { label: "Per TEU", value: "per_teu" },
+        { label: "Per Container", value: "per_container" },
+        { label: "Per B/L", value: "per_bl" },
+      ],
+    },
+    { name: "amount", label: "Amount", type: "number" },
+    { name: "percentage", label: "Percentage", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "applicableTo",
+      label: "Applicable To",
+      type: "select",
+      options: [
+        { label: "All", value: "all" },
+        { label: "Import", value: "import" },
+        { label: "Export", value: "export" },
+        { label: "Transhipment", value: "transhipment" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "isMandatory", label: "Mandatory", type: "checkbox" },
+    { name: "isActive", label: "Active", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   return (

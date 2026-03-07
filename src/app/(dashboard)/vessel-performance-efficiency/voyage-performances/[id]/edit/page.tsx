@@ -6,54 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getVoyagePerformance } from "@/lib/vessel-performance-efficiency/service";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const VOYAGE_PERFORMANCE_FIELDS: FieldConfig[] = [
-  {
-    name: "performanceType",
-    label: "Performance Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "cp_compliance", label: "CP Compliance" },
-      { value: "speed_claim", label: "Speed Claim" },
-      { value: "consumption_claim", label: "Consumption Claim" },
-      { value: "weather_routing", label: "Weather Routing" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageId", label: "Voyage ID", type: "text" },
-  { name: "charterPartyId", label: "Charter Party ID", type: "text" },
-  { name: "cpSpeed", label: "CP Speed", type: "text" },
-  { name: "actualSpeed", label: "Actual Speed", type: "text" },
-  { name: "speedVariance", label: "Speed Variance", type: "text" },
-  { name: "cpConsumption", label: "CP Consumption", type: "text" },
-  { name: "actualConsumption", label: "Actual Consumption", type: "text" },
-  {
-    name: "consumptionVariance",
-    label: "Consumption Variance",
-    type: "text",
-  },
-  { name: "goodWeatherDays", label: "Good Weather Days", type: "text" },
-  { name: "badWeatherDays", label: "Bad Weather Days", type: "text" },
-  { name: "claimAmount", label: "Claim Amount", type: "text" },
-  {
-    name: "claimCurrency",
-    label: "Claim Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "claimDirection",
-    label: "Claim Direction",
-    type: "select",
-    options: [
-      { value: "owner_claim", label: "Owner Claim" },
-      { value: "charterer_claim", label: "Charterer Claim" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditVoyagePerformancePage({
   params,
@@ -64,6 +17,58 @@ export default async function EditVoyagePerformancePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "vpe:edit")))
     redirect("/vessel-performance-efficiency/voyage-performances");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const VOYAGE_PERFORMANCE_FIELDS: FieldConfig[] = [
+    {
+      name: "performanceType",
+      label: "Performance Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "cp_compliance", label: "CP Compliance" },
+        { value: "speed_claim", label: "Speed Claim" },
+        { value: "consumption_claim", label: "Consumption Claim" },
+        { value: "weather_routing", label: "Weather Routing" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageId", label: "Voyage ID", type: "text" },
+    { name: "charterPartyId", label: "Charter Party ID", type: "text" },
+    { name: "cpSpeed", label: "CP Speed", type: "text" },
+    { name: "actualSpeed", label: "Actual Speed", type: "text" },
+    { name: "speedVariance", label: "Speed Variance", type: "text" },
+    { name: "cpConsumption", label: "CP Consumption", type: "text" },
+    { name: "actualConsumption", label: "Actual Consumption", type: "text" },
+    {
+      name: "consumptionVariance",
+      label: "Consumption Variance",
+      type: "text",
+    },
+    { name: "goodWeatherDays", label: "Good Weather Days", type: "text" },
+    { name: "badWeatherDays", label: "Bad Weather Days", type: "text" },
+    { name: "claimAmount", label: "Claim Amount", type: "text" },
+    {
+      name: "claimCurrency",
+      label: "Claim Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "claimDirection",
+      label: "Claim Direction",
+      type: "select",
+      options: [
+        { value: "owner_claim", label: "Owner Claim" },
+        { value: "charterer_claim", label: "Charterer Claim" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

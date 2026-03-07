@@ -1,0 +1,31 @@
+{
+  "node_type": "decision",
+  "id": "D-001",
+  "name": "Simplified Category Sidebar + Hub Pages",
+  "created_at": "2026-03-07",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "F-001", "relationship_type": "informs" }
+  ],
+  "content": {
+    "topic": "Navigation UX — Sidebar Overload",
+    "decision": "Replace 48-group / 200+ item collapsible sidebar with 10-category flat list. Each category links to a hub page showing permission-filtered module cards in a grid.",
+    "rationale": "The sidebar had become unusable — 48 collapsible groups, 130+ icon imports, 951 lines. Users couldn't find modules. A flat category list with hub pages gives a clean 2-click navigation pattern: category → module.",
+    "alternatives_considered": [
+      "Keep collapsible groups but collapse all by default — still 200+ items when expanded",
+      "Search-based nav (command palette) — not discoverable for new users",
+      "Mega-menu dropdown on hover — bad on mobile, complex to implement",
+      "Category sidebar with expandable sub-items — intermediate complexity, chose simpler hub pages instead"
+    ],
+    "impacts": [
+      "Sidebar reduced from 951 → 66 lines",
+      "10 category icons replace 130+ icon imports",
+      "9 new hub route pages created",
+      "All existing module pages untouched — bookmarked URLs still work",
+      "Dashboard quick actions updated to link to hub routes"
+    ],
+    "implementation_commit": "6281d98"
+  }
+}

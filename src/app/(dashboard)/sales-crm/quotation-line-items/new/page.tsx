@@ -5,36 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const LINE_ITEM_FIELDS: FieldConfig[] = [
-  { name: "quotationId", label: "Quotation ID", type: "text", required: true, placeholder: "UUID of the quotation" },
-  { name: "chargeCode", label: "Charge Code", type: "text", required: true },
-  { name: "chargeName", label: "Charge Name", type: "text", required: true },
-  { name: "chargeType", label: "Charge Type", type: "select", required: true, options: [
-    { value: "ocean_freight", label: "Ocean Freight" },
-    { value: "thc", label: "THC" },
-    { value: "documentation", label: "Documentation" },
-    { value: "customs", label: "Customs" },
-    { value: "inland", label: "Inland" },
-    { value: "surcharge", label: "Surcharge" },
-    { value: "other", label: "Other" },
-  ]},
-  { name: "basis", label: "Basis", type: "select", required: true, options: [
-    { value: "per_container", label: "Per Container" },
-    { value: "per_teu", label: "Per TEU" },
-    { value: "per_bl", label: "Per B/L" },
-    { value: "per_shipment", label: "Per Shipment" },
-    { value: "lumpsum", label: "Lumpsum" },
-  ]},
-  { name: "unitPrice", label: "Unit Price", type: "number", required: true },
-  { name: "quantity", label: "Quantity", type: "number" },
-  { name: "totalPrice", label: "Total Price", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "isMandatory", label: "Mandatory", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewQuotationLineItemPage({
   searchParams,
@@ -46,6 +17,37 @@ export default async function NewQuotationLineItemPage({
   if (!(await hasPermission(session.id, session.tenantId, "sales:create")))
     redirect("/sales-crm");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const LINE_ITEM_FIELDS: FieldConfig[] = [
+    { name: "quotationId", label: "Quotation ID", type: "text", required: true, placeholder: "UUID of the quotation" },
+    { name: "chargeCode", label: "Charge Code", type: "text", required: true },
+    { name: "chargeName", label: "Charge Name", type: "text", required: true },
+    { name: "chargeType", label: "Charge Type", type: "select", required: true, options: [
+      { value: "ocean_freight", label: "Ocean Freight" },
+      { value: "thc", label: "THC" },
+      { value: "documentation", label: "Documentation" },
+      { value: "customs", label: "Customs" },
+      { value: "inland", label: "Inland" },
+      { value: "surcharge", label: "Surcharge" },
+      { value: "other", label: "Other" },
+    ]},
+    { name: "basis", label: "Basis", type: "select", required: true, options: [
+      { value: "per_container", label: "Per Container" },
+      { value: "per_teu", label: "Per TEU" },
+      { value: "per_bl", label: "Per B/L" },
+      { value: "per_shipment", label: "Per Shipment" },
+      { value: "lumpsum", label: "Lumpsum" },
+    ]},
+    { name: "unitPrice", label: "Unit Price", type: "number", required: true },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "totalPrice", label: "Total Price", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "isMandatory", label: "Mandatory", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const sp = await searchParams;
   const quotationId = sp.quotationId ?? "";
 

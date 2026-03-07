@@ -8,6 +8,7 @@ import {
   EcrForm,
   type FieldConfig,
 } from "@/components/empty-container-repositioning-ai/ecr-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditReturnIncentivePage({
   params,
@@ -19,6 +20,11 @@ export default async function EditReturnIncentivePage({
   if (!(await hasPermission(session.id, session.tenantId, "ecr:edit")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const record = await getReturnIncentive(id, session.tenantId);
   if (!record) notFound();
@@ -41,7 +47,7 @@ export default async function EditReturnIncentivePage({
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
     },
     { name: "tradeLane", label: "Trade Lane", type: "text", required: true },
@@ -63,7 +69,7 @@ export default async function EditReturnIncentivePage({
       type: "text",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts, required: true },
     {
       name: "validFrom",
       label: "Valid From",

@@ -5,37 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getDamageSurvey } from "@/lib/cargo-claims-management/service";
 import { CcmForm, type FieldConfig } from "@/components/cargo-claims-management/ccm-form";
-
-const DAMAGE_SURVEY_FIELDS: FieldConfig[] = [
-  {
-    name: "surveyType",
-    label: "Survey Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "joint_survey", label: "Joint Survey" },
-      { value: "independent_survey", label: "Independent Survey" },
-      { value: "pre_shipment", label: "Pre-Shipment" },
-      { value: "discharge_survey", label: "Discharge Survey" },
-      { value: "re_survey", label: "Re-Survey" },
-    ],
-  },
-  { name: "claimId", label: "Claim ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "surveyorName", label: "Surveyor Name", type: "text" },
-  { name: "surveyorCompany", label: "Surveyor Company", type: "text" },
-  { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
-  { name: "surveyLocation", label: "Survey Location", type: "text" },
-  { name: "damageType", label: "Damage Type", type: "text" },
-  { name: "damageExtent", label: "Damage Extent", type: "text" },
-  { name: "estimatedDamageUsd", label: "Estimated Damage (USD)", type: "text" },
-  { name: "containerCondition", label: "Container Condition", type: "text" },
-  { name: "sealCondition", label: "Seal Condition", type: "text" },
-  { name: "photosAttached", label: "Photos Attached", type: "checkbox" },
-  { name: "reportReceived", label: "Report Received", type: "checkbox" },
-  { name: "reportDate", label: "Report Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditDamageSurveyPage({
   params,
@@ -47,6 +17,38 @@ export default async function EditDamageSurveyPage({
   if (!(await hasPermission(session.id, session.tenantId, "ccm:edit")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const DAMAGE_SURVEY_FIELDS: FieldConfig[] = [
+    {
+      name: "surveyType",
+      label: "Survey Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "joint_survey", label: "Joint Survey" },
+        { value: "independent_survey", label: "Independent Survey" },
+        { value: "pre_shipment", label: "Pre-Shipment" },
+        { value: "discharge_survey", label: "Discharge Survey" },
+        { value: "re_survey", label: "Re-Survey" },
+      ],
+    },
+    { name: "claimId", label: "Claim ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "surveyorName", label: "Surveyor Name", type: "text" },
+    { name: "surveyorCompany", label: "Surveyor Company", type: "text" },
+    { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
+    { name: "surveyLocation", label: "Survey Location", type: "text" },
+    { name: "damageType", label: "Damage Type", type: "text" },
+    { name: "damageExtent", label: "Damage Extent", type: "text" },
+    { name: "estimatedDamageUsd", label: "Estimated Damage (USD)", type: "text" },
+    { name: "containerCondition", label: "Container Condition", type: "text" },
+    { name: "sealCondition", label: "Seal Condition", type: "text" },
+    { name: "photosAttached", label: "Photos Attached", type: "checkbox" },
+    { name: "reportReceived", label: "Report Received", type: "checkbox" },
+    { name: "reportDate", label: "Report Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getDamageSurvey(id, session.tenantId);
   if (!record) notFound();

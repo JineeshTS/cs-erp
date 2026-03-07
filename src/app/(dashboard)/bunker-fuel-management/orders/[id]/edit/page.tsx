@@ -8,6 +8,7 @@ import {
   BfmForm,
   type FieldConfig,
 } from "@/components/bunker-fuel-management/bfm-form";
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBunkerOrderPage({
   params,
@@ -19,22 +20,29 @@ export default async function EditBunkerOrderPage({
   if (!(await hasPermission(session.id, session.tenantId, "bunker:edit")))
     redirect("/");
 
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const order = await getBunkerOrder(id, session.tenantId);
   if (!order) notFound();
 
   const fields: FieldConfig[] = [
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
     { name: "voyageRef", label: "Voyage Ref", type: "text" },
     {
       name: "supplierName",
       label: "Supplier Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
     },
     { name: "supplierCode", label: "Supplier Code", type: "text" },
-    { name: "port", label: "Port", type: "text", required: true },
+    { name: "port", label: "Port", type: "select", options: portOpts, required: true },
     { name: "deliveryDate", label: "Delivery Date", type: "datetime-local" },
     {
       name: "fuelType",
@@ -75,8 +83,7 @@ export default async function EditBunkerOrderPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "totalAmount", label: "Total Amount", type: "number" },
     { name: "paymentTerms", label: "Payment Terms", type: "text" },

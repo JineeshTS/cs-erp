@@ -8,34 +8,7 @@ import {
   EcrForm,
   type FieldConfig,
 } from "@/components/empty-container-repositioning-ai/ecr-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "costType",
-    label: "Cost Type",
-    type: "select",
-    required: true,
-    options: [
-      { label: "Inland Transport", value: "inland_transport" },
-      { label: "Ocean Freight", value: "ocean_freight" },
-      { label: "Handling", value: "handling" },
-      { label: "Storage", value: "storage" },
-      { label: "Repair", value: "repair" },
-      { label: "Repositioning Fee", value: "repositioning_fee" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "planRef", label: "Plan Ref", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "quantity", label: "Quantity", type: "number" },
-  { name: "unitCost", label: "Unit Cost", type: "text" },
-  { name: "totalCost", label: "Total Cost", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "approvedDate", label: "Approved Date", type: "datetime-local" },
-  { name: "isApproved", label: "Is Approved", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCostTrackingPage({
   params,
@@ -46,6 +19,36 @@ export default async function EditCostTrackingPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "ecr:edit")))
     redirect("/");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    {
+      name: "costType",
+      label: "Cost Type",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Inland Transport", value: "inland_transport" },
+        { label: "Ocean Freight", value: "ocean_freight" },
+        { label: "Handling", value: "handling" },
+        { label: "Storage", value: "storage" },
+        { label: "Repair", value: "repair" },
+        { label: "Repositioning Fee", value: "repositioning_fee" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "planRef", label: "Plan Ref", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "unitCost", label: "Unit Cost", type: "text" },
+    { name: "totalCost", label: "Total Cost", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "approvedDate", label: "Approved Date", type: "datetime-local" },
+    { name: "isApproved", label: "Is Approved", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const costTracking = await getCostTracking(id, session.tenantId);

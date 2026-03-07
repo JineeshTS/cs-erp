@@ -4,58 +4,60 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CspForm, FieldConfig } from "@/components/customer-portal/csp-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "invoiceId",
-    label: "Invoice ID",
-    type: "text",
-    required: true,
-    placeholder: "Invoice UUID",
-  },
-  {
-    name: "amount",
-    label: "Amount",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "paymentMethod",
-    label: "Payment Method",
-    type: "select",
-    required: true,
-    options: [
-      { value: "credit_card", label: "Credit Card" },
-      { value: "bank_transfer", label: "Bank Transfer" },
-      { value: "wire", label: "Wire" },
-      { value: "cheque", label: "Cheque" },
-      { value: "online_banking", label: "Online Banking" },
-      { value: "letter_of_credit", label: "Letter of Credit" },
-    ],
-  },
-  {
-    name: "gatewayProvider",
-    label: "Gateway Provider",
-    type: "text",
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewPaymentPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "portal:create")))
     redirect("/customer-portal/payments");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    {
+      name: "invoiceId",
+      label: "Invoice ID",
+      type: "text",
+      required: true,
+      placeholder: "Invoice UUID",
+    },
+    {
+      name: "amount",
+      label: "Amount",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "paymentMethod",
+      label: "Payment Method",
+      type: "select",
+      required: true,
+      options: [
+        { value: "credit_card", label: "Credit Card" },
+        { value: "bank_transfer", label: "Bank Transfer" },
+        { value: "wire", label: "Wire" },
+        { value: "cheque", label: "Cheque" },
+        { value: "online_banking", label: "Online Banking" },
+        { value: "letter_of_credit", label: "Letter of Credit" },
+      ],
+    },
+    {
+      name: "gatewayProvider",
+      label: "Gateway Provider",
+      type: "text",
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   return (
     <div className="space-y-6">

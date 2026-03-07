@@ -6,40 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getSpeedConsumption } from "@/lib/vessel-performance-efficiency/service";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const SPEED_CONSUMPTION_FIELDS: FieldConfig[] = [
-  {
-    name: "consumptionType",
-    label: "Consumption Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "laden", label: "Laden" },
-      { value: "ballast", label: "Ballast" },
-      { value: "port", label: "Port" },
-      { value: "anchored", label: "Anchored" },
-      { value: "canal_transit", label: "Canal Transit" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageId", label: "Voyage ID", type: "text" },
-  { name: "reportDate", label: "Report Date", type: "datetime-local" },
-  { name: "speedOrdered", label: "Speed Ordered", type: "text" },
-  { name: "speedActual", label: "Speed Actual", type: "text" },
-  { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
-  { name: "fuelConsumedMt", label: "Fuel Consumed MT", type: "text" },
-  { name: "fuelType", label: "Fuel Type", type: "text" },
-  { name: "dailyConsumption", label: "Daily Consumption", type: "text" },
-  { name: "distanceTraveled", label: "Distance Traveled", type: "text" },
-  { name: "slipPercentage", label: "Slip Percentage", type: "text" },
-  { name: "windForce", label: "Wind Force", type: "number" },
-  { name: "seaState", label: "Sea State", type: "text" },
-  { name: "currentFactor", label: "Current Factor", type: "text" },
-  { name: "performanceIndex", label: "Performance Index", type: "text" },
-  { name: "weatherImpact", label: "Weather Impact", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditSpeedConsumptionPage({
   params,
@@ -51,6 +18,41 @@ export default async function EditSpeedConsumptionPage({
   if (!(await hasPermission(session.id, session.tenantId, "vpe:edit")))
     redirect("/vessel-performance-efficiency/speed-consumptions");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const SPEED_CONSUMPTION_FIELDS: FieldConfig[] = [
+    {
+      name: "consumptionType",
+      label: "Consumption Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "laden", label: "Laden" },
+        { value: "ballast", label: "Ballast" },
+        { value: "port", label: "Port" },
+        { value: "anchored", label: "Anchored" },
+        { value: "canal_transit", label: "Canal Transit" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageId", label: "Voyage ID", type: "text" },
+    { name: "reportDate", label: "Report Date", type: "datetime-local" },
+    { name: "speedOrdered", label: "Speed Ordered", type: "text" },
+    { name: "speedActual", label: "Speed Actual", type: "text" },
+    { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
+    { name: "fuelConsumedMt", label: "Fuel Consumed MT", type: "text" },
+    { name: "fuelType", label: "Fuel Type", type: "text" },
+    { name: "dailyConsumption", label: "Daily Consumption", type: "text" },
+    { name: "distanceTraveled", label: "Distance Traveled", type: "text" },
+    { name: "slipPercentage", label: "Slip Percentage", type: "text" },
+    { name: "windForce", label: "Wind Force", type: "number" },
+    { name: "seaState", label: "Sea State", type: "text" },
+    { name: "currentFactor", label: "Current Factor", type: "text" },
+    { name: "performanceIndex", label: "Performance Index", type: "text" },
+    { name: "weatherImpact", label: "Weather Impact", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getSpeedConsumption(id, session.tenantId);

@@ -5,38 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { OdmForm } from "@/components/operations-documentation/odm-form";
 import type { FieldConfig } from "@/components/operations-documentation/odm-form";
-
-const FIELDS: FieldConfig[] = [
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  {
-    name: "eventType",
-    label: "Event Type",
-    type: "text",
-    required: true,
-    placeholder: "departure",
-  },
-  {
-    name: "eventCode",
-    label: "Event Code",
-    type: "text",
-    required: true,
-    placeholder: "DEP",
-  },
-  { name: "eventDescription", label: "Event Description", type: "text" },
-  { name: "eventLocation", label: "Event Location", type: "text" },
-  { name: "eventPort", label: "Event Port", type: "text" },
-  {
-    name: "eventDate",
-    label: "Event Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "reportedBy", label: "Reported By", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "isActual", label: "Is Actual", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewCargoTrackingEventPage() {
   const session = await getSession();
@@ -45,6 +14,40 @@ export default async function NewCargoTrackingEventPage() {
     !(await hasPermission(session.id, session.tenantId, "operations:create"))
   )
     redirect("/operations-documentation");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const FIELDS: FieldConfig[] = [
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    {
+      name: "eventType",
+      label: "Event Type",
+      type: "text",
+      required: true,
+      placeholder: "departure",
+    },
+    {
+      name: "eventCode",
+      label: "Event Code",
+      type: "text",
+      required: true,
+      placeholder: "DEP",
+    },
+    { name: "eventDescription", label: "Event Description", type: "text" },
+    { name: "eventLocation", label: "Event Location", type: "text" },
+    { name: "eventPort", label: "Event Port", type: "text" },
+    {
+      name: "eventDate",
+      label: "Event Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "reportedBy", label: "Reported By", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "isActual", label: "Is Actual", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

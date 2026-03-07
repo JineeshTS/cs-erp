@@ -2,40 +2,43 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { MecForm, type FieldConfig } from "@/components/marpol-environmental-compliance/mec-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "complianceType",
-    label: "Compliance Type",
-    type: "select",
-    options: [
-      { label: "Annex I - Oil", value: "annex_i_oil" },
-      { label: "Annex II - NLS", value: "annex_ii_nls" },
-      { label: "Annex III - Harmful", value: "annex_iii_harmful" },
-      { label: "Annex IV - Sewage", value: "annex_iv_sewage" },
-      { label: "Annex V - Garbage", value: "annex_v_garbage" },
-      { label: "Annex VI - Air", value: "annex_vi_air" },
-    ],
-    required: true,
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text", required: true },
-  { name: "inspectionDate", label: "Inspection Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "certificateNumber", label: "Certificate Number", type: "text" },
-  { name: "issuingAuthority", label: "Issuing Authority", type: "text" },
-  { name: "isCompliant", label: "Is Compliant", type: "checkbox" },
-  { name: "findingsCount", label: "Findings Count", type: "number" },
-  { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewAnnexCompliancePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "mec:create")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "complianceType",
+      label: "Compliance Type",
+      type: "select",
+      options: [
+        { label: "Annex I - Oil", value: "annex_i_oil" },
+        { label: "Annex II - NLS", value: "annex_ii_nls" },
+        { label: "Annex III - Harmful", value: "annex_iii_harmful" },
+        { label: "Annex IV - Sewage", value: "annex_iv_sewage" },
+        { label: "Annex V - Garbage", value: "annex_v_garbage" },
+        { label: "Annex VI - Air", value: "annex_vi_air" },
+      ],
+      required: true,
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text", required: true },
+    { name: "inspectionDate", label: "Inspection Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "certificateNumber", label: "Certificate Number", type: "text" },
+    { name: "issuingAuthority", label: "Issuing Authority", type: "text" },
+    { name: "isCompliant", label: "Is Compliant", type: "checkbox" },
+    { name: "findingsCount", label: "Findings Count", type: "number" },
+    { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

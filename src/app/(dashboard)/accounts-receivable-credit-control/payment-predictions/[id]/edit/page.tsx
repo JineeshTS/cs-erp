@@ -3,21 +3,27 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getPaymentPrediction } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm, type FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditPaymentPredictionPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit"))) redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const record = await getPaymentPrediction(id, session.tenantId);
   if (!record) notFound();
 
   const fields: FieldConfig[] = [
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
     { name: "accountNumber", label: "Account Number", type: "text" },
     { name: "invoiceRef", label: "Invoice Ref", type: "text" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "invoiceAmount", label: "Invoice Amount", type: "number", required: true },
     { name: "outstandingAmount", label: "Outstanding Amount", type: "number", required: true },
     { name: "predictedPaymentDate", label: "Predicted Payment Date", type: "datetime-local" },

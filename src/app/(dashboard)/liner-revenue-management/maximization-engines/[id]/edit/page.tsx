@@ -5,34 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getMaximizationEngine } from "@/lib/liner-revenue-management/service";
 import { LrmForm, type FieldConfig } from "@/components/liner-revenue-management/lrm-form";
-
-const MAXIMIZATION_ENGINE_FIELDS: FieldConfig[] = [
-  {
-    name: "engineType",
-    label: "Engine Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "dynamic_pricing", label: "Dynamic Pricing" },
-      { value: "overbooking_optimization", label: "Overbooking Optimization" },
-      { value: "cargo_allocation", label: "Cargo Allocation" },
-      { value: "surcharge_optimization", label: "Surcharge Optimization" },
-      { value: "bundle_pricing", label: "Bundle Pricing" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "modelName", label: "Model Name", type: "text" },
-  { name: "modelVersion", label: "Model Version", type: "text" },
-  { name: "recommendedRate", label: "Recommended Rate", type: "text" },
-  { name: "currentRate", label: "Current Rate", type: "text" },
-  { name: "upliftPct", label: "Uplift %", type: "text" },
-  { name: "confidenceScore", label: "Confidence Score", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "simulationRunAt", label: "Simulation Run At", type: "datetime-local" },
-  { name: "acceptedRecommendation", label: "Accepted Recommendation", type: "checkbox" },
-  { name: "revenueImpact", label: "Revenue Impact", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditMaximizationEnginePage({
   params,
@@ -44,6 +17,35 @@ export default async function EditMaximizationEnginePage({
   if (!(await hasPermission(session.id, session.tenantId, "lrm:edit")))
     redirect("/liner-revenue-management/maximization-engines");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const MAXIMIZATION_ENGINE_FIELDS: FieldConfig[] = [
+    {
+      name: "engineType",
+      label: "Engine Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "dynamic_pricing", label: "Dynamic Pricing" },
+        { value: "overbooking_optimization", label: "Overbooking Optimization" },
+        { value: "cargo_allocation", label: "Cargo Allocation" },
+        { value: "surcharge_optimization", label: "Surcharge Optimization" },
+        { value: "bundle_pricing", label: "Bundle Pricing" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "modelName", label: "Model Name", type: "text" },
+    { name: "modelVersion", label: "Model Version", type: "text" },
+    { name: "recommendedRate", label: "Recommended Rate", type: "text" },
+    { name: "currentRate", label: "Current Rate", type: "text" },
+    { name: "upliftPct", label: "Uplift %", type: "text" },
+    { name: "confidenceScore", label: "Confidence Score", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "simulationRunAt", label: "Simulation Run At", type: "datetime-local" },
+    { name: "acceptedRecommendation", label: "Accepted Recommendation", type: "checkbox" },
+    { name: "revenueImpact", label: "Revenue Impact", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getMaximizationEngine(id, session.tenantId);

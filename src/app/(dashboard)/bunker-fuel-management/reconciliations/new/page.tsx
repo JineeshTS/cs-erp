@@ -5,70 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { BfmForm } from "@/components/bunker-fuel-management/bfm-form";
 import type { FieldConfig } from "@/components/bunker-fuel-management/bfm-form";
-
-const RECONCILIATION_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "vesselImo", label: "Vessel IMO", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  {
-    name: "fuelType",
-    label: "Fuel Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "VLSFO", label: "VLSFO" },
-      { value: "HSFO", label: "HSFO" },
-      { value: "LSMGO", label: "LSMGO" },
-      { value: "MGO", label: "MGO" },
-      { value: "MDO", label: "MDO" },
-      { value: "LNG", label: "LNG" },
-      { value: "ULSFO", label: "ULSFO" },
-      { value: "HFO", label: "HFO" },
-      { value: "BIOFUEL", label: "BIOFUEL" },
-    ],
-  },
-  {
-    name: "periodStart",
-    label: "Period Start",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "periodEnd",
-    label: "Period End",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "openingRob",
-    label: "Opening ROB",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "closingRob",
-    label: "Closing ROB",
-    type: "number",
-    required: true,
-  },
-  { name: "totalReceived", label: "Total Received", type: "number" },
-  { name: "totalConsumed", label: "Total Consumed", type: "number" },
-  { name: "totalTransferred", label: "Total Transferred", type: "number" },
-  { name: "variance", label: "Variance", type: "number" },
-  { name: "variancePercent", label: "Variance Percent", type: "number" },
-  {
-    name: "unit",
-    label: "Unit",
-    type: "select",
-    options: [
-      { value: "MT", label: "MT" },
-      { value: "CBM", label: "CBM" },
-      { value: "LTR", label: "LTR" },
-      { value: "GAL", label: "GAL" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewReconciliationPage() {
   const session = await getSession();
@@ -76,6 +13,71 @@ export default async function NewReconciliationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "bunker:create")))
     redirect("/bunker-fuel-management/reconciliations");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const RECONCILIATION_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    {
+      name: "fuelType",
+      label: "Fuel Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "VLSFO", label: "VLSFO" },
+        { value: "HSFO", label: "HSFO" },
+        { value: "LSMGO", label: "LSMGO" },
+        { value: "MGO", label: "MGO" },
+        { value: "MDO", label: "MDO" },
+        { value: "LNG", label: "LNG" },
+        { value: "ULSFO", label: "ULSFO" },
+        { value: "HFO", label: "HFO" },
+        { value: "BIOFUEL", label: "BIOFUEL" },
+      ],
+    },
+    {
+      name: "periodStart",
+      label: "Period Start",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "periodEnd",
+      label: "Period End",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "openingRob",
+      label: "Opening ROB",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "closingRob",
+      label: "Closing ROB",
+      type: "number",
+      required: true,
+    },
+    { name: "totalReceived", label: "Total Received", type: "number" },
+    { name: "totalConsumed", label: "Total Consumed", type: "number" },
+    { name: "totalTransferred", label: "Total Transferred", type: "number" },
+    { name: "variance", label: "Variance", type: "number" },
+    { name: "variancePercent", label: "Variance Percent", type: "number" },
+    {
+      name: "unit",
+      label: "Unit",
+      type: "select",
+      options: [
+        { value: "MT", label: "MT" },
+        { value: "CBM", label: "CBM" },
+        { value: "LTR", label: "LTR" },
+        { value: "GAL", label: "GAL" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

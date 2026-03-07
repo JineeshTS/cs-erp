@@ -10,75 +10,7 @@ import {
   MelsForm,
   type FieldConfig,
 } from "@/components/multi-entity-legal-structure/mels-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "transactionNumber",
-    label: "Transaction Number",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "sourceEntityId",
-    label: "Source Entity ID",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "targetEntityId",
-    label: "Target Entity ID",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "transactionType",
-    label: "Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "sale", label: "Sale" },
-      { value: "purchase", label: "Purchase" },
-      { value: "loan", label: "Loan" },
-      { value: "service", label: "Service" },
-      { value: "dividend", label: "Dividend" },
-      { value: "royalty", label: "Royalty" },
-      { value: "management_fee", label: "Management Fee" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "description", label: "Description", type: "textarea" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    required: true,
-    placeholder: "QAR",
-  },
-  {
-    name: "amount",
-    label: "Amount (smallest unit)",
-    type: "number",
-    required: true,
-  },
-  { name: "fxRate", label: "FX Rate", type: "number" },
-  { name: "fxRateMultiplier", label: "FX Rate Multiplier", type: "number" },
-  { name: "baseAmount", label: "Base Amount", type: "number" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "draft", label: "Draft" },
-      { value: "pending", label: "Pending" },
-      { value: "approved", label: "Approved" },
-      { value: "posted", label: "Posted" },
-      { value: "reversed", label: "Reversed" },
-      { value: "cancelled", label: "Cancelled" },
-    ],
-  },
-  { name: "referenceType", label: "Reference Type", type: "text" },
-  { name: "referenceId", label: "Reference ID", type: "text" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditIntercompanyTransactionPage({
   params,
@@ -89,6 +21,76 @@ export default async function EditIntercompanyTransactionPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "entities:edit")))
     redirect("/multi-entity-legal-structure/intercompany-transactions");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "transactionNumber",
+      label: "Transaction Number",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "sourceEntityId",
+      label: "Source Entity ID",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "targetEntityId",
+      label: "Target Entity ID",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "transactionType",
+      label: "Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "sale", label: "Sale" },
+        { value: "purchase", label: "Purchase" },
+        { value: "loan", label: "Loan" },
+        { value: "service", label: "Service" },
+        { value: "dividend", label: "Dividend" },
+        { value: "royalty", label: "Royalty" },
+        { value: "management_fee", label: "Management Fee" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+      required: true,
+    },
+    {
+      name: "amount",
+      label: "Amount (smallest unit)",
+      type: "number",
+      required: true,
+    },
+    { name: "fxRate", label: "FX Rate", type: "number" },
+    { name: "fxRateMultiplier", label: "FX Rate Multiplier", type: "number" },
+    { name: "baseAmount", label: "Base Amount", type: "number" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "posted", label: "Posted" },
+        { value: "reversed", label: "Reversed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    { name: "referenceType", label: "Reference Type", type: "text" },
+    { name: "referenceId", label: "Reference ID", type: "text" },
+  ];
 
   const { id } = await params;
 

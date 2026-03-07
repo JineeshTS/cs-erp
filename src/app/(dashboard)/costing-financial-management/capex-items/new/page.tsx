@@ -7,6 +7,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewCapexItemPage() {
   const session = await getSession();
@@ -14,6 +15,8 @@ export default async function NewCapexItemPage() {
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const fields: FieldConfig[] = [
     { name: "assetName", label: "Asset Name", type: "text", required: true },
     {
@@ -35,8 +38,7 @@ export default async function NewCapexItemPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "acquisitionCost",

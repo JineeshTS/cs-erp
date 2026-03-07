@@ -8,38 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { melsSettlementBatches } from "@/db/schema";
 import { MelsForm } from "@/components/multi-entity-legal-structure/mels-form";
 import type { FieldConfig } from "@/components/multi-entity-legal-structure/mels-form";
-
-const FIELDS: FieldConfig[] = [
-  { name: "batchNumber", label: "Batch Number", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  {
-    name: "settlementDate",
-    label: "Settlement Date",
-    type: "date",
-    required: true,
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    required: true,
-    placeholder: "QAR",
-  },
-  { name: "totalAmount", label: "Total Amount", type: "number" },
-  { name: "netAmount", label: "Net Amount", type: "number" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "draft", label: "Draft" },
-      { value: "pending", label: "Pending" },
-      { value: "approved", label: "Approved" },
-      { value: "settled", label: "Settled" },
-      { value: "cancelled", label: "Cancelled" },
-    ],
-  },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditSettlementBatchPage({
   params,
@@ -50,6 +19,39 @@ export default async function EditSettlementBatchPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "entities:edit")))
     redirect("/multi-entity-legal-structure/settlement-batches");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    { name: "batchNumber", label: "Batch Number", type: "text", required: true },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "settlementDate",
+      label: "Settlement Date",
+      type: "date",
+      required: true,
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+      required: true,
+    },
+    { name: "totalAmount", label: "Total Amount", type: "number" },
+    { name: "netAmount", label: "Net Amount", type: "number" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "settled", label: "Settled" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+  ];
 
   const { id } = await params;
 

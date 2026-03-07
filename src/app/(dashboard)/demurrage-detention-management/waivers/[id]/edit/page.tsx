@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getDdmWaiver } from "@/lib/demurrage-detention-management/service";
 import { DdmForm, FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditWaiverPage({
   params,
@@ -14,6 +15,11 @@ export default async function EditWaiverPage({
   if (!(await hasPermission(session.id, session.tenantId, "demurrage:edit")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const waiver = await getDdmWaiver(id, session.tenantId);
   if (!waiver) notFound();
@@ -34,9 +40,8 @@ export default async function EditWaiverPage({
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
-      placeholder: "Customer name",
     },
     {
       name: "containerNumber",
@@ -79,8 +84,7 @@ export default async function EditWaiverPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "reason",

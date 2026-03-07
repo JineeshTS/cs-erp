@@ -4,33 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const VOYAGE_OPTIMIZATION_FIELDS: FieldConfig[] = [
-  {
-    name: "optimizationType",
-    label: "Optimization Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "route_optimization", label: "Route Optimization" },
-      { value: "speed_profile", label: "Speed Profile" },
-      { value: "port_sequence", label: "Port Sequence" },
-      { value: "bunker_strategy", label: "Bunker Strategy" },
-      { value: "emission_reduction", label: "Emission Reduction" },
-    ],
-  },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "originalCost", label: "Original Cost", type: "text" },
-  { name: "optimizedCost", label: "Optimized Cost", type: "text" },
-  { name: "savingsAmount", label: "Savings Amount", type: "text" },
-  { name: "savingsPct", label: "Savings %", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "modelVersion", label: "Model Version", type: "text" },
-  { name: "confidenceScore", label: "Confidence Score", type: "text" },
-  { name: "accepted", label: "Accepted", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewVoyageOptimizationPage() {
   const session = await getSession();
@@ -39,6 +13,38 @@ export default async function NewVoyageOptimizationPage() {
     !(await hasPermission(session.id, session.tenantId, "svp:create"))
   )
     redirect("/schedule-voyage-planning/voyage-optimizations");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const VOYAGE_OPTIMIZATION_FIELDS: FieldConfig[] = [
+    {
+      name: "optimizationType",
+      label: "Optimization Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "route_optimization", label: "Route Optimization" },
+        { value: "speed_profile", label: "Speed Profile" },
+        { value: "port_sequence", label: "Port Sequence" },
+        { value: "bunker_strategy", label: "Bunker Strategy" },
+        { value: "emission_reduction", label: "Emission Reduction" },
+      ],
+    },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "originalCost", label: "Original Cost", type: "text" },
+    { name: "optimizedCost", label: "Optimized Cost", type: "text" },
+    { name: "savingsAmount", label: "Savings Amount", type: "text" },
+    { name: "savingsPct", label: "Savings %", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "modelVersion", label: "Model Version", type: "text" },
+    { name: "confidenceScore", label: "Confidence Score", type: "text" },
+    { name: "accepted", label: "Accepted", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

@@ -8,25 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { scmCustomerContacts } from "@/db/schema";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
-
-const CONTACT_FIELDS: FieldConfig[] = [
-  { name: "customerId", label: "Customer ID", type: "text", required: true, placeholder: "UUID of the customer" },
-  { name: "firstName", label: "First Name", type: "text", required: true },
-  { name: "lastName", label: "Last Name", type: "text", required: true },
-  { name: "jobTitle", label: "Job Title", type: "text" },
-  { name: "department", label: "Department", type: "text" },
-  { name: "email", label: "Email", type: "text" },
-  { name: "phone", label: "Phone", type: "text" },
-  { name: "mobile", label: "Mobile", type: "text" },
-  { name: "isPrimary", label: "Primary Contact", type: "checkbox" },
-  { name: "isDecisionMaker", label: "Decision Maker", type: "checkbox" },
-  { name: "preferredLanguage", label: "Preferred Language", type: "select", options: [
-    { value: "en", label: "English" },
-    { value: "ar", label: "Arabic" },
-    { value: "hi", label: "Hindi" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditCustomerContactPage({
   params,
@@ -38,6 +20,26 @@ export default async function EditCustomerContactPage({
   if (!(await hasPermission(session.id, session.tenantId, "sales:edit")))
     redirect("/sales-crm");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const CONTACT_FIELDS: FieldConfig[] = [
+    { name: "customerId", label: "Customer ID", type: "select", options: customerOpts, required: true },
+    { name: "firstName", label: "First Name", type: "text", required: true },
+    { name: "lastName", label: "Last Name", type: "text", required: true },
+    { name: "jobTitle", label: "Job Title", type: "text" },
+    { name: "department", label: "Department", type: "text" },
+    { name: "email", label: "Email", type: "text" },
+    { name: "phone", label: "Phone", type: "text" },
+    { name: "mobile", label: "Mobile", type: "text" },
+    { name: "isPrimary", label: "Primary Contact", type: "checkbox" },
+    { name: "isDecisionMaker", label: "Decision Maker", type: "checkbox" },
+    { name: "preferredLanguage", label: "Preferred Language", type: "select", options: [
+      { value: "en", label: "English" },
+      { value: "ar", label: "Arabic" },
+      { value: "hi", label: "Hindi" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

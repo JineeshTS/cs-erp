@@ -5,55 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { GlfrForm } from "@/components/general-ledger-financial-reporting/glfr-form";
 import type { FieldConfig } from "@/components/general-ledger-financial-reporting/glfr-form";
-
-const CONSOLIDATED_STATEMENT_FIELDS: FieldConfig[] = [
-  {
-    name: "consolidationType",
-    label: "Consolidation Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "full", label: "Full" },
-      { value: "proportional", label: "Proportional" },
-      { value: "equity_method", label: "Equity Method" },
-      { value: "elimination", label: "Elimination" },
-    ],
-  },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "parentEntity", label: "Parent Entity", type: "text" },
-  { name: "minorityInterest", label: "Minority Interest", type: "text" },
-  {
-    name: "consolidatedRevenue",
-    label: "Consolidated Revenue",
-    type: "text",
-  },
-  {
-    name: "consolidatedNetIncome",
-    label: "Consolidated Net Income",
-    type: "text",
-  },
-  {
-    name: "consolidatedAssets",
-    label: "Consolidated Assets",
-    type: "text",
-  },
-  {
-    name: "consolidatedLiabilities",
-    label: "Consolidated Liabilities",
-    type: "text",
-  },
-  {
-    name: "consolidatedEquity",
-    label: "Consolidated Equity",
-    type: "text",
-  },
-  { name: "preparedBy", label: "Prepared By", type: "text" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewConsolidatedStatementPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -63,6 +15,56 @@ export default async function NewConsolidatedStatementPage(): Promise<React.Reac
   )
     redirect("/general-ledger-financial-reporting/consolidated-statements");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CONSOLIDATED_STATEMENT_FIELDS: FieldConfig[] = [
+    {
+      name: "consolidationType",
+      label: "Consolidation Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "full", label: "Full" },
+        { value: "proportional", label: "Proportional" },
+        { value: "equity_method", label: "Equity Method" },
+        { value: "elimination", label: "Elimination" },
+      ],
+    },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "parentEntity", label: "Parent Entity", type: "text" },
+    { name: "minorityInterest", label: "Minority Interest", type: "text" },
+    {
+      name: "consolidatedRevenue",
+      label: "Consolidated Revenue",
+      type: "text",
+    },
+    {
+      name: "consolidatedNetIncome",
+      label: "Consolidated Net Income",
+      type: "text",
+    },
+    {
+      name: "consolidatedAssets",
+      label: "Consolidated Assets",
+      type: "text",
+    },
+    {
+      name: "consolidatedLiabilities",
+      label: "Consolidated Liabilities",
+      type: "text",
+    },
+    {
+      name: "consolidatedEquity",
+      label: "Consolidated Equity",
+      type: "text",
+    },
+    { name: "preparedBy", label: "Prepared By", type: "text" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

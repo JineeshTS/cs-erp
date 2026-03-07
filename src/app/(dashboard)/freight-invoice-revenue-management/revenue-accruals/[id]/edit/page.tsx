@@ -8,49 +8,7 @@ import {
   FirmForm,
   type FieldConfig,
 } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const ACCRUAL_FIELDS: FieldConfig[] = [
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  {
-    name: "accrualType",
-    label: "Accrual Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "freight_accrual", label: "Freight Accrual" },
-      { value: "freight_deferral", label: "Freight Deferral" },
-      { value: "demurrage_accrual", label: "Demurrage Accrual" },
-      { value: "surcharge_accrual", label: "Surcharge Accrual" },
-      { value: "period_end_accrual", label: "Period End Accrual" },
-      { value: "reversal", label: "Reversal" },
-    ],
-  },
-  {
-    name: "accountingPeriod",
-    label: "Accounting Period",
-    type: "text",
-    required: true,
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  {
-    name: "accrualAmount",
-    label: "Accrual Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "deferralAmount", label: "Deferral Amount", type: "number" },
-  { name: "recognizedAmount", label: "Recognized Amount", type: "number" },
-  {
-    name: "remainingAmount",
-    label: "Remaining Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
-  { name: "glAccountCode", label: "GL Account Code", type: "text" },
-  { name: "reversalDate", label: "Reversal Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRevenueAccrualPage({
   params,
@@ -62,6 +20,50 @@ export default async function EditRevenueAccrualPage({
   if (!(await hasPermission(session.id, session.tenantId, "invoice:edit")))
     redirect("/freight-invoice-revenue-management/revenue-accruals");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const ACCRUAL_FIELDS: FieldConfig[] = [
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    {
+      name: "accrualType",
+      label: "Accrual Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "freight_accrual", label: "Freight Accrual" },
+        { value: "freight_deferral", label: "Freight Deferral" },
+        { value: "demurrage_accrual", label: "Demurrage Accrual" },
+        { value: "surcharge_accrual", label: "Surcharge Accrual" },
+        { value: "period_end_accrual", label: "Period End Accrual" },
+        { value: "reversal", label: "Reversal" },
+      ],
+    },
+    {
+      name: "accountingPeriod",
+      label: "Accounting Period",
+      type: "text",
+      required: true,
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "accrualAmount",
+      label: "Accrual Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "deferralAmount", label: "Deferral Amount", type: "number" },
+    { name: "recognizedAmount", label: "Recognized Amount", type: "number" },
+    {
+      name: "remainingAmount",
+      label: "Remaining Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
+    { name: "glAccountCode", label: "GL Account Code", type: "text" },
+    { name: "reversalDate", label: "Reversal Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getRevenueAccrual(id, session.tenantId);
   if (!record) notFound();

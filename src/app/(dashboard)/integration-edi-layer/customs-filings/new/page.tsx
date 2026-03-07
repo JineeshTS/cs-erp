@@ -5,83 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { IelForm } from "@/components/integration-edi-layer/iel-form";
 import type { FieldConfig } from "@/components/integration-edi-layer/iel-form";
-
-const FILING_FIELDS: FieldConfig[] = [
-  {
-    name: "filingType",
-    label: "Filing Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "import_declaration", label: "Import Declaration" },
-      { value: "export_declaration", label: "Export Declaration" },
-      { value: "transit_declaration", label: "Transit Declaration" },
-      { value: "re_export", label: "Re-Export" },
-      { value: "temporary_import", label: "Temporary Import" },
-      { value: "free_zone", label: "Free Zone" },
-    ],
-  },
-  {
-    name: "customsAuthority",
-    label: "Customs Authority",
-    type: "select",
-    required: true,
-    options: [
-      { value: "qatar_customs", label: "Qatar Customs" },
-      { value: "dubai_customs", label: "Dubai Customs" },
-      { value: "abu_dhabi_customs", label: "Abu Dhabi Customs" },
-      { value: "saudi_customs", label: "Saudi Customs" },
-      { value: "india_customs", label: "India Customs" },
-    ],
-  },
-  {
-    name: "countryCode",
-    label: "Country Code",
-    type: "text",
-    required: true,
-    placeholder: "QA",
-  },
-  {
-    name: "portCode",
-    label: "Port Code",
-    type: "text",
-    placeholder: "QADOH",
-  },
-  {
-    name: "declarationType",
-    label: "Declaration Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "standard", label: "Standard" },
-      { value: "simplified", label: "Simplified" },
-      { value: "pre_arrival", label: "Pre-Arrival" },
-      { value: "post_clearance", label: "Post Clearance" },
-    ],
-  },
-  {
-    name: "hsCode",
-    label: "HS Code",
-    type: "text",
-    placeholder: "8471.30",
-  },
-  {
-    name: "totalValue",
-    label: "Total Value",
-    type: "number",
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getPortOptions, getCurrencyOptions, getCountryOptions } from "@/lib/lookups";
 
 export default async function NewCustomsFilingPage() {
   const session = await getSession();
@@ -90,6 +14,86 @@ export default async function NewCustomsFilingPage() {
     !(await hasPermission(session.id, session.tenantId, "integration:create"))
   )
     redirect("/integration-edi-layer/customs-filings");
+
+  const [portOpts, currencyOpts, countryOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+    getCountryOptions(),
+  ]);
+
+  const FILING_FIELDS: FieldConfig[] = [
+    {
+      name: "filingType",
+      label: "Filing Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "import_declaration", label: "Import Declaration" },
+        { value: "export_declaration", label: "Export Declaration" },
+        { value: "transit_declaration", label: "Transit Declaration" },
+        { value: "re_export", label: "Re-Export" },
+        { value: "temporary_import", label: "Temporary Import" },
+        { value: "free_zone", label: "Free Zone" },
+      ],
+    },
+    {
+      name: "customsAuthority",
+      label: "Customs Authority",
+      type: "select",
+      required: true,
+      options: [
+        { value: "qatar_customs", label: "Qatar Customs" },
+        { value: "dubai_customs", label: "Dubai Customs" },
+        { value: "abu_dhabi_customs", label: "Abu Dhabi Customs" },
+        { value: "saudi_customs", label: "Saudi Customs" },
+        { value: "india_customs", label: "India Customs" },
+      ],
+    },
+    {
+      name: "countryCode",
+      label: "Country Code",
+      type: "select", options: countryOpts,
+      required: true,
+    },
+    {
+      name: "portCode",
+      label: "Port Code",
+      type: "select", options: portOpts,
+    },
+    {
+      name: "declarationType",
+      label: "Declaration Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "standard", label: "Standard" },
+        { value: "simplified", label: "Simplified" },
+        { value: "pre_arrival", label: "Pre-Arrival" },
+        { value: "post_clearance", label: "Post Clearance" },
+      ],
+    },
+    {
+      name: "hsCode",
+      label: "HS Code",
+      type: "text",
+      placeholder: "8471.30",
+    },
+    {
+      name: "totalValue",
+      label: "Total Value",
+      type: "number",
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   return (
     <div className="space-y-6">

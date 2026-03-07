@@ -7,25 +7,31 @@ import {
   FirmForm,
   type FieldConfig,
 } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const PROFORMA_FIELDS: FieldConfig[] = [
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "customerCode", label: "Customer Code", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "subtotal", label: "Subtotal", type: "number" },
-  { name: "taxAmount", label: "Tax Amount", type: "number" },
-  { name: "totalAmount", label: "Total Amount", type: "number", required: true },
-  { name: "validUntil", label: "Valid Until", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewProformaInvoicePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "invoice:create")))
     redirect("/freight-invoice-revenue-management/proforma-invoices");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const PROFORMA_FIELDS: FieldConfig[] = [
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerCode", label: "Customer Code", type: "select", options: customerOpts },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "subtotal", label: "Subtotal", type: "number" },
+    { name: "taxAmount", label: "Tax Amount", type: "number" },
+    { name: "totalAmount", label: "Total Amount", type: "number", required: true },
+    { name: "validUntil", label: "Valid Until", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

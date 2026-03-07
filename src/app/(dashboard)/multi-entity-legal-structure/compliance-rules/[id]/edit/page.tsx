@@ -8,36 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { melsComplianceRules } from "@/db/schema";
 import { MelsForm } from "@/components/multi-entity-legal-structure/mels-form";
 import type { FieldConfig } from "@/components/multi-entity-legal-structure/mels-form";
-
-const FIELDS: FieldConfig[] = [
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "ruleCode", label: "Rule Code", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  {
-    name: "country",
-    label: "Country Code",
-    type: "text",
-    required: true,
-    placeholder: "QA",
-  },
-  { name: "region", label: "Region", type: "text" },
-  { name: "regulatoryBody", label: "Regulatory Body", type: "text" },
-  {
-    name: "ruleType",
-    label: "Rule Type",
-    type: "select",
-    options: [
-      { value: "reporting", label: "Reporting" },
-      { value: "filing", label: "Filing" },
-      { value: "disclosure", label: "Disclosure" },
-      { value: "audit", label: "Audit" },
-      { value: "registration", label: "Registration" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "frequency", label: "Frequency", type: "text" },
-  { name: "isActive", label: "Active", type: "checkbox" },
-];
+import { getCountryOptions } from "@/lib/lookups";
 
 export default async function EditComplianceRulePage({
   params,
@@ -50,6 +21,37 @@ export default async function EditComplianceRulePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "entities:edit")))
     redirect("/multi-entity-legal-structure/compliance-rules");
+
+  const countryOpts = await getCountryOptions();
+
+  const FIELDS: FieldConfig[] = [
+    { name: "name", label: "Name", type: "text", required: true },
+    { name: "ruleCode", label: "Rule Code", type: "text", required: true },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "country",
+      label: "Country Code",
+      type: "select", options: countryOpts,
+      required: true,
+    },
+    { name: "region", label: "Region", type: "text" },
+    { name: "regulatoryBody", label: "Regulatory Body", type: "text" },
+    {
+      name: "ruleType",
+      label: "Rule Type",
+      type: "select",
+      options: [
+        { value: "reporting", label: "Reporting" },
+        { value: "filing", label: "Filing" },
+        { value: "disclosure", label: "Disclosure" },
+        { value: "audit", label: "Audit" },
+        { value: "registration", label: "Registration" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "frequency", label: "Frequency", type: "text" },
+    { name: "isActive", label: "Active", type: "checkbox" },
+  ];
 
   const [rule] = await db
     .select()

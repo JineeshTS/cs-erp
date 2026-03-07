@@ -8,50 +8,7 @@ import {
   PttForm,
   type FieldConfig,
 } from "@/components/port-tariff-terminal-billing/ptt-form";
-
-const THC_FIELDS: FieldConfig[] = [
-  {
-    name: "chargeType",
-    label: "Charge Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "origin_thc", label: "Origin THC" },
-      { value: "destination_thc", label: "Destination THC" },
-      { value: "transshipment_thc", label: "Transshipment THC" },
-      { value: "reefer_thc", label: "Reefer THC" },
-      { value: "hazardous_thc", label: "Hazardous THC" },
-    ],
-  },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "terminalName", label: "Terminal Name", type: "text" },
-  { name: "terminalCode", label: "Terminal Code", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "cargoCategory", label: "Cargo Category", type: "text" },
-  { name: "chargeAmountBase", label: "Charge Amount (Base)", type: "number" },
-  { name: "chargeCurrency", label: "Charge Currency", type: "text" },
-  { name: "chargePerUnit", label: "Charge Per Unit", type: "text" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  {
-    name: "surchargePercentage",
-    label: "Surcharge Percentage",
-    type: "number",
-  },
-  {
-    name: "peakSeasonMultiplier",
-    label: "Peak Season Multiplier",
-    type: "number",
-  },
-  {
-    name: "exemptionApplicable",
-    label: "Exemption Applicable",
-    type: "checkbox",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function EditTerminalHandlingChargePage({
   params,
@@ -63,6 +20,51 @@ export default async function EditTerminalHandlingChargePage({
   if (!(await hasPermission(session.id, session.tenantId, "ptt:edit")))
     redirect("/");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const THC_FIELDS: FieldConfig[] = [
+    {
+      name: "chargeType",
+      label: "Charge Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "origin_thc", label: "Origin THC" },
+        { value: "destination_thc", label: "Destination THC" },
+        { value: "transshipment_thc", label: "Transshipment THC" },
+        { value: "reefer_thc", label: "Reefer THC" },
+        { value: "hazardous_thc", label: "Hazardous THC" },
+      ],
+    },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "terminalName", label: "Terminal Name", type: "text" },
+    { name: "terminalCode", label: "Terminal Code", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "cargoCategory", label: "Cargo Category", type: "text" },
+    { name: "chargeAmountBase", label: "Charge Amount (Base)", type: "number" },
+    { name: "chargeCurrency", label: "Charge Currency", type: "text" },
+    { name: "chargePerUnit", label: "Charge Per Unit", type: "text" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    {
+      name: "surchargePercentage",
+      label: "Surcharge Percentage",
+      type: "number",
+    },
+    {
+      name: "peakSeasonMultiplier",
+      label: "Peak Season Multiplier",
+      type: "number",
+    },
+    {
+      name: "exemptionApplicable",
+      label: "Exemption Applicable",
+      type: "checkbox",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getTerminalHandlingCharge(id, session.tenantId);
   if (!record) notFound();

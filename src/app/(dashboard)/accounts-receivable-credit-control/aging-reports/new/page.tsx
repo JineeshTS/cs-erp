@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewAgingReportPage() {
   const session = await getSession();
@@ -10,6 +11,8 @@ export default async function NewAgingReportPage() {
   if (!(await hasPermission(session.id, session.tenantId, "receivable:create")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const fields: FieldConfig[] = [
     {
       name: "reportType",
@@ -31,7 +34,7 @@ export default async function NewAgingReportPage() {
       type: "datetime-local",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "notes", label: "Notes", type: "textarea" },
   ];
 

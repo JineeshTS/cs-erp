@@ -6,37 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getWeatherRouting } from "@/lib/vessel-performance-efficiency/service";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const WEATHER_ROUTING_FIELDS: FieldConfig[] = [
-  {
-    name: "routingType",
-    label: "Routing Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "optimized", label: "Optimized" },
-      { value: "standard", label: "Standard" },
-      { value: "shortest", label: "Shortest" },
-      { value: "safest", label: "Safest" },
-      { value: "eco", label: "Eco" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageId", label: "Voyage ID", type: "text" },
-  { name: "departurePort", label: "Departure Port", type: "text" },
-  { name: "arrivalPort", label: "Arrival Port", type: "text" },
-  { name: "departureDate", label: "Departure Date", type: "datetime-local" },
-  { name: "arrivalDate", label: "Arrival Date", type: "datetime-local" },
-  { name: "optimizedEta", label: "Optimized ETA", type: "datetime-local" },
-  { name: "totalDistanceNm", label: "Total Distance NM", type: "text" },
-  { name: "estimatedFuelMt", label: "Estimated Fuel MT", type: "text" },
-  { name: "fuelSavingMt", label: "Fuel Saving MT", type: "text" },
-  { name: "timeSavingHours", label: "Time Saving Hours", type: "text" },
-  { name: "riskAssessment", label: "Risk Assessment", type: "text" },
-  { name: "confidenceScore", label: "Confidence Score", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditWeatherRoutingPage({
   params,
@@ -48,6 +18,38 @@ export default async function EditWeatherRoutingPage({
   if (!(await hasPermission(session.id, session.tenantId, "vpe:edit")))
     redirect("/vessel-performance-efficiency/weather-routings");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const WEATHER_ROUTING_FIELDS: FieldConfig[] = [
+    {
+      name: "routingType",
+      label: "Routing Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "optimized", label: "Optimized" },
+        { value: "standard", label: "Standard" },
+        { value: "shortest", label: "Shortest" },
+        { value: "safest", label: "Safest" },
+        { value: "eco", label: "Eco" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageId", label: "Voyage ID", type: "text" },
+    { name: "departurePort", label: "Departure Port", type: "text" },
+    { name: "arrivalPort", label: "Arrival Port", type: "text" },
+    { name: "departureDate", label: "Departure Date", type: "datetime-local" },
+    { name: "arrivalDate", label: "Arrival Date", type: "datetime-local" },
+    { name: "optimizedEta", label: "Optimized ETA", type: "datetime-local" },
+    { name: "totalDistanceNm", label: "Total Distance NM", type: "text" },
+    { name: "estimatedFuelMt", label: "Estimated Fuel MT", type: "text" },
+    { name: "fuelSavingMt", label: "Fuel Saving MT", type: "text" },
+    { name: "timeSavingHours", label: "Time Saving Hours", type: "text" },
+    { name: "riskAssessment", label: "Risk Assessment", type: "text" },
+    { name: "confidenceScore", label: "Confidence Score", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getWeatherRouting(id, session.tenantId);

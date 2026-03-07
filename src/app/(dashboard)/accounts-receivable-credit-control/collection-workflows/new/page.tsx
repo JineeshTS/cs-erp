@@ -3,14 +3,17 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function NewCollectionWorkflowPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:create"))) redirect("/");
 
+
+  const customerOpts = await getCustomerOptions(session.tenantId);
   const fields: FieldConfig[] = [
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
     { name: "accountNumber", label: "Account Number", type: "text" },
     { name: "totalOutstanding", label: "Total Outstanding", type: "number", required: true },
     { name: "totalOverdue", label: "Total Overdue", type: "number" },

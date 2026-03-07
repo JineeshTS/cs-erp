@@ -5,47 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { DdmForm } from "@/components/demurrage-detention-management/ddm-form";
 import type { FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
-
-const NOTIFICATION_FIELDS: FieldConfig[] = [
-  {
-    name: "notificationType",
-    label: "Notification Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "free_time_expiry", label: "Free Time Expiry" },
-      { value: "demurrage_start", label: "Demurrage Start" },
-      { value: "detention_start", label: "Detention Start" },
-      { value: "invoice", label: "Invoice" },
-      { value: "reminder", label: "Reminder" },
-      { value: "escalation", label: "Escalation" },
-      { value: "custom", label: "Custom" },
-    ],
-  },
-  {
-    name: "channel",
-    label: "Channel",
-    type: "select",
-    required: true,
-    options: [
-      { value: "email", label: "Email" },
-      { value: "sms", label: "SMS" },
-      { value: "portal", label: "Portal" },
-      { value: "whatsapp", label: "WhatsApp" },
-    ],
-  },
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "customerEmail", label: "Customer Email", type: "text" },
-  { name: "customerPhone", label: "Customer Phone", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "subject", label: "Subject", type: "text", required: true },
-  { name: "body", label: "Body", type: "textarea", required: true },
-  { name: "templateName", label: "Template Name", type: "text" },
-  { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
-  { name: "relatedEntityType", label: "Related Entity Type", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function NewNotificationPage() {
   const session = await getSession();
@@ -55,6 +15,48 @@ export default async function NewNotificationPage() {
   )
     redirect("/demurrage-detention-management/notifications");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const NOTIFICATION_FIELDS: FieldConfig[] = [
+    {
+      name: "notificationType",
+      label: "Notification Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "free_time_expiry", label: "Free Time Expiry" },
+        { value: "demurrage_start", label: "Demurrage Start" },
+        { value: "detention_start", label: "Detention Start" },
+        { value: "invoice", label: "Invoice" },
+        { value: "reminder", label: "Reminder" },
+        { value: "escalation", label: "Escalation" },
+        { value: "custom", label: "Custom" },
+      ],
+    },
+    {
+      name: "channel",
+      label: "Channel",
+      type: "select",
+      required: true,
+      options: [
+        { value: "email", label: "Email" },
+        { value: "sms", label: "SMS" },
+        { value: "portal", label: "Portal" },
+        { value: "whatsapp", label: "WhatsApp" },
+      ],
+    },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerEmail", label: "Customer Email", type: "text" },
+    { name: "customerPhone", label: "Customer Phone", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "subject", label: "Subject", type: "text", required: true },
+    { name: "body", label: "Body", type: "textarea", required: true },
+    { name: "templateName", label: "Template Name", type: "text" },
+    { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
+    { name: "relatedEntityType", label: "Related Entity Type", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

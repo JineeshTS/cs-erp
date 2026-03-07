@@ -4,34 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { IotForm, type FieldConfig } from "@/components/real-time-iot-asset-tracking/iot-form";
-
-const VESSEL_POSITION_FIELDS: FieldConfig[] = [
-  {
-    name: "positionType",
-    label: "Position Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "ais_report", label: "AIS Report" },
-      { value: "manual_position", label: "Manual Position" },
-      { value: "satellite_fix", label: "Satellite Fix" },
-      { value: "port_arrival", label: "Port Arrival" },
-      { value: "port_departure", label: "Port Departure" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "vesselImo", label: "Vessel IMO", type: "text" },
-  { name: "mmsi", label: "MMSI", type: "text" },
-  { name: "latitude", label: "Latitude", type: "text" },
-  { name: "longitude", label: "Longitude", type: "text" },
-  { name: "courseOverGround", label: "Course Over Ground", type: "text" },
-  { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
-  { name: "navStatus", label: "Nav Status", type: "text" },
-  { name: "destination", label: "Destination", type: "text" },
-  { name: "eta", label: "ETA", type: "datetime-local" },
-  { name: "draught", label: "Draught", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewVesselPositionPage() {
   const session = await getSession();
@@ -41,6 +14,35 @@ export default async function NewVesselPositionPage() {
   )
     redirect("/real-time-iot-asset-tracking/vessel-positions");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const VESSEL_POSITION_FIELDS: FieldConfig[] = [
+    {
+      name: "positionType",
+      label: "Position Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "ais_report", label: "AIS Report" },
+        { value: "manual_position", label: "Manual Position" },
+        { value: "satellite_fix", label: "Satellite Fix" },
+        { value: "port_arrival", label: "Port Arrival" },
+        { value: "port_departure", label: "Port Departure" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "mmsi", label: "MMSI", type: "text" },
+    { name: "latitude", label: "Latitude", type: "text" },
+    { name: "longitude", label: "Longitude", type: "text" },
+    { name: "courseOverGround", label: "Course Over Ground", type: "text" },
+    { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
+    { name: "navStatus", label: "Nav Status", type: "text" },
+    { name: "destination", label: "Destination", type: "text" },
+    { name: "eta", label: "ETA", type: "datetime-local" },
+    { name: "draught", label: "Draught", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

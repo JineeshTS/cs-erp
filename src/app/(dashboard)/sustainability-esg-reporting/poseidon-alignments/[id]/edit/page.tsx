@@ -5,36 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getPoseidonAlignment } from "@/lib/sustainability-esg-reporting/service";
 import { SerForm, type FieldConfig } from "@/components/sustainability-esg-reporting/ser-form";
-
-const ALIGNMENT_FIELDS: FieldConfig[] = [
-  {
-    name: "alignmentType",
-    label: "Alignment Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual_assessment", label: "Annual Assessment" },
-      { value: "vessel_scoring", label: "Vessel Scoring" },
-      { value: "portfolio_alignment", label: "Portfolio Alignment" },
-      {
-        value: "decarbonization_trajectory",
-        label: "Decarbonization Trajectory",
-      },
-      { value: "reporting_disclosure", label: "Reporting Disclosure" },
-    ],
-  },
-  { name: "reportingYear", label: "Reporting Year", type: "number" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "vesselImo", label: "Vessel IMO", type: "text" },
-  { name: "vesselType", label: "Vessel Type", type: "text" },
-  { name: "aeoi", label: "AEOI", type: "text" },
-  { name: "requiredAeoi", label: "Required AEOI", type: "text" },
-  { name: "alignmentDelta", label: "Alignment Delta", type: "text" },
-  { name: "climateAligned", label: "Climate Aligned", type: "checkbox" },
-  { name: "portfolioScore", label: "Portfolio Score", type: "text" },
-  { name: "trajectoryTarget", label: "Trajectory Target", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditPoseidonAlignmentPage({
   params,
@@ -46,6 +17,37 @@ export default async function EditPoseidonAlignmentPage({
   if (!(await hasPermission(session.id, session.tenantId, "ser:edit")))
     redirect("/sustainability-esg-reporting/poseidon-alignments");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const ALIGNMENT_FIELDS: FieldConfig[] = [
+    {
+      name: "alignmentType",
+      label: "Alignment Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual_assessment", label: "Annual Assessment" },
+        { value: "vessel_scoring", label: "Vessel Scoring" },
+        { value: "portfolio_alignment", label: "Portfolio Alignment" },
+        {
+          value: "decarbonization_trajectory",
+          label: "Decarbonization Trajectory",
+        },
+        { value: "reporting_disclosure", label: "Reporting Disclosure" },
+      ],
+    },
+    { name: "reportingYear", label: "Reporting Year", type: "number" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "vesselType", label: "Vessel Type", type: "text" },
+    { name: "aeoi", label: "AEOI", type: "text" },
+    { name: "requiredAeoi", label: "Required AEOI", type: "text" },
+    { name: "alignmentDelta", label: "Alignment Delta", type: "text" },
+    { name: "climateAligned", label: "Climate Aligned", type: "checkbox" },
+    { name: "portfolioScore", label: "Portfolio Score", type: "text" },
+    { name: "trajectoryTarget", label: "Trajectory Target", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getPoseidonAlignment(id, session.tenantId);

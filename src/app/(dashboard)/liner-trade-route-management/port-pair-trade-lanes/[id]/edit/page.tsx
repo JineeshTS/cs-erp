@@ -6,35 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getPortPairTradeLane } from "@/lib/liner-trade-route-management/service";
 import { LtrForm } from "@/components/liner-trade-route-management/ltr-form";
 import type { FieldConfig } from "@/components/liner-trade-route-management/ltr-form";
-
-const TRADE_LANE_FIELDS: FieldConfig[] = [
-  { name: "originPort", label: "Origin Port", type: "text", required: true },
-  { name: "originCountry", label: "Origin Country", type: "text", required: true },
-  { name: "originRegion", label: "Origin Region", type: "text" },
-  { name: "destinationPort", label: "Destination Port", type: "text", required: true },
-  { name: "destinationCountry", label: "Destination Country", type: "text", required: true },
-  { name: "destinationRegion", label: "Destination Region", type: "text" },
-  {
-    name: "tradeDirection",
-    label: "Trade Direction",
-    type: "select",
-    required: true,
-    options: [
-      { value: "eastbound", label: "Eastbound" },
-      { value: "westbound", label: "Westbound" },
-      { value: "northbound", label: "Northbound" },
-      { value: "southbound", label: "Southbound" },
-      { value: "intra_regional", label: "Intra-Regional" },
-    ],
-  },
-  { name: "distanceNm", label: "Distance (NM)", type: "number" },
-  { name: "averageTransitDays", label: "Average Transit Days", type: "number" },
-  { name: "competitorCount", label: "Competitor Count", type: "number" },
-  { name: "marketSharePercent", label: "Market Share (%)", type: "text" },
-  { name: "avgFreightRate", label: "Avg Freight Rate", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditPortPairTradeLanePage({
   params,
@@ -45,6 +17,40 @@ export default async function EditPortPairTradeLanePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "liner:edit")))
     redirect("/liner-trade-route-management/port-pair-trade-lanes");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const TRADE_LANE_FIELDS: FieldConfig[] = [
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts, required: true },
+    { name: "originCountry", label: "Origin Country", type: "text", required: true },
+    { name: "originRegion", label: "Origin Region", type: "text" },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts, required: true },
+    { name: "destinationCountry", label: "Destination Country", type: "text", required: true },
+    { name: "destinationRegion", label: "Destination Region", type: "text" },
+    {
+      name: "tradeDirection",
+      label: "Trade Direction",
+      type: "select",
+      required: true,
+      options: [
+        { value: "eastbound", label: "Eastbound" },
+        { value: "westbound", label: "Westbound" },
+        { value: "northbound", label: "Northbound" },
+        { value: "southbound", label: "Southbound" },
+        { value: "intra_regional", label: "Intra-Regional" },
+      ],
+    },
+    { name: "distanceNm", label: "Distance (NM)", type: "number" },
+    { name: "averageTransitDays", label: "Average Transit Days", type: "number" },
+    { name: "competitorCount", label: "Competitor Count", type: "number" },
+    { name: "marketSharePercent", label: "Market Share (%)", type: "text" },
+    { name: "avgFreightRate", label: "Avg Freight Rate", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

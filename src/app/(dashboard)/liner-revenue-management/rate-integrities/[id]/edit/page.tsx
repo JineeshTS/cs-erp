@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getRateIntegrity } from "@/lib/liner-revenue-management/service";
 import { LrmForm, type FieldConfig } from "@/components/liner-revenue-management/lrm-form";
-
-const RATE_INTEGRITY_FIELDS: FieldConfig[] = [
-  {
-    name: "integrityType",
-    label: "Integrity Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "rate_audit", label: "Rate Audit" },
-      { value: "discount_review", label: "Discount Review" },
-      { value: "tariff_compliance", label: "Tariff Compliance" },
-      { value: "approval_check", label: "Approval Check" },
-      { value: "deviation_alert", label: "Deviation Alert" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "publishedRate", label: "Published Rate", type: "text" },
-  { name: "appliedRate", label: "Applied Rate", type: "text" },
-  { name: "discountPct", label: "Discount %", type: "text" },
-  { name: "maxAllowedDiscount", label: "Max Allowed Discount", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "authorized", label: "Authorized", type: "checkbox" },
-  { name: "authorizedBy", label: "Authorized By", type: "text" },
-  { name: "violationSeverity", label: "Violation Severity", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRateIntegrityPage({
   params,
@@ -42,6 +16,38 @@ export default async function EditRateIntegrityPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "lrm:edit")))
     redirect("/liner-revenue-management/rate-integrities");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const RATE_INTEGRITY_FIELDS: FieldConfig[] = [
+    {
+      name: "integrityType",
+      label: "Integrity Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "rate_audit", label: "Rate Audit" },
+        { value: "discount_review", label: "Discount Review" },
+        { value: "tariff_compliance", label: "Tariff Compliance" },
+        { value: "approval_check", label: "Approval Check" },
+        { value: "deviation_alert", label: "Deviation Alert" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "publishedRate", label: "Published Rate", type: "text" },
+    { name: "appliedRate", label: "Applied Rate", type: "text" },
+    { name: "discountPct", label: "Discount %", type: "text" },
+    { name: "maxAllowedDiscount", label: "Max Allowed Discount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "authorized", label: "Authorized", type: "checkbox" },
+    { name: "authorizedBy", label: "Authorized By", type: "text" },
+    { name: "violationSeverity", label: "Violation Severity", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

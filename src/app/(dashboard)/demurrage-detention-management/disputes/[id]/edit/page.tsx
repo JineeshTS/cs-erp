@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getDdmDispute } from "@/lib/demurrage-detention-management/service";
 import { DdmForm, FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditDisputePage({
   params,
@@ -14,6 +15,11 @@ export default async function EditDisputePage({
   if (!(await hasPermission(session.id, session.tenantId, "demurrage:edit")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const dispute = await getDdmDispute(id, session.tenantId);
   if (!dispute) notFound();
@@ -28,9 +34,8 @@ export default async function EditDisputePage({
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
-      placeholder: "Customer name",
     },
     {
       name: "containerNumber",
@@ -75,8 +80,7 @@ export default async function EditDisputePage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "filedDate",

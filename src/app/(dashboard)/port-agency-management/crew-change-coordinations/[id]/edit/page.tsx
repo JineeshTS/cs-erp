@@ -6,64 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCrewChangeCoordination } from "@/lib/port-agency-management/service";
 import { PamForm } from "@/components/port-agency-management/pam-form";
 import type { FieldConfig } from "@/components/port-agency-management/pam-form";
-
-const CREW_CHANGE_COORDINATION_FIELDS: FieldConfig[] = [
-  {
-    name: "coordinationType",
-    label: "Coordination Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "sign_on", label: "Sign On" },
-      { value: "sign_off", label: "Sign Off" },
-      { value: "relief", label: "Relief" },
-      { value: "emergency", label: "Emergency" },
-      { value: "medical_repatriation", label: "Medical Repatriation" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "portCallRef", label: "Port Call Ref", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  {
-    name: "crewMemberName",
-    label: "Crew Member Name",
-    type: "text",
-    required: true,
-  },
-  { name: "crewRank", label: "Crew Rank", type: "text" },
-  { name: "nationality", label: "Nationality", type: "text" },
-  { name: "passportNumber", label: "Passport Number", type: "text" },
-  { name: "seamanBookNumber", label: "Seaman Book Number", type: "text" },
-  { name: "visaRequired", label: "Visa Required", type: "checkbox" },
-  {
-    name: "visaStatus",
-    label: "Visa Status",
-    type: "select",
-    options: [
-      { value: "not_required", label: "Not Required" },
-      { value: "pending", label: "Pending" },
-      { value: "approved", label: "Approved" },
-      { value: "rejected", label: "Rejected" },
-    ],
-  },
-  { name: "hotelRequired", label: "Hotel Required", type: "checkbox" },
-  {
-    name: "transportArranged",
-    label: "Transport Arranged",
-    type: "checkbox",
-  },
-  {
-    name: "transportDetails",
-    label: "Transport Details",
-    type: "textarea",
-  },
-  { name: "scheduledDate", label: "Scheduled Date", type: "datetime-local" },
-  { name: "estimatedCost", label: "Estimated Cost", type: "number" },
-  { name: "actualCost", label: "Actual Cost", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCrewChangeCoordinationPage({
   params,
@@ -74,6 +17,70 @@ export default async function EditCrewChangeCoordinationPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "port_agency:edit")))
     redirect("/port-agency-management/crew-change-coordinations");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const CREW_CHANGE_COORDINATION_FIELDS: FieldConfig[] = [
+    {
+      name: "coordinationType",
+      label: "Coordination Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "sign_on", label: "Sign On" },
+        { value: "sign_off", label: "Sign Off" },
+        { value: "relief", label: "Relief" },
+        { value: "emergency", label: "Emergency" },
+        { value: "medical_repatriation", label: "Medical Repatriation" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "portCallRef", label: "Port Call Ref", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    {
+      name: "crewMemberName",
+      label: "Crew Member Name",
+      type: "text",
+      required: true,
+    },
+    { name: "crewRank", label: "Crew Rank", type: "text" },
+    { name: "nationality", label: "Nationality", type: "text" },
+    { name: "passportNumber", label: "Passport Number", type: "text" },
+    { name: "seamanBookNumber", label: "Seaman Book Number", type: "text" },
+    { name: "visaRequired", label: "Visa Required", type: "checkbox" },
+    {
+      name: "visaStatus",
+      label: "Visa Status",
+      type: "select",
+      options: [
+        { value: "not_required", label: "Not Required" },
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+      ],
+    },
+    { name: "hotelRequired", label: "Hotel Required", type: "checkbox" },
+    {
+      name: "transportArranged",
+      label: "Transport Arranged",
+      type: "checkbox",
+    },
+    {
+      name: "transportDetails",
+      label: "Transport Details",
+      type: "textarea",
+    },
+    { name: "scheduledDate", label: "Scheduled Date", type: "datetime-local" },
+    { name: "estimatedCost", label: "Estimated Cost", type: "number" },
+    { name: "actualCost", label: "Actual Cost", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

@@ -6,38 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCashToMaster } from "@/lib/port-agency-management/service";
 import { PamForm } from "@/components/port-agency-management/pam-form";
 import type { FieldConfig } from "@/components/port-agency-management/pam-form";
-
-const CASH_TO_MASTER_FIELDS: FieldConfig[] = [
-  {
-    name: "transactionType",
-    label: "Transaction Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "cash_advance", label: "Cash Advance" },
-      { value: "petty_cash", label: "Petty Cash" },
-      { value: "reimbursement", label: "Reimbursement" },
-      { value: "settlement", label: "Settlement" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "portCallRef", label: "Port Call Ref", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "masterName", label: "Master Name", type: "text" },
-  {
-    name: "requestedAmount",
-    label: "Requested Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "exchangeRate", label: "Exchange Rate", type: "number" },
-  { name: "localCurrency", label: "Local Currency", type: "text" },
-  { name: "localAmount", label: "Local Amount", type: "number" },
-  { name: "purpose", label: "Purpose", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCashToMasterPage({
   params,
@@ -48,6 +17,44 @@ export default async function EditCashToMasterPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "port_agency:edit")))
     redirect("/port-agency-management/cash-to-masters");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const CASH_TO_MASTER_FIELDS: FieldConfig[] = [
+    {
+      name: "transactionType",
+      label: "Transaction Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "cash_advance", label: "Cash Advance" },
+        { value: "petty_cash", label: "Petty Cash" },
+        { value: "reimbursement", label: "Reimbursement" },
+        { value: "settlement", label: "Settlement" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "portCallRef", label: "Port Call Ref", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "masterName", label: "Master Name", type: "text" },
+    {
+      name: "requestedAmount",
+      label: "Requested Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "exchangeRate", label: "Exchange Rate", type: "number" },
+    { name: "localCurrency", label: "Local Currency", type: "text" },
+    { name: "localAmount", label: "Local Amount", type: "number" },
+    { name: "purpose", label: "Purpose", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

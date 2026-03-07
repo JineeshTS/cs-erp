@@ -5,64 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { IcdForm } from "@/components/intermodal-icd-operations/icd-form";
 import type { FieldConfig } from "@/components/intermodal-icd-operations/icd-form";
-
-const ROUTE_OPTIMIZATION_FIELDS: FieldConfig[] = [
-  { name: "requestedByName", label: "Requested By", type: "text" },
-  {
-    name: "originLocation",
-    label: "Origin",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "destinationLocation",
-    label: "Destination",
-    type: "text",
-    required: true,
-  },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "containerCount", label: "Container Count", type: "number" },
-  { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text" },
-  {
-    name: "requiredDeliveryAt",
-    label: "Required Delivery",
-    type: "datetime-local",
-  },
-  {
-    name: "optimizationCriteria",
-    label: "Optimization Criteria",
-    type: "select",
-    required: true,
-    options: [
-      { value: "cost", label: "Cost" },
-      { value: "time", label: "Time" },
-      { value: "carbon", label: "Carbon" },
-      { value: "balanced", label: "Balanced" },
-    ],
-  },
-  {
-    name: "selectedRouteIndex",
-    label: "Selected Route Index",
-    type: "number",
-  },
-  {
-    name: "selectedRouteSummary",
-    label: "Selected Route Summary",
-    type: "textarea",
-  },
-  { name: "estimatedCost", label: "Estimated Cost", type: "text" },
-  {
-    name: "estimatedTransitDays",
-    label: "Est. Transit Days",
-    type: "number",
-  },
-  { name: "estimatedCarbonKg", label: "Est. Carbon (kg)", type: "text" },
-  { name: "aiModelUsed", label: "AI Model Used", type: "text" },
-  { name: "aiConfidenceScore", label: "AI Confidence Score", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewRouteOptimizationPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -72,6 +15,65 @@ export default async function NewRouteOptimizationPage(): Promise<React.ReactNod
   )
     redirect("/intermodal-icd-operations/route-optimizations");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const ROUTE_OPTIMIZATION_FIELDS: FieldConfig[] = [
+    { name: "requestedByName", label: "Requested By", type: "text" },
+    {
+      name: "originLocation",
+      label: "Origin",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "destinationLocation",
+      label: "Destination",
+      type: "text",
+      required: true,
+    },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "containerCount", label: "Container Count", type: "number" },
+    { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text" },
+    {
+      name: "requiredDeliveryAt",
+      label: "Required Delivery",
+      type: "datetime-local",
+    },
+    {
+      name: "optimizationCriteria",
+      label: "Optimization Criteria",
+      type: "select",
+      required: true,
+      options: [
+        { value: "cost", label: "Cost" },
+        { value: "time", label: "Time" },
+        { value: "carbon", label: "Carbon" },
+        { value: "balanced", label: "Balanced" },
+      ],
+    },
+    {
+      name: "selectedRouteIndex",
+      label: "Selected Route Index",
+      type: "number",
+    },
+    {
+      name: "selectedRouteSummary",
+      label: "Selected Route Summary",
+      type: "textarea",
+    },
+    { name: "estimatedCost", label: "Estimated Cost", type: "text" },
+    {
+      name: "estimatedTransitDays",
+      label: "Est. Transit Days",
+      type: "number",
+    },
+    { name: "estimatedCarbonKg", label: "Est. Carbon (kg)", type: "text" },
+    { name: "aiModelUsed", label: "AI Model Used", type: "text" },
+    { name: "aiConfidenceScore", label: "AI Confidence Score", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

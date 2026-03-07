@@ -4,39 +4,42 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { AnmForm } from "@/components/agent-network-management/anm-form";
 import type { FieldConfig } from "@/components/agent-network-management/anm-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "incentiveType",
-    label: "Incentive Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "volume_bonus", label: "Volume Bonus" },
-      { value: "target_achievement", label: "Target Achievement" },
-      { value: "growth_incentive", label: "Growth Incentive" },
-      { value: "loyalty_bonus", label: "Loyalty Bonus" },
-      { value: "special_campaign", label: "Special Campaign" },
-    ],
-  },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "incentivePeriod", label: "Incentive Period", type: "text" },
-  { name: "targetTeu", label: "Target TEU", type: "text" },
-  { name: "achievedTeu", label: "Achieved TEU", type: "text" },
-  { name: "bonusRate", label: "Bonus Rate", type: "text" },
-  { name: "bonusAmount", label: "Bonus Amount", type: "text" },
-  { name: "incentiveCurrency", label: "Currency", type: "text" },
-  { name: "payoutDate", label: "Payout Date", type: "datetime-local" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function NewAgentIncentivePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "anm:create")))
     redirect("/agent-network-management/agent-incentives");
+
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "incentiveType",
+      label: "Incentive Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "volume_bonus", label: "Volume Bonus" },
+        { value: "target_achievement", label: "Target Achievement" },
+        { value: "growth_incentive", label: "Growth Incentive" },
+        { value: "loyalty_bonus", label: "Loyalty Bonus" },
+        { value: "special_campaign", label: "Special Campaign" },
+      ],
+    },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "incentivePeriod", label: "Incentive Period", type: "text" },
+    { name: "targetTeu", label: "Target TEU", type: "text" },
+    { name: "achievedTeu", label: "Achieved TEU", type: "text" },
+    { name: "bonusRate", label: "Bonus Rate", type: "text" },
+    { name: "bonusAmount", label: "Bonus Amount", type: "text" },
+    { name: "incentiveCurrency", label: "Currency", type: "text" },
+    { name: "payoutDate", label: "Payout Date", type: "datetime-local" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

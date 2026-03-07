@@ -8,56 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { melsLegalEntities } from "@/db/schema";
 import { MelsForm } from "@/components/multi-entity-legal-structure/mels-form";
 import type { FieldConfig } from "@/components/multi-entity-legal-structure/mels-form";
-
-const FIELDS: FieldConfig[] = [
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "shortName", label: "Short Name", type: "text" },
-  { name: "slug", label: "Slug", type: "text", required: true },
-  {
-    name: "entityType",
-    label: "Entity Type",
-    type: "select",
-    options: [
-      { value: "holding", label: "Holding" },
-      { value: "subsidiary", label: "Subsidiary" },
-      { value: "branch", label: "Branch" },
-      { value: "joint_venture", label: "Joint Venture" },
-      { value: "representative", label: "Representative" },
-    ],
-  },
-  { name: "legalName", label: "Legal Name", type: "text", required: true },
-  { name: "registrationNumber", label: "Registration Number", type: "text" },
-  { name: "taxId", label: "Tax ID", type: "text" },
-  { name: "vatNumber", label: "VAT Number", type: "text" },
-  {
-    name: "country",
-    label: "Country Code",
-    type: "text",
-    required: true,
-    placeholder: "QA",
-  },
-  { name: "region", label: "Region", type: "text" },
-  {
-    name: "baseCurrency",
-    label: "Base Currency",
-    type: "text",
-    placeholder: "QAR",
-  },
-  {
-    name: "timezone",
-    label: "Timezone",
-    type: "text",
-    placeholder: "Asia/Qatar",
-  },
-  {
-    name: "fiscalYearStart",
-    label: "Fiscal Year Start",
-    type: "text",
-    placeholder: "01-01",
-  },
-  { name: "isActive", label: "Active", type: "checkbox" },
-  { name: "isHeadquarters", label: "Headquarters", type: "checkbox" },
-];
+import { getCurrencyOptions, getCountryOptions } from "@/lib/lookups";
 
 export default async function EditLegalEntityPage({
   params,
@@ -70,6 +21,59 @@ export default async function EditLegalEntityPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "entities:edit")))
     redirect("/multi-entity-legal-structure/legal-entities");
+
+  const [currencyOpts, countryOpts] = await Promise.all([
+    getCurrencyOptions(),
+    getCountryOptions(),
+  ]);
+
+  const FIELDS: FieldConfig[] = [
+    { name: "name", label: "Name", type: "text", required: true },
+    { name: "shortName", label: "Short Name", type: "text" },
+    { name: "slug", label: "Slug", type: "text", required: true },
+    {
+      name: "entityType",
+      label: "Entity Type",
+      type: "select",
+      options: [
+        { value: "holding", label: "Holding" },
+        { value: "subsidiary", label: "Subsidiary" },
+        { value: "branch", label: "Branch" },
+        { value: "joint_venture", label: "Joint Venture" },
+        { value: "representative", label: "Representative" },
+      ],
+    },
+    { name: "legalName", label: "Legal Name", type: "text", required: true },
+    { name: "registrationNumber", label: "Registration Number", type: "text" },
+    { name: "taxId", label: "Tax ID", type: "text" },
+    { name: "vatNumber", label: "VAT Number", type: "text" },
+    {
+      name: "country",
+      label: "Country Code",
+      type: "select", options: countryOpts,
+      required: true,
+    },
+    { name: "region", label: "Region", type: "text" },
+    {
+      name: "baseCurrency",
+      label: "Base Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "timezone",
+      label: "Timezone",
+      type: "text",
+      placeholder: "Asia/Qatar",
+    },
+    {
+      name: "fiscalYearStart",
+      label: "Fiscal Year Start",
+      type: "text",
+      placeholder: "01-01",
+    },
+    { name: "isActive", label: "Active", type: "checkbox" },
+    { name: "isHeadquarters", label: "Headquarters", type: "checkbox" },
+  ];
 
   const [entity] = await db
     .select()

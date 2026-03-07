@@ -1,0 +1,112 @@
+{
+  "node_type": "feature",
+  "id": "F-003",
+  "name": "Global Master Data Wiring — All Form Pages",
+  "created_at": "2026-03-07",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-002", "relationship_type": "implements" },
+    { "target_id": "F-002", "relationship_type": "extends" }
+  ],
+  "content": {
+    "category": "Forms & Data Integrity",
+    "priority": "must_have",
+    "complexity": "high",
+    "description": "Wire all 36 remaining form pages across 13 modules to use master data lookups instead of plain text inputs. Create a centralized lookups module at src/lib/lookups.ts with 8 query functions. Update each form page to fetch options server-side and pass to form components as select dropdowns.",
+    "capabilities": [
+      "Centralized src/lib/lookups.ts with 8 lookup functions (ports, customers, vessels, container types, commodities, terminals, currencies, countries)",
+      "All port fields across all modules render as select dropdowns from mdm_ports",
+      "All customer/counterparty fields render as select dropdowns from mdm_customers",
+      "All vessel fields render as select dropdowns from mdm_vessels",
+      "All container type fields render as select dropdowns from mdm_container_types",
+      "All currency fields render as select dropdowns from hardcoded ISO 4217 list",
+      "All country fields render as select dropdowns from hardcoded ISO 3166 list",
+      "Commodity/HS code fields render as select dropdowns from mdm_commodities",
+      "Terminal/depot fields render as select dropdowns from mdm_terminals"
+    ],
+    "acceptance_criteria": [
+      "src/lib/lookups.ts exports 8 functions: getPortOptions, getCustomerOptions, getVesselOptions, getContainerTypeOptions, getCommodityOptions, getTerminalOptions, getCurrencyOptions, getCountryOptions",
+      "All 36 form pages import and use appropriate lookup functions",
+      "All port fields (20+ occurrences) are type:'select' with DB-sourced options",
+      "All customer/counterparty fields (15+ occurrences) are type:'select' with DB-sourced options",
+      "All vessel fields (12+ occurrences) are type:'select' with DB-sourced options",
+      "All currency fields (20+ occurrences) are type:'select' with hardcoded ISO list",
+      "Edit forms pre-select the existing value correctly",
+      "Cargo type, status, priority fields remain hardcoded (business logic, not master data)",
+      "npx tsc --noEmit passes with 0 errors",
+      "Existing validation schemas updated to accept DB values (relax hardcoded enums where needed)"
+    ],
+    "edge_cases": [
+      "Master data table empty for a tenant — dropdown shows only 'Select...' placeholder",
+      "Existing record has value no longer in master data — edit form shows blank selection (user must re-select)",
+      "Multiple tenants — each sees only their own master data",
+      "Deleted master data (soft delete) — excluded from options via isNull(deletedAt) filter",
+      "Large master data sets (100+ ports) — capped at 50 results, ordered alphabetically"
+    ],
+    "error_handling": [
+      "DB query failure in lookup — Next.js error boundary catches and shows error page",
+      "Form submission with value not in current lookup list — API validation accepts (loose validation on reference fields)"
+    ],
+    "implementation_phases": [
+      {
+        "phase": "1 — Lookups Module",
+        "description": "Move existing 3 functions from src/lib/customer-portal/lookups.ts to src/lib/lookups.ts, add 5 new functions (vessels, commodities, terminals, currencies, countries)",
+        "files": ["src/lib/lookups.ts"],
+        "estimated_lines": 120
+      },
+      {
+        "phase": "2 — Sales CRM Forms (5 pages)",
+        "description": "Wire contracts, opportunities, leads, customer-contacts, campaigns forms",
+        "files": [
+          "src/app/(dashboard)/sales-crm/contracts/new/page.tsx",
+          "src/app/(dashboard)/sales-crm/contracts/[id]/edit/page.tsx",
+          "src/app/(dashboard)/sales-crm/opportunities/new/page.tsx",
+          "src/app/(dashboard)/sales-crm/opportunities/[id]/edit/page.tsx",
+          "src/app/(dashboard)/sales-crm/leads/new/page.tsx",
+          "src/app/(dashboard)/sales-crm/leads/[id]/edit/page.tsx",
+          "src/app/(dashboard)/sales-crm/customer-contacts/new/page.tsx",
+          "src/app/(dashboard)/sales-crm/customer-contacts/[id]/edit/page.tsx",
+          "src/app/(dashboard)/sales-crm/campaigns/new/page.tsx",
+          "src/app/(dashboard)/sales-crm/campaigns/[id]/edit/page.tsx"
+        ]
+      },
+      {
+        "phase": "3 — Chartering & Vessel Forms (4 pages)",
+        "description": "Wire fixtures, charter-parties, tc-contracts, voyage-estimates forms",
+        "files": [
+          "src/app/(dashboard)/chartering-vessel-management/fixtures/new/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/fixtures/[id]/edit/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/voyage-estimates/new/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/voyage-estimates/[id]/edit/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/tc-contracts/new/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/tc-contracts/[id]/edit/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/coa-contracts/new/page.tsx",
+          "src/app/(dashboard)/chartering-vessel-management/coa-contracts/[id]/edit/page.tsx"
+        ]
+      },
+      {
+        "phase": "4 — Operations Modules (bunker, DG, cargo claims, port tariff, schedule)",
+        "description": "Wire bunker orders, DG manifests, claim registrations, port dues, port sequences forms",
+        "files_pattern": "src/app/(dashboard)/{module}/*/new/page.tsx and [id]/edit/page.tsx"
+      },
+      {
+        "phase": "5 — Finance & Equipment Modules (demurrage, freight invoice, container leasing, OOG)",
+        "description": "Wire detention trackings, invoice line items, lease agreements, cargo acceptances forms",
+        "files_pattern": "src/app/(dashboard)/{module}/*/new/page.tsx and [id]/edit/page.tsx"
+      },
+      {
+        "phase": "6 — Admin Modules (integration, master data)",
+        "description": "Wire customs filings, MDM customer/port forms with country/currency dropdowns",
+        "files_pattern": "src/app/(dashboard)/{module}/*/new/page.tsx and [id]/edit/page.tsx"
+      }
+    ],
+    "affected_files_summary": {
+      "new_files": ["src/lib/lookups.ts"],
+      "modified_files": "36 form pages (new + edit) across 13 modules",
+      "validation_files": "Up to 10 validation.ts files may need enum relaxation",
+      "deleted_files": ["src/lib/customer-portal/lookups.ts (moved to src/lib/lookups.ts)"]
+    }
+  }
+}

@@ -8,39 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { csoComplaints } from "@/db/schema";
 import { CsoForm } from "@/components/customer-service-operations/cso-form";
 import type { FieldConfig } from "@/components/customer-service-operations/cso-form";
-
-const COMPLAINT_FIELDS: FieldConfig[] = [
-  { name: "complaintNumber", label: "Complaint Number", type: "text", required: true },
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "customerEmail", label: "Customer Email", type: "text" },
-  { name: "customerPhone", label: "Customer Phone", type: "text" },
-  { name: "subject", label: "Subject", type: "text", required: true },
-  { name: "complaintType", label: "Complaint Type", type: "select", options: [
-    { value: "service", label: "Service" },
-    { value: "billing", label: "Billing" },
-    { value: "cargo_damage", label: "Cargo Damage" },
-    { value: "delay", label: "Delay" },
-    { value: "documentation", label: "Documentation" },
-    { value: "other", label: "Other" },
-  ]},
-  { name: "severity", label: "Severity", type: "select", options: [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
-    { value: "critical", label: "Critical" },
-  ]},
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "open", label: "Open" },
-    { value: "investigating", label: "Investigating" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "resolved", label: "Resolved" },
-    { value: "closed", label: "Closed" },
-  ]},
-  { name: "rootCause", label: "Root Cause", type: "textarea" },
-  { name: "correctionAction", label: "Correction Action", type: "textarea" },
-  { name: "preventiveAction", label: "Preventive Action", type: "textarea" },
-  { name: "description", label: "Description", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditComplaintPage({
   params,
@@ -52,6 +20,40 @@ export default async function EditComplaintPage({
   if (!(await hasPermission(session.id, session.tenantId, "customer_service:edit")))
     redirect("/customer-service-operations/complaints");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const COMPLAINT_FIELDS: FieldConfig[] = [
+    { name: "complaintNumber", label: "Complaint Number", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerEmail", label: "Customer Email", type: "text" },
+    { name: "customerPhone", label: "Customer Phone", type: "text" },
+    { name: "subject", label: "Subject", type: "text", required: true },
+    { name: "complaintType", label: "Complaint Type", type: "select", options: [
+      { value: "service", label: "Service" },
+      { value: "billing", label: "Billing" },
+      { value: "cargo_damage", label: "Cargo Damage" },
+      { value: "delay", label: "Delay" },
+      { value: "documentation", label: "Documentation" },
+      { value: "other", label: "Other" },
+    ]},
+    { name: "severity", label: "Severity", type: "select", options: [
+      { value: "low", label: "Low" },
+      { value: "medium", label: "Medium" },
+      { value: "high", label: "High" },
+      { value: "critical", label: "Critical" },
+    ]},
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "open", label: "Open" },
+      { value: "investigating", label: "Investigating" },
+      { value: "in_progress", label: "In Progress" },
+      { value: "resolved", label: "Resolved" },
+      { value: "closed", label: "Closed" },
+    ]},
+    { name: "rootCause", label: "Root Cause", type: "textarea" },
+    { name: "correctionAction", label: "Correction Action", type: "textarea" },
+    { name: "preventiveAction", label: "Preventive Action", type: "textarea" },
+    { name: "description", label: "Description", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

@@ -6,49 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getPortCallPlan } from "@/lib/port-agency-management/service";
 import { PamForm } from "@/components/port-agency-management/pam-form";
 import type { FieldConfig } from "@/components/port-agency-management/pam-form";
-
-const PORT_CALL_PLAN_FIELDS: FieldConfig[] = [
-  {
-    name: "planType",
-    label: "Plan Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "scheduled", label: "Scheduled" },
-      { value: "unscheduled", label: "Unscheduled" },
-      { value: "emergency", label: "Emergency" },
-      { value: "bunker_only", label: "Bunker Only" },
-      { value: "crew_change", label: "Crew Change" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "berthName", label: "Berth Name", type: "text" },
-  { name: "terminalName", label: "Terminal Name", type: "text" },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "agentContactEmail", label: "Agent Contact Email", type: "text" },
-  { name: "agentContactPhone", label: "Agent Contact Phone", type: "text" },
-  { name: "eta", label: "ETA", type: "datetime-local" },
-  { name: "etd", label: "ETD", type: "datetime-local" },
-  { name: "pilotRequired", label: "Pilot Required", type: "checkbox" },
-  { name: "tugRequired", label: "Tug Required", type: "checkbox" },
-  { name: "tugsCount", label: "Tugs Count", type: "number" },
-  {
-    name: "specialInstructions",
-    label: "Special Instructions",
-    type: "textarea",
-  },
-  {
-    name: "portChargesEstimate",
-    label: "Port Charges Estimate",
-    type: "number",
-  },
-  { name: "portChargesCurrency", label: "Port Charges Currency", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditPortCallPlanPage({
   params,
@@ -59,6 +17,55 @@ export default async function EditPortCallPlanPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "port_agency:edit")))
     redirect("/port-agency-management/port-call-plans");
+
+  const [portOpts, vesselOpts, customerOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+  ]);
+
+  const PORT_CALL_PLAN_FIELDS: FieldConfig[] = [
+    {
+      name: "planType",
+      label: "Plan Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "scheduled", label: "Scheduled" },
+        { value: "unscheduled", label: "Unscheduled" },
+        { value: "emergency", label: "Emergency" },
+        { value: "bunker_only", label: "Bunker Only" },
+        { value: "crew_change", label: "Crew Change" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "berthName", label: "Berth Name", type: "text" },
+    { name: "terminalName", label: "Terminal Name", type: "text" },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "agentContactEmail", label: "Agent Contact Email", type: "text" },
+    { name: "agentContactPhone", label: "Agent Contact Phone", type: "text" },
+    { name: "eta", label: "ETA", type: "datetime-local" },
+    { name: "etd", label: "ETD", type: "datetime-local" },
+    { name: "pilotRequired", label: "Pilot Required", type: "checkbox" },
+    { name: "tugRequired", label: "Tug Required", type: "checkbox" },
+    { name: "tugsCount", label: "Tugs Count", type: "number" },
+    {
+      name: "specialInstructions",
+      label: "Special Instructions",
+      type: "textarea",
+    },
+    {
+      name: "portChargesEstimate",
+      label: "Port Charges Estimate",
+      type: "number",
+    },
+    { name: "portChargesCurrency", label: "Port Charges Currency", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

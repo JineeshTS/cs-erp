@@ -6,47 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getSocialInsuranceRecord } from "@/lib/hr-payroll-shore-staff/service";
 import { HpsForm } from "@/components/hr-payroll-shore-staff/hps-form";
 import type { FieldConfig } from "@/components/hr-payroll-shore-staff/hps-form";
-
-const SOCIAL_INSURANCE_FIELDS: FieldConfig[] = [
-  {
-    name: "recordType",
-    label: "Record Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "gosi", label: "GOSI" },
-      { value: "pifss", label: "PIFSS" },
-      { value: "epf", label: "EPF" },
-      { value: "pension", label: "Pension" },
-      { value: "social_security", label: "Social Security" },
-    ],
-  },
-  { name: "employeeRef", label: "Employee Ref", type: "text" },
-  { name: "employeeName", label: "Employee Name", type: "text" },
-  { name: "schemeName", label: "Scheme Name", type: "text" },
-  { name: "registrationNumber", label: "Registration Number", type: "text" },
-  { name: "contributionPeriod", label: "Contribution Period", type: "text", placeholder: "YYYY-MM" },
-  { name: "employeeContribution", label: "Employee Contribution", type: "text" },
-  { name: "employerContribution", label: "Employer Contribution", type: "text" },
-  { name: "totalContribution", label: "Total Contribution", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "contributionRate", label: "Contribution Rate", type: "text" },
-  { name: "baseSalary", label: "Base Salary", type: "text" },
-  { name: "filingDate", label: "Filing Date", type: "datetime-local" },
-  { name: "filingRef", label: "Filing Ref", type: "text" },
-  {
-    name: "filingStatus",
-    label: "Filing Status",
-    type: "select",
-    options: [
-      { value: "pending", label: "Pending" },
-      { value: "filed", label: "Filed" },
-      { value: "accepted", label: "Accepted" },
-      { value: "rejected", label: "Rejected" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditSocialInsuranceRecordPage({
   params,
@@ -58,6 +18,48 @@ export default async function EditSocialInsuranceRecordPage({
   if (!(await hasPermission(session.id, session.tenantId, "hr:edit")))
     redirect("/hr-payroll-shore-staff/social-insurance-records");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const SOCIAL_INSURANCE_FIELDS: FieldConfig[] = [
+    {
+      name: "recordType",
+      label: "Record Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "gosi", label: "GOSI" },
+        { value: "pifss", label: "PIFSS" },
+        { value: "epf", label: "EPF" },
+        { value: "pension", label: "Pension" },
+        { value: "social_security", label: "Social Security" },
+      ],
+    },
+    { name: "employeeRef", label: "Employee Ref", type: "text" },
+    { name: "employeeName", label: "Employee Name", type: "text" },
+    { name: "schemeName", label: "Scheme Name", type: "text" },
+    { name: "registrationNumber", label: "Registration Number", type: "text" },
+    { name: "contributionPeriod", label: "Contribution Period", type: "text", placeholder: "YYYY-MM" },
+    { name: "employeeContribution", label: "Employee Contribution", type: "text" },
+    { name: "employerContribution", label: "Employer Contribution", type: "text" },
+    { name: "totalContribution", label: "Total Contribution", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "contributionRate", label: "Contribution Rate", type: "text" },
+    { name: "baseSalary", label: "Base Salary", type: "text" },
+    { name: "filingDate", label: "Filing Date", type: "datetime-local" },
+    { name: "filingRef", label: "Filing Ref", type: "text" },
+    {
+      name: "filingStatus",
+      label: "Filing Status",
+      type: "select",
+      options: [
+        { value: "pending", label: "Pending" },
+        { value: "filed", label: "Filed" },
+        { value: "accepted", label: "Accepted" },
+        { value: "rejected", label: "Rejected" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getSocialInsuranceRecord(id, session.tenantId);

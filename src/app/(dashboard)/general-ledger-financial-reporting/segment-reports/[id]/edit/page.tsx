@@ -6,40 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getSegmentReport } from "@/lib/general-ledger-financial-reporting/service";
 import { GlfrForm } from "@/components/general-ledger-financial-reporting/glfr-form";
 import type { FieldConfig } from "@/components/general-ledger-financial-reporting/glfr-form";
-
-const SEGMENT_REPORT_FIELDS: FieldConfig[] = [
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "entity", label: "Entity" },
-      { value: "trade_lane", label: "Trade Lane" },
-      { value: "geography", label: "Geography" },
-      { value: "business_unit", label: "Business Unit" },
-      { value: "product_line", label: "Product Line" },
-    ],
-  },
-  { name: "segmentName", label: "Segment Name", type: "text" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "revenue", label: "Revenue", type: "text" },
-  { name: "costOfRevenue", label: "Cost of Revenue", type: "text" },
-  { name: "grossProfit", label: "Gross Profit", type: "text" },
-  { name: "operatingExpenses", label: "Operating Expenses", type: "text" },
-  { name: "operatingIncome", label: "Operating Income", type: "text" },
-  { name: "segmentAssets", label: "Segment Assets", type: "text" },
-  { name: "segmentLiabilities", label: "Segment Liabilities", type: "text" },
-  {
-    name: "interSegmentRevenue",
-    label: "Inter-Segment Revenue",
-    type: "text",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditSegmentReportPage({
   params,
@@ -51,6 +18,41 @@ export default async function EditSegmentReportPage({
   if (!(await hasPermission(session.id, session.tenantId, "gl:edit")))
     redirect("/general-ledger-financial-reporting/segment-reports");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const SEGMENT_REPORT_FIELDS: FieldConfig[] = [
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "entity", label: "Entity" },
+        { value: "trade_lane", label: "Trade Lane" },
+        { value: "geography", label: "Geography" },
+        { value: "business_unit", label: "Business Unit" },
+        { value: "product_line", label: "Product Line" },
+      ],
+    },
+    { name: "segmentName", label: "Segment Name", type: "text" },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "revenue", label: "Revenue", type: "text" },
+    { name: "costOfRevenue", label: "Cost of Revenue", type: "text" },
+    { name: "grossProfit", label: "Gross Profit", type: "text" },
+    { name: "operatingExpenses", label: "Operating Expenses", type: "text" },
+    { name: "operatingIncome", label: "Operating Income", type: "text" },
+    { name: "segmentAssets", label: "Segment Assets", type: "text" },
+    { name: "segmentLiabilities", label: "Segment Liabilities", type: "text" },
+    {
+      name: "interSegmentRevenue",
+      label: "Inter-Segment Revenue",
+      type: "text",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getSegmentReport(id, session.tenantId);

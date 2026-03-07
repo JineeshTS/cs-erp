@@ -7,39 +7,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const SCHEDULE_DEVIATION_FIELDS: FieldConfig[] = [
-  {
-    name: "deviationType",
-    label: "Deviation Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "port_omission", label: "Port Omission" },
-      { value: "schedule_delay", label: "Schedule Delay" },
-      { value: "speed_change", label: "Speed Change" },
-      { value: "bunker_diversion", label: "Bunker Diversion" },
-      { value: "weather_routing", label: "Weather Routing" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "serviceName", label: "Service Name", type: "text" },
-  { name: "originalEta", label: "Original ETA", type: "datetime-local" },
-  { name: "revisedEta", label: "Revised ETA", type: "datetime-local" },
-  { name: "delayHours", label: "Delay Hours", type: "number" },
-  { name: "deviationReason", label: "Deviation Reason", type: "textarea" },
-  { name: "recoveryPlan", label: "Recovery Plan", type: "textarea" },
-  { name: "costImpact", label: "Cost Impact", type: "number" },
-  { name: "impactCurrency", label: "Impact Currency", type: "text" },
-  { name: "affectedPorts", label: "Affected Ports", type: "number" },
-  {
-    name: "recoveryAchieved",
-    label: "Recovery Achieved",
-    type: "checkbox",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewScheduleDeviationPage() {
   const session = await getSession();
@@ -47,6 +15,40 @@ export default async function NewScheduleDeviationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "loc:create")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const SCHEDULE_DEVIATION_FIELDS: FieldConfig[] = [
+    {
+      name: "deviationType",
+      label: "Deviation Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "port_omission", label: "Port Omission" },
+        { value: "schedule_delay", label: "Schedule Delay" },
+        { value: "speed_change", label: "Speed Change" },
+        { value: "bunker_diversion", label: "Bunker Diversion" },
+        { value: "weather_routing", label: "Weather Routing" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "serviceName", label: "Service Name", type: "text" },
+    { name: "originalEta", label: "Original ETA", type: "datetime-local" },
+    { name: "revisedEta", label: "Revised ETA", type: "datetime-local" },
+    { name: "delayHours", label: "Delay Hours", type: "number" },
+    { name: "deviationReason", label: "Deviation Reason", type: "textarea" },
+    { name: "recoveryPlan", label: "Recovery Plan", type: "textarea" },
+    { name: "costImpact", label: "Cost Impact", type: "number" },
+    { name: "impactCurrency", label: "Impact Currency", type: "text" },
+    { name: "affectedPorts", label: "Affected Ports", type: "number" },
+    {
+      name: "recoveryAchieved",
+      label: "Recovery Achieved",
+      type: "checkbox",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

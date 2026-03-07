@@ -5,52 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const VP_FIELDS: FieldConfig[] = [
-  {
-    name: "voyageEstimateId",
-    label: "Voyage Estimate ID",
-    type: "text",
-  },
-  {
-    name: "vesselName",
-    label: "Vessel Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "reportDate",
-    label: "Report Date",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    options: [
-      { value: "noon", label: "Noon" },
-      { value: "arrival", label: "Arrival" },
-      { value: "departure", label: "Departure" },
-      { value: "event", label: "Event" },
-    ],
-  },
-  { name: "latitude", label: "Latitude", type: "number" },
-  { name: "longitude", label: "Longitude", type: "number" },
-  { name: "speedKnots", label: "Speed (Knots)", type: "number" },
-  { name: "consumptionMt", label: "Consumption (MT)", type: "number" },
-  { name: "fuelType", label: "Fuel Type", type: "text" },
-  { name: "windForce", label: "Wind Force", type: "number" },
-  { name: "seaState", label: "Sea State", type: "number" },
-  {
-    name: "weatherConditions",
-    label: "Weather Conditions",
-    type: "text",
-  },
-  { name: "distanceNm", label: "Distance (NM)", type: "number" },
-  { name: "slipPercent", label: "Slip %", type: "number" },
-  { name: "remarks", label: "Remarks", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewVesselPerformancePage() {
   const session = await getSession();
@@ -60,6 +15,53 @@ export default async function NewVesselPerformancePage() {
   )
     redirect("/chartering-vessel-management");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const VP_FIELDS: FieldConfig[] = [
+    {
+      name: "voyageEstimateId",
+      label: "Voyage Estimate ID",
+      type: "text",
+    },
+    {
+      name: "vesselName",
+      label: "Vessel Name",
+      type: "select", options: vesselOpts,
+      required: true,
+    },
+    {
+      name: "reportDate",
+      label: "Report Date",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      options: [
+        { value: "noon", label: "Noon" },
+        { value: "arrival", label: "Arrival" },
+        { value: "departure", label: "Departure" },
+        { value: "event", label: "Event" },
+      ],
+    },
+    { name: "latitude", label: "Latitude", type: "number" },
+    { name: "longitude", label: "Longitude", type: "number" },
+    { name: "speedKnots", label: "Speed (Knots)", type: "number" },
+    { name: "consumptionMt", label: "Consumption (MT)", type: "number" },
+    { name: "fuelType", label: "Fuel Type", type: "text" },
+    { name: "windForce", label: "Wind Force", type: "number" },
+    { name: "seaState", label: "Sea State", type: "number" },
+    {
+      name: "weatherConditions",
+      label: "Weather Conditions",
+      type: "text",
+    },
+    { name: "distanceNm", label: "Distance (NM)", type: "number" },
+    { name: "slipPercent", label: "Slip %", type: "number" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

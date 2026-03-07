@@ -5,106 +5,112 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { VrsForm } from "@/components/voyage-results-settlement/vrs-form";
 import type { FieldConfig } from "@/components/voyage-results-settlement/vrs-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "settlementType",
-    label: "Settlement Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "hire_payment", label: "Hire Payment" },
-      { value: "ballast_bonus", label: "Ballast Bonus" },
-      { value: "redelivery", label: "Redelivery" },
-      { value: "bunker_adjustment", label: "Bunker Adjustment" },
-      { value: "off_hire_deduction", label: "Off Hire Deduction" },
-    ],
-  },
-  {
-    name: "title",
-    label: "Title",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "vesselName",
-    label: "Vessel Name",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "charterParty",
-    label: "Charter Party",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "periodFrom",
-    label: "Period From",
-    type: "datetime-local",
-    required: false,
-  },
-  {
-    name: "periodTo",
-    label: "Period To",
-    type: "datetime-local",
-    required: false,
-  },
-  {
-    name: "hireRate",
-    label: "Hire Rate",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "totalHireDays",
-    label: "Total Hire Days",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "offHireDays",
-    label: "Off Hire Days",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "grossHire",
-    label: "Gross Hire",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "deductions",
-    label: "Deductions",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "netPayable",
-    label: "Net Payable",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-    required: false,
-  },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewTcSettlementPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "vrs:create")))
     redirect("/");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "settlementType",
+      label: "Settlement Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "hire_payment", label: "Hire Payment" },
+        { value: "ballast_bonus", label: "Ballast Bonus" },
+        { value: "redelivery", label: "Redelivery" },
+        { value: "bunker_adjustment", label: "Bunker Adjustment" },
+        { value: "off_hire_deduction", label: "Off Hire Deduction" },
+      ],
+    },
+    {
+      name: "title",
+      label: "Title",
+      type: "text",
+      required: false,
+    },
+    {
+      name: "vesselName",
+      label: "Vessel Name",
+      type: "select", options: vesselOpts,
+      required: false,
+    },
+    {
+      name: "charterParty",
+      label: "Charter Party",
+      type: "text",
+      required: false,
+    },
+    {
+      name: "periodFrom",
+      label: "Period From",
+      type: "datetime-local",
+      required: false,
+    },
+    {
+      name: "periodTo",
+      label: "Period To",
+      type: "datetime-local",
+      required: false,
+    },
+    {
+      name: "hireRate",
+      label: "Hire Rate",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "totalHireDays",
+      label: "Total Hire Days",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "offHireDays",
+      label: "Off Hire Days",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "grossHire",
+      label: "Gross Hire",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "deductions",
+      label: "Deductions",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "netPayable",
+      label: "Net Payable",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+      required: false,
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+      required: false,
+    },
+  ];
 
   return (
     <div className="space-y-6">

@@ -7,28 +7,7 @@ import {
   FirmForm,
   type FieldConfig,
 } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const DUNNING_RUN_FIELDS: FieldConfig[] = [
-  {
-    name: "runType",
-    label: "Run Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "automated", label: "Automated" },
-      { value: "manual", label: "Manual" },
-      { value: "ai_recommended", label: "AI Recommended" },
-      { value: "escalation", label: "Escalation" },
-      { value: "final_notice", label: "Final Notice" },
-    ],
-  },
-  { name: "targetSegment", label: "Target Segment", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "totalOutstanding", label: "Total Outstanding", type: "number" },
-  { name: "invoicesTargeted", label: "Invoices Targeted", type: "number" },
-  { name: "customersTargeted", label: "Customers Targeted", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewDunningRunPage() {
   const session = await getSession();
@@ -36,6 +15,29 @@ export default async function NewDunningRunPage() {
   if (!(await hasPermission(session.id, session.tenantId, "invoice:create")))
     redirect("/freight-invoice-revenue-management/dunning-runs");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const DUNNING_RUN_FIELDS: FieldConfig[] = [
+    {
+      name: "runType",
+      label: "Run Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "automated", label: "Automated" },
+        { value: "manual", label: "Manual" },
+        { value: "ai_recommended", label: "AI Recommended" },
+        { value: "escalation", label: "Escalation" },
+        { value: "final_notice", label: "Final Notice" },
+      ],
+    },
+    { name: "targetSegment", label: "Target Segment", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "totalOutstanding", label: "Total Outstanding", type: "number" },
+    { name: "invoicesTargeted", label: "Invoices Targeted", type: "number" },
+    { name: "customersTargeted", label: "Customers Targeted", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

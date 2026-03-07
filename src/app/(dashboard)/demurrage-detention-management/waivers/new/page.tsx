@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { DdmForm, FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewWaiverPage() {
   const session = await getSession();
@@ -9,6 +10,11 @@ export default async function NewWaiverPage() {
   if (!(await hasPermission(session.id, session.tenantId, "demurrage:create")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const fields: FieldConfig[] = [
     {
       name: "waiverType",
@@ -25,9 +31,8 @@ export default async function NewWaiverPage() {
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
-      placeholder: "Customer name",
     },
     {
       name: "containerNumber",
@@ -70,8 +75,7 @@ export default async function NewWaiverPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "reason",

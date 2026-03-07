@@ -5,27 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getMultiModalLogistic } from "@/lib/oog-special-cargo-management/service";
 import { OogForm, type FieldConfig } from "@/components/oog-special-cargo-management/oog-form";
-
-const fields: FieldConfig[] = [
-  { name: "acceptanceRef", label: "Acceptance Ref", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "transportMode", label: "Transport Mode", type: "select", required: true, options: [{ value: "road", label: "Road" }, { value: "rail", label: "Rail" }, { value: "barge", label: "Barge" }, { value: "sea", label: "Sea" }, { value: "multimodal", label: "Multimodal" }] },
-  { name: "carrierName", label: "Carrier Name", type: "text" },
-  { name: "vehicleId", label: "Vehicle ID", type: "text" },
-  { name: "originLocation", label: "Origin Location", type: "text", required: true },
-  { name: "destinationLocation", label: "Destination Location", type: "text", required: true },
-  { name: "permitRequired", label: "Permit Required", type: "checkbox" },
-  { name: "permitNumber", label: "Permit Number", type: "text" },
-  { name: "escortRequired", label: "Escort Required", type: "checkbox" },
-  { name: "estimatedDepartureAt", label: "Est. Departure", type: "datetime-local" },
-  { name: "estimatedArrivalAt", label: "Est. Arrival", type: "datetime-local" },
-  { name: "actualDepartureAt", label: "Actual Departure", type: "datetime-local" },
-  { name: "actualArrivalAt", label: "Actual Arrival", type: "datetime-local" },
-  { name: "transportCost", label: "Transport Cost", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditMultiModalLogisticPage({
   params,
@@ -37,6 +17,29 @@ export default async function EditMultiModalLogisticPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "oog_special:edit")))
     redirect("/");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    { name: "acceptanceRef", label: "Acceptance Ref", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "transportMode", label: "Transport Mode", type: "select", required: true, options: [{ value: "road", label: "Road" }, { value: "rail", label: "Rail" }, { value: "barge", label: "Barge" }, { value: "sea", label: "Sea" }, { value: "multimodal", label: "Multimodal" }] },
+    { name: "carrierName", label: "Carrier Name", type: "text" },
+    { name: "vehicleId", label: "Vehicle ID", type: "text" },
+    { name: "originLocation", label: "Origin Location", type: "text", required: true },
+    { name: "destinationLocation", label: "Destination Location", type: "text", required: true },
+    { name: "permitRequired", label: "Permit Required", type: "checkbox" },
+    { name: "permitNumber", label: "Permit Number", type: "text" },
+    { name: "escortRequired", label: "Escort Required", type: "checkbox" },
+    { name: "estimatedDepartureAt", label: "Est. Departure", type: "datetime-local" },
+    { name: "estimatedArrivalAt", label: "Est. Arrival", type: "datetime-local" },
+    { name: "actualDepartureAt", label: "Actual Departure", type: "datetime-local" },
+    { name: "actualArrivalAt", label: "Actual Arrival", type: "datetime-local" },
+    { name: "transportCost", label: "Transport Cost", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const record = await getMultiModalLogistic(id, session.tenantId);
   if (!record) notFound();

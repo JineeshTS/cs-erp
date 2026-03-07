@@ -6,63 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getPredictiveMaintenance } from "@/lib/vessel-technical-management/service";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const fields: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "equipmentCode",
-    label: "Equipment Code",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "equipmentName",
-    label: "Equipment Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "modelType",
-    label: "Model Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "vibration_analysis", label: "Vibration Analysis" },
-      { value: "oil_analysis", label: "Oil Analysis" },
-      { value: "thermal", label: "Thermal" },
-      { value: "performance_degradation", label: "Performance Degradation" },
-      { value: "pattern_recognition", label: "Pattern Recognition" },
-      { value: "custom", label: "Custom" },
-    ],
-  },
-  { name: "modelVersion", label: "Model Version", type: "text" },
-  {
-    name: "predictionDate",
-    label: "Prediction Date",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "predictedFailureDate",
-    label: "Predicted Failure Date",
-    type: "datetime-local",
-  },
-  { name: "confidenceScore", label: "Confidence Score", type: "number" },
-  {
-    name: "riskLevel",
-    label: "Risk Level",
-    type: "select",
-    options: [
-      { value: "critical", label: "Critical" },
-      { value: "high", label: "High" },
-      { value: "medium", label: "Medium" },
-      { value: "low", label: "Low" },
-    ],
-  },
-  { name: "currentCondition", label: "Current Condition", type: "textarea" },
-  { name: "aiInsights", label: "AI Insights", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditPredictiveMaintenancePage({
   params,
@@ -73,6 +17,65 @@ export default async function EditPredictiveMaintenancePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:edit")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "equipmentCode",
+      label: "Equipment Code",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "equipmentName",
+      label: "Equipment Name",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "modelType",
+      label: "Model Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "vibration_analysis", label: "Vibration Analysis" },
+        { value: "oil_analysis", label: "Oil Analysis" },
+        { value: "thermal", label: "Thermal" },
+        { value: "performance_degradation", label: "Performance Degradation" },
+        { value: "pattern_recognition", label: "Pattern Recognition" },
+        { value: "custom", label: "Custom" },
+      ],
+    },
+    { name: "modelVersion", label: "Model Version", type: "text" },
+    {
+      name: "predictionDate",
+      label: "Prediction Date",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "predictedFailureDate",
+      label: "Predicted Failure Date",
+      type: "datetime-local",
+    },
+    { name: "confidenceScore", label: "Confidence Score", type: "number" },
+    {
+      name: "riskLevel",
+      label: "Risk Level",
+      type: "select",
+      options: [
+        { value: "critical", label: "Critical" },
+        { value: "high", label: "High" },
+        { value: "medium", label: "Medium" },
+        { value: "low", label: "Low" },
+      ],
+    },
+    { name: "currentCondition", label: "Current Condition", type: "textarea" },
+    { name: "aiInsights", label: "AI Insights", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getPredictiveMaintenance(id, session.tenantId);

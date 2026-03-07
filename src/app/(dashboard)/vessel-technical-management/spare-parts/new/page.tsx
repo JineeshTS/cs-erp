@@ -5,47 +5,53 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const SPARE_PART_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "partNumber", label: "Part Number", type: "text", required: true },
-  { name: "partName", label: "Part Name", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  {
-    name: "category",
-    label: "Category",
-    type: "select",
-    required: true,
-    options: [
-      { value: "engine", label: "Engine" },
-      { value: "deck", label: "Deck" },
-      { value: "electrical", label: "Electrical" },
-      { value: "navigation", label: "Navigation" },
-      { value: "safety", label: "Safety" },
-      { value: "piping", label: "Piping" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "manufacturer", label: "Manufacturer", type: "text" },
-  { name: "modelNumber", label: "Model Number", type: "text" },
-  { name: "unitOfMeasure", label: "Unit of Measure", type: "text" },
-  { name: "minimumStock", label: "Minimum Stock", type: "number" },
-  { name: "currentStock", label: "Current Stock", type: "number" },
-  { name: "reorderLevel", label: "Reorder Level", type: "number" },
-  { name: "lastUnitPrice", label: "Last Unit Price", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "storageLocation", label: "Storage Location", type: "text" },
-  { name: "criticalPart", label: "Critical Part", type: "checkbox" },
-  { name: "leadTimeDays", label: "Lead Time (Days)", type: "number" },
-  { name: "preferredSupplierName", label: "Preferred Supplier Name", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewSparePartPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:create")))
     redirect("/vessel-technical-management/spare-parts");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const SPARE_PART_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "partNumber", label: "Part Number", type: "text", required: true },
+    { name: "partName", label: "Part Name", type: "text", required: true },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "category",
+      label: "Category",
+      type: "select",
+      required: true,
+      options: [
+        { value: "engine", label: "Engine" },
+        { value: "deck", label: "Deck" },
+        { value: "electrical", label: "Electrical" },
+        { value: "navigation", label: "Navigation" },
+        { value: "safety", label: "Safety" },
+        { value: "piping", label: "Piping" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "manufacturer", label: "Manufacturer", type: "text" },
+    { name: "modelNumber", label: "Model Number", type: "text" },
+    { name: "unitOfMeasure", label: "Unit of Measure", type: "text" },
+    { name: "minimumStock", label: "Minimum Stock", type: "number" },
+    { name: "currentStock", label: "Current Stock", type: "number" },
+    { name: "reorderLevel", label: "Reorder Level", type: "number" },
+    { name: "lastUnitPrice", label: "Last Unit Price", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "storageLocation", label: "Storage Location", type: "text" },
+    { name: "criticalPart", label: "Critical Part", type: "checkbox" },
+    { name: "leadTimeDays", label: "Lead Time (Days)", type: "number" },
+    { name: "preferredSupplierName", label: "Preferred Supplier Name", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

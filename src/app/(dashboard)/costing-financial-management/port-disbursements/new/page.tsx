@@ -7,6 +7,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewPortDisbursementPage() {
   const session = await getSession();
@@ -14,10 +15,17 @@ export default async function NewPortDisbursementPage() {
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
 
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const fields: FieldConfig[] = [
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-    { name: "port", label: "Port", type: "text", required: true },
-    { name: "agentName", label: "Agent Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "port", label: "Port", type: "select", options: portOpts, required: true },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
     { name: "voyageRef", label: "Voyage Ref", type: "text" },
     {
       name: "disbursementType",
@@ -33,8 +41,7 @@ export default async function NewPortDisbursementPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "pdaAmount", label: "PDA Amount", type: "number" },
     { name: "fdaAmount", label: "FDA Amount", type: "number" },

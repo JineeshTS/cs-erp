@@ -5,49 +5,56 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const PROCUREMENT_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "requestType",
-    label: "Request Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "spare_parts", label: "Spare Parts" },
-      { value: "services", label: "Services" },
-      { value: "equipment", label: "Equipment" },
-      { value: "consumables", label: "Consumables" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "description", label: "Description", type: "textarea", required: true },
-  { name: "requestedByName", label: "Requested By", type: "text" },
-  { name: "department", label: "Department", type: "text" },
-  {
-    name: "urgency",
-    label: "Urgency",
-    type: "select",
-    options: [
-      { value: "emergency", label: "Emergency" },
-      { value: "urgent", label: "Urgent" },
-      { value: "routine", label: "Routine" },
-      { value: "planned", label: "Planned" },
-    ],
-  },
-  { name: "estimatedBudget", label: "Estimated Budget", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "supplierName", label: "Supplier Name", type: "text" },
-  { name: "purchaseOrderRef", label: "Purchase Order Ref", type: "text" },
-  { name: "deliveryDate", label: "Delivery Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewTechnicalProcurementPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:create")))
     redirect("/vessel-technical-management/technical-procurements");
+
+  const [vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const PROCUREMENT_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "requestType",
+      label: "Request Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "spare_parts", label: "Spare Parts" },
+        { value: "services", label: "Services" },
+        { value: "equipment", label: "Equipment" },
+        { value: "consumables", label: "Consumables" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "description", label: "Description", type: "textarea", required: true },
+    { name: "requestedByName", label: "Requested By", type: "text" },
+    { name: "department", label: "Department", type: "text" },
+    {
+      name: "urgency",
+      label: "Urgency",
+      type: "select",
+      options: [
+        { value: "emergency", label: "Emergency" },
+        { value: "urgent", label: "Urgent" },
+        { value: "routine", label: "Routine" },
+        { value: "planned", label: "Planned" },
+      ],
+    },
+    { name: "estimatedBudget", label: "Estimated Budget", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "supplierName", label: "Supplier Name", type: "select", options: customerOpts },
+    { name: "purchaseOrderRef", label: "Purchase Order Ref", type: "text" },
+    { name: "deliveryDate", label: "Delivery Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

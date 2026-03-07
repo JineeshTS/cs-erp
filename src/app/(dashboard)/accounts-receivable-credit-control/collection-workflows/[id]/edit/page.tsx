@@ -4,18 +4,21 @@ import { hasPermission } from "@/lib/rbac";
 import { getCollectionWorkflow } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditCollectionWorkflowPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit"))) redirect("/");
 
+
+  const customerOpts = await getCustomerOptions(session.tenantId);
   const { id } = await params;
   const workflow = await getCollectionWorkflow(id, session.tenantId);
   if (!workflow) notFound();
 
   const fields: FieldConfig[] = [
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
     { name: "accountNumber", label: "Account Number", type: "text" },
     { name: "totalOutstanding", label: "Total Outstanding", type: "number", required: true },
     { name: "totalOverdue", label: "Total Overdue", type: "number" },

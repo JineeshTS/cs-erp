@@ -5,38 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PscForm } from "@/components/procurement-supply-chain/psc-form";
 import type { FieldConfig } from "@/components/procurement-supply-chain/psc-form";
-
-const SOURCING_FIELDS: FieldConfig[] = [
-  {
-    name: "sourcingType",
-    label: "Sourcing Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "rfq", label: "RFQ" },
-      { value: "rfp", label: "RFP" },
-      { value: "rfi", label: "RFI" },
-      { value: "reverse_auction", label: "Reverse Auction" },
-      { value: "sole_source", label: "Sole Source" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "category", label: "Category", type: "text" },
-  { name: "issueDate", label: "Issue Date", type: "datetime-local" },
-  { name: "closingDate", label: "Closing Date", type: "datetime-local" },
-  { name: "evaluationDate", label: "Evaluation Date", type: "datetime-local" },
-  { name: "selectedVendor", label: "Selected Vendor", type: "text" },
-  { name: "selectionReason", label: "Selection Reason", type: "textarea" },
-  { name: "totalBudget", label: "Total Budget", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  {
-    name: "linkedRequisitionRef",
-    label: "Linked Requisition Ref",
-    type: "text",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewVendorSourcingPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -46,6 +15,39 @@ export default async function NewVendorSourcingPage(): Promise<React.ReactNode> 
   )
     redirect("/procurement-supply-chain/vendor-sourcings");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const SOURCING_FIELDS: FieldConfig[] = [
+    {
+      name: "sourcingType",
+      label: "Sourcing Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "rfq", label: "RFQ" },
+        { value: "rfp", label: "RFP" },
+        { value: "rfi", label: "RFI" },
+        { value: "reverse_auction", label: "Reverse Auction" },
+        { value: "sole_source", label: "Sole Source" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "category", label: "Category", type: "text" },
+    { name: "issueDate", label: "Issue Date", type: "datetime-local" },
+    { name: "closingDate", label: "Closing Date", type: "datetime-local" },
+    { name: "evaluationDate", label: "Evaluation Date", type: "datetime-local" },
+    { name: "selectedVendor", label: "Selected Vendor", type: "text" },
+    { name: "selectionReason", label: "Selection Reason", type: "textarea" },
+    { name: "totalBudget", label: "Total Budget", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "linkedRequisitionRef",
+      label: "Linked Requisition Ref",
+      type: "text",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

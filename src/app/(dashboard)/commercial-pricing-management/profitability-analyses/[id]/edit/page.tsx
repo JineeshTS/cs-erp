@@ -8,46 +8,7 @@ import { db } from "@/lib/db";
 import { cpmProfitabilityAnalyses } from "@/db/schema";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "analysisName", label: "Analysis Name", type: "text", required: true },
-  {
-    name: "analysisType",
-    label: "Analysis Type",
-    type: "select",
-    options: [
-      { label: "Trade Lane", value: "trade_lane" },
-      { label: "Customer", value: "customer" },
-      { label: "Voyage", value: "voyage" },
-      { label: "Service", value: "service" },
-      { label: "Overall", value: "overall" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "customerId", label: "Customer ID", type: "text" },
-  { name: "voyageId", label: "Voyage ID", type: "text" },
-  { name: "periodFrom", label: "Period From", type: "date", required: true },
-  { name: "periodTo", label: "Period To", type: "date", required: true },
-  { name: "totalRevenue", label: "Total Revenue", type: "number" },
-  { name: "totalCost", label: "Total Cost", type: "number" },
-  { name: "grossProfit", label: "Gross Profit", type: "number" },
-  { name: "marginPercent", label: "Margin %", type: "number" },
-  { name: "teuCount", label: "TEU Count", type: "number" },
-  { name: "revenuePerTeu", label: "Revenue Per TEU", type: "number" },
-  { name: "costPerTeu", label: "Cost Per TEU", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { label: "Draft", value: "draft" },
-      { label: "Final", value: "final" },
-      { label: "Archived", value: "archived" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditProfitabilityAnalysisPage({
   params,
@@ -56,6 +17,52 @@ export default async function EditProfitabilityAnalysisPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    { name: "analysisName", label: "Analysis Name", type: "text", required: true },
+    {
+      name: "analysisType",
+      label: "Analysis Type",
+      type: "select",
+      options: [
+        { label: "Trade Lane", value: "trade_lane" },
+        { label: "Customer", value: "customer" },
+        { label: "Voyage", value: "voyage" },
+        { label: "Service", value: "service" },
+        { label: "Overall", value: "overall" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "customerId", label: "Customer ID", type: "select", options: customerOpts },
+    { name: "voyageId", label: "Voyage ID", type: "text" },
+    { name: "periodFrom", label: "Period From", type: "date", required: true },
+    { name: "periodTo", label: "Period To", type: "date", required: true },
+    { name: "totalRevenue", label: "Total Revenue", type: "number" },
+    { name: "totalCost", label: "Total Cost", type: "number" },
+    { name: "grossProfit", label: "Gross Profit", type: "number" },
+    { name: "marginPercent", label: "Margin %", type: "number" },
+    { name: "teuCount", label: "TEU Count", type: "number" },
+    { name: "revenuePerTeu", label: "Revenue Per TEU", type: "number" },
+    { name: "costPerTeu", label: "Cost Per TEU", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Draft", value: "draft" },
+        { label: "Final", value: "final" },
+        { label: "Archived", value: "archived" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const { id } = await params;

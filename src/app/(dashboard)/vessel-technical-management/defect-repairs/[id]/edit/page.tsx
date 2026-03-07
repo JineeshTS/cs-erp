@@ -6,62 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getDefectRepair } from "@/lib/vessel-technical-management/service";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const fields: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "equipmentCode", label: "Equipment Code", type: "text" },
-  { name: "equipmentName", label: "Equipment Name", type: "text" },
-  {
-    name: "defectCategory",
-    label: "Defect Category",
-    type: "select",
-    required: true,
-    options: [
-      { value: "structural", label: "Structural" },
-      { value: "mechanical", label: "Mechanical" },
-      { value: "electrical", label: "Electrical" },
-      { value: "piping", label: "Piping" },
-      { value: "navigation", label: "Navigation" },
-      { value: "safety", label: "Safety" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  {
-    name: "severity",
-    label: "Severity",
-    type: "select",
-    required: true,
-    options: [
-      { value: "critical", label: "Critical" },
-      { value: "major", label: "Major" },
-      { value: "minor", label: "Minor" },
-      { value: "observation", label: "Observation" },
-    ],
-  },
-  {
-    name: "reportedDate",
-    label: "Reported Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "reportedByName", label: "Reported By", type: "text" },
-  {
-    name: "description",
-    label: "Description",
-    type: "textarea",
-    required: true,
-  },
-  { name: "rootCause", label: "Root Cause", type: "textarea" },
-  { name: "repairMethod", label: "Repair Method", type: "textarea" },
-  { name: "estimatedCost", label: "Estimated Cost", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  {
-    name: "classNotificationRequired",
-    label: "Class Notification Required",
-    type: "checkbox",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditDefectRepairPage({
   params,
@@ -72,6 +17,67 @@ export default async function EditDefectRepairPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:edit")))
     redirect("/");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "equipmentCode", label: "Equipment Code", type: "text" },
+    { name: "equipmentName", label: "Equipment Name", type: "text" },
+    {
+      name: "defectCategory",
+      label: "Defect Category",
+      type: "select",
+      required: true,
+      options: [
+        { value: "structural", label: "Structural" },
+        { value: "mechanical", label: "Mechanical" },
+        { value: "electrical", label: "Electrical" },
+        { value: "piping", label: "Piping" },
+        { value: "navigation", label: "Navigation" },
+        { value: "safety", label: "Safety" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    {
+      name: "severity",
+      label: "Severity",
+      type: "select",
+      required: true,
+      options: [
+        { value: "critical", label: "Critical" },
+        { value: "major", label: "Major" },
+        { value: "minor", label: "Minor" },
+        { value: "observation", label: "Observation" },
+      ],
+    },
+    {
+      name: "reportedDate",
+      label: "Reported Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "reportedByName", label: "Reported By", type: "text" },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      required: true,
+    },
+    { name: "rootCause", label: "Root Cause", type: "textarea" },
+    { name: "repairMethod", label: "Repair Method", type: "textarea" },
+    { name: "estimatedCost", label: "Estimated Cost", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "classNotificationRequired",
+      label: "Class Notification Required",
+      type: "checkbox",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getDefectRepair(id, session.tenantId);

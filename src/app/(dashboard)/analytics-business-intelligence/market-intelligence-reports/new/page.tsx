@@ -5,36 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { AbiForm } from "@/components/analytics-business-intelligence/abi-form";
 import type { FieldConfig } from "@/components/analytics-business-intelligence/abi-form";
-
-const REPORT_FIELDS: FieldConfig[] = [
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "market_overview", label: "Market Overview" },
-      { value: "competitor_analysis", label: "Competitor Analysis" },
-      { value: "rate_benchmark", label: "Rate Benchmark" },
-      { value: "capacity_analysis", label: "Capacity Analysis" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "region", label: "Region", type: "text" },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "marketSize", label: "Market Size", type: "number" },
-  { name: "marketGrowthPct", label: "Market Growth %", type: "number" },
-  { name: "ourMarketSharePct", label: "Our Market Share %", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "avgMarketRate", label: "Avg Market Rate", type: "number" },
-  { name: "ourAvgRate", label: "Our Avg Rate", type: "number" },
-  { name: "ratePremiumPct", label: "Rate Premium %", type: "number" },
-  { name: "recommendations", label: "Recommendations", type: "textarea" },
-  { name: "source", label: "Source", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewMarketIntelligenceReportPage() {
   const session = await getSession();
@@ -44,6 +15,37 @@ export default async function NewMarketIntelligenceReportPage() {
   )
     redirect("/analytics-business-intelligence/market-intelligence-reports");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const REPORT_FIELDS: FieldConfig[] = [
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "market_overview", label: "Market Overview" },
+        { value: "competitor_analysis", label: "Competitor Analysis" },
+        { value: "rate_benchmark", label: "Rate Benchmark" },
+        { value: "capacity_analysis", label: "Capacity Analysis" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "region", label: "Region", type: "text" },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "marketSize", label: "Market Size", type: "number" },
+    { name: "marketGrowthPct", label: "Market Growth %", type: "number" },
+    { name: "ourMarketSharePct", label: "Our Market Share %", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "avgMarketRate", label: "Avg Market Rate", type: "number" },
+    { name: "ourAvgRate", label: "Our Avg Rate", type: "number" },
+    { name: "ratePremiumPct", label: "Rate Premium %", type: "number" },
+    { name: "recommendations", label: "Recommendations", type: "textarea" },
+    { name: "source", label: "Source", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

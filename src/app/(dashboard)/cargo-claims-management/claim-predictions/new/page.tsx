@@ -4,45 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CcmForm, type FieldConfig } from "@/components/cargo-claims-management/ccm-form";
-
-const PREDICTION_FIELDS: FieldConfig[] = [
-  {
-    name: "predictionType",
-    label: "Prediction Type",
-    type: "select",
-    options: [
-      { value: "success_probability", label: "Success Probability" },
-      { value: "settlement_range", label: "Settlement Range" },
-      { value: "duration_estimate", label: "Duration Estimate" },
-      { value: "liability_score", label: "Liability Score" },
-      { value: "recovery_likelihood", label: "Recovery Likelihood" },
-    ],
-  },
-  { name: "claimId", label: "Claim ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "modelVersion", label: "Model Version", type: "text" },
-  { name: "successProbability", label: "Success Probability", type: "text" },
-  { name: "predictedSettlement", label: "Predicted Settlement", type: "text" },
-  { name: "confidenceInterval", label: "Confidence Interval", type: "text" },
-  {
-    name: "estimatedDurationDays",
-    label: "Estimated Duration (Days)",
-    type: "number",
-  },
-  { name: "riskScore", label: "Risk Score", type: "text" },
-  {
-    name: "recommendedAction",
-    label: "Recommended Action",
-    type: "textarea",
-  },
-  { name: "similarCasesCount", label: "Similar Cases Count", type: "number" },
-  {
-    name: "historicalAvgSettlement",
-    label: "Historical Avg Settlement",
-    type: "text",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewClaimPredictionPage() {
   const session = await getSession();
@@ -50,6 +12,46 @@ export default async function NewClaimPredictionPage() {
   if (!(await hasPermission(session.id, session.tenantId, "ccm:create")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const PREDICTION_FIELDS: FieldConfig[] = [
+    {
+      name: "predictionType",
+      label: "Prediction Type",
+      type: "select",
+      options: [
+        { value: "success_probability", label: "Success Probability" },
+        { value: "settlement_range", label: "Settlement Range" },
+        { value: "duration_estimate", label: "Duration Estimate" },
+        { value: "liability_score", label: "Liability Score" },
+        { value: "recovery_likelihood", label: "Recovery Likelihood" },
+      ],
+    },
+    { name: "claimId", label: "Claim ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "modelVersion", label: "Model Version", type: "text" },
+    { name: "successProbability", label: "Success Probability", type: "text" },
+    { name: "predictedSettlement", label: "Predicted Settlement", type: "text" },
+    { name: "confidenceInterval", label: "Confidence Interval", type: "text" },
+    {
+      name: "estimatedDurationDays",
+      label: "Estimated Duration (Days)",
+      type: "number",
+    },
+    { name: "riskScore", label: "Risk Score", type: "text" },
+    {
+      name: "recommendedAction",
+      label: "Recommended Action",
+      type: "textarea",
+    },
+    { name: "similarCasesCount", label: "Similar Cases Count", type: "number" },
+    {
+      name: "historicalAvgSettlement",
+      label: "Historical Avg Settlement",
+      type: "text",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

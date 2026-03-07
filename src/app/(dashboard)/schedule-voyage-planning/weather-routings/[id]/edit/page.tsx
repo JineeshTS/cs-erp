@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getWeatherRouting } from "@/lib/schedule-voyage-planning/service";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const WEATHER_ROUTING_FIELDS: FieldConfig[] = [
-  {
-    name: "routingType",
-    label: "Routing Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "optimal_route", label: "Optimal Route" },
-      { value: "storm_avoidance", label: "Storm Avoidance" },
-      { value: "current_utilization", label: "Current Utilization" },
-      { value: "seasonal_planning", label: "Seasonal Planning" },
-      { value: "heavy_weather_alert", label: "Heavy Weather Alert" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "departurePort", label: "Departure Port", type: "text" },
-  { name: "arrivalPort", label: "Arrival Port", type: "text" },
-  { name: "recommendedRoute", label: "Recommended Route", type: "textarea" },
-  { name: "distanceNm", label: "Distance NM", type: "text" },
-  { name: "weatherSeverity", label: "Weather Severity", type: "text" },
-  { name: "waveHeightM", label: "Wave Height (m)", type: "text" },
-  { name: "windSpeedKnots", label: "Wind Speed (knots)", type: "text" },
-  { name: "routeProvider", label: "Route Provider", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditWeatherRoutingPage({
   params,
@@ -43,6 +17,34 @@ export default async function EditWeatherRoutingPage({
   if (!(await hasPermission(session.id, session.tenantId, "svp:edit")))
     redirect("/schedule-voyage-planning/weather-routings");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const WEATHER_ROUTING_FIELDS: FieldConfig[] = [
+    {
+      name: "routingType",
+      label: "Routing Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "optimal_route", label: "Optimal Route" },
+        { value: "storm_avoidance", label: "Storm Avoidance" },
+        { value: "current_utilization", label: "Current Utilization" },
+        { value: "seasonal_planning", label: "Seasonal Planning" },
+        { value: "heavy_weather_alert", label: "Heavy Weather Alert" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "departurePort", label: "Departure Port", type: "text" },
+    { name: "arrivalPort", label: "Arrival Port", type: "text" },
+    { name: "recommendedRoute", label: "Recommended Route", type: "textarea" },
+    { name: "distanceNm", label: "Distance NM", type: "text" },
+    { name: "weatherSeverity", label: "Weather Severity", type: "text" },
+    { name: "waveHeightM", label: "Wave Height (m)", type: "text" },
+    { name: "windSpeedKnots", label: "Wind Speed (knots)", type: "text" },
+    { name: "routeProvider", label: "Route Provider", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getWeatherRouting(id, session.tenantId);

@@ -8,39 +8,7 @@ import {
   PttForm,
   type FieldConfig,
 } from "@/components/port-tariff-terminal-billing/ptt-form";
-
-const STORAGE_DEMURRAGE_FIELDS: FieldConfig[] = [
-  {
-    name: "tariffType",
-    label: "Tariff Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "import_storage", label: "Import Storage" },
-      { value: "export_storage", label: "Export Storage" },
-      { value: "demurrage", label: "Demurrage" },
-      { value: "detention", label: "Detention" },
-      { value: "combined", label: "Combined" },
-    ],
-  },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "terminalName", label: "Terminal Name", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "freeDays", label: "Free Days", type: "number" },
-  { name: "dailyRateTier1", label: "Daily Rate Tier 1", type: "number" },
-  { name: "tier1DaysFrom", label: "Tier 1 Days From", type: "number" },
-  { name: "tier1DaysTo", label: "Tier 1 Days To", type: "number" },
-  { name: "dailyRateTier2", label: "Daily Rate Tier 2", type: "number" },
-  { name: "tier2DaysFrom", label: "Tier 2 Days From", type: "number" },
-  { name: "tier2DaysTo", label: "Tier 2 Days To", type: "number" },
-  { name: "dailyRateTier3", label: "Daily Rate Tier 3", type: "number" },
-  { name: "tariffCurrency", label: "Tariff Currency", type: "text" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function EditStorageDemurrageTariffPage({
   params,
@@ -52,6 +20,40 @@ export default async function EditStorageDemurrageTariffPage({
   if (!(await hasPermission(session.id, session.tenantId, "ptt:edit")))
     redirect("/");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const STORAGE_DEMURRAGE_FIELDS: FieldConfig[] = [
+    {
+      name: "tariffType",
+      label: "Tariff Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "import_storage", label: "Import Storage" },
+        { value: "export_storage", label: "Export Storage" },
+        { value: "demurrage", label: "Demurrage" },
+        { value: "detention", label: "Detention" },
+        { value: "combined", label: "Combined" },
+      ],
+    },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "terminalName", label: "Terminal Name", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "freeDays", label: "Free Days", type: "number" },
+    { name: "dailyRateTier1", label: "Daily Rate Tier 1", type: "number" },
+    { name: "tier1DaysFrom", label: "Tier 1 Days From", type: "number" },
+    { name: "tier1DaysTo", label: "Tier 1 Days To", type: "number" },
+    { name: "dailyRateTier2", label: "Daily Rate Tier 2", type: "number" },
+    { name: "tier2DaysFrom", label: "Tier 2 Days From", type: "number" },
+    { name: "tier2DaysTo", label: "Tier 2 Days To", type: "number" },
+    { name: "dailyRateTier3", label: "Daily Rate Tier 3", type: "number" },
+    { name: "tariffCurrency", label: "Tariff Currency", type: "text" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getStorageDemurrageTariff(id, session.tenantId);
   if (!record) notFound();

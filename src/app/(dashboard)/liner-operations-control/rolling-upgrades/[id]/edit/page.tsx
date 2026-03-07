@@ -8,35 +8,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const UPGRADE_FIELDS: FieldConfig[] = [
-  {
-    name: "upgradeType",
-    label: "Upgrade Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "container_upgrade", label: "Container Upgrade" },
-      { value: "service_upgrade", label: "Service Upgrade" },
-      { value: "equipment_swap", label: "Equipment Swap" },
-      { value: "priority_loading", label: "Priority Loading" },
-      { value: "express_release", label: "Express Release" },
-    ],
-  },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "originalEquipment", label: "Original Equipment", type: "text" },
-  { name: "upgradedEquipment", label: "Upgraded Equipment", type: "text" },
-  { name: "originalService", label: "Original Service", type: "text" },
-  { name: "upgradedService", label: "Upgraded Service", type: "text" },
-  { name: "costDifference", label: "Cost Difference", type: "number" },
-  { name: "upgradeCurrency", label: "Upgrade Currency", type: "text" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
-  { name: "upgradeReason", label: "Upgrade Reason", type: "textarea" },
-  { name: "revenueRecovered", label: "Revenue Recovered", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditRollingUpgradePage({
   params,
@@ -48,6 +20,36 @@ export default async function EditRollingUpgradePage({
   if (!(await hasPermission(session.id, session.tenantId, "loc:edit")))
     redirect("/");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const UPGRADE_FIELDS: FieldConfig[] = [
+    {
+      name: "upgradeType",
+      label: "Upgrade Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "container_upgrade", label: "Container Upgrade" },
+        { value: "service_upgrade", label: "Service Upgrade" },
+        { value: "equipment_swap", label: "Equipment Swap" },
+        { value: "priority_loading", label: "Priority Loading" },
+        { value: "express_release", label: "Express Release" },
+      ],
+    },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "originalEquipment", label: "Original Equipment", type: "text" },
+    { name: "upgradedEquipment", label: "Upgraded Equipment", type: "text" },
+    { name: "originalService", label: "Original Service", type: "text" },
+    { name: "upgradedService", label: "Upgraded Service", type: "text" },
+    { name: "costDifference", label: "Cost Difference", type: "number" },
+    { name: "upgradeCurrency", label: "Upgrade Currency", type: "text" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
+    { name: "upgradeReason", label: "Upgrade Reason", type: "textarea" },
+    { name: "revenueRecovered", label: "Revenue Recovered", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getRollingUpgrade(id, session.tenantId);
   if (!record) notFound();

@@ -8,27 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { cvmLaytimeCalculations } from "@/db/schema";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const LC_FIELDS: FieldConfig[] = [
-  { name: "charterPartyId", label: "Charter Party ID", type: "text", placeholder: "UUID" },
-  { name: "voyageEstimateId", label: "Voyage Estimate ID", type: "text", placeholder: "UUID" },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  { name: "operationType", label: "Operation Type", type: "select", options: [
-    { value: "loading", label: "Loading" },
-    { value: "discharging", label: "Discharging" },
-  ]},
-  { name: "allowedHours", label: "Allowed Hours", type: "number", required: true },
-  { name: "usedHours", label: "Used Hours", type: "number", required: true },
-  { name: "excessHours", label: "Excess Hours", type: "number" },
-  { name: "demurrageRate", label: "Demurrage Rate", type: "number" },
-  { name: "despatchRate", label: "Despatch Rate", type: "number" },
-  { name: "demurrageAmount", label: "Demurrage Amount", type: "number" },
-  { name: "despatchAmount", label: "Despatch Amount", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "commencedAt", label: "Commenced At", type: "datetime-local" },
-  { name: "completedAt", label: "Completed At", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditLaytimeCalculationPage({
   params,
@@ -39,6 +19,32 @@ export default async function EditLaytimeCalculationPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "chartering:edit")))
     redirect("/chartering-vessel-management");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const LC_FIELDS: FieldConfig[] = [
+    { name: "charterPartyId", label: "Charter Party ID", type: "text", placeholder: "UUID" },
+    { name: "voyageEstimateId", label: "Voyage Estimate ID", type: "text", placeholder: "UUID" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    { name: "operationType", label: "Operation Type", type: "select", options: [
+      { value: "loading", label: "Loading" },
+      { value: "discharging", label: "Discharging" },
+    ]},
+    { name: "allowedHours", label: "Allowed Hours", type: "number", required: true },
+    { name: "usedHours", label: "Used Hours", type: "number", required: true },
+    { name: "excessHours", label: "Excess Hours", type: "number" },
+    { name: "demurrageRate", label: "Demurrage Rate", type: "number" },
+    { name: "despatchRate", label: "Despatch Rate", type: "number" },
+    { name: "demurrageAmount", label: "Demurrage Amount", type: "number" },
+    { name: "despatchAmount", label: "Despatch Amount", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "commencedAt", label: "Commenced At", type: "datetime-local" },
+    { name: "completedAt", label: "Completed At", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

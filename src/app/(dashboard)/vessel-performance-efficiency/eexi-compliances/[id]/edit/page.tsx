@@ -6,61 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getEexiCompliance } from "@/lib/vessel-performance-efficiency/service";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const EEXI_COMPLIANCE_FIELDS: FieldConfig[] = [
-  {
-    name: "complianceType",
-    label: "Compliance Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "initial", label: "Initial" },
-      { value: "annual", label: "Annual" },
-      { value: "interim", label: "Interim" },
-      { value: "renewal", label: "Renewal" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "attainedEexi", label: "Attained EEXI", type: "text" },
-  { name: "requiredEexi", label: "Required EEXI", type: "text" },
-  { name: "referenceLine", label: "Reference Line", type: "text" },
-  {
-    name: "reductionPercentage",
-    label: "Reduction Percentage",
-    type: "text",
-  },
-  {
-    name: "enginePowerLimitation",
-    label: "Engine Power Limitation",
-    type: "checkbox",
-  },
-  { name: "eplPercentage", label: "EPL Percentage", type: "text" },
-  {
-    name: "shaftPowerLimitation",
-    label: "Shaft Power Limitation",
-    type: "checkbox",
-  },
-  { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
-  {
-    name: "certificateNumber",
-    label: "Certificate Number",
-    type: "text",
-  },
-  {
-    name: "certificateExpiry",
-    label: "Certificate Expiry",
-    type: "datetime-local",
-  },
-  { name: "flagState", label: "Flag State", type: "text" },
-  {
-    name: "classificationSociety",
-    label: "Classification Society",
-    type: "text",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditEexiCompliancePage({
   params,
@@ -72,6 +18,62 @@ export default async function EditEexiCompliancePage({
   if (!(await hasPermission(session.id, session.tenantId, "vpe:edit")))
     redirect("/vessel-performance-efficiency/eexi-compliances");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const EEXI_COMPLIANCE_FIELDS: FieldConfig[] = [
+    {
+      name: "complianceType",
+      label: "Compliance Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "initial", label: "Initial" },
+        { value: "annual", label: "Annual" },
+        { value: "interim", label: "Interim" },
+        { value: "renewal", label: "Renewal" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "attainedEexi", label: "Attained EEXI", type: "text" },
+    { name: "requiredEexi", label: "Required EEXI", type: "text" },
+    { name: "referenceLine", label: "Reference Line", type: "text" },
+    {
+      name: "reductionPercentage",
+      label: "Reduction Percentage",
+      type: "text",
+    },
+    {
+      name: "enginePowerLimitation",
+      label: "Engine Power Limitation",
+      type: "checkbox",
+    },
+    { name: "eplPercentage", label: "EPL Percentage", type: "text" },
+    {
+      name: "shaftPowerLimitation",
+      label: "Shaft Power Limitation",
+      type: "checkbox",
+    },
+    { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
+    {
+      name: "certificateNumber",
+      label: "Certificate Number",
+      type: "text",
+    },
+    {
+      name: "certificateExpiry",
+      label: "Certificate Expiry",
+      type: "datetime-local",
+    },
+    { name: "flagState", label: "Flag State", type: "text" },
+    {
+      name: "classificationSociety",
+      label: "Classification Society",
+      type: "text",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getEexiCompliance(id, session.tenantId);

@@ -4,12 +4,18 @@ import { hasPermission } from "@/lib/rbac";
 import { getBadDebtProvision } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBadDebtProvisionPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit"))) redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const provision = await getBadDebtProvision(id, session.tenantId);
   if (!provision) notFound();
@@ -21,10 +27,10 @@ export default async function EditBadDebtProvisionPage({ params }: { params: Pro
       { label: "Write-Off", value: "write_off" },
       { label: "Recovery", value: "recovery" },
     ]},
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
     { name: "accountNumber", label: "Account Number", type: "text" },
     { name: "invoiceRef", label: "Invoice Ref", type: "text" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "originalAmount", label: "Original Amount", type: "number", required: true },
     { name: "provisionAmount", label: "Provision Amount", type: "number", required: true },
     { name: "provisionPercent", label: "Provision Percent", type: "number" },

@@ -6,28 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getDgmManifest } from "@/lib/dangerous-goods-management/service";
 import { DgmForm } from "@/components/dangerous-goods-management/dgm-form";
 import type { FieldConfig } from "@/components/dangerous-goods-management/dgm-form";
-
-const MANIFEST_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "voyageNumber", label: "Voyage Number", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "callSign", label: "Call Sign", type: "text" },
-  { name: "masterName", label: "Master Name", type: "text" },
-  { name: "portOfLoading", label: "Port of Loading", type: "text", required: true },
-  { name: "portOfDischarge", label: "Port of Discharge", type: "text", required: true },
-  { name: "departureDate", label: "Departure Date", type: "datetime-local" },
-  { name: "arrivalDate", label: "Arrival Date", type: "datetime-local" },
-  { name: "totalDgContainers", label: "Total DG Containers", type: "number" },
-  { name: "totalDgWeight", label: "Total DG Weight", type: "text" },
-  { name: "weightUnit", label: "Weight Unit", type: "text", placeholder: "e.g. KG, MT" },
-  { name: "submittedToAuthority", label: "Submitted to Authority", type: "text" },
-  { name: "submissionDate", label: "Submission Date", type: "datetime-local" },
-  { name: "submissionReference", label: "Submission Reference", type: "text" },
-  { name: "preparedByName", label: "Prepared By", type: "text" },
-  { name: "approvedByName", label: "Approved By", type: "text" },
-  { name: "approvedAt", label: "Approved At", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function EditManifestPage({
   params,
@@ -38,6 +17,33 @@ export default async function EditManifestPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "dangerous_goods:edit")))
     redirect("/dangerous-goods-management/manifests");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const MANIFEST_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "voyageNumber", label: "Voyage Number", type: "text", required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "callSign", label: "Call Sign", type: "text" },
+    { name: "masterName", label: "Master Name", type: "text" },
+    { name: "portOfLoading", label: "Port of Loading", type: "select", options: portOpts, required: true },
+    { name: "portOfDischarge", label: "Port of Discharge", type: "select", options: portOpts, required: true },
+    { name: "departureDate", label: "Departure Date", type: "datetime-local" },
+    { name: "arrivalDate", label: "Arrival Date", type: "datetime-local" },
+    { name: "totalDgContainers", label: "Total DG Containers", type: "number" },
+    { name: "totalDgWeight", label: "Total DG Weight", type: "text" },
+    { name: "weightUnit", label: "Weight Unit", type: "text", placeholder: "e.g. KG, MT" },
+    { name: "submittedToAuthority", label: "Submitted to Authority", type: "text" },
+    { name: "submissionDate", label: "Submission Date", type: "datetime-local" },
+    { name: "submissionReference", label: "Submission Reference", type: "text" },
+    { name: "preparedByName", label: "Prepared By", type: "text" },
+    { name: "approvedByName", label: "Approved By", type: "text" },
+    { name: "approvedAt", label: "Approved At", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

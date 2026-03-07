@@ -7,6 +7,7 @@ import {
   BfmForm,
   type FieldConfig,
 } from "@/components/bunker-fuel-management/bfm-form";
+import { getPortOptions, getVesselOptions, getCustomerOptions } from "@/lib/lookups";
 
 export default async function NewBunkerStemPage() {
   const session = await getSession();
@@ -14,6 +15,12 @@ export default async function NewBunkerStemPage() {
   if (!(await hasPermission(session.id, session.tenantId, "bunker:create")))
     redirect("/");
 
+
+  const [portOpts, vesselOpts, customerOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+  ]);
   const fields: FieldConfig[] = [
     {
       name: "orderId",
@@ -21,11 +28,11 @@ export default async function NewBunkerStemPage() {
       type: "text",
       placeholder: "Order UUID",
     },
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
-    { name: "port", label: "Port", type: "text", required: true },
+    { name: "port", label: "Port", type: "select", options: portOpts, required: true },
     { name: "berth", label: "Berth", type: "text" },
-    { name: "supplierName", label: "Supplier Name", type: "text" },
+    { name: "supplierName", label: "Supplier Name", type: "select", options: customerOpts },
     { name: "bargeName", label: "Barge Name", type: "text" },
     {
       name: "fuelType",

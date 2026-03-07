@@ -5,60 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getAgencyCommission } from "@/lib/costing-financial-management/service";
 import { CfmForm, type FieldConfig } from "@/components/costing-financial-management/cfm-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "agentName",
-    label: "Agent Name",
-    type: "text",
-    required: true,
-  },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "port", label: "Port", type: "text" },
-  {
-    name: "commissionType",
-    label: "Commission Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "booking", label: "Booking" },
-      { value: "freight", label: "Freight" },
-      { value: "port", label: "Port" },
-      { value: "documentation", label: "Documentation" },
-      { value: "handling", label: "Handling" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  {
-    name: "baseAmount",
-    label: "Base Amount",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "commissionRate",
-    label: "Commission Rate",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "commissionAmount",
-    label: "Commission Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "taxAmount", label: "Tax Amount", type: "number" },
-  {
-    name: "netPayable",
-    label: "Net Payable",
-    type: "number",
-    required: true,
-  },
-  { name: "invoiceRef", label: "Invoice Ref", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditAgencyCommissionPage({
   params,
@@ -69,6 +16,66 @@ export default async function EditAgencyCommissionPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
+
+  const [portOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "agentName",
+      label: "Agent Name",
+      type: "select", options: customerOpts,
+      required: true,
+    },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "port", label: "Port", type: "select", options: portOpts },
+    {
+      name: "commissionType",
+      label: "Commission Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "booking", label: "Booking" },
+        { value: "freight", label: "Freight" },
+        { value: "port", label: "Port" },
+        { value: "documentation", label: "Documentation" },
+        { value: "handling", label: "Handling" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "baseAmount",
+      label: "Base Amount",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "commissionRate",
+      label: "Commission Rate",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "commissionAmount",
+      label: "Commission Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "taxAmount", label: "Tax Amount", type: "number" },
+    {
+      name: "netPayable",
+      label: "Net Payable",
+      type: "number",
+      required: true,
+    },
+    { name: "invoiceRef", label: "Invoice Ref", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getAgencyCommission(id, session.tenantId);

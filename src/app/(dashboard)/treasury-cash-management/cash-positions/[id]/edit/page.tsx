@@ -6,49 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCashPosition } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const CASH_POSITION_FIELDS: FieldConfig[] = [
-  {
-    name: "positionType",
-    label: "Position Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "daily", label: "Daily" },
-      { value: "weekly", label: "Weekly" },
-      { value: "monthly", label: "Monthly" },
-      { value: "forecast", label: "Forecast" },
-      { value: "actual", label: "Actual" },
-    ],
-  },
-  {
-    name: "positionDate",
-    label: "Position Date",
-    type: "datetime-local",
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "QAR",
-  },
-  { name: "openingBalance", label: "Opening Balance", type: "text" },
-  { name: "totalInflows", label: "Total Inflows", type: "text" },
-  { name: "totalOutflows", label: "Total Outflows", type: "text" },
-  { name: "closingBalance", label: "Closing Balance", type: "text" },
-  { name: "netCashFlow", label: "Net Cash Flow", type: "text" },
-  { name: "minimumBalance", label: "Minimum Balance", type: "text" },
-  { name: "maximumBalance", label: "Maximum Balance", type: "text" },
-  { name: "bankAccountId", label: "Bank Account ID", type: "text" },
-  { name: "entityId", label: "Entity ID", type: "text" },
-  { name: "variance", label: "Variance", type: "text" },
-  {
-    name: "variancePercentage",
-    label: "Variance Percentage",
-    type: "text",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCashPositionPage({
   params,
@@ -60,6 +18,49 @@ export default async function EditCashPositionPage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/cash-positions");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CASH_POSITION_FIELDS: FieldConfig[] = [
+    {
+      name: "positionType",
+      label: "Position Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "daily", label: "Daily" },
+        { value: "weekly", label: "Weekly" },
+        { value: "monthly", label: "Monthly" },
+        { value: "forecast", label: "Forecast" },
+        { value: "actual", label: "Actual" },
+      ],
+    },
+    {
+      name: "positionDate",
+      label: "Position Date",
+      type: "datetime-local",
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "openingBalance", label: "Opening Balance", type: "text" },
+    { name: "totalInflows", label: "Total Inflows", type: "text" },
+    { name: "totalOutflows", label: "Total Outflows", type: "text" },
+    { name: "closingBalance", label: "Closing Balance", type: "text" },
+    { name: "netCashFlow", label: "Net Cash Flow", type: "text" },
+    { name: "minimumBalance", label: "Minimum Balance", type: "text" },
+    { name: "maximumBalance", label: "Maximum Balance", type: "text" },
+    { name: "bankAccountId", label: "Bank Account ID", type: "text" },
+    { name: "entityId", label: "Entity ID", type: "text" },
+    { name: "variance", label: "Variance", type: "text" },
+    {
+      name: "variancePercentage",
+      label: "Variance Percentage",
+      type: "text",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCashPosition(id, session.tenantId);

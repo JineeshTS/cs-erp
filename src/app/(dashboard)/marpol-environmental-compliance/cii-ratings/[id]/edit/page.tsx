@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCiiRating } from "@/lib/marpol-environmental-compliance/service";
 import { MecForm, type FieldConfig } from "@/components/marpol-environmental-compliance/mec-form";
 import Link from "next/link";
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditCiiRatingPage({
   params,
@@ -16,6 +17,8 @@ export default async function EditCiiRatingPage({
   if (!(await hasPermission(session.id, session.tenantId, "mec:edit")))
     redirect("/");
 
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
   const { id } = await params;
   const record = await getCiiRating(id, session.tenantId);
   if (!record) notFound();
@@ -34,7 +37,7 @@ export default async function EditCiiRatingPage({
       ],
     },
     { name: "title", label: "Title", type: "text" },
-    { name: "vesselName", label: "Vessel Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
     { name: "imoNumber", label: "IMO Number", type: "text" },
     { name: "reportingYear", label: "Reporting Year", type: "number" },
     { name: "attainedCii", label: "Attained CII", type: "text" },

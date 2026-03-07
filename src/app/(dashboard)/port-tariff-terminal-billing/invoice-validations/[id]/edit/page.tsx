@@ -8,35 +8,7 @@ import {
   PttForm,
   type FieldConfig,
 } from "@/components/port-tariff-terminal-billing/ptt-form";
-
-const VALIDATION_FIELDS: FieldConfig[] = [
-  {
-    name: "validationType",
-    label: "Validation Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "auto_validation", label: "Auto Validation" },
-      { value: "manual_review", label: "Manual Review" },
-      { value: "dispute_raised", label: "Dispute Raised" },
-      { value: "dispute_resolved", label: "Dispute Resolved" },
-      { value: "credit_note", label: "Credit Note" },
-    ],
-  },
-  { name: "invoiceNumber", label: "Invoice Number", type: "text" },
-  { name: "terminalName", label: "Terminal Name", type: "text" },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "invoiceDate", label: "Invoice Date", type: "datetime-local" },
-  { name: "invoiceAmountClaimed", label: "Invoice Amount Claimed", type: "number" },
-  { name: "calculatedAmount", label: "Calculated Amount", type: "number" },
-  { name: "varianceAmount", label: "Variance Amount", type: "number" },
-  { name: "variancePercentage", label: "Variance Percentage", type: "number" },
-  { name: "invoiceCurrency", label: "Invoice Currency", type: "text" },
-  { name: "disputeReason", label: "Dispute Reason", type: "textarea" },
-  { name: "resolutionDate", label: "Resolution Date", type: "datetime-local" },
-  { name: "resolvedAmount", label: "Resolved Amount", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditInvoiceValidationPage({
   params,
@@ -47,6 +19,40 @@ export default async function EditInvoiceValidationPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "ptt:edit")))
     redirect("/");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const VALIDATION_FIELDS: FieldConfig[] = [
+    {
+      name: "validationType",
+      label: "Validation Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "auto_validation", label: "Auto Validation" },
+        { value: "manual_review", label: "Manual Review" },
+        { value: "dispute_raised", label: "Dispute Raised" },
+        { value: "dispute_resolved", label: "Dispute Resolved" },
+        { value: "credit_note", label: "Credit Note" },
+      ],
+    },
+    { name: "invoiceNumber", label: "Invoice Number", type: "text" },
+    { name: "terminalName", label: "Terminal Name", type: "text" },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "invoiceDate", label: "Invoice Date", type: "datetime-local" },
+    { name: "invoiceAmountClaimed", label: "Invoice Amount Claimed", type: "number" },
+    { name: "calculatedAmount", label: "Calculated Amount", type: "number" },
+    { name: "varianceAmount", label: "Variance Amount", type: "number" },
+    { name: "variancePercentage", label: "Variance Percentage", type: "number" },
+    { name: "invoiceCurrency", label: "Invoice Currency", type: "select", options: currencyOpts },
+    { name: "disputeReason", label: "Dispute Reason", type: "textarea" },
+    { name: "resolutionDate", label: "Resolution Date", type: "datetime-local" },
+    { name: "resolvedAmount", label: "Resolved Amount", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getInvoiceValidation(id, session.tenantId);

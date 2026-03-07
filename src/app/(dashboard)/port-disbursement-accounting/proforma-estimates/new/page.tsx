@@ -4,48 +4,56 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PdaForm, type FieldConfig } from "@/components/port-disbursement-accounting/pda-form";
-
-const PE_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "portCode", label: "Port Code", type: "text", required: true },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  {
-    name: "callPurpose",
-    label: "Call Purpose",
-    type: "select",
-    required: true,
-    options: [
-      { value: "loading", label: "Loading" },
-      { value: "discharge", label: "Discharge" },
-      { value: "bunkering", label: "Bunkering" },
-      { value: "drydock", label: "Drydock" },
-      { value: "transshipment", label: "Transshipment" },
-      { value: "crew_change", label: "Crew Change" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "portDues", label: "Port Dues", type: "number" },
-  { name: "pilotage", label: "Pilotage", type: "number" },
-  { name: "towage", label: "Towage", type: "number" },
-  { name: "berthHire", label: "Berth Hire", type: "number" },
-  { name: "cargoHandling", label: "Cargo Handling", type: "number" },
-  { name: "agencyFees", label: "Agency Fees", type: "number" },
-  { name: "customs", label: "Customs", type: "number" },
-  { name: "miscellaneous", label: "Miscellaneous", type: "number" },
-  { name: "totalEstimate", label: "Total Estimate", type: "number", required: true },
-  { name: "estimateDate", label: "Estimate Date", type: "datetime-local", required: true },
-  { name: "validUntil", label: "Valid Until", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewProformaEstimatePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "disbursement:create")))
     redirect("/port-disbursement-accounting");
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const PE_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts, required: true },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    {
+      name: "callPurpose",
+      label: "Call Purpose",
+      type: "select",
+      required: true,
+      options: [
+        { value: "loading", label: "Loading" },
+        { value: "discharge", label: "Discharge" },
+        { value: "bunkering", label: "Bunkering" },
+        { value: "drydock", label: "Drydock" },
+        { value: "transshipment", label: "Transshipment" },
+        { value: "crew_change", label: "Crew Change" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "portDues", label: "Port Dues", type: "number" },
+    { name: "pilotage", label: "Pilotage", type: "number" },
+    { name: "towage", label: "Towage", type: "number" },
+    { name: "berthHire", label: "Berth Hire", type: "number" },
+    { name: "cargoHandling", label: "Cargo Handling", type: "number" },
+    { name: "agencyFees", label: "Agency Fees", type: "number" },
+    { name: "customs", label: "Customs", type: "number" },
+    { name: "miscellaneous", label: "Miscellaneous", type: "number" },
+    { name: "totalEstimate", label: "Total Estimate", type: "number", required: true },
+    { name: "estimateDate", label: "Estimate Date", type: "datetime-local", required: true },
+    { name: "validUntil", label: "Valid Until", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

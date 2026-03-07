@@ -5,32 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getCanalTransit } from "@/lib/schedule-voyage-planning/service";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const CANAL_TRANSIT_FIELDS: FieldConfig[] = [
-  {
-    name: "transitType",
-    label: "Transit Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "suez_northbound", label: "Suez Northbound" },
-      { value: "suez_southbound", label: "Suez Southbound" },
-      { value: "panama_transit", label: "Panama Transit" },
-      { value: "kiel_transit", label: "Kiel Transit" },
-      { value: "turkish_straits", label: "Turkish Straits" },
-    ],
-  },
-  { name: "canalName", label: "Canal Name", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "bookingNumber", label: "Booking Number", type: "text" },
-  { name: "scheduledDate", label: "Scheduled Date", type: "datetime-local" },
-  { name: "actualDate", label: "Actual Date", type: "datetime-local" },
-  { name: "transitFee", label: "Transit Fee", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "convoyPosition", label: "Convoy Position", type: "number" },
-  { name: "pilotRequired", label: "Pilot Required", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCanalTransitPage({
   params,
@@ -41,6 +16,37 @@ export default async function EditCanalTransitPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "svp:edit")))
     redirect("/schedule-voyage-planning/canal-transits");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const CANAL_TRANSIT_FIELDS: FieldConfig[] = [
+    {
+      name: "transitType",
+      label: "Transit Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "suez_northbound", label: "Suez Northbound" },
+        { value: "suez_southbound", label: "Suez Southbound" },
+        { value: "panama_transit", label: "Panama Transit" },
+        { value: "kiel_transit", label: "Kiel Transit" },
+        { value: "turkish_straits", label: "Turkish Straits" },
+      ],
+    },
+    { name: "canalName", label: "Canal Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "bookingNumber", label: "Booking Number", type: "text" },
+    { name: "scheduledDate", label: "Scheduled Date", type: "datetime-local" },
+    { name: "actualDate", label: "Actual Date", type: "datetime-local" },
+    { name: "transitFee", label: "Transit Fee", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "convoyPosition", label: "Convoy Position", type: "number" },
+    { name: "pilotRequired", label: "Pilot Required", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

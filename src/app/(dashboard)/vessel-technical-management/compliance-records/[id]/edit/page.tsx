@@ -6,44 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getComplianceRecord } from "@/lib/vessel-technical-management/service";
 import { VtmForm } from "@/components/vessel-technical-management/vtm-form";
 import type { FieldConfig } from "@/components/vessel-technical-management/vtm-form";
-
-const fields: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "complianceType",
-    label: "Compliance Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "ism_audit", label: "ISM Audit" },
-      { value: "solas", label: "SOLAS" },
-      { value: "marpol", label: "MARPOL" },
-      { value: "isps", label: "ISPS" },
-      { value: "mlc", label: "MLC" },
-      { value: "ballast_water", label: "Ballast Water" },
-      { value: "ems", label: "EMS" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "certificateName", label: "Certificate Name", type: "text" },
-  { name: "certificateNumber", label: "Certificate Number", type: "text" },
-  { name: "issuingAuthority", label: "Issuing Authority", type: "text" },
-  { name: "issuedDate", label: "Issued Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "auditDate", label: "Audit Date", type: "datetime-local" },
-  { name: "auditorName", label: "Auditor Name", type: "text" },
-  { name: "nonConformities", label: "Non-Conformities", type: "number" },
-  { name: "majorNc", label: "Major NC", type: "number" },
-  { name: "minorNc", label: "Minor NC", type: "number" },
-  { name: "observations", label: "Observations", type: "number" },
-  { name: "closureDeadline", label: "Closure Deadline", type: "datetime-local" },
-  {
-    name: "nextInspectionDate",
-    label: "Next Inspection Date",
-    type: "datetime-local",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditComplianceRecordPage({
   params,
@@ -54,6 +17,46 @@ export default async function EditComplianceRecordPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "technical:edit")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "complianceType",
+      label: "Compliance Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "ism_audit", label: "ISM Audit" },
+        { value: "solas", label: "SOLAS" },
+        { value: "marpol", label: "MARPOL" },
+        { value: "isps", label: "ISPS" },
+        { value: "mlc", label: "MLC" },
+        { value: "ballast_water", label: "Ballast Water" },
+        { value: "ems", label: "EMS" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "certificateName", label: "Certificate Name", type: "text" },
+    { name: "certificateNumber", label: "Certificate Number", type: "text" },
+    { name: "issuingAuthority", label: "Issuing Authority", type: "text" },
+    { name: "issuedDate", label: "Issued Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "auditDate", label: "Audit Date", type: "datetime-local" },
+    { name: "auditorName", label: "Auditor Name", type: "text" },
+    { name: "nonConformities", label: "Non-Conformities", type: "number" },
+    { name: "majorNc", label: "Major NC", type: "number" },
+    { name: "minorNc", label: "Minor NC", type: "number" },
+    { name: "observations", label: "Observations", type: "number" },
+    { name: "closureDeadline", label: "Closure Deadline", type: "datetime-local" },
+    {
+      name: "nextInspectionDate",
+      label: "Next Inspection Date",
+      type: "datetime-local",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getComplianceRecord(id, session.tenantId);

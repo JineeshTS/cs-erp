@@ -4,33 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const SERVICE_SCHEDULE_FIELDS: FieldConfig[] = [
-  {
-    name: "scheduleType",
-    label: "Schedule Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "liner_service", label: "Liner Service" },
-      { value: "feeder_service", label: "Feeder Service" },
-      { value: "relay_service", label: "Relay Service" },
-      { value: "pendulum_route", label: "Pendulum Route" },
-      { value: "round_trip", label: "Round Trip" },
-    ],
-  },
-  { name: "serviceName", label: "Service Name", type: "text" },
-  { name: "serviceCode", label: "Service Code", type: "text" },
-  { name: "tradeRoute", label: "Trade Route", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "frequencyDays", label: "Frequency (Days)", type: "number" },
-  { name: "portCount", label: "Port Count", type: "number" },
-  { name: "transitTimeDays", label: "Transit Time (Days)", type: "number" },
-  { name: "publishedAt", label: "Published At", type: "datetime-local" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewServiceSchedulePage() {
   const session = await getSession();
@@ -40,6 +14,34 @@ export default async function NewServiceSchedulePage() {
   )
     redirect("/schedule-voyage-planning/service-schedules");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const SERVICE_SCHEDULE_FIELDS: FieldConfig[] = [
+    {
+      name: "scheduleType",
+      label: "Schedule Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "liner_service", label: "Liner Service" },
+        { value: "feeder_service", label: "Feeder Service" },
+        { value: "relay_service", label: "Relay Service" },
+        { value: "pendulum_route", label: "Pendulum Route" },
+        { value: "round_trip", label: "Round Trip" },
+      ],
+    },
+    { name: "serviceName", label: "Service Name", type: "text" },
+    { name: "serviceCode", label: "Service Code", type: "text" },
+    { name: "tradeRoute", label: "Trade Route", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "frequencyDays", label: "Frequency (Days)", type: "number" },
+    { name: "portCount", label: "Port Count", type: "number" },
+    { name: "transitTimeDays", label: "Transit Time (Days)", type: "number" },
+    { name: "publishedAt", label: "Published At", type: "datetime-local" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

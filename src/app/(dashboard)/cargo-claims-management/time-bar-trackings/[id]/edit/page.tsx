@@ -5,37 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getTimeBarTracking } from "@/lib/cargo-claims-management/service";
 import { CcmForm, type FieldConfig } from "@/components/cargo-claims-management/ccm-form";
-
-const TIME_BAR_TRACKING_FIELDS: FieldConfig[] = [
-  {
-    name: "trackingType",
-    label: "Tracking Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "suit_time_bar", label: "Suit Time Bar" },
-      { value: "arbitration_deadline", label: "Arbitration Deadline" },
-      { value: "notice_period", label: "Notice Period" },
-      { value: "extension", label: "Extension" },
-      { value: "tolling_agreement", label: "Tolling Agreement" },
-    ],
-  },
-  { name: "claimId", label: "Claim ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "applicableLaw", label: "Applicable Law", type: "text" },
-  { name: "timeBarPeriodMonths", label: "Time Bar Period (Months)", type: "number" },
-  { name: "dateOfDelivery", label: "Date of Delivery", type: "datetime-local" },
-  { name: "timeBarDeadline", label: "Time Bar Deadline", type: "datetime-local" },
-  { name: "daysRemaining", label: "Days Remaining", type: "number" },
-  { name: "extensionGranted", label: "Extension Granted", type: "checkbox" },
-  { name: "extensionDate", label: "Extension Date", type: "datetime-local" },
-  { name: "alertSent30Days", label: "Alert Sent (30 Days)", type: "checkbox" },
-  { name: "alertSent60Days", label: "Alert Sent (60 Days)", type: "checkbox" },
-  { name: "alertSent90Days", label: "Alert Sent (90 Days)", type: "checkbox" },
-  { name: "protectiveAction", label: "Protective Action", type: "text" },
-  { name: "protectiveActionDate", label: "Protective Action Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditTimeBarTrackingPage({
   params,
@@ -47,6 +17,38 @@ export default async function EditTimeBarTrackingPage({
   if (!(await hasPermission(session.id, session.tenantId, "ccm:edit")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const TIME_BAR_TRACKING_FIELDS: FieldConfig[] = [
+    {
+      name: "trackingType",
+      label: "Tracking Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "suit_time_bar", label: "Suit Time Bar" },
+        { value: "arbitration_deadline", label: "Arbitration Deadline" },
+        { value: "notice_period", label: "Notice Period" },
+        { value: "extension", label: "Extension" },
+        { value: "tolling_agreement", label: "Tolling Agreement" },
+      ],
+    },
+    { name: "claimId", label: "Claim ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "applicableLaw", label: "Applicable Law", type: "text" },
+    { name: "timeBarPeriodMonths", label: "Time Bar Period (Months)", type: "number" },
+    { name: "dateOfDelivery", label: "Date of Delivery", type: "datetime-local" },
+    { name: "timeBarDeadline", label: "Time Bar Deadline", type: "datetime-local" },
+    { name: "daysRemaining", label: "Days Remaining", type: "number" },
+    { name: "extensionGranted", label: "Extension Granted", type: "checkbox" },
+    { name: "extensionDate", label: "Extension Date", type: "datetime-local" },
+    { name: "alertSent30Days", label: "Alert Sent (30 Days)", type: "checkbox" },
+    { name: "alertSent60Days", label: "Alert Sent (60 Days)", type: "checkbox" },
+    { name: "alertSent90Days", label: "Alert Sent (90 Days)", type: "checkbox" },
+    { name: "protectiveAction", label: "Protective Action", type: "text" },
+    { name: "protectiveActionDate", label: "Protective Action Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getTimeBarTracking(id, session.tenantId);
   if (!record) notFound();

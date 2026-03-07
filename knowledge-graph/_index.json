@@ -1,0 +1,12 @@
+{
+  "project": "cs-erp",
+  "last_updated": "2026-03-07",
+  "total_nodes": 5,
+  "nodes": [
+    { "id": "D-001", "node_type": "decision", "name": "Simplified Category Sidebar + Hub Pages", "file": "decisions/D-001.json", "status": "final" },
+    { "id": "D-002", "node_type": "decision", "name": "Master Data Wiring Strategy for All Forms", "file": "decisions/D-002.json", "status": "draft" },
+    { "id": "F-001", "node_type": "feature", "name": "Category Sidebar + Hub Pages", "file": "features/F-001.json", "status": "final" },
+    { "id": "F-002", "node_type": "feature", "name": "Booking Form Master Data Wiring", "file": "features/F-002.json", "status": "final" },
+    { "id": "F-003", "node_type": "feature", "name": "Global Master Data Wiring — All Form Pages", "file": "features/F-003.json", "status": "draft" }
+  ]
+}

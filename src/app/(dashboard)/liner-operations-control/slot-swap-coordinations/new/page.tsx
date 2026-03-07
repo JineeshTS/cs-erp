@@ -7,35 +7,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const SLOT_SWAP_FIELDS: FieldConfig[] = [
-  {
-    name: "swapType",
-    label: "Swap Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "slot_purchase", label: "Slot Purchase" },
-      { value: "slot_sale", label: "Slot Sale" },
-      { value: "slot_exchange", label: "Slot Exchange" },
-      { value: "capacity_share", label: "Capacity Share" },
-      { value: "emergency_swap", label: "Emergency Swap" },
-    ],
-  },
-  { name: "partnerName", label: "Partner Name", type: "text" },
-  { name: "partnerCode", label: "Partner Code", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "tradeRoute", label: "Trade Route", type: "text" },
-  { name: "slotsOffered", label: "Slots Offered", type: "number" },
-  { name: "slotsReceived", label: "Slots Received", type: "number" },
-  { name: "ratePerSlot", label: "Rate Per Slot", type: "number" },
-  { name: "totalValue", label: "Total Value", type: "number" },
-  { name: "swapCurrency", label: "Swap Currency", type: "text" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewSlotSwapCoordinationPage() {
   const session = await getSession();
@@ -43,6 +15,36 @@ export default async function NewSlotSwapCoordinationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "loc:create")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const SLOT_SWAP_FIELDS: FieldConfig[] = [
+    {
+      name: "swapType",
+      label: "Swap Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "slot_purchase", label: "Slot Purchase" },
+        { value: "slot_sale", label: "Slot Sale" },
+        { value: "slot_exchange", label: "Slot Exchange" },
+        { value: "capacity_share", label: "Capacity Share" },
+        { value: "emergency_swap", label: "Emergency Swap" },
+      ],
+    },
+    { name: "partnerName", label: "Partner Name", type: "text" },
+    { name: "partnerCode", label: "Partner Code", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "tradeRoute", label: "Trade Route", type: "text" },
+    { name: "slotsOffered", label: "Slots Offered", type: "number" },
+    { name: "slotsReceived", label: "Slots Received", type: "number" },
+    { name: "ratePerSlot", label: "Rate Per Slot", type: "number" },
+    { name: "totalValue", label: "Total Value", type: "number" },
+    { name: "swapCurrency", label: "Swap Currency", type: "text" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local" },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

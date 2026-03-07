@@ -7,6 +7,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewOverheadAllocationPage() {
   const session = await getSession();
@@ -14,6 +15,8 @@ export default async function NewOverheadAllocationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const fields: FieldConfig[] = [
     { name: "costCentre", label: "Cost Centre", type: "text", required: true },
     {
@@ -40,8 +43,7 @@ export default async function NewOverheadAllocationPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "totalOverhead",

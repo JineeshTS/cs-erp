@@ -6,47 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getFreeTimeRule } from "@/lib/demurrage-detention-management/service";
 import { DdmForm } from "@/components/demurrage-detention-management/ddm-form";
 import type { FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
-
-const RULE_FIELDS: FieldConfig[] = [
-  { name: "ruleName", label: "Rule Name", type: "text", required: true },
-  {
-    name: "ruleType",
-    label: "Rule Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "demurrage", label: "Demurrage" },
-      { value: "detention", label: "Detention" },
-      { value: "combined", label: "Combined" },
-    ],
-  },
-  {
-    name: "applicableTo",
-    label: "Applicable To",
-    type: "select",
-    required: true,
-    options: [
-      { value: "all", label: "All" },
-      { value: "port", label: "Port" },
-      { value: "customer", label: "Customer" },
-      { value: "container_type", label: "Container Type" },
-      { value: "trade_lane", label: "Trade Lane" },
-    ],
-  },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "portCountry", label: "Port Country", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "freeTimeDays", label: "Free Time Days", type: "number", required: true },
-  { name: "gracePeriodDays", label: "Grace Period Days", type: "number" },
-  { name: "weekendsExcluded", label: "Weekends Excluded", type: "checkbox" },
-  { name: "holidaysExcluded", label: "Holidays Excluded", type: "checkbox" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "priority", label: "Priority", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditFreeTimeRulePage({
   params,
@@ -57,6 +17,52 @@ export default async function EditFreeTimeRulePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "demurrage:edit")))
     redirect("/demurrage-detention-management/free-time-rules");
+
+  const [portOpts, customerOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+  ]);
+
+  const RULE_FIELDS: FieldConfig[] = [
+    { name: "ruleName", label: "Rule Name", type: "text", required: true },
+    {
+      name: "ruleType",
+      label: "Rule Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "demurrage", label: "Demurrage" },
+        { value: "detention", label: "Detention" },
+        { value: "combined", label: "Combined" },
+      ],
+    },
+    {
+      name: "applicableTo",
+      label: "Applicable To",
+      type: "select",
+      required: true,
+      options: [
+        { value: "all", label: "All" },
+        { value: "port", label: "Port" },
+        { value: "customer", label: "Customer" },
+        { value: "container_type", label: "Container Type" },
+        { value: "trade_lane", label: "Trade Lane" },
+      ],
+    },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "portCountry", label: "Port Country", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "freeTimeDays", label: "Free Time Days", type: "number", required: true },
+    { name: "gracePeriodDays", label: "Grace Period Days", type: "number" },
+    { name: "weekendsExcluded", label: "Weekends Excluded", type: "checkbox" },
+    { name: "holidaysExcluded", label: "Holidays Excluded", type: "checkbox" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "priority", label: "Priority", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

@@ -4,25 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PdaForm, type FieldConfig } from "@/components/port-disbursement-accounting/pda-form";
-
-const VARIANCE_ANALYSIS_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "portCode", label: "Port Code", type: "text", required: true },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  { name: "proformaRef", label: "Proforma Ref", type: "text" },
-  { name: "fdaRef", label: "FDA Ref", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "pdaTotal", label: "PDA Total", type: "number", required: true },
-  { name: "fdaTotal", label: "FDA Total", type: "number", required: true },
-  { name: "deviationThreshold", label: "Deviation Threshold", type: "number" },
-  {
-    name: "rootCauseAnalysis",
-    label: "Root Cause Analysis",
-    type: "textarea",
-  },
-  { name: "recommendations", label: "Recommendations", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewVarianceAnalysisPage() {
   const session = await getSession();
@@ -35,6 +17,31 @@ export default async function NewVarianceAnalysisPage() {
     ))
   )
     redirect("/port-disbursement-accounting/variance-analyses");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const VARIANCE_ANALYSIS_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts, required: true },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    { name: "proformaRef", label: "Proforma Ref", type: "text" },
+    { name: "fdaRef", label: "FDA Ref", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "pdaTotal", label: "PDA Total", type: "number", required: true },
+    { name: "fdaTotal", label: "FDA Total", type: "number", required: true },
+    { name: "deviationThreshold", label: "Deviation Threshold", type: "number" },
+    {
+      name: "rootCauseAnalysis",
+      label: "Root Cause Analysis",
+      type: "textarea",
+    },
+    { name: "recommendations", label: "Recommendations", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

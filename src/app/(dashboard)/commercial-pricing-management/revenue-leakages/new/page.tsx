@@ -5,53 +5,60 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "leakageReference", label: "Leakage Reference", type: "text", required: true },
-  {
-    name: "leakageType",
-    label: "Leakage Type",
-    type: "select",
-    options: [
-      { label: "Rate Deviation", value: "rate_deviation" },
-      { label: "Missing Surcharge", value: "missing_surcharge" },
-      { label: "Incorrect Billing", value: "incorrect_billing" },
-      { label: "Unapplied Charge", value: "unapplied_charge" },
-      { label: "Weight Discrepancy", value: "weight_discrepancy" },
-      { label: "Other", value: "other" },
-    ],
-  },
-  { name: "detectedDate", label: "Detected Date", type: "date", required: true },
-  { name: "bookingReference", label: "Booking Reference", type: "text" },
-  { name: "invoiceReference", label: "Invoice Reference", type: "text" },
-  { name: "customerId", label: "Customer ID", type: "text" },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "expectedAmount", label: "Expected Amount", type: "number", required: true },
-  { name: "actualAmount", label: "Actual Amount", type: "number", required: true },
-  { name: "leakageAmount", label: "Leakage Amount", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "rootCause", label: "Root Cause", type: "text" },
-  { name: "correctionAction", label: "Correction Action", type: "textarea" },
-  { name: "recoveredAmount", label: "Recovered Amount", type: "number" },
-  { name: "assignedTo", label: "Assigned To", type: "text" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { label: "Detected", value: "detected" },
-      { label: "Investigating", value: "investigating" },
-      { label: "Confirmed", value: "confirmed" },
-      { label: "Recovered", value: "recovered" },
-      { label: "Written Off", value: "written_off" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewRevenueLeakagePage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    { name: "leakageReference", label: "Leakage Reference", type: "text", required: true },
+    {
+      name: "leakageType",
+      label: "Leakage Type",
+      type: "select",
+      options: [
+        { label: "Rate Deviation", value: "rate_deviation" },
+        { label: "Missing Surcharge", value: "missing_surcharge" },
+        { label: "Incorrect Billing", value: "incorrect_billing" },
+        { label: "Unapplied Charge", value: "unapplied_charge" },
+        { label: "Weight Discrepancy", value: "weight_discrepancy" },
+        { label: "Other", value: "other" },
+      ],
+    },
+    { name: "detectedDate", label: "Detected Date", type: "date", required: true },
+    { name: "bookingReference", label: "Booking Reference", type: "text" },
+    { name: "invoiceReference", label: "Invoice Reference", type: "text" },
+    { name: "customerId", label: "Customer ID", type: "select", options: customerOpts },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "expectedAmount", label: "Expected Amount", type: "number", required: true },
+    { name: "actualAmount", label: "Actual Amount", type: "number", required: true },
+    { name: "leakageAmount", label: "Leakage Amount", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "rootCause", label: "Root Cause", type: "text" },
+    { name: "correctionAction", label: "Correction Action", type: "textarea" },
+    { name: "recoveredAmount", label: "Recovered Amount", type: "number" },
+    { name: "assignedTo", label: "Assigned To", type: "text" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Detected", value: "detected" },
+        { label: "Investigating", value: "investigating" },
+        { label: "Confirmed", value: "confirmed" },
+        { label: "Recovered", value: "recovered" },
+        { label: "Written Off", value: "written_off" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   return (

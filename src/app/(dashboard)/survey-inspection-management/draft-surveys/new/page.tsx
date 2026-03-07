@@ -5,45 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { SimForm } from "@/components/survey-inspection-management/sim-form";
 import type { FieldConfig } from "@/components/survey-inspection-management/sim-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "surveyType",
-    label: "Survey Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "initial", label: "Initial" },
-      { value: "intermediate", label: "Intermediate" },
-      { value: "final", label: "Final" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "berthName", label: "Berth Name", type: "text" },
-  { name: "cargoType", label: "Cargo Type", type: "text" },
-  { name: "draftFore", label: "Draft Fore", type: "text", placeholder: "0.000" },
-  { name: "draftAft", label: "Draft Aft", type: "text", placeholder: "0.000" },
-  { name: "draftMidPort", label: "Draft Mid Port", type: "text", placeholder: "0.000" },
-  { name: "draftMidStarboard", label: "Draft Mid Starboard", type: "text", placeholder: "0.000" },
-  { name: "meanDraft", label: "Mean Draft", type: "text", placeholder: "0.000" },
-  { name: "trim", label: "Trim", type: "text", placeholder: "0.000" },
-  { name: "displacement", label: "Displacement", type: "text", placeholder: "0.00" },
-  { name: "ballastWeight", label: "Ballast Weight", type: "text", placeholder: "0.00" },
-  { name: "constantsWeight", label: "Constants Weight", type: "text", placeholder: "0.00" },
-  { name: "freshWaterWeight", label: "Fresh Water Weight", type: "text", placeholder: "0.00" },
-  { name: "fuelWeight", label: "Fuel Weight", type: "text", placeholder: "0.00" },
-  { name: "netCargoWeight", label: "Net Cargo Weight", type: "text", placeholder: "0.00" },
-  { name: "waterDensity", label: "Water Density", type: "text", placeholder: "1.0250" },
-  { name: "waterTemp", label: "Water Temp", type: "text", placeholder: "0.00" },
-  { name: "surveyorName", label: "Surveyor Name", type: "text" },
-  { name: "surveyorCompany", label: "Surveyor Company", type: "text" },
-  { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
-  { name: "completedAt", label: "Completed At", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function NewDraftSurveyPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -52,6 +14,50 @@ export default async function NewDraftSurveyPage(): Promise<React.ReactNode> {
     !(await hasPermission(session.id, session.tenantId, "survey:create"))
   )
     redirect("/survey-inspection-management/draft-surveys");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "surveyType",
+      label: "Survey Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "initial", label: "Initial" },
+        { value: "intermediate", label: "Intermediate" },
+        { value: "final", label: "Final" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "berthName", label: "Berth Name", type: "text" },
+    { name: "cargoType", label: "Cargo Type", type: "text" },
+    { name: "draftFore", label: "Draft Fore", type: "text", placeholder: "0.000" },
+    { name: "draftAft", label: "Draft Aft", type: "text", placeholder: "0.000" },
+    { name: "draftMidPort", label: "Draft Mid Port", type: "text", placeholder: "0.000" },
+    { name: "draftMidStarboard", label: "Draft Mid Starboard", type: "text", placeholder: "0.000" },
+    { name: "meanDraft", label: "Mean Draft", type: "text", placeholder: "0.000" },
+    { name: "trim", label: "Trim", type: "text", placeholder: "0.000" },
+    { name: "displacement", label: "Displacement", type: "text", placeholder: "0.00" },
+    { name: "ballastWeight", label: "Ballast Weight", type: "text", placeholder: "0.00" },
+    { name: "constantsWeight", label: "Constants Weight", type: "text", placeholder: "0.00" },
+    { name: "freshWaterWeight", label: "Fresh Water Weight", type: "text", placeholder: "0.00" },
+    { name: "fuelWeight", label: "Fuel Weight", type: "text", placeholder: "0.00" },
+    { name: "netCargoWeight", label: "Net Cargo Weight", type: "text", placeholder: "0.00" },
+    { name: "waterDensity", label: "Water Density", type: "text", placeholder: "1.0250" },
+    { name: "waterTemp", label: "Water Temp", type: "text", placeholder: "0.00" },
+    { name: "surveyorName", label: "Surveyor Name", type: "text" },
+    { name: "surveyorCompany", label: "Surveyor Company", type: "text" },
+    { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
+    { name: "completedAt", label: "Completed At", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

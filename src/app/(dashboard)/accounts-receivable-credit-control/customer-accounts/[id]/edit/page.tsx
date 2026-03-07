@@ -3,19 +3,25 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getCustomerAccount } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm, type FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCustomerAccountPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit"))) redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const account = await getCustomerAccount(id, session.tenantId);
   if (!account) notFound();
 
   const fields: FieldConfig[] = [
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
-    { name: "customerCode", label: "Customer Code", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerCode", label: "Customer Code", type: "select", options: customerOpts },
     { name: "tradingName", label: "Trading Name", type: "text" },
     { name: "registrationNumber", label: "Registration Number", type: "text" },
     { name: "taxId", label: "Tax ID", type: "text" },
@@ -28,7 +34,7 @@ export default async function EditCustomerAccountPage({ params }: { params: Prom
       { label: "Government", value: "government" },
       { label: "Other", value: "other" },
     ]},
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "paymentTerms", label: "Payment Terms", type: "text" },
     { name: "billingAddress", label: "Billing Address", type: "textarea" },
     { name: "billingEmail", label: "Billing Email", type: "text" },

@@ -5,34 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getCargoMix } from "@/lib/liner-revenue-management/service";
 import { LrmForm, type FieldConfig } from "@/components/liner-revenue-management/lrm-form";
-
-const CARGO_MIX_FIELDS: FieldConfig[] = [
-  {
-    name: "mixType",
-    label: "Mix Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "commodity_analysis", label: "Commodity Analysis" },
-      { value: "segment_allocation", label: "Segment Allocation" },
-      { value: "weight_class", label: "Weight Class" },
-      { value: "reefer_ratio", label: "Reefer Ratio" },
-      { value: "special_cargo", label: "Special Cargo" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "commodityGroup", label: "Commodity Group", type: "text" },
-  { name: "dryCargoTeu", label: "Dry Cargo TEU", type: "number" },
-  { name: "reeferTeu", label: "Reefer TEU", type: "number" },
-  { name: "specialCargoTeu", label: "Special Cargo TEU", type: "number" },
-  { name: "totalTeu", label: "Total TEU", type: "number" },
-  { name: "revenueContribution", label: "Revenue Contribution", type: "text" },
-  { name: "marginPct", label: "Margin %", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCargoMixPage({
   params,
@@ -44,6 +17,35 @@ export default async function EditCargoMixPage({
   if (!(await hasPermission(session.id, session.tenantId, "lrm:edit")))
     redirect("/liner-revenue-management/cargo-mixes");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CARGO_MIX_FIELDS: FieldConfig[] = [
+    {
+      name: "mixType",
+      label: "Mix Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "commodity_analysis", label: "Commodity Analysis" },
+        { value: "segment_allocation", label: "Segment Allocation" },
+        { value: "weight_class", label: "Weight Class" },
+        { value: "reefer_ratio", label: "Reefer Ratio" },
+        { value: "special_cargo", label: "Special Cargo" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "commodityGroup", label: "Commodity Group", type: "text" },
+    { name: "dryCargoTeu", label: "Dry Cargo TEU", type: "number" },
+    { name: "reeferTeu", label: "Reefer TEU", type: "number" },
+    { name: "specialCargoTeu", label: "Special Cargo TEU", type: "number" },
+    { name: "totalTeu", label: "Total TEU", type: "number" },
+    { name: "revenueContribution", label: "Revenue Contribution", type: "text" },
+    { name: "marginPct", label: "Margin %", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCargoMix(id, session.tenantId);

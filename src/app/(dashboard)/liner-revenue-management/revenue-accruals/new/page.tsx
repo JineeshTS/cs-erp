@@ -4,33 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { LrmForm, type FieldConfig } from "@/components/liner-revenue-management/lrm-form";
-
-const REVENUE_ACCRUAL_FIELDS: FieldConfig[] = [
-  {
-    name: "accrualType",
-    label: "Accrual Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "freight_accrual", label: "Freight Accrual" },
-      { value: "surcharge_accrual", label: "Surcharge Accrual" },
-      { value: "demurrage_accrual", label: "Demurrage Accrual" },
-      { value: "detention_accrual", label: "Detention Accrual" },
-      { value: "ancillary_accrual", label: "Ancillary Accrual" },
-    ],
-  },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "accrualAmount", label: "Accrual Amount", type: "text" },
-  { name: "billedAmount", label: "Billed Amount", type: "text" },
-  { name: "varianceAmount", label: "Variance Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "accrualPeriod", label: "Accrual Period", type: "text" },
-  { name: "recognitionDate", label: "Recognition Date", type: "datetime-local" },
-  { name: "reversalDate", label: "Reversal Date", type: "datetime-local" },
-  { name: "glAccountCode", label: "GL Account Code", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewRevenueAccrualPage() {
   const session = await getSession();
@@ -39,6 +13,38 @@ export default async function NewRevenueAccrualPage() {
     !(await hasPermission(session.id, session.tenantId, "lrm:create"))
   )
     redirect("/liner-revenue-management/revenue-accruals");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const REVENUE_ACCRUAL_FIELDS: FieldConfig[] = [
+    {
+      name: "accrualType",
+      label: "Accrual Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "freight_accrual", label: "Freight Accrual" },
+        { value: "surcharge_accrual", label: "Surcharge Accrual" },
+        { value: "demurrage_accrual", label: "Demurrage Accrual" },
+        { value: "detention_accrual", label: "Detention Accrual" },
+        { value: "ancillary_accrual", label: "Ancillary Accrual" },
+      ],
+    },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "accrualAmount", label: "Accrual Amount", type: "text" },
+    { name: "billedAmount", label: "Billed Amount", type: "text" },
+    { name: "varianceAmount", label: "Variance Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "accrualPeriod", label: "Accrual Period", type: "text" },
+    { name: "recognitionDate", label: "Recognition Date", type: "datetime-local" },
+    { name: "reversalDate", label: "Reversal Date", type: "datetime-local" },
+    { name: "glAccountCode", label: "GL Account Code", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

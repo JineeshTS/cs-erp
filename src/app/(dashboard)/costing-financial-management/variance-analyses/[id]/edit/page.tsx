@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditVarianceAnalysisPage({
   params,
@@ -19,13 +20,18 @@ export default async function EditVarianceAnalysisPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const analysis = await getVarianceAnalysis(id, session.tenantId);
   if (!analysis) notFound();
 
   const fields: FieldConfig[] = [
     { name: "voyageRef", label: "Voyage Ref", type: "text" },
-    { name: "vesselName", label: "Vessel Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
     { name: "costCentre", label: "Cost Centre", type: "text" },
     {
       name: "analysisPeriod",
@@ -50,8 +56,7 @@ export default async function EditVarianceAnalysisPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "budgetAmount",

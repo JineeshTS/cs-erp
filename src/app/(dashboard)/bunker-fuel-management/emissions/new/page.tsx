@@ -7,6 +7,7 @@ import {
   BfmForm,
   type FieldConfig,
 } from "@/components/bunker-fuel-management/bfm-form";
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewEmissionsRecordPage() {
   const session = await getSession();
@@ -14,8 +15,10 @@ export default async function NewEmissionsRecordPage() {
   if (!(await hasPermission(session.id, session.tenantId, "bunker:create")))
     redirect("/bunker-fuel-management/emissions");
 
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
   const fields: FieldConfig[] = [
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
     { name: "voyageRef", label: "Voyage Ref", type: "text" },
     {

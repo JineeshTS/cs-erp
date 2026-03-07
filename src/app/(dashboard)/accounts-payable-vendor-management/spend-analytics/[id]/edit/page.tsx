@@ -8,6 +8,7 @@ import {
   ApvmForm,
   type FieldConfig,
 } from "@/components/accounts-payable-vendor-management/apvm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditSpendAnalyticPage({
   params,
@@ -19,6 +20,8 @@ export default async function EditSpendAnalyticPage({
   if (!(await hasPermission(session.id, session.tenantId, "payable:edit")))
     redirect("/accounts-payable-vendor-management/spend-analytics");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const record = await getSpendAnalytic(id, session.tenantId);
   if (!record) notFound();
@@ -57,7 +60,7 @@ export default async function EditSpendAnalyticPage({
       type: "number",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "aiModelVersion", label: "AI Model Version", type: "text" },
     { name: "notes", label: "Notes", type: "textarea" },
   ];

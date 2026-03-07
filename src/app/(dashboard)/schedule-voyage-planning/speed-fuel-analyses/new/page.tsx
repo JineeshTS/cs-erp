@@ -4,32 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const SPEED_FUEL_ANALYSIS_FIELDS: FieldConfig[] = [
-  {
-    name: "analysisType",
-    label: "Analysis Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "slow_steaming", label: "Slow Steaming" },
-      { value: "eco_speed", label: "Eco Speed" },
-      { value: "full_speed", label: "Full Speed" },
-      { value: "variable_speed", label: "Variable Speed" },
-      { value: "weather_adjusted", label: "Weather Adjusted" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "speedKnots", label: "Speed (Knots)", type: "text" },
-  { name: "fuelConsumptionMt", label: "Fuel Consumption (MT)", type: "text" },
-  { name: "fuelCostPerDay", label: "Fuel Cost Per Day", type: "text" },
-  { name: "timeSavingHours", label: "Time Saving (Hours)", type: "text" },
-  { name: "co2EmissionsMt", label: "CO2 Emissions (MT)", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "optimalSpeed", label: "Optimal Speed", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewSpeedFuelAnalysisPage() {
   const session = await getSession();
@@ -38,6 +13,37 @@ export default async function NewSpeedFuelAnalysisPage() {
     !(await hasPermission(session.id, session.tenantId, "svp:create"))
   )
     redirect("/schedule-voyage-planning/speed-fuel-analyses");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const SPEED_FUEL_ANALYSIS_FIELDS: FieldConfig[] = [
+    {
+      name: "analysisType",
+      label: "Analysis Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "slow_steaming", label: "Slow Steaming" },
+        { value: "eco_speed", label: "Eco Speed" },
+        { value: "full_speed", label: "Full Speed" },
+        { value: "variable_speed", label: "Variable Speed" },
+        { value: "weather_adjusted", label: "Weather Adjusted" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "speedKnots", label: "Speed (Knots)", type: "text" },
+    { name: "fuelConsumptionMt", label: "Fuel Consumption (MT)", type: "text" },
+    { name: "fuelCostPerDay", label: "Fuel Cost Per Day", type: "text" },
+    { name: "timeSavingHours", label: "Time Saving (Hours)", type: "text" },
+    { name: "co2EmissionsMt", label: "CO2 Emissions (MT)", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "optimalSpeed", label: "Optimal Speed", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

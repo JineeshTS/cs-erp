@@ -5,34 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getVesselPosition } from "@/lib/real-time-iot-asset-tracking/service";
 import { IotForm, type FieldConfig } from "@/components/real-time-iot-asset-tracking/iot-form";
-
-const VESSEL_POSITION_FIELDS: FieldConfig[] = [
-  {
-    name: "positionType",
-    label: "Position Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "ais_report", label: "AIS Report" },
-      { value: "manual_position", label: "Manual Position" },
-      { value: "satellite_fix", label: "Satellite Fix" },
-      { value: "port_arrival", label: "Port Arrival" },
-      { value: "port_departure", label: "Port Departure" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "vesselImo", label: "Vessel IMO", type: "text" },
-  { name: "mmsi", label: "MMSI", type: "text" },
-  { name: "latitude", label: "Latitude", type: "text" },
-  { name: "longitude", label: "Longitude", type: "text" },
-  { name: "courseOverGround", label: "Course Over Ground", type: "text" },
-  { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
-  { name: "navStatus", label: "Nav Status", type: "text" },
-  { name: "destination", label: "Destination", type: "text" },
-  { name: "eta", label: "ETA", type: "datetime-local" },
-  { name: "draught", label: "Draught", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditVesselPositionPage({
   params,
@@ -44,6 +17,35 @@ export default async function EditVesselPositionPage({
   if (!(await hasPermission(session.id, session.tenantId, "iot:edit")))
     redirect("/real-time-iot-asset-tracking/vessel-positions");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const VESSEL_POSITION_FIELDS: FieldConfig[] = [
+    {
+      name: "positionType",
+      label: "Position Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "ais_report", label: "AIS Report" },
+        { value: "manual_position", label: "Manual Position" },
+        { value: "satellite_fix", label: "Satellite Fix" },
+        { value: "port_arrival", label: "Port Arrival" },
+        { value: "port_departure", label: "Port Departure" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "mmsi", label: "MMSI", type: "text" },
+    { name: "latitude", label: "Latitude", type: "text" },
+    { name: "longitude", label: "Longitude", type: "text" },
+    { name: "courseOverGround", label: "Course Over Ground", type: "text" },
+    { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
+    { name: "navStatus", label: "Nav Status", type: "text" },
+    { name: "destination", label: "Destination", type: "text" },
+    { name: "eta", label: "ETA", type: "datetime-local" },
+    { name: "draught", label: "Draught", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getVesselPosition(id, session.tenantId);

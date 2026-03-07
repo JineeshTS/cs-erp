@@ -5,49 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { EqyForm } from "@/components/equipment-control-yard-managem/eqy-form";
 import type { FieldConfig } from "@/components/equipment-control-yard-managem/eqy-form";
-
-const REPOSITIONING_OPTIMIZATION_FIELDS: FieldConfig[] = [
-  { name: "optimizationRunId", label: "Optimization Run ID", type: "text" },
-  { name: "planReference", label: "Plan Reference", type: "text" },
-  { name: "originPort", label: "Origin Port", type: "text", required: true },
-  { name: "destinationPort", label: "Destination Port", type: "text", required: true },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "select", options: [
-    { value: "20", label: "20ft" },
-    { value: "40", label: "40ft" },
-    { value: "45", label: "45ft" },
-  ]},
-  { name: "quantity", label: "Quantity", type: "number" },
-  { name: "transportMode", label: "Transport Mode", type: "select", options: [
-    { value: "vessel", label: "Vessel" },
-    { value: "truck", label: "Truck" },
-    { value: "rail", label: "Rail" },
-    { value: "barge", label: "Barge" },
-  ]},
-  { name: "estimatedCost", label: "Estimated Cost", type: "number" },
-  { name: "estimatedDays", label: "Estimated Days", type: "number" },
-  { name: "estimatedCarbon", label: "Estimated Carbon", type: "number" },
-  { name: "currency", label: "Currency", type: "select", options: [
-    { value: "USD", label: "USD" },
-    { value: "QAR", label: "QAR" },
-    { value: "AED", label: "AED" },
-    { value: "SAR", label: "SAR" },
-    { value: "INR", label: "INR" },
-  ]},
-  { name: "aiScore", label: "AI Score", type: "number" },
-  { name: "aiModel", label: "AI Model", type: "text" },
-  { name: "algorithm", label: "Algorithm", type: "text" },
-  { name: "selectedForExecution", label: "Selected for Execution", type: "checkbox" },
-  { name: "executionDate", label: "Execution Date", type: "datetime-local" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "pending", label: "Pending" },
-    { value: "running", label: "Running" },
-    { value: "completed", label: "Completed" },
-    { value: "failed", label: "Failed" },
-    { value: "approved", label: "Approved" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function NewRepositioningOptimizationPage() {
   const session = await getSession();
@@ -55,6 +13,50 @@ export default async function NewRepositioningOptimizationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "equipment:create")))
     redirect("/equipment-control-yard-managem");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const REPOSITIONING_OPTIMIZATION_FIELDS: FieldConfig[] = [
+    { name: "optimizationRunId", label: "Optimization Run ID", type: "text" },
+    { name: "planReference", label: "Plan Reference", type: "text" },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts, required: true },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts, required: true },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "select", options: [
+      { value: "20", label: "20ft" },
+      { value: "40", label: "40ft" },
+      { value: "45", label: "45ft" },
+    ]},
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "transportMode", label: "Transport Mode", type: "select", options: [
+      { value: "vessel", label: "Vessel" },
+      { value: "truck", label: "Truck" },
+      { value: "rail", label: "Rail" },
+      { value: "barge", label: "Barge" },
+    ]},
+    { name: "estimatedCost", label: "Estimated Cost", type: "number" },
+    { name: "estimatedDays", label: "Estimated Days", type: "number" },
+    { name: "estimatedCarbon", label: "Estimated Carbon", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: [
+      { value: "USD", label: "USD" },
+      { value: "QAR", label: "QAR" },
+      { value: "AED", label: "AED" },
+      { value: "SAR", label: "SAR" },
+      { value: "INR", label: "INR" },
+    ]},
+    { name: "aiScore", label: "AI Score", type: "number" },
+    { name: "aiModel", label: "AI Model", type: "text" },
+    { name: "algorithm", label: "Algorithm", type: "text" },
+    { name: "selectedForExecution", label: "Selected for Execution", type: "checkbox" },
+    { name: "executionDate", label: "Execution Date", type: "datetime-local" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "pending", label: "Pending" },
+      { value: "running", label: "Running" },
+      { value: "completed", label: "Completed" },
+      { value: "failed", label: "Failed" },
+      { value: "approved", label: "Approved" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

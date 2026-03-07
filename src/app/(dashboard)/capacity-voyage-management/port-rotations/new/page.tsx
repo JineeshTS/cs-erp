@@ -5,100 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CapForm } from "@/components/capacity-voyage-management/cap-form";
 import type { FieldConfig } from "@/components/capacity-voyage-management/cap-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "vesselScheduleId",
-    label: "Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "portCode",
-    label: "Port Code",
-    type: "text",
-    required: true,
-    placeholder: "QADOH",
-  },
-  {
-    name: "portName",
-    label: "Port Name",
-    type: "text",
-    required: true,
-    placeholder: "Hamad Port",
-  },
-  {
-    name: "sequenceNumber",
-    label: "Sequence Number",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "arrivalEta",
-    label: "Arrival ETA",
-    type: "datetime-local",
-  },
-  {
-    name: "departureEtd",
-    label: "Departure ETD",
-    type: "datetime-local",
-  },
-  {
-    name: "actualArrival",
-    label: "Actual Arrival",
-    type: "datetime-local",
-  },
-  {
-    name: "actualDeparture",
-    label: "Actual Departure",
-    type: "datetime-local",
-  },
-  {
-    name: "terminalName",
-    label: "Terminal Name",
-    type: "text",
-  },
-  {
-    name: "berthName",
-    label: "Berth Name",
-    type: "text",
-  },
-  {
-    name: "callPurpose",
-    label: "Call Purpose",
-    type: "select",
-    options: [
-      { value: "loading", label: "Loading" },
-      { value: "discharging", label: "Discharging" },
-      { value: "both", label: "Both" },
-      { value: "bunker", label: "Bunker" },
-      { value: "transit", label: "Transit" },
-    ],
-  },
-  {
-    name: "timeZone",
-    label: "Time Zone",
-    type: "text",
-    placeholder: "Asia/Qatar",
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "scheduled", label: "Scheduled" },
-      { value: "arrived", label: "Arrived" },
-      { value: "berthed", label: "Berthed" },
-      { value: "departed", label: "Departed" },
-      { value: "cancelled", label: "Cancelled" },
-      { value: "skipped", label: "Skipped" },
-    ],
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function NewPortRotationPage() {
   const session = await getSession();
@@ -107,6 +14,100 @@ export default async function NewPortRotationPage() {
     !(await hasPermission(session.id, session.tenantId, "capacity:create"))
   )
     redirect("/capacity-voyage-management");
+
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "vesselScheduleId",
+      label: "Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "portCode",
+      label: "Port Code",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "portName",
+      label: "Port Name",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "sequenceNumber",
+      label: "Sequence Number",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "arrivalEta",
+      label: "Arrival ETA",
+      type: "datetime-local",
+    },
+    {
+      name: "departureEtd",
+      label: "Departure ETD",
+      type: "datetime-local",
+    },
+    {
+      name: "actualArrival",
+      label: "Actual Arrival",
+      type: "datetime-local",
+    },
+    {
+      name: "actualDeparture",
+      label: "Actual Departure",
+      type: "datetime-local",
+    },
+    {
+      name: "terminalName",
+      label: "Terminal Name",
+      type: "text",
+    },
+    {
+      name: "berthName",
+      label: "Berth Name",
+      type: "text",
+    },
+    {
+      name: "callPurpose",
+      label: "Call Purpose",
+      type: "select",
+      options: [
+        { value: "loading", label: "Loading" },
+        { value: "discharging", label: "Discharging" },
+        { value: "both", label: "Both" },
+        { value: "bunker", label: "Bunker" },
+        { value: "transit", label: "Transit" },
+      ],
+    },
+    {
+      name: "timeZone",
+      label: "Time Zone",
+      type: "text",
+      placeholder: "Asia/Qatar",
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "scheduled", label: "Scheduled" },
+        { value: "arrived", label: "Arrived" },
+        { value: "berthed", label: "Berthed" },
+        { value: "departed", label: "Departed" },
+        { value: "cancelled", label: "Cancelled" },
+        { value: "skipped", label: "Skipped" },
+      ],
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   return (
     <div className="space-y-6">

@@ -6,62 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getRailPlan } from "@/lib/intermodal-icd-operations/service";
 import { IcdForm } from "@/components/intermodal-icd-operations/icd-form";
 import type { FieldConfig } from "@/components/intermodal-icd-operations/icd-form";
-
-const RAIL_PLAN_FIELDS: FieldConfig[] = [
-  { name: "trainNumber", label: "Train Number", type: "text" },
-  { name: "trainOperator", label: "Train Operator", type: "text" },
-  { name: "originIcd", label: "Origin ICD", type: "text", required: true },
-  {
-    name: "destinationIcd",
-    label: "Destination ICD",
-    type: "text",
-    required: true,
-  },
-  { name: "routeDescription", label: "Route Description", type: "textarea" },
-  { name: "wagonCount", label: "Wagon Count", type: "number" },
-  {
-    name: "wagonType",
-    label: "Wagon Type",
-    type: "select",
-    options: [
-      { value: "flat", label: "Flat" },
-      { value: "container", label: "Container" },
-      { value: "mixed", label: "Mixed" },
-    ],
-  },
-  { name: "totalCapacityTeu", label: "Total Capacity (TEU)", type: "number" },
-  { name: "bookedTeu", label: "Booked TEU", type: "number" },
-  {
-    name: "scheduledDepartureAt",
-    label: "Scheduled Departure",
-    type: "datetime-local",
-  },
-  {
-    name: "scheduledArrivalAt",
-    label: "Scheduled Arrival",
-    type: "datetime-local",
-  },
-  {
-    name: "actualDepartureAt",
-    label: "Actual Departure",
-    type: "datetime-local",
-  },
-  {
-    name: "actualArrivalAt",
-    label: "Actual Arrival",
-    type: "datetime-local",
-  },
-  { name: "transitTimeDays", label: "Transit Time (days)", type: "number" },
-  { name: "railwayCompany", label: "Railway Company", type: "text" },
-  {
-    name: "bookingCutoffAt",
-    label: "Booking Cutoff",
-    type: "datetime-local",
-  },
-  { name: "estimatedCost", label: "Estimated Cost", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRailPlanPage({
   params,
@@ -73,6 +18,63 @@ export default async function EditRailPlanPage({
   if (!(await hasPermission(session.id, session.tenantId, "intermodal:edit")))
     redirect("/intermodal-icd-operations/rail-plans");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const RAIL_PLAN_FIELDS: FieldConfig[] = [
+    { name: "trainNumber", label: "Train Number", type: "text" },
+    { name: "trainOperator", label: "Train Operator", type: "text" },
+    { name: "originIcd", label: "Origin ICD", type: "text", required: true },
+    {
+      name: "destinationIcd",
+      label: "Destination ICD",
+      type: "text",
+      required: true,
+    },
+    { name: "routeDescription", label: "Route Description", type: "textarea" },
+    { name: "wagonCount", label: "Wagon Count", type: "number" },
+    {
+      name: "wagonType",
+      label: "Wagon Type",
+      type: "select",
+      options: [
+        { value: "flat", label: "Flat" },
+        { value: "container", label: "Container" },
+        { value: "mixed", label: "Mixed" },
+      ],
+    },
+    { name: "totalCapacityTeu", label: "Total Capacity (TEU)", type: "number" },
+    { name: "bookedTeu", label: "Booked TEU", type: "number" },
+    {
+      name: "scheduledDepartureAt",
+      label: "Scheduled Departure",
+      type: "datetime-local",
+    },
+    {
+      name: "scheduledArrivalAt",
+      label: "Scheduled Arrival",
+      type: "datetime-local",
+    },
+    {
+      name: "actualDepartureAt",
+      label: "Actual Departure",
+      type: "datetime-local",
+    },
+    {
+      name: "actualArrivalAt",
+      label: "Actual Arrival",
+      type: "datetime-local",
+    },
+    { name: "transitTimeDays", label: "Transit Time (days)", type: "number" },
+    { name: "railwayCompany", label: "Railway Company", type: "text" },
+    {
+      name: "bookingCutoffAt",
+      label: "Booking Cutoff",
+      type: "datetime-local",
+    },
+    { name: "estimatedCost", label: "Estimated Cost", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getRailPlan(id, session.tenantId);
   if (!record) notFound();

@@ -4,10 +4,16 @@ import { ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm, type FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewDetentionDemurragePage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const fields: FieldConfig[] = [
@@ -23,7 +29,7 @@ export default async function NewDetentionDemurragePage() {
         { label: "Combined", value: "combined" },
       ],
     },
-    { name: "portCode", label: "Port Code", type: "text" },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
     { name: "containerType", label: "Container Type", type: "text" },
     { name: "containerSize", label: "Container Size", type: "text" },
     { name: "freeTimeDays", label: "Free Time (Days)", type: "number", required: true },
@@ -31,7 +37,7 @@ export default async function NewDetentionDemurragePage() {
     { name: "escalationRate", label: "Escalation Rate", type: "number" },
     { name: "escalationAfterDays", label: "Escalation After (Days)", type: "number" },
     { name: "maximumDays", label: "Maximum Days", type: "number" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "customerSegment", label: "Customer Segment", type: "text" },
     { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
     { name: "effectiveTo", label: "Effective To", type: "datetime-local" },

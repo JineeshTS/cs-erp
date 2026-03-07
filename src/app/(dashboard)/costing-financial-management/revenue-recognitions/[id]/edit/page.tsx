@@ -5,65 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getRevenueRecognition } from "@/lib/costing-financial-management/service";
 import { CfmForm, type FieldConfig } from "@/components/costing-financial-management/cfm-form";
-
-const fields: FieldConfig[] = [
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "blNumber", label: "BL Number", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  {
-    name: "revenueType",
-    label: "Revenue Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "freight", label: "Freight" },
-      { value: "demurrage", label: "Demurrage" },
-      { value: "detention", label: "Detention" },
-      { value: "surcharge", label: "Surcharge" },
-      { value: "reefer", label: "Reefer" },
-      { value: "documentation", label: "Documentation" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  {
-    name: "grossRevenue",
-    label: "Gross Revenue",
-    type: "number",
-    required: true,
-  },
-  { name: "deductions", label: "Deductions", type: "number" },
-  { name: "netRevenue", label: "Net Revenue", type: "number", required: true },
-  {
-    name: "recognitionMethod",
-    label: "Recognition Method",
-    type: "select",
-    required: true,
-    options: [
-      { value: "point_in_time", label: "Point in Time" },
-      { value: "over_time", label: "Over Time" },
-      { value: "percentage_of_completion", label: "Percentage of Completion" },
-      { value: "completed_voyage", label: "Completed Voyage" },
-    ],
-  },
-  {
-    name: "performanceObligation",
-    label: "Performance Obligation",
-    type: "text",
-  },
-  { name: "completionPercent", label: "Completion %", type: "number" },
-  {
-    name: "recognizedAmount",
-    label: "Recognized Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "deferredAmount", label: "Deferred Amount", type: "number" },
-  { name: "recognitionPeriod", label: "Recognition Period", type: "text" },
-  { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRevenueRecognitionPage({
   params,
@@ -74,6 +16,70 @@ export default async function EditRevenueRecognitionPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const fields: FieldConfig[] = [
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "blNumber", label: "BL Number", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    {
+      name: "revenueType",
+      label: "Revenue Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "freight", label: "Freight" },
+        { value: "demurrage", label: "Demurrage" },
+        { value: "detention", label: "Detention" },
+        { value: "surcharge", label: "Surcharge" },
+        { value: "reefer", label: "Reefer" },
+        { value: "documentation", label: "Documentation" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "grossRevenue",
+      label: "Gross Revenue",
+      type: "number",
+      required: true,
+    },
+    { name: "deductions", label: "Deductions", type: "number" },
+    { name: "netRevenue", label: "Net Revenue", type: "number", required: true },
+    {
+      name: "recognitionMethod",
+      label: "Recognition Method",
+      type: "select",
+      required: true,
+      options: [
+        { value: "point_in_time", label: "Point in Time" },
+        { value: "over_time", label: "Over Time" },
+        { value: "percentage_of_completion", label: "Percentage of Completion" },
+        { value: "completed_voyage", label: "Completed Voyage" },
+      ],
+    },
+    {
+      name: "performanceObligation",
+      label: "Performance Obligation",
+      type: "text",
+    },
+    { name: "completionPercent", label: "Completion %", type: "number" },
+    {
+      name: "recognizedAmount",
+      label: "Recognized Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "deferredAmount", label: "Deferred Amount", type: "number" },
+    { name: "recognitionPeriod", label: "Recognition Period", type: "text" },
+    { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getRevenueRecognition(id, session.tenantId);

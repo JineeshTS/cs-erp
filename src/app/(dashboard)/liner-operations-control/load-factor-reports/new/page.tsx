@@ -7,43 +7,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const LOAD_FACTOR_REPORT_FIELDS: FieldConfig[] = [
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "voyage_utilization", label: "Voyage Utilization" },
-      { value: "trade_lane_report", label: "Trade Lane Report" },
-      { value: "vessel_performance", label: "Vessel Performance" },
-      { value: "seasonal_analysis", label: "Seasonal Analysis" },
-      { value: "benchmark_comparison", label: "Benchmark Comparison" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "tradeRoute", label: "Trade Route", type: "text" },
-  { name: "totalCapacityTeu", label: "Total Capacity TEU", type: "number" },
-  { name: "loadedTeu", label: "Loaded TEU", type: "number" },
-  {
-    name: "loadFactorPercentage",
-    label: "Load Factor Percentage",
-    type: "number",
-  },
-  { name: "weightUtilization", label: "Weight Utilization", type: "number" },
-  { name: "revenuePerTeu", label: "Revenue Per TEU", type: "number" },
-  { name: "reportCurrency", label: "Report Currency", type: "text" },
-  { name: "periodFrom", label: "Period From", type: "datetime-local" },
-  { name: "periodTo", label: "Period To", type: "datetime-local" },
-  {
-    name: "emptyRepositioning",
-    label: "Empty Repositioning",
-    type: "number",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewLoadFactorReportPage() {
   const session = await getSession();
@@ -51,6 +15,44 @@ export default async function NewLoadFactorReportPage() {
   if (!(await hasPermission(session.id, session.tenantId, "loc:create")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const LOAD_FACTOR_REPORT_FIELDS: FieldConfig[] = [
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "voyage_utilization", label: "Voyage Utilization" },
+        { value: "trade_lane_report", label: "Trade Lane Report" },
+        { value: "vessel_performance", label: "Vessel Performance" },
+        { value: "seasonal_analysis", label: "Seasonal Analysis" },
+        { value: "benchmark_comparison", label: "Benchmark Comparison" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "tradeRoute", label: "Trade Route", type: "text" },
+    { name: "totalCapacityTeu", label: "Total Capacity TEU", type: "number" },
+    { name: "loadedTeu", label: "Loaded TEU", type: "number" },
+    {
+      name: "loadFactorPercentage",
+      label: "Load Factor Percentage",
+      type: "number",
+    },
+    { name: "weightUtilization", label: "Weight Utilization", type: "number" },
+    { name: "revenuePerTeu", label: "Revenue Per TEU", type: "number" },
+    { name: "reportCurrency", label: "Report Currency", type: "text" },
+    { name: "periodFrom", label: "Period From", type: "datetime-local" },
+    { name: "periodTo", label: "Period To", type: "datetime-local" },
+    {
+      name: "emptyRepositioning",
+      label: "Empty Repositioning",
+      type: "number",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

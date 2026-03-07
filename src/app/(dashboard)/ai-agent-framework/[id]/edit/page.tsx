@@ -8,40 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { aafAgents } from "@/db/schema";
 import { AafForm } from "@/components/ai-agent-framework/aaf-form";
 import type { FieldConfig } from "@/components/ai-agent-framework/aaf-form";
-
-const AGENT_FIELDS: FieldConfig[] = [
-  { name: "agentCode", label: "Agent Code", type: "text", required: true },
-  { name: "agentName", label: "Agent Name", type: "text", required: true },
-  { name: "agentType", label: "Agent Type", type: "select", required: true, options: [
-    { value: "document_intelligence", label: "Document Intelligence" },
-    { value: "workflow_orchestrator", label: "Workflow Orchestrator" },
-    { value: "communication", label: "Communication" },
-    { value: "compliance", label: "Compliance" },
-    { value: "exception_handler", label: "Exception Handler" },
-    { value: "query_processor", label: "Query Processor" },
-    { value: "custom", label: "Custom" },
-  ]},
-  { name: "modelProvider", label: "Model Provider", type: "select", options: [
-    { value: "anthropic", label: "Anthropic" },
-    { value: "openai", label: "OpenAI" },
-    { value: "google", label: "Google" },
-    { value: "azure", label: "Azure" },
-    { value: "custom", label: "Custom" },
-  ]},
-  { name: "modelId", label: "Model ID", type: "text" },
-  { name: "endpoint", label: "Endpoint URL", type: "text" },
-  { name: "maxConcurrency", label: "Max Concurrency", type: "number" },
-  { name: "timeoutMs", label: "Timeout (ms)", type: "number" },
-  { name: "isActive", label: "Active", type: "checkbox" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "idle", label: "Idle" },
-    { value: "running", label: "Running" },
-    { value: "error", label: "Error" },
-    { value: "disabled", label: "Disabled" },
-  ]},
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditAgentPage({
   params,
@@ -53,6 +20,41 @@ export default async function EditAgentPage({
   if (!(await hasPermission(session.id, session.tenantId, "ai:edit")))
     redirect("/ai-agent-framework");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const AGENT_FIELDS: FieldConfig[] = [
+    { name: "agentCode", label: "Agent Code", type: "text", required: true },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts, required: true },
+    { name: "agentType", label: "Agent Type", type: "select", required: true, options: [
+      { value: "document_intelligence", label: "Document Intelligence" },
+      { value: "workflow_orchestrator", label: "Workflow Orchestrator" },
+      { value: "communication", label: "Communication" },
+      { value: "compliance", label: "Compliance" },
+      { value: "exception_handler", label: "Exception Handler" },
+      { value: "query_processor", label: "Query Processor" },
+      { value: "custom", label: "Custom" },
+    ]},
+    { name: "modelProvider", label: "Model Provider", type: "select", options: [
+      { value: "anthropic", label: "Anthropic" },
+      { value: "openai", label: "OpenAI" },
+      { value: "google", label: "Google" },
+      { value: "azure", label: "Azure" },
+      { value: "custom", label: "Custom" },
+    ]},
+    { name: "modelId", label: "Model ID", type: "text" },
+    { name: "endpoint", label: "Endpoint URL", type: "text" },
+    { name: "maxConcurrency", label: "Max Concurrency", type: "number" },
+    { name: "timeoutMs", label: "Timeout (ms)", type: "number" },
+    { name: "isActive", label: "Active", type: "checkbox" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "idle", label: "Idle" },
+      { value: "running", label: "Running" },
+      { value: "error", label: "Error" },
+      { value: "disabled", label: "Disabled" },
+    ]},
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

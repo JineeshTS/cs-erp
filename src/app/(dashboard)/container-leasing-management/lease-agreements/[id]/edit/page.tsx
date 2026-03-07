@@ -8,50 +8,7 @@ import {
   ClmForm,
   type FieldConfig,
 } from "@/components/container-leasing-management/clm-form";
-
-const LEASE_AGREEMENT_FIELDS: FieldConfig[] = [
-  {
-    name: "agreementType",
-    label: "Agreement Type",
-    type: "select",
-    options: [
-      { value: "master_lease", label: "Master Lease" },
-      { value: "spot_lease", label: "Spot Lease" },
-      { value: "long_term", label: "Long Term" },
-      { value: "short_term", label: "Short Term" },
-      { value: "sale_leaseback", label: "Sale Leaseback" },
-    ],
-  },
-  { name: "lessorName", label: "Lessor Name", type: "text" },
-  { name: "lessorCode", label: "Lessor Code", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "quantity", label: "Quantity", type: "number" },
-  { name: "dailyRate", label: "Daily Rate", type: "text" },
-  { name: "rateCurrency", label: "Rate Currency", type: "text" },
-  { name: "minimumLeaseDays", label: "Minimum Lease Days", type: "number" },
-  {
-    name: "commencementDate",
-    label: "Commencement Date",
-    type: "datetime-local",
-  },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "pickupLocation", label: "Pickup Location", type: "text" },
-  { name: "dropoffLocation", label: "Dropoff Location", type: "text" },
-  { name: "depositAmount", label: "Deposit Amount", type: "text" },
-  {
-    name: "insuranceRequired",
-    label: "Insurance Required",
-    type: "checkbox",
-  },
-  { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
-  {
-    name: "terminationNoticeDays",
-    label: "Termination Notice Days",
-    type: "number",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function EditLeaseAgreementPage({
   params,
@@ -63,6 +20,51 @@ export default async function EditLeaseAgreementPage({
   if (!(await hasPermission(session.id, session.tenantId, "clm:edit")))
     redirect("/");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const LEASE_AGREEMENT_FIELDS: FieldConfig[] = [
+    {
+      name: "agreementType",
+      label: "Agreement Type",
+      type: "select",
+      options: [
+        { value: "master_lease", label: "Master Lease" },
+        { value: "spot_lease", label: "Spot Lease" },
+        { value: "long_term", label: "Long Term" },
+        { value: "short_term", label: "Short Term" },
+        { value: "sale_leaseback", label: "Sale Leaseback" },
+      ],
+    },
+    { name: "lessorName", label: "Lessor Name", type: "text" },
+    { name: "lessorCode", label: "Lessor Code", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "dailyRate", label: "Daily Rate", type: "text" },
+    { name: "rateCurrency", label: "Rate Currency", type: "text" },
+    { name: "minimumLeaseDays", label: "Minimum Lease Days", type: "number" },
+    {
+      name: "commencementDate",
+      label: "Commencement Date",
+      type: "datetime-local",
+    },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "pickupLocation", label: "Pickup Location", type: "select", options: portOpts },
+    { name: "dropoffLocation", label: "Dropoff Location", type: "select", options: portOpts },
+    { name: "depositAmount", label: "Deposit Amount", type: "text" },
+    {
+      name: "insuranceRequired",
+      label: "Insurance Required",
+      type: "checkbox",
+    },
+    { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
+    {
+      name: "terminationNoticeDays",
+      label: "Termination Notice Days",
+      type: "number",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getLeaseAgreement(id, session.tenantId);
   if (!record) notFound();

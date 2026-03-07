@@ -5,47 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { DdmForm } from "@/components/demurrage-detention-management/ddm-form";
 import type { FieldConfig } from "@/components/demurrage-detention-management/ddm-form";
-
-const INVOICE_FIELDS: FieldConfig[] = [
-  {
-    name: "invoiceType",
-    label: "Invoice Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "demurrage", label: "Demurrage" },
-      { value: "detention", label: "Detention" },
-      { value: "combined", label: "Combined" },
-    ],
-  },
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "customerCode", label: "Customer Code", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "blNumber", label: "BL Number", type: "text" },
-  { name: "demurrageAmount", label: "Demurrage Amount", type: "text" },
-  { name: "detentionAmount", label: "Detention Amount", type: "text" },
-  { name: "subtotal", label: "Subtotal", type: "text" },
-  { name: "taxRate", label: "Tax Rate", type: "text" },
-  { name: "taxAmount", label: "Tax Amount", type: "text" },
-  { name: "totalAmount", label: "Total Amount", type: "text", required: true },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "invoiceDate", label: "Invoice Date", type: "datetime-local", required: true },
-  { name: "dueDate", label: "Due Date", type: "datetime-local", required: true },
-  {
-    name: "dispatchMethod",
-    label: "Dispatch Method",
-    type: "select",
-    options: [
-      { value: "email", label: "Email" },
-      { value: "postal", label: "Postal" },
-      { value: "portal", label: "Portal" },
-      { value: "edi", label: "EDI" },
-    ],
-  },
-  { name: "customerEmail", label: "Customer Email", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewInvoicePage() {
   const session = await getSession();
@@ -54,6 +14,52 @@ export default async function NewInvoicePage() {
     !(await hasPermission(session.id, session.tenantId, "demurrage:create"))
   )
     redirect("/demurrage-detention-management/invoices");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const INVOICE_FIELDS: FieldConfig[] = [
+    {
+      name: "invoiceType",
+      label: "Invoice Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "demurrage", label: "Demurrage" },
+        { value: "detention", label: "Detention" },
+        { value: "combined", label: "Combined" },
+      ],
+    },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerCode", label: "Customer Code", type: "select", options: customerOpts },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "blNumber", label: "BL Number", type: "text" },
+    { name: "demurrageAmount", label: "Demurrage Amount", type: "text" },
+    { name: "detentionAmount", label: "Detention Amount", type: "text" },
+    { name: "subtotal", label: "Subtotal", type: "text" },
+    { name: "taxRate", label: "Tax Rate", type: "text" },
+    { name: "taxAmount", label: "Tax Amount", type: "text" },
+    { name: "totalAmount", label: "Total Amount", type: "text", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "invoiceDate", label: "Invoice Date", type: "datetime-local", required: true },
+    { name: "dueDate", label: "Due Date", type: "datetime-local", required: true },
+    {
+      name: "dispatchMethod",
+      label: "Dispatch Method",
+      type: "select",
+      options: [
+        { value: "email", label: "Email" },
+        { value: "postal", label: "Postal" },
+        { value: "portal", label: "Portal" },
+        { value: "edi", label: "EDI" },
+      ],
+    },
+    { name: "customerEmail", label: "Customer Email", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

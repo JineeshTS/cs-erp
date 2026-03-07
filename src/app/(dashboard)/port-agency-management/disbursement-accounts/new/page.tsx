@@ -5,44 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PamForm } from "@/components/port-agency-management/pam-form";
 import type { FieldConfig } from "@/components/port-agency-management/pam-form";
-
-const DISBURSEMENT_ACCOUNT_FIELDS: FieldConfig[] = [
-  {
-    name: "accountType",
-    label: "Account Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "proforma", label: "Proforma" },
-      { value: "final", label: "Final" },
-      { value: "supplementary", label: "Supplementary" },
-      { value: "credit_note", label: "Credit Note" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "portCallRef", label: "Port Call Ref", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "principalName", label: "Principal Name", type: "text" },
-  { name: "principalRef", label: "Principal Ref", type: "text" },
-  { name: "subtotal", label: "Subtotal", type: "number" },
-  { name: "agencyFee", label: "Agency Fee", type: "number" },
-  { name: "taxAmount", label: "Tax Amount", type: "number" },
-  { name: "totalAmount", label: "Total Amount", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "advanceReceived", label: "Advance Received", type: "number" },
-  { name: "balanceDue", label: "Balance Due", type: "number" },
-  { name: "proformaRef", label: "Proforma Ref", type: "text" },
-  { name: "proformaAmount", label: "Proforma Amount", type: "number" },
-  {
-    name: "varianceExplanation",
-    label: "Variance Explanation",
-    type: "textarea",
-  },
-  { name: "dueDate", label: "Due Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewDisbursementAccountPage() {
   const session = await getSession();
@@ -51,6 +14,50 @@ export default async function NewDisbursementAccountPage() {
     !(await hasPermission(session.id, session.tenantId, "port_agency:create"))
   )
     redirect("/port-agency-management/disbursement-accounts");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const DISBURSEMENT_ACCOUNT_FIELDS: FieldConfig[] = [
+    {
+      name: "accountType",
+      label: "Account Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "proforma", label: "Proforma" },
+        { value: "final", label: "Final" },
+        { value: "supplementary", label: "Supplementary" },
+        { value: "credit_note", label: "Credit Note" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "portCallRef", label: "Port Call Ref", type: "text" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "principalName", label: "Principal Name", type: "text" },
+    { name: "principalRef", label: "Principal Ref", type: "text" },
+    { name: "subtotal", label: "Subtotal", type: "number" },
+    { name: "agencyFee", label: "Agency Fee", type: "number" },
+    { name: "taxAmount", label: "Tax Amount", type: "number" },
+    { name: "totalAmount", label: "Total Amount", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "advanceReceived", label: "Advance Received", type: "number" },
+    { name: "balanceDue", label: "Balance Due", type: "number" },
+    { name: "proformaRef", label: "Proforma Ref", type: "text" },
+    { name: "proformaAmount", label: "Proforma Amount", type: "number" },
+    {
+      name: "varianceExplanation",
+      label: "Variance Explanation",
+      type: "textarea",
+    },
+    { name: "dueDate", label: "Due Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

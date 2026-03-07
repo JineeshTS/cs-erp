@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCashApplication } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCashApplicationPage({
   params,
@@ -15,6 +16,11 @@ export default async function EditCashApplicationPage({
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const application = await getCashApplication(id, session.tenantId);
   if (!application) notFound();
@@ -23,7 +29,7 @@ export default async function EditCashApplicationPage({
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
     },
     { name: "accountNumber", label: "Account Number", type: "text" },
@@ -54,7 +60,7 @@ export default async function EditCashApplicationPage({
       type: "datetime-local",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     {
       name: "paymentAmount",
       label: "Payment Amount",

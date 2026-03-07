@@ -4,17 +4,23 @@ import { ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm, type FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewRateBenchmarkPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const fields: FieldConfig[] = [
     { name: "benchmarkName", label: "Benchmark Name", type: "text", required: true },
     { name: "tradeLane", label: "Trade Lane", type: "text", required: true },
-    { name: "originPort", label: "Origin Port", type: "text" },
-    { name: "destinationPort", label: "Destination Port", type: "text" },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts },
     { name: "containerType", label: "Container Type", type: "text" },
     { name: "containerSize", label: "Container Size", type: "text" },
     { name: "marketRate", label: "Market Rate", type: "number", required: true },
@@ -23,7 +29,7 @@ export default async function NewRateBenchmarkPage() {
     { name: "competitorName", label: "Competitor Name", type: "text" },
     { name: "benchmarkSource", label: "Benchmark Source", type: "text" },
     { name: "benchmarkDate", label: "Benchmark Date", type: "date", required: true },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "variancePercent", label: "Variance %", type: "number" },
     {
       name: "trend",

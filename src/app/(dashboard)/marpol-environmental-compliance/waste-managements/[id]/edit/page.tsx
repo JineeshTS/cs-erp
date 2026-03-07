@@ -3,33 +3,7 @@ import { hasPermission } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
 import { MecForm, type FieldConfig } from "@/components/marpol-environmental-compliance/mec-form";
 import { getWasteManagement } from "@/lib/marpol-environmental-compliance/service";
-
-const fields: FieldConfig[] = [
-  {
-    name: "wasteType",
-    label: "Waste Type",
-    type: "select",
-    options: [
-      { label: "Plastics", value: "plastics" },
-      { label: "Food Waste", value: "food_waste" },
-      { label: "Domestic Waste", value: "domestic_waste" },
-      { label: "Cooking Oil", value: "cooking_oil" },
-      { label: "Operational Waste", value: "operational_waste" },
-      { label: "Cargo Residues", value: "cargo_residues" },
-    ],
-    required: true,
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text", required: true },
-  { name: "disposalMethod", label: "Disposal Method", type: "text" },
-  { name: "disposalDate", label: "Disposal Date", type: "datetime-local" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "quantityKg", label: "Quantity (kg)", type: "text" },
-  { name: "receivingFacility", label: "Receiving Facility", type: "text" },
-  { name: "receiptNumber", label: "Receipt Number", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function EditWasteManagementPage({
   params,
@@ -40,6 +14,38 @@ export default async function EditWasteManagementPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "mec:edit")))
     redirect("/");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "wasteType",
+      label: "Waste Type",
+      type: "select",
+      options: [
+        { label: "Plastics", value: "plastics" },
+        { label: "Food Waste", value: "food_waste" },
+        { label: "Domestic Waste", value: "domestic_waste" },
+        { label: "Cooking Oil", value: "cooking_oil" },
+        { label: "Operational Waste", value: "operational_waste" },
+        { label: "Cargo Residues", value: "cargo_residues" },
+      ],
+      required: true,
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text", required: true },
+    { name: "disposalMethod", label: "Disposal Method", type: "text" },
+    { name: "disposalDate", label: "Disposal Date", type: "datetime-local" },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "quantityKg", label: "Quantity (kg)", type: "text" },
+    { name: "receivingFacility", label: "Receiving Facility", type: "text" },
+    { name: "receiptNumber", label: "Receipt Number", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getWasteManagement(id, session.tenantId);

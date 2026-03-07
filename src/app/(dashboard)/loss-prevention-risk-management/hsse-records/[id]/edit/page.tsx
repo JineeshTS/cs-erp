@@ -5,34 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getHsseRecord } from "@/lib/loss-prevention-risk-management/service";
 import { LprForm, type FieldConfig } from "@/components/loss-prevention-risk-management/lpr-form";
-
-const HSSE_RECORD_FIELDS: FieldConfig[] = [
-  {
-    name: "hsseType",
-    label: "HSSE Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "safety_audit", label: "Safety Audit" },
-      { value: "health_check", label: "Health Check" },
-      { value: "security_drill", label: "Security Drill" },
-      { value: "environmental_review", label: "Environmental Review" },
-      { value: "toolbox_talk", label: "Toolbox Talk" },
-      { value: "permit_to_work", label: "Permit To Work" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "locationName", label: "Location Name", type: "text" },
-  { name: "conductedBy", label: "Conducted By", type: "text" },
-  { name: "conductedDate", label: "Conducted Date", type: "datetime-local" },
-  { name: "findingsCount", label: "Findings Count", type: "number" },
-  { name: "criticalFindings", label: "Critical Findings", type: "number" },
-  { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
-  { name: "nextDueDate", label: "Next Due Date", type: "datetime-local" },
-  { name: "isCompliant", label: "Is Compliant", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditHsseRecordPage({
   params,
@@ -44,6 +17,35 @@ export default async function EditHsseRecordPage({
   if (!(await hasPermission(session.id, session.tenantId, "lpr:edit")))
     redirect("/loss-prevention-risk-management/hsse-records");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const HSSE_RECORD_FIELDS: FieldConfig[] = [
+    {
+      name: "hsseType",
+      label: "HSSE Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "safety_audit", label: "Safety Audit" },
+        { value: "health_check", label: "Health Check" },
+        { value: "security_drill", label: "Security Drill" },
+        { value: "environmental_review", label: "Environmental Review" },
+        { value: "toolbox_talk", label: "Toolbox Talk" },
+        { value: "permit_to_work", label: "Permit To Work" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "locationName", label: "Location Name", type: "text" },
+    { name: "conductedBy", label: "Conducted By", type: "text" },
+    { name: "conductedDate", label: "Conducted Date", type: "datetime-local" },
+    { name: "findingsCount", label: "Findings Count", type: "number" },
+    { name: "criticalFindings", label: "Critical Findings", type: "number" },
+    { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
+    { name: "nextDueDate", label: "Next Due Date", type: "datetime-local" },
+    { name: "isCompliant", label: "Is Compliant", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getHsseRecord(id, session.tenantId);

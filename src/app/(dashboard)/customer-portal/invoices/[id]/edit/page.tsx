@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getInvoice } from "@/lib/customer-portal/service";
 import { CspForm, FieldConfig } from "@/components/customer-portal/csp-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditInvoicePage({
   params,
@@ -14,6 +15,11 @@ export default async function EditInvoicePage({
   if (!(await hasPermission(session.id, session.tenantId, "portal:edit")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const invoice = await getInvoice(id, session.tenantId);
   if (!invoice) notFound();
@@ -22,9 +28,8 @@ export default async function EditInvoicePage({
     {
       name: "customerId",
       label: "Customer ID",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
-      placeholder: "Customer UUID",
     },
     {
       name: "bookingId",
@@ -50,8 +55,7 @@ export default async function EditInvoicePage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "subtotal",

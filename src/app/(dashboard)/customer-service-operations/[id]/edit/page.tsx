@@ -8,35 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { csoInquiries } from "@/db/schema";
 import { CsoForm } from "@/components/customer-service-operations/cso-form";
 import type { FieldConfig } from "@/components/customer-service-operations/cso-form";
-
-const INQUIRY_FIELDS: FieldConfig[] = [
-  { name: "inquiryNumber", label: "Inquiry Number", type: "text", required: true },
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "customerEmail", label: "Customer Email", type: "text" },
-  { name: "customerPhone", label: "Customer Phone", type: "text" },
-  { name: "subject", label: "Subject", type: "text", required: true },
-  { name: "channel", label: "Channel", type: "select", options: [
-    { value: "email", label: "Email" },
-    { value: "phone", label: "Phone" },
-    { value: "chat", label: "Chat" },
-    { value: "portal", label: "Portal" },
-    { value: "walk_in", label: "Walk-in" },
-  ]},
-  { name: "priority", label: "Priority", type: "select", options: [
-    { value: "low", label: "Low" },
-    { value: "normal", label: "Normal" },
-    { value: "high", label: "High" },
-    { value: "urgent", label: "Urgent" },
-  ]},
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "open", label: "Open" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "pending_customer", label: "Pending Customer" },
-    { value: "resolved", label: "Resolved" },
-    { value: "closed", label: "Closed" },
-  ]},
-  { name: "description", label: "Description", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditInquiryPage({
   params,
@@ -48,6 +20,36 @@ export default async function EditInquiryPage({
   if (!(await hasPermission(session.id, session.tenantId, "customer_service:edit")))
     redirect("/customer-service-operations");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const INQUIRY_FIELDS: FieldConfig[] = [
+    { name: "inquiryNumber", label: "Inquiry Number", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
+    { name: "customerEmail", label: "Customer Email", type: "text" },
+    { name: "customerPhone", label: "Customer Phone", type: "text" },
+    { name: "subject", label: "Subject", type: "text", required: true },
+    { name: "channel", label: "Channel", type: "select", options: [
+      { value: "email", label: "Email" },
+      { value: "phone", label: "Phone" },
+      { value: "chat", label: "Chat" },
+      { value: "portal", label: "Portal" },
+      { value: "walk_in", label: "Walk-in" },
+    ]},
+    { name: "priority", label: "Priority", type: "select", options: [
+      { value: "low", label: "Low" },
+      { value: "normal", label: "Normal" },
+      { value: "high", label: "High" },
+      { value: "urgent", label: "Urgent" },
+    ]},
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "open", label: "Open" },
+      { value: "in_progress", label: "In Progress" },
+      { value: "pending_customer", label: "Pending Customer" },
+      { value: "resolved", label: "Resolved" },
+      { value: "closed", label: "Closed" },
+    ]},
+    { name: "description", label: "Description", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

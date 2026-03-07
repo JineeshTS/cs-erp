@@ -5,39 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PscForm } from "@/components/procurement-supply-chain/psc-form";
 import type { FieldConfig } from "@/components/procurement-supply-chain/psc-form";
-
-const INVENTORY_FIELDS: FieldConfig[] = [
-  {
-    name: "inventoryType",
-    label: "Inventory Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "raw_material", label: "Raw Material" },
-      { value: "spare_part", label: "Spare Part" },
-      { value: "consumable", label: "Consumable" },
-      { value: "finished_goods", label: "Finished Goods" },
-      { value: "safety_stock", label: "Safety Stock" },
-    ],
-  },
-  { name: "itemCode", label: "Item Code", type: "text", required: true },
-  { name: "itemName", label: "Item Name", type: "text", required: true },
-  { name: "category", label: "Category", type: "text" },
-  { name: "uom", label: "Unit of Measure", type: "text" },
-  { name: "currentStock", label: "Current Stock", type: "text" },
-  { name: "reorderLevel", label: "Reorder Level", type: "text" },
-  { name: "reorderQuantity", label: "Reorder Quantity", type: "text" },
-  { name: "safetyStock", label: "Safety Stock", type: "text" },
-  { name: "maxStock", label: "Max Stock", type: "text" },
-  { name: "unitCost", label: "Unit Cost", type: "text" },
-  { name: "totalValue", label: "Total Value", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "warehouseLocation", label: "Warehouse Location", type: "text" },
-  { name: "binNumber", label: "Bin Number", type: "text" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "batchNumber", label: "Batch Number", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewInventoryStockControlPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -47,6 +15,40 @@ export default async function NewInventoryStockControlPage(): Promise<React.Reac
   )
     redirect("/procurement-supply-chain/inventory-stock-controls");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const INVENTORY_FIELDS: FieldConfig[] = [
+    {
+      name: "inventoryType",
+      label: "Inventory Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "raw_material", label: "Raw Material" },
+        { value: "spare_part", label: "Spare Part" },
+        { value: "consumable", label: "Consumable" },
+        { value: "finished_goods", label: "Finished Goods" },
+        { value: "safety_stock", label: "Safety Stock" },
+      ],
+    },
+    { name: "itemCode", label: "Item Code", type: "text", required: true },
+    { name: "itemName", label: "Item Name", type: "text", required: true },
+    { name: "category", label: "Category", type: "text" },
+    { name: "uom", label: "Unit of Measure", type: "text" },
+    { name: "currentStock", label: "Current Stock", type: "text" },
+    { name: "reorderLevel", label: "Reorder Level", type: "text" },
+    { name: "reorderQuantity", label: "Reorder Quantity", type: "text" },
+    { name: "safetyStock", label: "Safety Stock", type: "text" },
+    { name: "maxStock", label: "Max Stock", type: "text" },
+    { name: "unitCost", label: "Unit Cost", type: "text" },
+    { name: "totalValue", label: "Total Value", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "warehouseLocation", label: "Warehouse Location", type: "text" },
+    { name: "binNumber", label: "Bin Number", type: "text" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "batchNumber", label: "Batch Number", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

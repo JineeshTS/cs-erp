@@ -8,36 +8,7 @@ import {
   PdaForm,
   type FieldConfig,
 } from "@/components/port-disbursement-accounting/pda-form";
-
-const AGENT_STATEMENT_FIELDS: FieldConfig[] = [
-  { name: "agentName", label: "Agent Name", type: "text", required: true },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  {
-    name: "statementDate",
-    label: "Statement Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "periodFrom", label: "Period From", type: "datetime-local" },
-  { name: "periodTo", label: "Period To", type: "datetime-local" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "openingBalance", label: "Opening Balance", type: "number" },
-  { name: "totalDebits", label: "Total Debits", type: "number" },
-  { name: "totalCredits", label: "Total Credits", type: "number" },
-  {
-    name: "closingBalance",
-    label: "Closing Balance",
-    type: "number",
-    required: true,
-  },
-  { name: "transactionCount", label: "Transaction Count", type: "number" },
-  { name: "advancePaid", label: "Advance Paid", type: "number" },
-  { name: "balanceDue", label: "Balance Due", type: "number" },
-  { name: "dueDate", label: "Due Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditAgentStatementPage({
   params,
@@ -48,6 +19,42 @@ export default async function EditAgentStatementPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "disbursement:edit")))
     redirect("/port-disbursement-accounting/agent-statements");
+
+  const [portOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const AGENT_STATEMENT_FIELDS: FieldConfig[] = [
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts, required: true },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    {
+      name: "statementDate",
+      label: "Statement Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "periodFrom", label: "Period From", type: "datetime-local" },
+    { name: "periodTo", label: "Period To", type: "datetime-local" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "openingBalance", label: "Opening Balance", type: "number" },
+    { name: "totalDebits", label: "Total Debits", type: "number" },
+    { name: "totalCredits", label: "Total Credits", type: "number" },
+    {
+      name: "closingBalance",
+      label: "Closing Balance",
+      type: "number",
+      required: true,
+    },
+    { name: "transactionCount", label: "Transaction Count", type: "number" },
+    { name: "advancePaid", label: "Advance Paid", type: "number" },
+    { name: "balanceDue", label: "Balance Due", type: "number" },
+    { name: "dueDate", label: "Due Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

@@ -5,27 +5,33 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const UA_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "analysisDate", label: "Analysis Date", type: "datetime-local", required: true },
-  { name: "periodFrom", label: "Period From", type: "datetime-local" },
-  { name: "periodTo", label: "Period To", type: "datetime-local" },
-  { name: "currentUtilizationPercent", label: "Current Utilization %", type: "number" },
-  { name: "projectedUtilizationPercent", label: "Projected Utilization %", type: "number" },
-  { name: "recommendedAction", label: "Recommended Action", type: "textarea" },
-  { name: "recommendedRoute", label: "Recommended Route", type: "text" },
-  { name: "projectedRevenueImpact", label: "Projected Revenue Impact", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "aiModel", label: "AI Model", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewUtilizationAnalysisPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "chartering:create")))
     redirect("/chartering-vessel-management");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const UA_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "analysisDate", label: "Analysis Date", type: "datetime-local", required: true },
+    { name: "periodFrom", label: "Period From", type: "datetime-local" },
+    { name: "periodTo", label: "Period To", type: "datetime-local" },
+    { name: "currentUtilizationPercent", label: "Current Utilization %", type: "number" },
+    { name: "projectedUtilizationPercent", label: "Projected Utilization %", type: "number" },
+    { name: "recommendedAction", label: "Recommended Action", type: "textarea" },
+    { name: "recommendedRoute", label: "Recommended Route", type: "text" },
+    { name: "projectedRevenueImpact", label: "Projected Revenue Impact", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "aiModel", label: "AI Model", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

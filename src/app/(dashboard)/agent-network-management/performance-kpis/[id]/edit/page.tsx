@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getPerformanceKpi } from "@/lib/agent-network-management/service";
 import { AnmForm, type FieldConfig } from "@/components/agent-network-management/anm-form";
-
-const PERFORMANCE_KPI_FIELDS: FieldConfig[] = [
-  {
-    name: "kpiType",
-    label: "KPI Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "volume_target", label: "Volume Target" },
-      { value: "revenue_target", label: "Revenue Target" },
-      { value: "customer_acquisition", label: "Customer Acquisition" },
-      { value: "service_quality", label: "Service Quality" },
-      { value: "collection_efficiency", label: "Collection Efficiency" },
-    ],
-  },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "kpiPeriod", label: "KPI Period", type: "text" },
-  { name: "targetValue", label: "Target Value", type: "text" },
-  { name: "actualValue", label: "Actual Value", type: "text" },
-  { name: "achievementPct", label: "Achievement %", type: "text" },
-  { name: "kpiCurrency", label: "KPI Currency", type: "text" },
-  { name: "ranking", label: "Ranking", type: "number" },
-  { name: "trendDirection", label: "Trend Direction", type: "text" },
-  { name: "benchmarkValue", label: "Benchmark Value", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditPerformanceKpiPage({
   params,
@@ -43,6 +17,34 @@ export default async function EditPerformanceKpiPage({
   if (!(await hasPermission(session.id, session.tenantId, "anm:edit")))
     redirect("/agent-network-management/performance-kpis");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const PERFORMANCE_KPI_FIELDS: FieldConfig[] = [
+    {
+      name: "kpiType",
+      label: "KPI Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "volume_target", label: "Volume Target" },
+        { value: "revenue_target", label: "Revenue Target" },
+        { value: "customer_acquisition", label: "Customer Acquisition" },
+        { value: "service_quality", label: "Service Quality" },
+        { value: "collection_efficiency", label: "Collection Efficiency" },
+      ],
+    },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "kpiPeriod", label: "KPI Period", type: "text" },
+    { name: "targetValue", label: "Target Value", type: "text" },
+    { name: "actualValue", label: "Actual Value", type: "text" },
+    { name: "achievementPct", label: "Achievement %", type: "text" },
+    { name: "kpiCurrency", label: "KPI Currency", type: "text" },
+    { name: "ranking", label: "Ranking", type: "number" },
+    { name: "trendDirection", label: "Trend Direction", type: "text" },
+    { name: "benchmarkValue", label: "Benchmark Value", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getPerformanceKpi(id, session.tenantId);

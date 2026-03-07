@@ -1,0 +1,62 @@
+{
+  "node_type": "feature",
+  "id": "F-001",
+  "name": "Category Sidebar + Hub Pages",
+  "created_at": "2026-03-07",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-001", "relationship_type": "implements" }
+  ],
+  "content": {
+    "category": "Navigation & UX",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Replace 48-group collapsible sidebar with 10-category flat navigation. Each category links to a hub page rendering permission-filtered module cards in a responsive grid.",
+    "capabilities": [
+      "10-category flat sidebar (Dashboard, Bookings, Sales, Vessels, Containers, Finance, Commercial, Logistics, Compliance, Admin)",
+      "Permission-based category visibility via canSeeCategory()",
+      "9 hub pages with module card grids (sm:2, lg:3, xl:4 columns)",
+      "Module cards filtered by user permissions via canSeeModule()",
+      "Empty state when no modules visible for user role",
+      "Collapsed sidebar shows only category icons",
+      "Dashboard quick actions link to hub routes"
+    ],
+    "acceptance_criteria": [
+      "Sidebar renders 10 flat category items instead of 48 collapsible groups",
+      "Category only visible if user has ANY of its permission prefixes",
+      "Clicking category navigates to hub page showing module cards",
+      "Each module card links to existing module route (pages unchanged)",
+      "Collapsed sidebar shows only icons with tooltip labels",
+      "Dashboard quick actions: /bookings-hub, /containers-hub, /vessels-hub, /admin-hub",
+      "npx tsc --noEmit passes with 0 errors",
+      "Direct URLs to existing modules (e.g. /sales-crm) still work"
+    ],
+    "edge_cases": [
+      "User with no permissions at all — sees only Dashboard",
+      "User with single module permission — sees only that category",
+      "Admin with wildcard permissions — sees all 10 categories"
+    ],
+    "error_handling": [
+      "getCategoryBySlug returns undefined for invalid slug — hub page returns 404",
+      "Empty permissions array — only Dashboard visible"
+    ],
+    "affected_files": [
+      "src/lib/navigation/categories.ts",
+      "src/components/hub/category-hub-page.tsx",
+      "src/components/layout/sidebar.tsx",
+      "src/app/(dashboard)/page.tsx",
+      "src/app/(dashboard)/bookings-hub/page.tsx",
+      "src/app/(dashboard)/sales-hub/page.tsx",
+      "src/app/(dashboard)/vessels-hub/page.tsx",
+      "src/app/(dashboard)/containers-hub/page.tsx",
+      "src/app/(dashboard)/finance-hub/page.tsx",
+      "src/app/(dashboard)/commercial-hub/page.tsx",
+      "src/app/(dashboard)/logistics-hub/page.tsx",
+      "src/app/(dashboard)/compliance-hub/page.tsx",
+      "src/app/(dashboard)/admin-hub/page.tsx"
+    ],
+    "implementation_commit": "6281d98"
+  }
+}

@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getClaimRegistration } from "@/lib/cargo-claims-management/service";
 import { CcmForm } from "@/components/cargo-claims-management/ccm-form";
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditClaimRegistrationPage({
   params,
@@ -16,6 +17,13 @@ export default async function EditClaimRegistrationPage({
   if (!(await hasPermission(session.id, session.tenantId, "ccm:edit")))
     redirect("/");
 
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const record = await getClaimRegistration(id, session.tenantId);
   if (!record) notFound();
@@ -34,10 +42,10 @@ export default async function EditClaimRegistrationPage({
         { value: "misdelivery", label: "Misdelivery" },
       ],
     },
-    { name: "claimantName", label: "Claimant Name", type: "text" as const },
+    { name: "claimantName", label: "Claimant Name", type: "select" as const, options: customerOpts },
     { name: "claimantEmail", label: "Claimant Email", type: "text" as const },
     { name: "claimantPhone", label: "Claimant Phone", type: "text" as const },
-    { name: "vesselName", label: "Vessel Name", type: "text" as const },
+    { name: "vesselName", label: "Vessel Name", type: "select" as const, options: vesselOpts },
     { name: "voyageRef", label: "Voyage Ref", type: "text" as const },
     { name: "blNumber", label: "BL Number", type: "text" as const },
     {
@@ -45,11 +53,11 @@ export default async function EditClaimRegistrationPage({
       label: "Container Numbers",
       type: "textarea" as const,
     },
-    { name: "portOfLoading", label: "Port of Loading", type: "text" as const },
+    { name: "portOfLoading", label: "Port of Loading", type: "select" as const, options: portOpts },
     {
       name: "portOfDischarge",
       label: "Port of Discharge",
-      type: "text" as const,
+      type: "select" as const, options: portOpts,
     },
     {
       name: "cargoDescription",
@@ -61,7 +69,7 @@ export default async function EditClaimRegistrationPage({
       label: "Claim Amount (USD)",
       type: "text" as const,
     },
-    { name: "claimCurrency", label: "Claim Currency", type: "text" as const },
+    { name: "claimCurrency", label: "Claim Currency", type: "select" as const, options: currencyOpts },
     {
       name: "claimAmountOriginal",
       label: "Claim Amount (Original)",

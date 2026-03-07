@@ -8,39 +8,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const AUDIT_FIELDS: FieldConfig[] = [
-  {
-    name: "auditType",
-    label: "Audit Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "rate_compliance", label: "Rate Compliance" },
-      { value: "tariff_verification", label: "Tariff Verification" },
-      { value: "surcharge_audit", label: "Surcharge Audit" },
-      { value: "discount_review", label: "Discount Review" },
-      { value: "leakage_detection", label: "Leakage Detection" },
-    ],
-  },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "contractedRate", label: "Contracted Rate", type: "number" },
-  { name: "appliedRate", label: "Applied Rate", type: "number" },
-  { name: "varianceAmount", label: "Variance Amount", type: "number" },
-  { name: "rateCurrency", label: "Rate Currency", type: "text" },
-  { name: "tradeRoute", label: "Trade Route", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "leakageAmount", label: "Leakage Amount", type: "number" },
-  {
-    name: "correctionApplied",
-    label: "Correction Applied",
-    type: "checkbox",
-  },
-  { name: "correctionDate", label: "Correction Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditRevenueIntegrityAuditPage({
   params,
@@ -52,6 +20,40 @@ export default async function EditRevenueIntegrityAuditPage({
   if (!(await hasPermission(session.id, session.tenantId, "loc:edit")))
     redirect("/");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const AUDIT_FIELDS: FieldConfig[] = [
+    {
+      name: "auditType",
+      label: "Audit Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "rate_compliance", label: "Rate Compliance" },
+        { value: "tariff_verification", label: "Tariff Verification" },
+        { value: "surcharge_audit", label: "Surcharge Audit" },
+        { value: "discount_review", label: "Discount Review" },
+        { value: "leakage_detection", label: "Leakage Detection" },
+      ],
+    },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "contractedRate", label: "Contracted Rate", type: "number" },
+    { name: "appliedRate", label: "Applied Rate", type: "number" },
+    { name: "varianceAmount", label: "Variance Amount", type: "number" },
+    { name: "rateCurrency", label: "Rate Currency", type: "text" },
+    { name: "tradeRoute", label: "Trade Route", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "leakageAmount", label: "Leakage Amount", type: "number" },
+    {
+      name: "correctionApplied",
+      label: "Correction Applied",
+      type: "checkbox",
+    },
+    { name: "correctionDate", label: "Correction Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getRevenueIntegrityAudit(id, session.tenantId);
   if (!record) notFound();

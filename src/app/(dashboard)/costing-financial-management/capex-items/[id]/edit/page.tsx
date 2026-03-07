@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCapexItemPage({
   params,
@@ -19,6 +20,8 @@ export default async function EditCapexItemPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const item = await getCapexItem(id, session.tenantId);
   if (!item) notFound();
@@ -44,8 +47,7 @@ export default async function EditCapexItemPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "acquisitionCost",

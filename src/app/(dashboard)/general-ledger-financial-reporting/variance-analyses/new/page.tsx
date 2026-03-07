@@ -5,54 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { GlfrForm } from "@/components/general-ledger-financial-reporting/glfr-form";
 import type { FieldConfig } from "@/components/general-ledger-financial-reporting/glfr-form";
-
-const VARIANCE_ANALYSIS_FIELDS: FieldConfig[] = [
-  {
-    name: "analysisType",
-    label: "Analysis Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "budget_vs_actual", label: "Budget vs Actual" },
-      { value: "period_over_period", label: "Period over Period" },
-      { value: "forecast_vs_actual", label: "Forecast vs Actual" },
-      { value: "plan_vs_actual", label: "Plan vs Actual" },
-    ],
-  },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  { name: "budgetAmount", label: "Budget Amount", type: "text" },
-  { name: "actualAmount", label: "Actual Amount", type: "text" },
-  { name: "varianceAmount", label: "Variance Amount", type: "text" },
-  {
-    name: "variancePercentage",
-    label: "Variance Percentage",
-    type: "text",
-  },
-  {
-    name: "favorableUnfavorable",
-    label: "Favorable/Unfavorable",
-    type: "select",
-    options: [
-      { value: "favorable", label: "Favorable" },
-      { value: "unfavorable", label: "Unfavorable" },
-    ],
-  },
-  { name: "department", label: "Department", type: "text" },
-  { name: "costCenter", label: "Cost Center", type: "text" },
-  { name: "accountCode", label: "Account Code", type: "text" },
-  { name: "commentary", label: "Commentary", type: "textarea" },
-  { name: "preparedBy", label: "Prepared By", type: "text" },
-  { name: "reviewedBy", label: "Reviewed By", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewVarianceAnalysisPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -60,6 +13,54 @@ export default async function NewVarianceAnalysisPage(): Promise<React.ReactNode
   if (!(await hasPermission(session.id, session.tenantId, "gl:create")))
     redirect("/general-ledger-financial-reporting/variance-analyses");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const VARIANCE_ANALYSIS_FIELDS: FieldConfig[] = [
+    {
+      name: "analysisType",
+      label: "Analysis Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "budget_vs_actual", label: "Budget vs Actual" },
+        { value: "period_over_period", label: "Period over Period" },
+        { value: "forecast_vs_actual", label: "Forecast vs Actual" },
+        { value: "plan_vs_actual", label: "Plan vs Actual" },
+      ],
+    },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "budgetAmount", label: "Budget Amount", type: "text" },
+    { name: "actualAmount", label: "Actual Amount", type: "text" },
+    { name: "varianceAmount", label: "Variance Amount", type: "text" },
+    {
+      name: "variancePercentage",
+      label: "Variance Percentage",
+      type: "text",
+    },
+    {
+      name: "favorableUnfavorable",
+      label: "Favorable/Unfavorable",
+      type: "select",
+      options: [
+        { value: "favorable", label: "Favorable" },
+        { value: "unfavorable", label: "Unfavorable" },
+      ],
+    },
+    { name: "department", label: "Department", type: "text" },
+    { name: "costCenter", label: "Cost Center", type: "text" },
+    { name: "accountCode", label: "Account Code", type: "text" },
+    { name: "commentary", label: "Commentary", type: "textarea" },
+    { name: "preparedBy", label: "Prepared By", type: "text" },
+    { name: "reviewedBy", label: "Reviewed By", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

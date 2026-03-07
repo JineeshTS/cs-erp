@@ -6,34 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getIntercoSettlement } from "@/lib/voyage-results-settlement/service";
 import { VrsForm } from "@/components/voyage-results-settlement/vrs-form";
 import type { FieldConfig } from "@/components/voyage-results-settlement/vrs-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "intercoType",
-    label: "Interco Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "cost_sharing", label: "Cost Sharing" },
-      { value: "revenue_sharing", label: "Revenue Sharing" },
-      { value: "management_fee", label: "Management Fee" },
-      { value: "bunker_allocation", label: "Bunker Allocation" },
-      { value: "overhead_allocation", label: "Overhead Allocation" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "fromEntity", label: "From Entity", type: "text" },
-  { name: "toEntity", label: "To Entity", type: "text" },
-  { name: "settlementAmount", label: "Settlement Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "allocationBasis", label: "Allocation Basis", type: "text" },
-  { name: "allocationPct", label: "Allocation %", type: "text" },
-  { name: "invoiceRef", label: "Invoice Ref", type: "text" },
-  { name: "settledDate", label: "Settled Date", type: "datetime-local" },
-  { name: "isSettled", label: "Is Settled", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditIntercoSettlementPage({
   params,
@@ -44,6 +17,36 @@ export default async function EditIntercoSettlementPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "vrs:edit")))
     redirect("/");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    {
+      name: "intercoType",
+      label: "Interco Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "cost_sharing", label: "Cost Sharing" },
+        { value: "revenue_sharing", label: "Revenue Sharing" },
+        { value: "management_fee", label: "Management Fee" },
+        { value: "bunker_allocation", label: "Bunker Allocation" },
+        { value: "overhead_allocation", label: "Overhead Allocation" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text" },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "fromEntity", label: "From Entity", type: "text" },
+    { name: "toEntity", label: "To Entity", type: "text" },
+    { name: "settlementAmount", label: "Settlement Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "allocationBasis", label: "Allocation Basis", type: "text" },
+    { name: "allocationPct", label: "Allocation %", type: "text" },
+    { name: "invoiceRef", label: "Invoice Ref", type: "text" },
+    { name: "settledDate", label: "Settled Date", type: "datetime-local" },
+    { name: "isSettled", label: "Is Settled", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getIntercoSettlement(id, session.tenantId);

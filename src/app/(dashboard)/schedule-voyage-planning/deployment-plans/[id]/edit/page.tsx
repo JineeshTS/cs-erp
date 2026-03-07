@@ -5,32 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getDeploymentPlan } from "@/lib/schedule-voyage-planning/service";
 import { SvpForm, type FieldConfig } from "@/components/schedule-voyage-planning/svp-form";
-
-const DEPLOYMENT_PLAN_FIELDS: FieldConfig[] = [
-  {
-    name: "planType",
-    label: "Plan Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual_deployment", label: "Annual Deployment" },
-      { value: "seasonal_adjustment", label: "Seasonal Adjustment" },
-      { value: "fleet_rebalancing", label: "Fleet Rebalancing" },
-      { value: "newbuild_allocation", label: "Newbuild Allocation" },
-      { value: "charter_strategy", label: "Charter Strategy" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "tradeRoute", label: "Trade Route", type: "text" },
-  { name: "deploymentStart", label: "Deployment Start", type: "datetime-local" },
-  { name: "deploymentEnd", label: "Deployment End", type: "datetime-local" },
-  { name: "vesselCapacityTeu", label: "Vessel Capacity TEU", type: "number" },
-  { name: "expectedUtilizationPct", label: "Expected Utilization %", type: "text" },
-  { name: "dailyCostUsd", label: "Daily Cost USD", type: "text" },
-  { name: "revenueProjection", label: "Revenue Projection", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditDeploymentPlanPage({
   params,
@@ -41,6 +16,37 @@ export default async function EditDeploymentPlanPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "svp:edit")))
     redirect("/schedule-voyage-planning/deployment-plans");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const DEPLOYMENT_PLAN_FIELDS: FieldConfig[] = [
+    {
+      name: "planType",
+      label: "Plan Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual_deployment", label: "Annual Deployment" },
+        { value: "seasonal_adjustment", label: "Seasonal Adjustment" },
+        { value: "fleet_rebalancing", label: "Fleet Rebalancing" },
+        { value: "newbuild_allocation", label: "Newbuild Allocation" },
+        { value: "charter_strategy", label: "Charter Strategy" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "tradeRoute", label: "Trade Route", type: "text" },
+    { name: "deploymentStart", label: "Deployment Start", type: "datetime-local" },
+    { name: "deploymentEnd", label: "Deployment End", type: "datetime-local" },
+    { name: "vesselCapacityTeu", label: "Vessel Capacity TEU", type: "number" },
+    { name: "expectedUtilizationPct", label: "Expected Utilization %", type: "text" },
+    { name: "dailyCostUsd", label: "Daily Cost USD", type: "text" },
+    { name: "revenueProjection", label: "Revenue Projection", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

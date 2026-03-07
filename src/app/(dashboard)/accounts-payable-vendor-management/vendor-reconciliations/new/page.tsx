@@ -7,59 +7,62 @@ import {
   ApvmForm,
   type FieldConfig,
 } from "@/components/accounts-payable-vendor-management/apvm-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "vendorName",
-    label: "Vendor Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "reconciliationDate",
-    label: "Reconciliation Date",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "periodFrom",
-    label: "Period From",
-    type: "datetime-local",
-  },
-  {
-    name: "periodTo",
-    label: "Period To",
-    type: "datetime-local",
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-  },
-  {
-    name: "ourBalance",
-    label: "Our Balance",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "vendorBalance",
-    label: "Vendor Balance",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewVendorReconciliationPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "payable:create")))
     redirect("/accounts-payable-vendor-management");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "vendorName",
+      label: "Vendor Name",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "reconciliationDate",
+      label: "Reconciliation Date",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "periodFrom",
+      label: "Period From",
+      type: "datetime-local",
+    },
+    {
+      name: "periodTo",
+      label: "Period To",
+      type: "datetime-local",
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "ourBalance",
+      label: "Our Balance",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "vendorBalance",
+      label: "Vendor Balance",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   return (
     <div className="space-y-6">

@@ -7,6 +7,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewKpiReportPage() {
   const session = await getSession();
@@ -14,6 +15,8 @@ export default async function NewKpiReportPage() {
   if (!(await hasPermission(session.id, session.tenantId, "costing:create")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const fields: FieldConfig[] = [
     {
       name: "reportName",
@@ -51,8 +54,7 @@ export default async function NewKpiReportPage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "totalRevenue", label: "Total Revenue", type: "number" },
     { name: "totalCost", label: "Total Cost", type: "number" },

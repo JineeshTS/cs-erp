@@ -8,43 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { odmDocumentAmendments } from "@/db/schema";
 import { OdmForm } from "@/components/operations-documentation/odm-form";
 import type { FieldConfig } from "@/components/operations-documentation/odm-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "amendmentNumber",
-    label: "Amendment Number",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "amendmentType",
-    label: "Amendment Type",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "fieldChanged",
-    label: "Field Changed",
-    type: "text",
-    required: true,
-  },
-  { name: "oldValue", label: "Old Value", type: "textarea" },
-  { name: "newValue", label: "New Value", type: "textarea" },
-  { name: "reason", label: "Reason", type: "textarea" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "pending", label: "Pending" },
-      { value: "approved", label: "Approved" },
-      { value: "rejected", label: "Rejected" },
-    ],
-  },
-  { name: "fee", label: "Fee", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditDocumentAmendmentPage({
   params,
@@ -55,6 +19,45 @@ export default async function EditDocumentAmendmentPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "operations:edit")))
     redirect("/operations-documentation");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "amendmentNumber",
+      label: "Amendment Number",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "amendmentType",
+      label: "Amendment Type",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "fieldChanged",
+      label: "Field Changed",
+      type: "text",
+      required: true,
+    },
+    { name: "oldValue", label: "Old Value", type: "textarea" },
+    { name: "newValue", label: "New Value", type: "textarea" },
+    { name: "reason", label: "Reason", type: "textarea" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+      ],
+    },
+    { name: "fee", label: "Fee", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await db

@@ -6,48 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getPayrollProcessing } from "@/lib/hr-payroll-shore-staff/service";
 import { HpsForm } from "@/components/hr-payroll-shore-staff/hps-form";
 import type { FieldConfig } from "@/components/hr-payroll-shore-staff/hps-form";
-
-const PAYROLL_PROCESSING_FIELDS: FieldConfig[] = [
-  {
-    name: "payrollType",
-    label: "Payroll Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "monthly", label: "Monthly" },
-      { value: "supplementary", label: "Supplementary" },
-      { value: "final_settlement", label: "Final Settlement" },
-      { value: "bonus", label: "Bonus" },
-    ],
-  },
-  { name: "payrollPeriod", label: "Payroll Period", type: "text", placeholder: "YYYY-MM" },
-  { name: "employeeRef", label: "Employee Ref", type: "text" },
-  { name: "employeeName", label: "Employee Name", type: "text" },
-  { name: "basicSalary", label: "Basic Salary", type: "text" },
-  { name: "housingAllowance", label: "Housing Allowance", type: "text" },
-  { name: "transportAllowance", label: "Transport Allowance", type: "text" },
-  { name: "otherAllowances", label: "Other Allowances", type: "text" },
-  { name: "totalDeductions", label: "Total Deductions", type: "text" },
-  { name: "grossPay", label: "Gross Pay", type: "text" },
-  { name: "netPay", label: "Net Pay", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "wpsFileRef", label: "WPS File Ref", type: "text" },
-  { name: "wpsSubmissionDate", label: "WPS Submission Date", type: "datetime-local" },
-  {
-    name: "wpsStatus",
-    label: "WPS Status",
-    type: "select",
-    options: [
-      { value: "pending", label: "Pending" },
-      { value: "submitted", label: "Submitted" },
-      { value: "accepted", label: "Accepted" },
-      { value: "rejected", label: "Rejected" },
-    ],
-  },
-  { name: "bankName", label: "Bank Name", type: "text" },
-  { name: "iban", label: "IBAN", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditPayrollProcessingPage({
   params,
@@ -59,6 +18,49 @@ export default async function EditPayrollProcessingPage({
   if (!(await hasPermission(session.id, session.tenantId, "hr:edit")))
     redirect("/hr-payroll-shore-staff/payroll-processings");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const PAYROLL_PROCESSING_FIELDS: FieldConfig[] = [
+    {
+      name: "payrollType",
+      label: "Payroll Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "monthly", label: "Monthly" },
+        { value: "supplementary", label: "Supplementary" },
+        { value: "final_settlement", label: "Final Settlement" },
+        { value: "bonus", label: "Bonus" },
+      ],
+    },
+    { name: "payrollPeriod", label: "Payroll Period", type: "text", placeholder: "YYYY-MM" },
+    { name: "employeeRef", label: "Employee Ref", type: "text" },
+    { name: "employeeName", label: "Employee Name", type: "text" },
+    { name: "basicSalary", label: "Basic Salary", type: "text" },
+    { name: "housingAllowance", label: "Housing Allowance", type: "text" },
+    { name: "transportAllowance", label: "Transport Allowance", type: "text" },
+    { name: "otherAllowances", label: "Other Allowances", type: "text" },
+    { name: "totalDeductions", label: "Total Deductions", type: "text" },
+    { name: "grossPay", label: "Gross Pay", type: "text" },
+    { name: "netPay", label: "Net Pay", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "wpsFileRef", label: "WPS File Ref", type: "text" },
+    { name: "wpsSubmissionDate", label: "WPS Submission Date", type: "datetime-local" },
+    {
+      name: "wpsStatus",
+      label: "WPS Status",
+      type: "select",
+      options: [
+        { value: "pending", label: "Pending" },
+        { value: "submitted", label: "Submitted" },
+        { value: "accepted", label: "Accepted" },
+        { value: "rejected", label: "Rejected" },
+      ],
+    },
+    { name: "bankName", label: "Bank Name", type: "text" },
+    { name: "iban", label: "IBAN", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getPayrollProcessing(id, session.tenantId);

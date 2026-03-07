@@ -8,22 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { cvmHireStatements } from "@/db/schema";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const HS_FIELDS: FieldConfig[] = [
-  { name: "charterPartyId", label: "Charter Party ID", type: "text", required: true, placeholder: "UUID" },
-  { name: "statementNumber", label: "Statement Number", type: "text", required: true },
-  { name: "periodFrom", label: "Period From", type: "datetime-local", required: true },
-  { name: "periodTo", label: "Period To", type: "datetime-local", required: true },
-  { name: "hireDays", label: "Hire Days", type: "number", required: true },
-  { name: "hireRate", label: "Hire Rate", type: "number", required: true },
-  { name: "grossHire", label: "Gross Hire", type: "number", required: true },
-  { name: "offHireDeductions", label: "Off-Hire Deductions", type: "number" },
-  { name: "bunkerAdjustments", label: "Bunker Adjustments", type: "number" },
-  { name: "otherDeductions", label: "Other Deductions", type: "number" },
-  { name: "netHire", label: "Net Hire", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditHireStatementPage({
   params,
@@ -35,6 +20,23 @@ export default async function EditHireStatementPage({
   if (!(await hasPermission(session.id, session.tenantId, "chartering:edit")))
     redirect("/chartering-vessel-management");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const HS_FIELDS: FieldConfig[] = [
+    { name: "charterPartyId", label: "Charter Party ID", type: "text", required: true, placeholder: "UUID" },
+    { name: "statementNumber", label: "Statement Number", type: "text", required: true },
+    { name: "periodFrom", label: "Period From", type: "datetime-local", required: true },
+    { name: "periodTo", label: "Period To", type: "datetime-local", required: true },
+    { name: "hireDays", label: "Hire Days", type: "number", required: true },
+    { name: "hireRate", label: "Hire Rate", type: "number", required: true },
+    { name: "grossHire", label: "Gross Hire", type: "number", required: true },
+    { name: "offHireDeductions", label: "Off-Hire Deductions", type: "number" },
+    { name: "bunkerAdjustments", label: "Bunker Adjustments", type: "number" },
+    { name: "otherDeductions", label: "Other Deductions", type: "number" },
+    { name: "netHire", label: "Net Hire", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const hs = await db

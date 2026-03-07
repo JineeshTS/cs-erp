@@ -5,37 +5,41 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "modelName", label: "Model Name", type: "text", required: true },
-  { name: "modelCode", label: "Model Code", type: "text", required: true },
-  {
-    name: "modelType",
-    label: "Model Type",
-    type: "select",
-    options: [
-      { label: "Regression", value: "regression" },
-      { label: "Classification", value: "classification" },
-      { label: "Time Series", value: "time_series" },
-      { label: "Ensemble", value: "ensemble" },
-      { label: "Neural Network", value: "neural_network" },
-    ],
-  },
-  { name: "tradeLane", label: "Trade Lane", type: "text" },
-  { name: "trainingDataFrom", label: "Training Data From", type: "date" },
-  { name: "trainingDataTo", label: "Training Data To", type: "date" },
-  { name: "accuracy", label: "Accuracy", type: "number" },
-  { name: "confidenceThreshold", label: "Confidence Threshold", type: "number" },
-  { name: "predictedRate", label: "Predicted Rate", type: "number" },
-  { name: "suggestedRate", label: "Suggested Rate", type: "number" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "isActive", label: "Active", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewAiPricingModelPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    { name: "modelName", label: "Model Name", type: "text", required: true },
+    { name: "modelCode", label: "Model Code", type: "text", required: true },
+    {
+      name: "modelType",
+      label: "Model Type",
+      type: "select",
+      options: [
+        { label: "Regression", value: "regression" },
+        { label: "Classification", value: "classification" },
+        { label: "Time Series", value: "time_series" },
+        { label: "Ensemble", value: "ensemble" },
+        { label: "Neural Network", value: "neural_network" },
+      ],
+    },
+    { name: "tradeLane", label: "Trade Lane", type: "text" },
+    { name: "trainingDataFrom", label: "Training Data From", type: "date" },
+    { name: "trainingDataTo", label: "Training Data To", type: "date" },
+    { name: "accuracy", label: "Accuracy", type: "number" },
+    { name: "confidenceThreshold", label: "Confidence Threshold", type: "number" },
+    { name: "predictedRate", label: "Predicted Rate", type: "number" },
+    { name: "suggestedRate", label: "Suggested Rate", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "isActive", label: "Active", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   return (

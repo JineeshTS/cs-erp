@@ -6,45 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCiiRating } from "@/lib/vessel-performance-efficiency/service";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const CII_RATING_FIELDS: FieldConfig[] = [
-  {
-    name: "ratingType",
-    label: "Rating Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual", label: "Annual" },
-      { value: "quarterly", label: "Quarterly" },
-      { value: "voyage", label: "Voyage" },
-      { value: "corrected", label: "Corrected" },
-      { value: "required", label: "Required" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "reportingYear", label: "Reporting Year", type: "number" },
-  { name: "attainedCii", label: "Attained CII", type: "text" },
-  { name: "requiredCii", label: "Required CII", type: "text" },
-  { name: "reductionFactor", label: "Reduction Factor", type: "text" },
-  {
-    name: "rating",
-    label: "Rating",
-    type: "text",
-    placeholder: "A-E",
-  },
-  { name: "totalCo2Emissions", label: "Total CO2 Emissions", type: "text" },
-  { name: "totalDistanceNm", label: "Total Distance NM", type: "text" },
-  { name: "dwt", label: "DWT", type: "text" },
-  { name: "complianceStatus", label: "Compliance Status", type: "text" },
-  {
-    name: "correctiveActionPlan",
-    label: "Corrective Action Plan",
-    type: "textarea",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditCiiRatingPage({
   params,
@@ -56,6 +18,46 @@ export default async function EditCiiRatingPage({
   if (!(await hasPermission(session.id, session.tenantId, "vpe:edit")))
     redirect("/vessel-performance-efficiency/cii-ratings");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const CII_RATING_FIELDS: FieldConfig[] = [
+    {
+      name: "ratingType",
+      label: "Rating Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual", label: "Annual" },
+        { value: "quarterly", label: "Quarterly" },
+        { value: "voyage", label: "Voyage" },
+        { value: "corrected", label: "Corrected" },
+        { value: "required", label: "Required" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "reportingYear", label: "Reporting Year", type: "number" },
+    { name: "attainedCii", label: "Attained CII", type: "text" },
+    { name: "requiredCii", label: "Required CII", type: "text" },
+    { name: "reductionFactor", label: "Reduction Factor", type: "text" },
+    {
+      name: "rating",
+      label: "Rating",
+      type: "text",
+      placeholder: "A-E",
+    },
+    { name: "totalCo2Emissions", label: "Total CO2 Emissions", type: "text" },
+    { name: "totalDistanceNm", label: "Total Distance NM", type: "text" },
+    { name: "dwt", label: "DWT", type: "text" },
+    { name: "complianceStatus", label: "Compliance Status", type: "text" },
+    {
+      name: "correctiveActionPlan",
+      label: "Corrective Action Plan",
+      type: "textarea",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCiiRating(id, session.tenantId);

@@ -6,48 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCrewRotation } from "@/lib/crew-management/service";
 import { CrmForm } from "@/components/crew-management/crm-form";
 import type { FieldConfig } from "@/components/crew-management/crm-form";
-
-const ROTATION_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "crewMemberName",
-    label: "Crew Member Name",
-    type: "text",
-    required: true,
-  },
-  { name: "rank", label: "Rank", type: "text", required: true },
-  { name: "nationality", label: "Nationality", type: "text" },
-  {
-    name: "joiningDate",
-    label: "Joining Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "relievingDate", label: "Relieving Date", type: "datetime-local" },
-  {
-    name: "contractDuration",
-    label: "Contract Duration (months)",
-    type: "number",
-  },
-  {
-    name: "rotationType",
-    label: "Rotation Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "joining", label: "Joining" },
-      { value: "relieving", label: "Relieving" },
-      { value: "extension", label: "Extension" },
-      { value: "transfer", label: "Transfer" },
-    ],
-  },
-  { name: "relievingCrewName", label: "Relieving Crew Name", type: "text" },
-  { name: "reliefPort", label: "Relief Port", type: "text" },
-  { name: "reliefCountry", label: "Relief Country", type: "text" },
-  { name: "approvedByName", label: "Approved By Name", type: "text" },
-  { name: "handoverNotes", label: "Handover Notes", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditCrewRotationPage({
   params,
@@ -59,6 +18,49 @@ export default async function EditCrewRotationPage({
   if (!(await hasPermission(session.id, session.tenantId, "crew:edit")))
     redirect("/");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const ROTATION_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "crewMemberName",
+      label: "Crew Member Name",
+      type: "text",
+      required: true,
+    },
+    { name: "rank", label: "Rank", type: "text", required: true },
+    { name: "nationality", label: "Nationality", type: "text" },
+    {
+      name: "joiningDate",
+      label: "Joining Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "relievingDate", label: "Relieving Date", type: "datetime-local" },
+    {
+      name: "contractDuration",
+      label: "Contract Duration (months)",
+      type: "number",
+    },
+    {
+      name: "rotationType",
+      label: "Rotation Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "joining", label: "Joining" },
+        { value: "relieving", label: "Relieving" },
+        { value: "extension", label: "Extension" },
+        { value: "transfer", label: "Transfer" },
+      ],
+    },
+    { name: "relievingCrewName", label: "Relieving Crew Name", type: "text" },
+    { name: "reliefPort", label: "Relief Port", type: "text" },
+    { name: "reliefCountry", label: "Relief Country", type: "text" },
+    { name: "approvedByName", label: "Approved By Name", type: "text" },
+    { name: "handoverNotes", label: "Handover Notes", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCrewRotation(id, session.tenantId);

@@ -8,82 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { capRevenueAnalytics } from "@/db/schema";
 import { CapForm } from "@/components/capacity-voyage-management/cap-form";
 import type { FieldConfig } from "@/components/capacity-voyage-management/cap-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "vesselScheduleId",
-    label: "Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "tradeLane",
-    label: "Trade Lane",
-    type: "text",
-  },
-  {
-    name: "originPort",
-    label: "Origin Port",
-    type: "text",
-  },
-  {
-    name: "destinationPort",
-    label: "Destination Port",
-    type: "text",
-  },
-  {
-    name: "periodFrom",
-    label: "Period From",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "periodTo",
-    label: "Period To",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "totalTeu",
-    label: "Total TEU",
-    type: "number",
-  },
-  {
-    name: "totalRevenue",
-    label: "Total Revenue",
-    type: "number",
-  },
-  {
-    name: "revenuePerTeu",
-    label: "Revenue per TEU",
-    type: "number",
-  },
-  {
-    name: "averageRate",
-    label: "Average Rate",
-    type: "number",
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "draft", label: "Draft" },
-      { value: "calculated", label: "Calculated" },
-      { value: "published", label: "Published" },
-    ],
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRevenueAnalyticsPage({
   params,
@@ -94,6 +19,86 @@ export default async function EditRevenueAnalyticsPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "capacity:edit")))
     redirect("/capacity-voyage-management");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "vesselScheduleId",
+      label: "Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "tradeLane",
+      label: "Trade Lane",
+      type: "text",
+    },
+    {
+      name: "originPort",
+      label: "Origin Port",
+      type: "select", options: portOpts,
+    },
+    {
+      name: "destinationPort",
+      label: "Destination Port",
+      type: "select", options: portOpts,
+    },
+    {
+      name: "periodFrom",
+      label: "Period From",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "periodTo",
+      label: "Period To",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "totalTeu",
+      label: "Total TEU",
+      type: "number",
+    },
+    {
+      name: "totalRevenue",
+      label: "Total Revenue",
+      type: "number",
+    },
+    {
+      name: "revenuePerTeu",
+      label: "Revenue per TEU",
+      type: "number",
+    },
+    {
+      name: "averageRate",
+      label: "Average Rate",
+      type: "number",
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "calculated", label: "Calculated" },
+        { value: "published", label: "Published" },
+      ],
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   const { id } = await params;
   const ra = await db

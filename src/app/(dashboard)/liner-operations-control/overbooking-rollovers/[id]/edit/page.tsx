@@ -8,41 +8,7 @@ import {
   LocForm,
   type FieldConfig,
 } from "@/components/liner-operations-control/loc-form";
-
-const ROLLOVER_FIELDS: FieldConfig[] = [
-  {
-    name: "rolloverType",
-    label: "Rollover Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "overbooking", label: "Overbooking" },
-      { value: "rollover", label: "Rollover" },
-      { value: "short_shipment", label: "Short Shipment" },
-      { value: "shut_out", label: "Shut Out" },
-      { value: "cargo_bump", label: "Cargo Bump" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "containerCount", label: "Container Count", type: "number" },
-  { name: "teuCount", label: "TEU Count", type: "number" },
-  { name: "originalVessel", label: "Original Vessel", type: "text" },
-  { name: "nextVessel", label: "Next Vessel", type: "text" },
-  { name: "nextVoyage", label: "Next Voyage", type: "text" },
-  { name: "rolloverReason", label: "Rollover Reason", type: "textarea" },
-  { name: "revenueImpact", label: "Revenue Impact", type: "number" },
-  { name: "impactCurrency", label: "Impact Currency", type: "text" },
-  {
-    name: "customerNotified",
-    label: "Customer Notified",
-    type: "checkbox",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function EditOverbookingRolloverPage({
   params,
@@ -53,6 +19,46 @@ export default async function EditOverbookingRolloverPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "loc:edit")))
     redirect("/");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const ROLLOVER_FIELDS: FieldConfig[] = [
+    {
+      name: "rolloverType",
+      label: "Rollover Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "overbooking", label: "Overbooking" },
+        { value: "rollover", label: "Rollover" },
+        { value: "short_shipment", label: "Short Shipment" },
+        { value: "shut_out", label: "Shut Out" },
+        { value: "cargo_bump", label: "Cargo Bump" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "containerCount", label: "Container Count", type: "number" },
+    { name: "teuCount", label: "TEU Count", type: "number" },
+    { name: "originalVessel", label: "Original Vessel", type: "text" },
+    { name: "nextVessel", label: "Next Vessel", type: "text" },
+    { name: "nextVoyage", label: "Next Voyage", type: "text" },
+    { name: "rolloverReason", label: "Rollover Reason", type: "textarea" },
+    { name: "revenueImpact", label: "Revenue Impact", type: "number" },
+    { name: "impactCurrency", label: "Impact Currency", type: "text" },
+    {
+      name: "customerNotified",
+      label: "Customer Notified",
+      type: "checkbox",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getOverbookingRollover(id, session.tenantId);

@@ -8,37 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { cvmCharterParties } from "@/db/schema";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const CP_FIELDS: FieldConfig[] = [
-  { name: "cpReference", label: "CP Reference", type: "text", required: true },
-  { name: "charterType", label: "Charter Type", type: "select", options: [
-    { value: "time_charter", label: "Time Charter" },
-    { value: "voyage_charter", label: "Voyage Charter" },
-    { value: "bareboat", label: "Bareboat" },
-    { value: "coa", label: "COA" },
-  ]},
-  { name: "chartererName", label: "Charterer Name", type: "text", required: true },
-  { name: "ownerName", label: "Owner Name", type: "text" },
-  { name: "brokerName", label: "Broker Name", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "vesselImo", label: "Vessel IMO", type: "text" },
-  { name: "hireRate", label: "Hire Rate (cents)", type: "number" },
-  { name: "hireCurrency", label: "Hire Currency", type: "text" },
-  { name: "hirePeriodUnit", label: "Hire Period", type: "select", options: [
-    { value: "day", label: "Per Day" },
-    { value: "month", label: "Per Month" },
-  ]},
-  { name: "deliveryPort", label: "Delivery Port", type: "text" },
-  { name: "redeliveryPort", label: "Redelivery Port", type: "text" },
-  { name: "laycanFrom", label: "Laycan From", type: "datetime-local" },
-  { name: "laycanTo", label: "Laycan To", type: "datetime-local" },
-  { name: "commencedAt", label: "Commenced At", type: "datetime-local" },
-  { name: "terminatedAt", label: "Terminated At", type: "datetime-local" },
-  { name: "durationDays", label: "Duration (days)", type: "number" },
-  { name: "commissionPercent", label: "Commission %", type: "number" },
-  { name: "cpTerms", label: "CP Terms", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditCharterPartyPage({
   params,
@@ -50,6 +20,38 @@ export default async function EditCharterPartyPage({
   if (!(await hasPermission(session.id, session.tenantId, "chartering:edit")))
     redirect("/chartering-vessel-management");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const CP_FIELDS: FieldConfig[] = [
+    { name: "cpReference", label: "CP Reference", type: "text", required: true },
+    { name: "charterType", label: "Charter Type", type: "select", options: [
+      { value: "time_charter", label: "Time Charter" },
+      { value: "voyage_charter", label: "Voyage Charter" },
+      { value: "bareboat", label: "Bareboat" },
+      { value: "coa", label: "COA" },
+    ]},
+    { name: "chartererName", label: "Charterer Name", type: "text", required: true },
+    { name: "ownerName", label: "Owner Name", type: "text" },
+    { name: "brokerName", label: "Broker Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "hireRate", label: "Hire Rate (cents)", type: "number" },
+    { name: "hireCurrency", label: "Hire Currency", type: "text" },
+    { name: "hirePeriodUnit", label: "Hire Period", type: "select", options: [
+      { value: "day", label: "Per Day" },
+      { value: "month", label: "Per Month" },
+    ]},
+    { name: "deliveryPort", label: "Delivery Port", type: "text" },
+    { name: "redeliveryPort", label: "Redelivery Port", type: "text" },
+    { name: "laycanFrom", label: "Laycan From", type: "datetime-local" },
+    { name: "laycanTo", label: "Laycan To", type: "datetime-local" },
+    { name: "commencedAt", label: "Commenced At", type: "datetime-local" },
+    { name: "terminatedAt", label: "Terminated At", type: "datetime-local" },
+    { name: "durationDays", label: "Duration (days)", type: "number" },
+    { name: "commissionPercent", label: "Commission %", type: "number" },
+    { name: "cpTerms", label: "CP Terms", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const cp = await db

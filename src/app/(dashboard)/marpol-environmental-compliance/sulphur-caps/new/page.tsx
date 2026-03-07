@@ -3,6 +3,7 @@ import { hasPermission } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { MecForm, type FieldConfig } from "@/components/marpol-environmental-compliance/mec-form";
 import Link from "next/link";
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewSulphurCapPage() {
   const session = await getSession();
@@ -10,6 +11,8 @@ export default async function NewSulphurCapPage() {
   if (!(await hasPermission(session.id, session.tenantId, "mec:create")))
     redirect("/");
 
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
   const fields: FieldConfig[] = [
     {
       name: "sulphurType",
@@ -24,7 +27,7 @@ export default async function NewSulphurCapPage() {
       ],
     },
     { name: "title", label: "Title", type: "text" },
-    { name: "vesselName", label: "Vessel Name", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
     { name: "imoNumber", label: "IMO Number", type: "text" },
     { name: "fuelType", label: "Fuel Type", type: "text" },
     { name: "sulphurContent", label: "Sulphur Content", type: "text" },

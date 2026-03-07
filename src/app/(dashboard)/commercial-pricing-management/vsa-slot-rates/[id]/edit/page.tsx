@@ -8,32 +8,7 @@ import { db } from "@/lib/db";
 import { cpmVsaSlotRates } from "@/db/schema";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "vsaPartner", label: "VSA Partner", type: "text", required: true },
-  { name: "agreementReference", label: "Agreement Reference", type: "text", required: true },
-  { name: "tradeLane", label: "Trade Lane", type: "text", required: true },
-  { name: "serviceName", label: "Service Name", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "slotAllocationTeu", label: "Slot Allocation TEU", type: "number" },
-  { name: "slotCostPerTeu", label: "Slot Cost Per TEU", type: "number", required: true },
-  { name: "utilizationPercent", label: "Utilization %", type: "number" },
-  { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
-  { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
-  { name: "currency", label: "Currency", type: "text" },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { label: "Active", value: "active" },
-      { label: "Expired", value: "expired" },
-      { label: "Suspended", value: "suspended" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditVsaSlotRatePage({
   params,
@@ -42,6 +17,35 @@ export default async function EditVsaSlotRatePage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    { name: "vsaPartner", label: "VSA Partner", type: "text", required: true },
+    { name: "agreementReference", label: "Agreement Reference", type: "text", required: true },
+    { name: "tradeLane", label: "Trade Lane", type: "text", required: true },
+    { name: "serviceName", label: "Service Name", type: "text" },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "slotAllocationTeu", label: "Slot Allocation TEU", type: "number" },
+    { name: "slotCostPerTeu", label: "Slot Cost Per TEU", type: "number", required: true },
+    { name: "utilizationPercent", label: "Utilization %", type: "number" },
+    { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
+    { name: "effectiveTo", label: "Effective To", type: "datetime-local" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Active", value: "active" },
+        { label: "Expired", value: "expired" },
+        { label: "Suspended", value: "suspended" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const { id } = await params;

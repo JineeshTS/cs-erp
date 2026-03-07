@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditVoyageBudgetPage({
   params,
@@ -19,13 +20,18 @@ export default async function EditVoyageBudgetPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const { id } = await params;
   const budget = await getVoyageBudget(id, session.tenantId);
   if (!budget) notFound();
 
   const fields: FieldConfig[] = [
     { name: "voyageRef", label: "Voyage Ref", type: "text", required: true },
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
     { name: "serviceRoute", label: "Service Route", type: "text" },
     {
@@ -43,8 +49,7 @@ export default async function EditVoyageBudgetPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     { name: "bunkerCost", label: "Bunker Cost", type: "number" },
     { name: "portCost", label: "Port Cost", type: "number" },

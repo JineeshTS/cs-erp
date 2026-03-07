@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getAgingReport } from "@/lib/accounts-receivable-credit-control/service";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditAgingReportPage({
   params,
@@ -15,6 +16,8 @@ export default async function EditAgingReportPage({
   if (!(await hasPermission(session.id, session.tenantId, "receivable:edit")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const report = await getAgingReport(id, session.tenantId);
   if (!report) notFound();
@@ -40,7 +43,7 @@ export default async function EditAgingReportPage({
       type: "datetime-local",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "notes", label: "Notes", type: "textarea" },
   ];
 

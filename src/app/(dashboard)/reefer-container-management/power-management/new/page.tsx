@@ -5,76 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { RcmForm } from "@/components/reefer-container-management/rcm-form";
 import type { FieldConfig } from "@/components/reefer-container-management/rcm-form";
-
-const POWER_FIELDS: FieldConfig[] = [
-  {
-    name: "containerNumber",
-    label: "Container Number",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "locationName",
-    label: "Location Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "locationType",
-    label: "Location Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "terminal", label: "Terminal" },
-      { value: "depot", label: "Depot" },
-      { value: "vessel", label: "Vessel" },
-      { value: "rail", label: "Rail" },
-      { value: "truck", label: "Truck" },
-    ],
-  },
-  { name: "plugType", label: "Plug Type", type: "text" },
-  { name: "voltage", label: "Voltage", type: "text" },
-  { name: "amperage", label: "Amperage", type: "text" },
-  { name: "bayPosition", label: "Bay Position", type: "text" },
-  { name: "tierPosition", label: "Tier Position", type: "text" },
-  {
-    name: "pluggedInAt",
-    label: "Plugged In At",
-    type: "datetime-local",
-  },
-  {
-    name: "unpluggedAt",
-    label: "Unplugged At",
-    type: "datetime-local",
-  },
-  { name: "totalPlugHours", label: "Total Plug Hours", type: "text" },
-  {
-    name: "powerConsumptionKwh",
-    label: "Power Consumption (kWh)",
-    type: "text",
-  },
-  { name: "costPerKwh", label: "Cost Per kWh", type: "text" },
-  { name: "totalCost", label: "Total Cost", type: "text" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "powerInterruptions",
-    label: "Power Interruptions",
-    type: "number",
-  },
-  {
-    name: "lastInterruptionAt",
-    label: "Last Interruption At",
-    type: "datetime-local",
-  },
-  { name: "gensetBackup", label: "Genset Backup", type: "checkbox" },
-  { name: "monitoredByName", label: "Monitored By", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewPowerManagementPage() {
   const session = await getSession();
@@ -82,6 +13,76 @@ export default async function NewPowerManagementPage() {
   if (!(await hasPermission(session.id, session.tenantId, "reefer:create")))
     redirect("/reefer-container-management");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const POWER_FIELDS: FieldConfig[] = [
+    {
+      name: "containerNumber",
+      label: "Container Number",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "locationName",
+      label: "Location Name",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "locationType",
+      label: "Location Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "terminal", label: "Terminal" },
+        { value: "depot", label: "Depot" },
+        { value: "vessel", label: "Vessel" },
+        { value: "rail", label: "Rail" },
+        { value: "truck", label: "Truck" },
+      ],
+    },
+    { name: "plugType", label: "Plug Type", type: "text" },
+    { name: "voltage", label: "Voltage", type: "text" },
+    { name: "amperage", label: "Amperage", type: "text" },
+    { name: "bayPosition", label: "Bay Position", type: "text" },
+    { name: "tierPosition", label: "Tier Position", type: "text" },
+    {
+      name: "pluggedInAt",
+      label: "Plugged In At",
+      type: "datetime-local",
+    },
+    {
+      name: "unpluggedAt",
+      label: "Unplugged At",
+      type: "datetime-local",
+    },
+    { name: "totalPlugHours", label: "Total Plug Hours", type: "text" },
+    {
+      name: "powerConsumptionKwh",
+      label: "Power Consumption (kWh)",
+      type: "text",
+    },
+    { name: "costPerKwh", label: "Cost Per kWh", type: "text" },
+    { name: "totalCost", label: "Total Cost", type: "text" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "powerInterruptions",
+      label: "Power Interruptions",
+      type: "number",
+    },
+    {
+      name: "lastInterruptionAt",
+      label: "Last Interruption At",
+      type: "datetime-local",
+    },
+    { name: "gensetBackup", label: "Genset Backup", type: "checkbox" },
+    { name: "monitoredByName", label: "Monitored By", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

@@ -5,49 +5,53 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm } from "@/components/commercial-pricing-management/cpm-form";
 import type { FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
-
-const fields: FieldConfig[] = [
-  { name: "tariffId", label: "Tariff ID", type: "text", placeholder: "UUID of parent tariff" },
-  { name: "chargeCode", label: "Charge Code", type: "text", required: true },
-  { name: "chargeName", label: "Charge Name", type: "text", required: true },
-  {
-    name: "chargeType",
-    label: "Charge Type",
-    type: "select",
-    options: [
-      { label: "Ocean Freight", value: "ocean_freight" },
-      { label: "THC", value: "thc" },
-      { label: "Documentation", value: "documentation" },
-      { label: "Customs", value: "customs" },
-      { label: "Inland", value: "inland" },
-      { label: "Surcharge", value: "surcharge" },
-      { label: "Other", value: "other" },
-    ],
-  },
-  {
-    name: "basis",
-    label: "Basis",
-    type: "select",
-    options: [
-      { label: "Per Container", value: "per_container" },
-      { label: "Per TEU", value: "per_teu" },
-      { label: "Per B/L", value: "per_bl" },
-      { label: "Per Shipment", value: "per_shipment" },
-      { label: "Lumpsum", value: "lumpsum" },
-    ],
-  },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "unitPrice", label: "Unit Price", type: "number", required: true },
-  { name: "minimumCharge", label: "Minimum Charge", type: "number" },
-  { name: "maximumCharge", label: "Maximum Charge", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "e.g. USD" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewTariffRatePage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const fields: FieldConfig[] = [
+    { name: "tariffId", label: "Tariff ID", type: "text", placeholder: "UUID of parent tariff" },
+    { name: "chargeCode", label: "Charge Code", type: "text", required: true },
+    { name: "chargeName", label: "Charge Name", type: "text", required: true },
+    {
+      name: "chargeType",
+      label: "Charge Type",
+      type: "select",
+      options: [
+        { label: "Ocean Freight", value: "ocean_freight" },
+        { label: "THC", value: "thc" },
+        { label: "Documentation", value: "documentation" },
+        { label: "Customs", value: "customs" },
+        { label: "Inland", value: "inland" },
+        { label: "Surcharge", value: "surcharge" },
+        { label: "Other", value: "other" },
+      ],
+    },
+    {
+      name: "basis",
+      label: "Basis",
+      type: "select",
+      options: [
+        { label: "Per Container", value: "per_container" },
+        { label: "Per TEU", value: "per_teu" },
+        { label: "Per B/L", value: "per_bl" },
+        { label: "Per Shipment", value: "per_shipment" },
+        { label: "Lumpsum", value: "lumpsum" },
+      ],
+    },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "unitPrice", label: "Unit Price", type: "number", required: true },
+    { name: "minimumCharge", label: "Minimum Charge", type: "number" },
+    { name: "maximumCharge", label: "Maximum Charge", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   return (

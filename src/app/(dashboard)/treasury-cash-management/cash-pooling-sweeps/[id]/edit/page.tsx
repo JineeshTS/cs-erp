@@ -6,86 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCashPoolingSweep } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const SWEEP_FIELDS: FieldConfig[] = [
-  {
-    name: "sweepType",
-    label: "Sweep Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "zero_balance", label: "Zero Balance" },
-      { value: "target_balance", label: "Target Balance" },
-      { value: "threshold", label: "Threshold" },
-      { value: "notional_pooling", label: "Notional Pooling" },
-    ],
-  },
-  { name: "poolName", label: "Pool Name", type: "text" },
-  { name: "masterAccountRef", label: "Master Account Ref", type: "text" },
-  {
-    name: "sweepDirection",
-    label: "Sweep Direction",
-    type: "select",
-    options: [
-      { value: "to_master", label: "To Master" },
-      { value: "from_master", label: "From Master" },
-      { value: "bidirectional", label: "Bidirectional" },
-    ],
-  },
-  {
-    name: "triggerBalance",
-    label: "Trigger Balance",
-    type: "text",
-    placeholder: "0.00",
-  },
-  {
-    name: "targetBalance",
-    label: "Target Balance",
-    type: "text",
-    placeholder: "0.00",
-  },
-  {
-    name: "sweepAmount",
-    label: "Sweep Amount",
-    type: "text",
-    placeholder: "0.00",
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  {
-    name: "frequency",
-    label: "Frequency",
-    type: "select",
-    options: [
-      { value: "daily", label: "Daily" },
-      { value: "weekly", label: "Weekly" },
-      { value: "monthly", label: "Monthly" },
-      { value: "on_demand", label: "On Demand" },
-    ],
-  },
-  {
-    name: "lastExecutedAt",
-    label: "Last Executed At",
-    type: "datetime-local",
-  },
-  {
-    name: "nextScheduledAt",
-    label: "Next Scheduled At",
-    type: "datetime-local",
-  },
-  {
-    name: "interestRate",
-    label: "Interest Rate",
-    type: "text",
-    placeholder: "0.00",
-  },
-  {
-    name: "totalPoolBalance",
-    label: "Total Pool Balance",
-    type: "text",
-    placeholder: "0.00",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCashPoolingSweepPage({
   params,
@@ -97,6 +18,87 @@ export default async function EditCashPoolingSweepPage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/cash-pooling-sweeps");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const SWEEP_FIELDS: FieldConfig[] = [
+    {
+      name: "sweepType",
+      label: "Sweep Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "zero_balance", label: "Zero Balance" },
+        { value: "target_balance", label: "Target Balance" },
+        { value: "threshold", label: "Threshold" },
+        { value: "notional_pooling", label: "Notional Pooling" },
+      ],
+    },
+    { name: "poolName", label: "Pool Name", type: "text" },
+    { name: "masterAccountRef", label: "Master Account Ref", type: "text" },
+    {
+      name: "sweepDirection",
+      label: "Sweep Direction",
+      type: "select",
+      options: [
+        { value: "to_master", label: "To Master" },
+        { value: "from_master", label: "From Master" },
+        { value: "bidirectional", label: "Bidirectional" },
+      ],
+    },
+    {
+      name: "triggerBalance",
+      label: "Trigger Balance",
+      type: "text",
+      placeholder: "0.00",
+    },
+    {
+      name: "targetBalance",
+      label: "Target Balance",
+      type: "text",
+      placeholder: "0.00",
+    },
+    {
+      name: "sweepAmount",
+      label: "Sweep Amount",
+      type: "text",
+      placeholder: "0.00",
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    {
+      name: "frequency",
+      label: "Frequency",
+      type: "select",
+      options: [
+        { value: "daily", label: "Daily" },
+        { value: "weekly", label: "Weekly" },
+        { value: "monthly", label: "Monthly" },
+        { value: "on_demand", label: "On Demand" },
+      ],
+    },
+    {
+      name: "lastExecutedAt",
+      label: "Last Executed At",
+      type: "datetime-local",
+    },
+    {
+      name: "nextScheduledAt",
+      label: "Next Scheduled At",
+      type: "datetime-local",
+    },
+    {
+      name: "interestRate",
+      label: "Interest Rate",
+      type: "text",
+      placeholder: "0.00",
+    },
+    {
+      name: "totalPoolBalance",
+      label: "Total Pool Balance",
+      type: "text",
+      placeholder: "0.00",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCashPoolingSweep(id, session.tenantId);

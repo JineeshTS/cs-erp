@@ -8,20 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { csoCustomerFeedback } from "@/db/schema";
 import { CsoForm } from "@/components/customer-service-operations/cso-form";
 import type { FieldConfig } from "@/components/customer-service-operations/cso-form";
-
-const FEEDBACK_FIELDS: FieldConfig[] = [
-  { name: "entityType", label: "Entity Type", type: "select", required: true, options: [
-    { value: "inquiry", label: "Inquiry" },
-    { value: "complaint", label: "Complaint" },
-    { value: "service_request", label: "Service Request" },
-  ]},
-  { name: "entityId", label: "Entity ID", type: "text", required: true },
-  { name: "customerName", label: "Customer Name", type: "text" },
-  { name: "rating", label: "Rating", type: "number" },
-  { name: "satisfactionScore", label: "Satisfaction Score", type: "number" },
-  { name: "feedbackText", label: "Feedback Text", type: "textarea" },
-  { name: "feedbackChannel", label: "Feedback Channel", type: "text" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditCustomerFeedbackPage({
   params,
@@ -33,6 +20,21 @@ export default async function EditCustomerFeedbackPage({
   if (!(await hasPermission(session.id, session.tenantId, "customer_service:edit")))
     redirect("/customer-service-operations/customer-feedback");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const FEEDBACK_FIELDS: FieldConfig[] = [
+    { name: "entityType", label: "Entity Type", type: "select", required: true, options: [
+      { value: "inquiry", label: "Inquiry" },
+      { value: "complaint", label: "Complaint" },
+      { value: "service_request", label: "Service Request" },
+    ]},
+    { name: "entityId", label: "Entity ID", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts },
+    { name: "rating", label: "Rating", type: "number" },
+    { name: "satisfactionScore", label: "Satisfaction Score", type: "number" },
+    { name: "feedbackText", label: "Feedback Text", type: "textarea" },
+    { name: "feedbackChannel", label: "Feedback Channel", type: "text" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

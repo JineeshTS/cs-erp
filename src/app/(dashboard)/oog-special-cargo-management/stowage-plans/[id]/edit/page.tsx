@@ -7,50 +7,7 @@ import { getStowagePlan } from "@/lib/oog-special-cargo-management/service";
 import { OogForm } from "@/components/oog-special-cargo-management/oog-form";
 import type { FieldConfig } from "@/components/oog-special-cargo-management/oog-form";
 import React from "react";
-
-const FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  {
-    name: "voyageNumber",
-    label: "Voyage Number",
-    type: "text",
-    required: true,
-  },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  {
-    name: "containerType",
-    label: "Container Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "flat_rack", label: "Flat Rack" },
-      { value: "open_top", label: "Open Top" },
-      { value: "platform", label: "Platform" },
-      { value: "bolster", label: "Bolster" },
-      { value: "mafi_trailer", label: "Mafi Trailer" },
-    ],
-  },
-  { name: "bayPosition", label: "Bay Position", type: "text" },
-  { name: "rowPosition", label: "Row Position", type: "text" },
-  { name: "tierPosition", label: "Tier Position", type: "text" },
-  { name: "weightKg", label: "Weight (kg)", type: "text" },
-  { name: "overLengthFore", label: "Over-Length Fore (cm)", type: "text" },
-  { name: "overLengthAft", label: "Over-Length Aft (cm)", type: "text" },
-  { name: "overWidthPort", label: "Over-Width Port (cm)", type: "text" },
-  {
-    name: "overWidthStarboard",
-    label: "Over-Width Starboard (cm)",
-    type: "text",
-  },
-  { name: "overHeight", label: "Over-Height (cm)", type: "text" },
-  { name: "stackable", label: "Stackable", type: "checkbox" },
-  { name: "clearanceRequired", label: "Clearance Required", type: "checkbox" },
-  { name: "lashingPoints", label: "Lashing Points", type: "number" },
-  { name: "planApproved", label: "Plan Approved", type: "checkbox" },
-  { name: "approvedByName", label: "Approved By", type: "text" },
-  { name: "approvedAt", label: "Approved At", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditStowagePlanPage({
   params,
@@ -63,6 +20,52 @@ export default async function EditStowagePlanPage({
     !(await hasPermission(session.id, session.tenantId, "oog_special:edit"))
   )
     redirect("/oog-special-cargo-management/stowage-plans");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    {
+      name: "voyageNumber",
+      label: "Voyage Number",
+      type: "text",
+      required: true,
+    },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    {
+      name: "containerType",
+      label: "Container Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "flat_rack", label: "Flat Rack" },
+        { value: "open_top", label: "Open Top" },
+        { value: "platform", label: "Platform" },
+        { value: "bolster", label: "Bolster" },
+        { value: "mafi_trailer", label: "Mafi Trailer" },
+      ],
+    },
+    { name: "bayPosition", label: "Bay Position", type: "text" },
+    { name: "rowPosition", label: "Row Position", type: "text" },
+    { name: "tierPosition", label: "Tier Position", type: "text" },
+    { name: "weightKg", label: "Weight (kg)", type: "text" },
+    { name: "overLengthFore", label: "Over-Length Fore (cm)", type: "text" },
+    { name: "overLengthAft", label: "Over-Length Aft (cm)", type: "text" },
+    { name: "overWidthPort", label: "Over-Width Port (cm)", type: "text" },
+    {
+      name: "overWidthStarboard",
+      label: "Over-Width Starboard (cm)",
+      type: "text",
+    },
+    { name: "overHeight", label: "Over-Height (cm)", type: "text" },
+    { name: "stackable", label: "Stackable", type: "checkbox" },
+    { name: "clearanceRequired", label: "Clearance Required", type: "checkbox" },
+    { name: "lashingPoints", label: "Lashing Points", type: "number" },
+    { name: "planApproved", label: "Plan Approved", type: "checkbox" },
+    { name: "approvedByName", label: "Approved By", type: "text" },
+    { name: "approvedAt", label: "Approved At", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getStowagePlan(id, session.tenantId);

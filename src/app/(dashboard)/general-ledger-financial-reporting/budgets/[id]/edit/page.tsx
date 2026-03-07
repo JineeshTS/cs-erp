@@ -6,46 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getBudget } from "@/lib/general-ledger-financial-reporting/service";
 import { GlfrForm } from "@/components/general-ledger-financial-reporting/glfr-form";
 import type { FieldConfig } from "@/components/general-ledger-financial-reporting/glfr-form";
-
-const BUDGET_FIELDS: FieldConfig[] = [
-  {
-    name: "budgetType",
-    label: "Budget Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual", label: "Annual" },
-      { value: "quarterly", label: "Quarterly" },
-      { value: "rolling", label: "Rolling" },
-      { value: "zero_based", label: "Zero Based" },
-      { value: "incremental", label: "Incremental" },
-    ],
-  },
-  { name: "budgetName", label: "Budget Name", type: "text" },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  { name: "department", label: "Department", type: "text" },
-  { name: "costCenter", label: "Cost Center", type: "text" },
-  { name: "totalBudgeted", label: "Total Budgeted", type: "text" },
-  { name: "totalActual", label: "Total Actual", type: "text" },
-  { name: "totalVariance", label: "Total Variance", type: "text" },
-  {
-    name: "variancePercentage",
-    label: "Variance Percentage",
-    type: "text",
-  },
-  { name: "currentRevision", label: "Current Revision", type: "number" },
-  { name: "preparedBy", label: "Prepared By", type: "text" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBudgetPage({
   params,
@@ -57,6 +18,46 @@ export default async function EditBudgetPage({
   if (!(await hasPermission(session.id, session.tenantId, "gl:edit")))
     redirect("/general-ledger-financial-reporting/budgets");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const BUDGET_FIELDS: FieldConfig[] = [
+    {
+      name: "budgetType",
+      label: "Budget Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual", label: "Annual" },
+        { value: "quarterly", label: "Quarterly" },
+        { value: "rolling", label: "Rolling" },
+        { value: "zero_based", label: "Zero Based" },
+        { value: "incremental", label: "Incremental" },
+      ],
+    },
+    { name: "budgetName", label: "Budget Name", type: "text" },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "department", label: "Department", type: "text" },
+    { name: "costCenter", label: "Cost Center", type: "text" },
+    { name: "totalBudgeted", label: "Total Budgeted", type: "text" },
+    { name: "totalActual", label: "Total Actual", type: "text" },
+    { name: "totalVariance", label: "Total Variance", type: "text" },
+    {
+      name: "variancePercentage",
+      label: "Variance Percentage",
+      type: "text",
+    },
+    { name: "currentRevision", label: "Current Revision", type: "number" },
+    { name: "preparedBy", label: "Prepared By", type: "text" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getBudget(id, session.tenantId);
   if (!record) notFound();

@@ -5,35 +5,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getGaAgreement } from "@/lib/agent-network-management/service";
 import { AnmForm } from "@/components/agent-network-management/anm-form";
 import type { FieldConfig } from "@/components/agent-network-management/anm-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "agreementType",
-    label: "Agreement Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "exclusive_ga", label: "Exclusive GA" },
-      { value: "non_exclusive_ga", label: "Non-Exclusive GA" },
-      { value: "liner_agency", label: "Liner Agency" },
-      { value: "tramp_agency", label: "Tramp Agency" },
-      { value: "port_agency", label: "Port Agency" },
-    ],
-  },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "territory", label: "Territory", type: "text" },
-  { name: "portsCovered", label: "Ports Covered", type: "textarea" },
-  { name: "commencementDate", label: "Commencement Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
-  { name: "terminationNoticeDays", label: "Termination Notice Days", type: "number" },
-  { name: "baseCommissionPct", label: "Base Commission %", type: "text" },
-  { name: "commissionCurrency", label: "Commission Currency", type: "text" },
-  { name: "exclusivityClause", label: "Exclusivity Clause", type: "checkbox" },
-  { name: "performanceGuarantee", label: "Performance Guarantee", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditGaAgreementPage({
   params,
@@ -44,6 +16,37 @@ export default async function EditGaAgreementPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "anm:edit")))
     redirect("/agent-network-management/ga-agreements");
+
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "agreementType",
+      label: "Agreement Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "exclusive_ga", label: "Exclusive GA" },
+        { value: "non_exclusive_ga", label: "Non-Exclusive GA" },
+        { value: "liner_agency", label: "Liner Agency" },
+        { value: "tramp_agency", label: "Tramp Agency" },
+        { value: "port_agency", label: "Port Agency" },
+      ],
+    },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "territory", label: "Territory", type: "text" },
+    { name: "portsCovered", label: "Ports Covered", type: "textarea" },
+    { name: "commencementDate", label: "Commencement Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
+    { name: "terminationNoticeDays", label: "Termination Notice Days", type: "number" },
+    { name: "baseCommissionPct", label: "Base Commission %", type: "text" },
+    { name: "commissionCurrency", label: "Commission Currency", type: "text" },
+    { name: "exclusivityClause", label: "Exclusivity Clause", type: "checkbox" },
+    { name: "performanceGuarantee", label: "Performance Guarantee", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getGaAgreement(id, session.tenantId);

@@ -5,39 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const DR_FIELDS: FieldConfig[] = [
-  {
-    name: "charterPartyId",
-    label: "Charter Party ID",
-    type: "text",
-    required: true,
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    options: [
-      { value: "delivery", label: "Delivery" },
-      { value: "redelivery", label: "Redelivery" },
-    ],
-  },
-  { name: "portName", label: "Port Name", type: "text" },
-  {
-    name: "reportDate",
-    label: "Report Date",
-    type: "datetime-local",
-    required: true,
-  },
-  {
-    name: "vesselCondition",
-    label: "Vessel Condition",
-    type: "textarea",
-  },
-  { name: "surveyReference", label: "Survey Reference", type: "text" },
-  { name: "remarks", label: "Remarks", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function NewDeliveryReportPage() {
   const session = await getSession();
@@ -46,6 +14,44 @@ export default async function NewDeliveryReportPage() {
     !(await hasPermission(session.id, session.tenantId, "chartering:create"))
   )
     redirect("/chartering-vessel-management");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const DR_FIELDS: FieldConfig[] = [
+    {
+      name: "charterPartyId",
+      label: "Charter Party ID",
+      type: "text",
+      required: true,
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      options: [
+        { value: "delivery", label: "Delivery" },
+        { value: "redelivery", label: "Redelivery" },
+      ],
+    },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    {
+      name: "reportDate",
+      label: "Report Date",
+      type: "datetime-local",
+      required: true,
+    },
+    {
+      name: "vesselCondition",
+      label: "Vessel Condition",
+      type: "textarea",
+    },
+    { name: "surveyReference", label: "Survey Reference", type: "text" },
+    { name: "remarks", label: "Remarks", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

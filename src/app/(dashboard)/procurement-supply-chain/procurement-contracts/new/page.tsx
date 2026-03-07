@@ -5,36 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PscForm } from "@/components/procurement-supply-chain/psc-form";
 import type { FieldConfig } from "@/components/procurement-supply-chain/psc-form";
-
-const CONTRACT_FIELDS: FieldConfig[] = [
-  {
-    name: "contractType",
-    label: "Contract Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "fixed_price", label: "Fixed Price" },
-      { value: "cost_plus", label: "Cost Plus" },
-      { value: "framework", label: "Framework" },
-      { value: "blanket", label: "Blanket" },
-      { value: "service_level", label: "Service Level" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "vendorName", label: "Vendor Name", type: "text" },
-  { name: "vendorId", label: "Vendor ID", type: "text" },
-  { name: "startDate", label: "Start Date", type: "datetime-local" },
-  { name: "endDate", label: "End Date", type: "datetime-local" },
-  { name: "contractValue", label: "Contract Value", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "paymentTerms", label: "Payment Terms", type: "text" },
-  { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
-  { name: "renewalNoticeDays", label: "Renewal Notice Days", type: "number" },
-  { name: "penaltyClause", label: "Penalty Clause", type: "textarea" },
-  { name: "signedBy", label: "Signed By", type: "text" },
-  { name: "signatureDate", label: "Signature Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewProcurementContractPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -44,6 +15,37 @@ export default async function NewProcurementContractPage(): Promise<React.ReactN
   )
     redirect("/procurement-supply-chain/procurement-contracts");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CONTRACT_FIELDS: FieldConfig[] = [
+    {
+      name: "contractType",
+      label: "Contract Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "fixed_price", label: "Fixed Price" },
+        { value: "cost_plus", label: "Cost Plus" },
+        { value: "framework", label: "Framework" },
+        { value: "blanket", label: "Blanket" },
+        { value: "service_level", label: "Service Level" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "vendorName", label: "Vendor Name", type: "text" },
+    { name: "vendorId", label: "Vendor ID", type: "text" },
+    { name: "startDate", label: "Start Date", type: "datetime-local" },
+    { name: "endDate", label: "End Date", type: "datetime-local" },
+    { name: "contractValue", label: "Contract Value", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "paymentTerms", label: "Payment Terms", type: "text" },
+    { name: "autoRenewal", label: "Auto Renewal", type: "checkbox" },
+    { name: "renewalNoticeDays", label: "Renewal Notice Days", type: "number" },
+    { name: "penaltyClause", label: "Penalty Clause", type: "textarea" },
+    { name: "signedBy", label: "Signed By", type: "text" },
+    { name: "signatureDate", label: "Signature Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

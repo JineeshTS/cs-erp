@@ -4,43 +4,49 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CcmForm, type FieldConfig } from "@/components/cargo-claims-management/ccm-form";
-
-const SETTLEMENT_FIELDS: FieldConfig[] = [
-  {
-    name: "settlementType",
-    label: "Settlement Type",
-    type: "select",
-    options: [
-      { value: "full_settlement", label: "Full Settlement" },
-      { value: "partial_settlement", label: "Partial Settlement" },
-      { value: "compromise", label: "Compromise" },
-      { value: "denial", label: "Denial" },
-      { value: "withdrawal", label: "Withdrawal" },
-      { value: "without_prejudice", label: "Without Prejudice" },
-    ],
-  },
-  { name: "claimId", label: "Claim ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "originalClaimAmount", label: "Original Claim Amount", type: "text" },
-  { name: "offeredAmount", label: "Offered Amount", type: "text" },
-  { name: "settledAmount", label: "Settled Amount", type: "text" },
-  { name: "settlementCurrency", label: "Settlement Currency", type: "text" },
-  { name: "settlementDate", label: "Settlement Date", type: "datetime-local" },
-  { name: "paymentMethod", label: "Payment Method", type: "text" },
-  { name: "paymentReference", label: "Payment Reference", type: "text" },
-  { name: "paymentDate", label: "Payment Date", type: "datetime-local" },
-  { name: "releaseObtained", label: "Release Obtained", type: "checkbox" },
-  { name: "releaseDate", label: "Release Date", type: "datetime-local" },
-  { name: "savingsAmount", label: "Savings Amount", type: "text" },
-  { name: "savingsPercentage", label: "Savings Percentage", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewClaimSettlementPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "ccm:create")))
     redirect("/");
+
+  const [vesselOpts, currencyOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const SETTLEMENT_FIELDS: FieldConfig[] = [
+    {
+      name: "settlementType",
+      label: "Settlement Type",
+      type: "select",
+      options: [
+        { value: "full_settlement", label: "Full Settlement" },
+        { value: "partial_settlement", label: "Partial Settlement" },
+        { value: "compromise", label: "Compromise" },
+        { value: "denial", label: "Denial" },
+        { value: "withdrawal", label: "Withdrawal" },
+        { value: "without_prejudice", label: "Without Prejudice" },
+      ],
+    },
+    { name: "claimId", label: "Claim ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "originalClaimAmount", label: "Original Claim Amount", type: "text" },
+    { name: "offeredAmount", label: "Offered Amount", type: "text" },
+    { name: "settledAmount", label: "Settled Amount", type: "text" },
+    { name: "settlementCurrency", label: "Settlement Currency", type: "select", options: currencyOpts },
+    { name: "settlementDate", label: "Settlement Date", type: "datetime-local" },
+    { name: "paymentMethod", label: "Payment Method", type: "text" },
+    { name: "paymentReference", label: "Payment Reference", type: "text" },
+    { name: "paymentDate", label: "Payment Date", type: "datetime-local" },
+    { name: "releaseObtained", label: "Release Obtained", type: "checkbox" },
+    { name: "releaseDate", label: "Release Date", type: "datetime-local" },
+    { name: "savingsAmount", label: "Savings Amount", type: "text" },
+    { name: "savingsPercentage", label: "Savings Percentage", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

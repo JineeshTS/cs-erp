@@ -8,6 +8,7 @@ import {
   CfmForm,
   type FieldConfig,
 } from "@/components/costing-financial-management/cfm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditOverheadAllocationPage({
   params,
@@ -19,6 +20,8 @@ export default async function EditOverheadAllocationPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/");
 
+
+  const currencyOpts = await getCurrencyOptions();
   const { id } = await params;
   const allocation = await getOverheadAllocation(id, session.tenantId);
   if (!allocation) notFound();
@@ -49,8 +52,7 @@ export default async function EditOverheadAllocationPage({
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "totalOverhead",

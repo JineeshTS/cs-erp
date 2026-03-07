@@ -5,29 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getFinalDa } from "@/lib/port-disbursement-accounting/service";
 import { PdaForm, type FieldConfig } from "@/components/port-disbursement-accounting/pda-form";
-
-const FDA_FIELDS: FieldConfig[] = [
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "portCode", label: "Port Code", type: "text", required: true },
-  { name: "portName", label: "Port Name", type: "text", required: true },
-  { name: "proformaRef", label: "Proforma Ref", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "portDues", label: "Port Dues", type: "number" },
-  { name: "pilotage", label: "Pilotage", type: "number" },
-  { name: "towage", label: "Towage", type: "number" },
-  { name: "berthHire", label: "Berth Hire", type: "number" },
-  { name: "cargoHandling", label: "Cargo Handling", type: "number" },
-  { name: "agencyFees", label: "Agency Fees", type: "number" },
-  { name: "customs", label: "Customs", type: "number" },
-  { name: "miscellaneous", label: "Miscellaneous", type: "number" },
-  { name: "totalActual", label: "Total Actual", type: "number", required: true },
-  { name: "invoiceRef", label: "Invoice Ref", type: "text" },
-  { name: "invoiceDate", label: "Invoice Date", type: "datetime-local" },
-  { name: "receivedDate", label: "Received Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditFinalDaPage({
   params,
@@ -38,6 +16,36 @@ export default async function EditFinalDaPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "disbursement:edit")))
     redirect("/port-disbursement-accounting");
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const FDA_FIELDS: FieldConfig[] = [
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts, required: true },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts, required: true },
+    { name: "proformaRef", label: "Proforma Ref", type: "text" },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "portDues", label: "Port Dues", type: "number" },
+    { name: "pilotage", label: "Pilotage", type: "number" },
+    { name: "towage", label: "Towage", type: "number" },
+    { name: "berthHire", label: "Berth Hire", type: "number" },
+    { name: "cargoHandling", label: "Cargo Handling", type: "number" },
+    { name: "agencyFees", label: "Agency Fees", type: "number" },
+    { name: "customs", label: "Customs", type: "number" },
+    { name: "miscellaneous", label: "Miscellaneous", type: "number" },
+    { name: "totalActual", label: "Total Actual", type: "number", required: true },
+    { name: "invoiceRef", label: "Invoice Ref", type: "text" },
+    { name: "invoiceDate", label: "Invoice Date", type: "datetime-local" },
+    { name: "receivedDate", label: "Received Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

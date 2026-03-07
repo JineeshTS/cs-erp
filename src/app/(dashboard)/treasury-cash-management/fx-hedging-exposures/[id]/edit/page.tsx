@@ -6,39 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getFxHedgingExposure } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const FX_HEDGING_FIELDS: FieldConfig[] = [
-  {
-    name: "hedgeType",
-    label: "Hedge Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "forward", label: "Forward" },
-      { value: "option", label: "Option" },
-      { value: "swap", label: "Swap" },
-      { value: "natural_hedge", label: "Natural Hedge" },
-      { value: "cross_currency", label: "Cross Currency" },
-    ],
-  },
-  { name: "baseCurrency", label: "Base Currency", type: "text", placeholder: "USD" },
-  { name: "quoteCurrency", label: "Quote Currency", type: "text", placeholder: "QAR" },
-  { name: "notionalAmount", label: "Notional Amount", type: "text" },
-  { name: "hedgedAmount", label: "Hedged Amount", type: "text" },
-  { name: "spotRate", label: "Spot Rate", type: "text" },
-  { name: "forwardRate", label: "Forward Rate", type: "text" },
-  { name: "strikeRate", label: "Strike Rate", type: "text" },
-  { name: "maturityDate", label: "Maturity Date", type: "datetime-local" },
-  { name: "settlementDate", label: "Settlement Date", type: "datetime-local" },
-  { name: "counterparty", label: "Counterparty", type: "text" },
-  { name: "dealReference", label: "Deal Reference", type: "text" },
-  { name: "hedgeEffectiveness", label: "Hedge Effectiveness", type: "text" },
-  { name: "unrealizedGainLoss", label: "Unrealized Gain/Loss", type: "text" },
-  { name: "realizedGainLoss", label: "Realized Gain/Loss", type: "text" },
-  { name: "exposureType", label: "Exposure Type", type: "text" },
-  { name: "hedgeAccountingMethod", label: "Hedge Accounting Method", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditFxHedgingExposurePage({
   params,
@@ -52,6 +20,40 @@ export default async function EditFxHedgingExposurePage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/fx-hedging-exposures");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const FX_HEDGING_FIELDS: FieldConfig[] = [
+    {
+      name: "hedgeType",
+      label: "Hedge Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "forward", label: "Forward" },
+        { value: "option", label: "Option" },
+        { value: "swap", label: "Swap" },
+        { value: "natural_hedge", label: "Natural Hedge" },
+        { value: "cross_currency", label: "Cross Currency" },
+      ],
+    },
+    { name: "baseCurrency", label: "Base Currency", type: "select", options: currencyOpts },
+    { name: "quoteCurrency", label: "Quote Currency", type: "text", placeholder: "QAR" },
+    { name: "notionalAmount", label: "Notional Amount", type: "text" },
+    { name: "hedgedAmount", label: "Hedged Amount", type: "text" },
+    { name: "spotRate", label: "Spot Rate", type: "text" },
+    { name: "forwardRate", label: "Forward Rate", type: "text" },
+    { name: "strikeRate", label: "Strike Rate", type: "text" },
+    { name: "maturityDate", label: "Maturity Date", type: "datetime-local" },
+    { name: "settlementDate", label: "Settlement Date", type: "datetime-local" },
+    { name: "counterparty", label: "Counterparty", type: "text" },
+    { name: "dealReference", label: "Deal Reference", type: "text" },
+    { name: "hedgeEffectiveness", label: "Hedge Effectiveness", type: "text" },
+    { name: "unrealizedGainLoss", label: "Unrealized Gain/Loss", type: "text" },
+    { name: "realizedGainLoss", label: "Realized Gain/Loss", type: "text" },
+    { name: "exposureType", label: "Exposure Type", type: "text" },
+    { name: "hedgeAccountingMethod", label: "Hedge Accounting Method", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const record = await getFxHedgingExposure(id, session.tenantId);
   if (!record) notFound();
 

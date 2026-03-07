@@ -4,44 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { LprForm, type FieldConfig } from "@/components/loss-prevention-risk-management/lpr-form";
-
-const NEAR_MISS_REPORT_FIELDS: FieldConfig[] = [
-  {
-    name: "reportType",
-    label: "Report Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "near_miss", label: "Near Miss" },
-      { value: "unsafe_act", label: "Unsafe Act" },
-      { value: "unsafe_condition", label: "Unsafe Condition" },
-      { value: "good_catch", label: "Good Catch" },
-      { value: "hazard_observation", label: "Hazard Observation" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "locationName", label: "Location Name", type: "text" },
-  { name: "reportedBy", label: "Reported By", type: "text" },
-  { name: "reportedDate", label: "Reported Date", type: "datetime-local" },
-  {
-    name: "potentialSeverity",
-    label: "Potential Severity",
-    type: "select",
-    options: [
-      { value: "low", label: "Low" },
-      { value: "medium", label: "Medium" },
-      { value: "high", label: "High" },
-      { value: "critical", label: "Critical" },
-    ],
-  },
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "immediateAction", label: "Immediate Action", type: "textarea" },
-  { name: "rootCause", label: "Root Cause", type: "textarea" },
-  { name: "preventiveMeasure", label: "Preventive Measure", type: "textarea" },
-  { name: "isAnonymous", label: "Anonymous Report", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewNearMissReportPage() {
   const session = await getSession();
@@ -51,6 +14,45 @@ export default async function NewNearMissReportPage() {
   )
     redirect("/loss-prevention-risk-management/near-miss-reports");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const NEAR_MISS_REPORT_FIELDS: FieldConfig[] = [
+    {
+      name: "reportType",
+      label: "Report Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "near_miss", label: "Near Miss" },
+        { value: "unsafe_act", label: "Unsafe Act" },
+        { value: "unsafe_condition", label: "Unsafe Condition" },
+        { value: "good_catch", label: "Good Catch" },
+        { value: "hazard_observation", label: "Hazard Observation" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "locationName", label: "Location Name", type: "text" },
+    { name: "reportedBy", label: "Reported By", type: "text" },
+    { name: "reportedDate", label: "Reported Date", type: "datetime-local" },
+    {
+      name: "potentialSeverity",
+      label: "Potential Severity",
+      type: "select",
+      options: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+        { value: "critical", label: "Critical" },
+      ],
+    },
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "immediateAction", label: "Immediate Action", type: "textarea" },
+    { name: "rootCause", label: "Root Cause", type: "textarea" },
+    { name: "preventiveMeasure", label: "Preventive Measure", type: "textarea" },
+    { name: "isAnonymous", label: "Anonymous Report", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

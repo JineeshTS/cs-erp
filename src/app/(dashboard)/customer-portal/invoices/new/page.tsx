@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CspForm, FieldConfig } from "@/components/customer-portal/csp-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewInvoicePage() {
   const session = await getSession();
@@ -9,13 +10,17 @@ export default async function NewInvoicePage() {
   if (!(await hasPermission(session.id, session.tenantId, "portal:create")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const fields: FieldConfig[] = [
     {
       name: "customerId",
       label: "Customer ID",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
-      placeholder: "Customer UUID",
     },
     {
       name: "bookingId",
@@ -41,8 +46,7 @@ export default async function NewInvoicePage() {
     {
       name: "currency",
       label: "Currency",
-      type: "text",
-      placeholder: "USD",
+      type: "select", options: currencyOpts,
     },
     {
       name: "subtotal",

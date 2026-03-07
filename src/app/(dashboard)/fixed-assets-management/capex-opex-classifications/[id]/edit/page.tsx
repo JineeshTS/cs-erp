@@ -6,38 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCapexOpexClassification } from "@/lib/fixed-assets-management/service";
 import { FamForm } from "@/components/fixed-assets-management/fam-form";
 import type { FieldConfig } from "@/components/fixed-assets-management/fam-form";
-
-const CLASSIFICATION_FIELDS: FieldConfig[] = [
-  {
-    name: "classificationType",
-    label: "Classification Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "capex", label: "CapEx" },
-      { value: "opex", label: "OpEx" },
-      { value: "mixed", label: "Mixed" },
-      { value: "reclassification", label: "Reclassification" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "expenditureDate", label: "Expenditure Date", type: "datetime-local" },
-  { name: "amount", label: "Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "QAR" },
-  { name: "assetRef", label: "Asset Ref", type: "text" },
-  { name: "assetName", label: "Asset Name", type: "text" },
-  { name: "costCenter", label: "Cost Center", type: "text" },
-  { name: "glAccountCode", label: "GL Account Code", type: "text" },
-  { name: "justification", label: "Justification", type: "textarea" },
-  { name: "capitalizationThreshold", label: "Capitalization Threshold", type: "text" },
-  { name: "usefulLifeExtension", label: "Useful Life Extension", type: "number" },
-  { name: "improvementValue", label: "Improvement Value", type: "text" },
-  { name: "classifiedBy", label: "Classified By", type: "text" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
-  { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCapexOpexClassificationPage({
   params,
@@ -49,6 +18,39 @@ export default async function EditCapexOpexClassificationPage({
   if (!(await hasPermission(session.id, session.tenantId, "asset:edit")))
     redirect("/fixed-assets-management/capex-opex-classifications");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CLASSIFICATION_FIELDS: FieldConfig[] = [
+    {
+      name: "classificationType",
+      label: "Classification Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "capex", label: "CapEx" },
+        { value: "opex", label: "OpEx" },
+        { value: "mixed", label: "Mixed" },
+        { value: "reclassification", label: "Reclassification" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "expenditureDate", label: "Expenditure Date", type: "datetime-local" },
+    { name: "amount", label: "Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "assetRef", label: "Asset Ref", type: "text" },
+    { name: "assetName", label: "Asset Name", type: "text" },
+    { name: "costCenter", label: "Cost Center", type: "text" },
+    { name: "glAccountCode", label: "GL Account Code", type: "text" },
+    { name: "justification", label: "Justification", type: "textarea" },
+    { name: "capitalizationThreshold", label: "Capitalization Threshold", type: "text" },
+    { name: "usefulLifeExtension", label: "Useful Life Extension", type: "number" },
+    { name: "improvementValue", label: "Improvement Value", type: "text" },
+    { name: "classifiedBy", label: "Classified By", type: "text" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
+    { name: "journalEntryRef", label: "Journal Entry Ref", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getCapexOpexClassification(id, session.tenantId);

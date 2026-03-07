@@ -5,56 +5,59 @@ import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { SimForm } from "@/components/survey-inspection-management/sim-form";
 import type { FieldConfig } from "@/components/survey-inspection-management/sim-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "surveyType",
-    label: "Survey Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual", label: "Annual" },
-      { value: "special", label: "Special" },
-      { value: "intermediate", label: "Intermediate" },
-      { value: "renewal", label: "Renewal" },
-      { value: "bottom", label: "Bottom" },
-    ],
-  },
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "classificationSociety", label: "Classification Society", type: "text", required: true },
-  { name: "classNotation", label: "Class Notation", type: "text" },
-  { name: "surveyorName", label: "Surveyor Name", type: "text" },
-  { name: "surveyorId", label: "Surveyor ID", type: "text" },
-  { name: "surveyLocation", label: "Survey Location", type: "text" },
-  { name: "certificateType", label: "Certificate Type", type: "text" },
-  { name: "certificateNumber", label: "Certificate Number", type: "text" },
-  { name: "certificateIssuedAt", label: "Certificate Issued At", type: "datetime-local" },
-  { name: "certificateExpiresAt", label: "Certificate Expires At", type: "datetime-local" },
-  { name: "windowStart", label: "Window Start", type: "datetime-local" },
-  { name: "windowEnd", label: "Window End", type: "datetime-local" },
-  { name: "findingsCount", label: "Findings Count", type: "number" },
-  { name: "rectificationDeadline", label: "Rectification Deadline", type: "datetime-local" },
-  { name: "rectifiedAt", label: "Rectified At", type: "datetime-local" },
-  { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
-  { name: "completedAt", label: "Completed At", type: "datetime-local" },
-  {
-    name: "overallResult",
-    label: "Overall Result",
-    type: "select",
-    options: [
-      { value: "passed", label: "Passed" },
-      { value: "conditional", label: "Conditional" },
-      { value: "failed", label: "Failed" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewClassificationSurveyPage(): Promise<React.ReactNode> {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "survey:create"))) redirect("/login");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "surveyType",
+      label: "Survey Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual", label: "Annual" },
+        { value: "special", label: "Special" },
+        { value: "intermediate", label: "Intermediate" },
+        { value: "renewal", label: "Renewal" },
+        { value: "bottom", label: "Bottom" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "classificationSociety", label: "Classification Society", type: "text", required: true },
+    { name: "classNotation", label: "Class Notation", type: "text" },
+    { name: "surveyorName", label: "Surveyor Name", type: "text" },
+    { name: "surveyorId", label: "Surveyor ID", type: "text" },
+    { name: "surveyLocation", label: "Survey Location", type: "text" },
+    { name: "certificateType", label: "Certificate Type", type: "text" },
+    { name: "certificateNumber", label: "Certificate Number", type: "text" },
+    { name: "certificateIssuedAt", label: "Certificate Issued At", type: "datetime-local" },
+    { name: "certificateExpiresAt", label: "Certificate Expires At", type: "datetime-local" },
+    { name: "windowStart", label: "Window Start", type: "datetime-local" },
+    { name: "windowEnd", label: "Window End", type: "datetime-local" },
+    { name: "findingsCount", label: "Findings Count", type: "number" },
+    { name: "rectificationDeadline", label: "Rectification Deadline", type: "datetime-local" },
+    { name: "rectifiedAt", label: "Rectified At", type: "datetime-local" },
+    { name: "scheduledAt", label: "Scheduled At", type: "datetime-local" },
+    { name: "completedAt", label: "Completed At", type: "datetime-local" },
+    {
+      name: "overallResult",
+      label: "Overall Result",
+      type: "select",
+      options: [
+        { value: "passed", label: "Passed" },
+        { value: "conditional", label: "Conditional" },
+        { value: "failed", label: "Failed" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

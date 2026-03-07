@@ -8,6 +8,7 @@ import {
   BfmForm,
   type FieldConfig,
 } from "@/components/bunker-fuel-management/bfm-form";
+import { getPortOptions, getVesselOptions, getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditBunkerStemPage({
   params,
@@ -19,6 +20,12 @@ export default async function EditBunkerStemPage({
   if (!(await hasPermission(session.id, session.tenantId, "bunker:edit")))
     redirect("/");
 
+
+  const [portOpts, vesselOpts, customerOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+  ]);
   const { id } = await params;
   const stem = await getBunkerStem(id, session.tenantId);
   if (!stem) notFound();
@@ -30,11 +37,11 @@ export default async function EditBunkerStemPage({
       type: "text",
       placeholder: "Order UUID",
     },
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
-    { name: "port", label: "Port", type: "text", required: true },
+    { name: "port", label: "Port", type: "select", options: portOpts, required: true },
     { name: "berth", label: "Berth", type: "text" },
-    { name: "supplierName", label: "Supplier Name", type: "text" },
+    { name: "supplierName", label: "Supplier Name", type: "select", options: customerOpts },
     { name: "bargeName", label: "Barge Name", type: "text" },
     {
       name: "fuelType",

@@ -5,52 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getContainerCost } from "@/lib/costing-financial-management/service";
 import { CfmForm, type FieldConfig } from "@/components/costing-financial-management/cfm-form";
-
-const CONTAINER_COST_FIELDS: FieldConfig[] = [
-  {
-    name: "containerNumber",
-    label: "Container Number",
-    type: "text",
-    required: true,
-  },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "voyageRef", label: "Voyage Ref", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  {
-    name: "costCategory",
-    label: "Cost Category",
-    type: "select",
-    required: true,
-    options: [
-      { value: "lease", label: "Lease" },
-      { value: "handling", label: "Handling" },
-      { value: "repositioning", label: "Repositioning" },
-      { value: "maintenance", label: "Maintenance" },
-      { value: "insurance", label: "Insurance" },
-      { value: "storage", label: "Storage" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "leaseCost", label: "Lease Cost", type: "number" },
-  { name: "handlingCost", label: "Handling Cost", type: "number" },
-  {
-    name: "repositioningCost",
-    label: "Repositioning Cost",
-    type: "number",
-  },
-  { name: "maintenanceCost", label: "Maintenance Cost", type: "number" },
-  { name: "insuranceCost", label: "Insurance Cost", type: "number" },
-  { name: "otherCost", label: "Other Cost", type: "number" },
-  {
-    name: "totalCost",
-    label: "Total Cost",
-    type: "number",
-    required: true,
-  },
-  { name: "allocationMethod", label: "Allocation Method", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditContainerCostPage({
   params,
@@ -62,6 +17,53 @@ export default async function EditContainerCostPage({
   if (!(await hasPermission(session.id, session.tenantId, "costing:edit")))
     redirect("/costing-financial-management/container-costs");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CONTAINER_COST_FIELDS: FieldConfig[] = [
+    {
+      name: "containerNumber",
+      label: "Container Number",
+      type: "text",
+      required: true,
+    },
+    { name: "containerType", label: "Container Type", type: "text" },
+    { name: "voyageRef", label: "Voyage Ref", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    {
+      name: "costCategory",
+      label: "Cost Category",
+      type: "select",
+      required: true,
+      options: [
+        { value: "lease", label: "Lease" },
+        { value: "handling", label: "Handling" },
+        { value: "repositioning", label: "Repositioning" },
+        { value: "maintenance", label: "Maintenance" },
+        { value: "insurance", label: "Insurance" },
+        { value: "storage", label: "Storage" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "leaseCost", label: "Lease Cost", type: "number" },
+    { name: "handlingCost", label: "Handling Cost", type: "number" },
+    {
+      name: "repositioningCost",
+      label: "Repositioning Cost",
+      type: "number",
+    },
+    { name: "maintenanceCost", label: "Maintenance Cost", type: "number" },
+    { name: "insuranceCost", label: "Insurance Cost", type: "number" },
+    { name: "otherCost", label: "Other Cost", type: "number" },
+    {
+      name: "totalCost",
+      label: "Total Cost",
+      type: "number",
+      required: true,
+    },
+    { name: "allocationMethod", label: "Allocation Method", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const cost = await getContainerCost(id, session.tenantId);
   if (!cost) notFound();

@@ -7,6 +7,7 @@ import {
   BfmForm,
   type FieldConfig,
 } from "@/components/bunker-fuel-management/bfm-form";
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function NewSulphurRecordPage() {
   const session = await getSession();
@@ -14,10 +15,15 @@ export default async function NewSulphurRecordPage() {
   if (!(await hasPermission(session.id, session.tenantId, "bunker:create")))
     redirect("/bunker-fuel-management/sulphur-records");
 
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
   const fields: FieldConfig[] = [
-    { name: "vesselName", label: "Vessel Name", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
     { name: "vesselImo", label: "Vessel IMO", type: "text" },
-    { name: "port", label: "Port", type: "text" },
+    { name: "port", label: "Port", type: "select", options: portOpts },
     {
       name: "fuelType",
       label: "Fuel Type",

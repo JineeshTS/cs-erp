@@ -4,10 +4,13 @@ import { ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { CpmForm, type FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewYieldTargetPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const currencyOpts = await getCurrencyOptions();
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const fields: FieldConfig[] = [
@@ -23,7 +26,7 @@ export default async function NewYieldTargetPage() {
     { name: "targetTeu", label: "Target TEU", type: "number" },
     { name: "actualTeu", label: "Actual TEU", type: "number" },
     { name: "minimumRateThreshold", label: "Minimum Rate Threshold", type: "number" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     {
       name: "status",
       label: "Status",

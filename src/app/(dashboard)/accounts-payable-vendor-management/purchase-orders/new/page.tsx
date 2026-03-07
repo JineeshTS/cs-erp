@@ -7,41 +7,7 @@ import {
   ApvmForm,
   type FieldConfig,
 } from "@/components/accounts-payable-vendor-management/apvm-form";
-
-const PURCHASE_ORDER_FIELDS: FieldConfig[] = [
-  { name: "vendorName", label: "Vendor Name", type: "text", required: true },
-  { name: "vendorCode", label: "Vendor Code", type: "text" },
-  {
-    name: "poType",
-    label: "PO Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "standard", label: "Standard" },
-      { value: "blanket", label: "Blanket" },
-      { value: "contract", label: "Contract" },
-      { value: "emergency", label: "Emergency" },
-      { value: "service", label: "Service" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "subtotal", label: "Subtotal", type: "number" },
-  { name: "taxAmount", label: "Tax Amount", type: "number" },
-  {
-    name: "totalAmount",
-    label: "Total Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "deliveryDate", label: "Delivery Date", type: "datetime-local" },
-  { name: "deliveryAddress", label: "Delivery Address", type: "textarea" },
-  { name: "paymentTerms", label: "Payment Terms", type: "text" },
-  { name: "budgetCode", label: "Budget Code", type: "text" },
-  { name: "costCentre", label: "Cost Centre", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewPurchaseOrderPage() {
   const session = await getSession();
@@ -49,6 +15,42 @@ export default async function NewPurchaseOrderPage() {
   if (!(await hasPermission(session.id, session.tenantId, "payable:create")))
     redirect("/accounts-payable-vendor-management/purchase-orders");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const PURCHASE_ORDER_FIELDS: FieldConfig[] = [
+    { name: "vendorName", label: "Vendor Name", type: "text", required: true },
+    { name: "vendorCode", label: "Vendor Code", type: "text" },
+    {
+      name: "poType",
+      label: "PO Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "standard", label: "Standard" },
+        { value: "blanket", label: "Blanket" },
+        { value: "contract", label: "Contract" },
+        { value: "emergency", label: "Emergency" },
+        { value: "service", label: "Service" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    { name: "description", label: "Description", type: "textarea" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "subtotal", label: "Subtotal", type: "number" },
+    { name: "taxAmount", label: "Tax Amount", type: "number" },
+    {
+      name: "totalAmount",
+      label: "Total Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "deliveryDate", label: "Delivery Date", type: "datetime-local" },
+    { name: "deliveryAddress", label: "Delivery Address", type: "textarea" },
+    { name: "paymentTerms", label: "Payment Terms", type: "text" },
+    { name: "budgetCode", label: "Budget Code", type: "text" },
+    { name: "costCentre", label: "Cost Centre", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

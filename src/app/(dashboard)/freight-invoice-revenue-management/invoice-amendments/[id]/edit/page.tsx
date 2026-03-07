@@ -6,62 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getInvoiceAmendment } from "@/lib/freight-invoice-revenue-management/service";
 import { FirmForm } from "@/components/freight-invoice-revenue-management/firm-form";
 import type { FieldConfig } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const AMENDMENT_FIELDS: FieldConfig[] = [
-  {
-    name: "originalInvoiceId",
-    label: "Original Invoice ID",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "originalInvoiceNumber",
-    label: "Original Invoice Number",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "amendmentType",
-    label: "Amendment Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "correction", label: "Correction" },
-      { value: "rate_change", label: "Rate Change" },
-      { value: "quantity_change", label: "Quantity Change" },
-      { value: "charge_addition", label: "Charge Addition" },
-      { value: "charge_removal", label: "Charge Removal" },
-      { value: "full_reissue", label: "Full Reissue" },
-    ],
-  },
-  { name: "reason", label: "Reason", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  {
-    name: "previousAmount",
-    label: "Previous Amount",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "newAmount",
-    label: "New Amount",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "adjustmentAmount",
-    label: "Adjustment Amount",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditInvoiceAmendmentPage({
   params,
@@ -73,6 +18,62 @@ export default async function EditInvoiceAmendmentPage({
   if (!(await hasPermission(session.id, session.tenantId, "invoice:edit")))
     redirect("/freight-invoice-revenue-management/invoice-amendments");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const AMENDMENT_FIELDS: FieldConfig[] = [
+    {
+      name: "originalInvoiceId",
+      label: "Original Invoice ID",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "originalInvoiceNumber",
+      label: "Original Invoice Number",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "amendmentType",
+      label: "Amendment Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "correction", label: "Correction" },
+        { value: "rate_change", label: "Rate Change" },
+        { value: "quantity_change", label: "Quantity Change" },
+        { value: "charge_addition", label: "Charge Addition" },
+        { value: "charge_removal", label: "Charge Removal" },
+        { value: "full_reissue", label: "Full Reissue" },
+      ],
+    },
+    { name: "reason", label: "Reason", type: "text", required: true },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "previousAmount",
+      label: "Previous Amount",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "newAmount",
+      label: "New Amount",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "adjustmentAmount",
+      label: "Adjustment Amount",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const amendment = await getInvoiceAmendment(id, session.tenantId);
   if (!amendment) notFound();

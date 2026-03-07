@@ -5,49 +5,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { VpeForm } from "@/components/vessel-performance-efficiency/vpe-form";
 import type { FieldConfig } from "@/components/vessel-performance-efficiency/vpe-form";
-
-const FUEL_BENCHMARK_FIELDS: FieldConfig[] = [
-  {
-    name: "benchmarkType",
-    label: "Benchmark Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "vessel", label: "Vessel" },
-      { value: "fleet", label: "Fleet" },
-      { value: "class", label: "Class" },
-      { value: "industry", label: "Industry" },
-      { value: "historical", label: "Historical" },
-    ],
-  },
-  { name: "vesselId", label: "Vessel ID", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "vesselClass", label: "Vessel Class", type: "text" },
-  { name: "periodStart", label: "Period Start", type: "datetime-local" },
-  { name: "periodEnd", label: "Period End", type: "datetime-local" },
-  {
-    name: "avgDailyConsumption",
-    label: "Avg Daily Consumption",
-    type: "text",
-  },
-  {
-    name: "benchmarkConsumption",
-    label: "Benchmark Consumption",
-    type: "text",
-  },
-  { name: "efficiencyRatio", label: "Efficiency Ratio", type: "text" },
-  { name: "fuelCostPerNm", label: "Fuel Cost Per NM", type: "text" },
-  { name: "co2PerNm", label: "CO2 Per NM", type: "text" },
-  { name: "fleetRanking", label: "Fleet Ranking", type: "number" },
-  {
-    name: "totalVesselsInClass",
-    label: "Total Vessels In Class",
-    type: "number",
-  },
-  { name: "percentile", label: "Percentile", type: "text" },
-  { name: "trendDirection", label: "Trend Direction", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewFuelBenchmarkPage(): Promise<React.ReactNode> {
   const session = await getSession();
@@ -57,6 +15,50 @@ export default async function NewFuelBenchmarkPage(): Promise<React.ReactNode> {
   )
     redirect("/vessel-performance-efficiency/fuel-benchmarks");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const FUEL_BENCHMARK_FIELDS: FieldConfig[] = [
+    {
+      name: "benchmarkType",
+      label: "Benchmark Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "vessel", label: "Vessel" },
+        { value: "fleet", label: "Fleet" },
+        { value: "class", label: "Class" },
+        { value: "industry", label: "Industry" },
+        { value: "historical", label: "Historical" },
+      ],
+    },
+    { name: "vesselId", label: "Vessel ID", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselClass", label: "Vessel Class", type: "text" },
+    { name: "periodStart", label: "Period Start", type: "datetime-local" },
+    { name: "periodEnd", label: "Period End", type: "datetime-local" },
+    {
+      name: "avgDailyConsumption",
+      label: "Avg Daily Consumption",
+      type: "text",
+    },
+    {
+      name: "benchmarkConsumption",
+      label: "Benchmark Consumption",
+      type: "text",
+    },
+    { name: "efficiencyRatio", label: "Efficiency Ratio", type: "text" },
+    { name: "fuelCostPerNm", label: "Fuel Cost Per NM", type: "text" },
+    { name: "co2PerNm", label: "CO2 Per NM", type: "text" },
+    { name: "fleetRanking", label: "Fleet Ranking", type: "number" },
+    {
+      name: "totalVesselsInClass",
+      label: "Total Vessels In Class",
+      type: "number",
+    },
+    { name: "percentile", label: "Percentile", type: "text" },
+    { name: "trendDirection", label: "Trend Direction", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

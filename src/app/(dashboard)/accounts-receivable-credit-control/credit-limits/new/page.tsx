@@ -2,16 +2,19 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ArccForm, type FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function NewCreditLimitPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "receivable:create"))) redirect("/");
 
+
+  const customerOpts = await getCustomerOptions(session.tenantId);
   const fields: FieldConfig[] = [
     { name: "accountId", label: "Account ID", type: "text", required: true },
     { name: "accountNumber", label: "Account Number", type: "text", required: true },
-    { name: "customerName", label: "Customer Name", type: "text", required: true },
+    { name: "customerName", label: "Customer Name", type: "select", options: customerOpts, required: true },
     { name: "creditLimit", label: "Credit Limit", type: "number", required: true },
     { name: "riskCategory", label: "Risk Category", type: "select", options: [
       { label: "Low", value: "low" },

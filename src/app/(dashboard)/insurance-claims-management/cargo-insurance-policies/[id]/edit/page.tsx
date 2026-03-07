@@ -6,57 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getCargoInsurancePolicy } from "@/lib/insurance-claims-management/service";
 import { IcmForm } from "@/components/insurance-claims-management/icm-form";
 import type { FieldConfig } from "@/components/insurance-claims-management/icm-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "policyType",
-    label: "Policy Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "open_cover", label: "Open Cover" },
-      { value: "specific_voyage", label: "Specific Voyage" },
-      { value: "annual", label: "Annual" },
-      { value: "warehouse_to_warehouse", label: "Warehouse to Warehouse" },
-    ],
-  },
-  { name: "insurerName", label: "Insurer Name", type: "text", required: true },
-  { name: "insuredParty", label: "Insured Party", type: "text" },
-  {
-    name: "coverageType",
-    label: "Coverage Type",
-    type: "select",
-    options: [
-      { value: "all_risk", label: "All Risk" },
-      { value: "fpa", label: "FPA" },
-      { value: "wa", label: "WA" },
-      { value: "icc_a", label: "ICC A" },
-      { value: "icc_b", label: "ICC B" },
-      { value: "icc_c", label: "ICC C" },
-    ],
-  },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "hsCode", label: "HS Code", type: "text" },
-  { name: "cargoValue", label: "Cargo Value", type: "text" },
-  { name: "insuredValue", label: "Insured Value", type: "text" },
-  { name: "valueCurrency", label: "Value Currency", type: "text" },
-  { name: "coverageStart", label: "Coverage Start", type: "datetime-local" },
-  { name: "coverageEnd", label: "Coverage End", type: "datetime-local" },
-  { name: "premiumAmount", label: "Premium Amount", type: "text" },
-  { name: "premiumRate", label: "Premium Rate", type: "text" },
-  { name: "premiumCurrency", label: "Premium Currency", type: "text" },
-  { name: "deductibleAmount", label: "Deductible Amount", type: "text" },
-  { name: "originPort", label: "Origin Port", type: "text" },
-  { name: "destinationPort", label: "Destination Port", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "blNumber", label: "BL Number", type: "text" },
-  { name: "certificateNumber", label: "Certificate Number", type: "text" },
-  { name: "brokerName", label: "Broker Name", type: "text" },
-  { name: "specialConditions", label: "Special Conditions", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function EditCargoInsurancePolicyPage({
   params,
@@ -66,6 +16,62 @@ export default async function EditCargoInsurancePolicyPage({
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "insurance:edit"))) redirect("/login");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "policyType",
+      label: "Policy Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "open_cover", label: "Open Cover" },
+        { value: "specific_voyage", label: "Specific Voyage" },
+        { value: "annual", label: "Annual" },
+        { value: "warehouse_to_warehouse", label: "Warehouse to Warehouse" },
+      ],
+    },
+    { name: "insurerName", label: "Insurer Name", type: "text", required: true },
+    { name: "insuredParty", label: "Insured Party", type: "text" },
+    {
+      name: "coverageType",
+      label: "Coverage Type",
+      type: "select",
+      options: [
+        { value: "all_risk", label: "All Risk" },
+        { value: "fpa", label: "FPA" },
+        { value: "wa", label: "WA" },
+        { value: "icc_a", label: "ICC A" },
+        { value: "icc_b", label: "ICC B" },
+        { value: "icc_c", label: "ICC C" },
+      ],
+    },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "hsCode", label: "HS Code", type: "text" },
+    { name: "cargoValue", label: "Cargo Value", type: "text" },
+    { name: "insuredValue", label: "Insured Value", type: "text" },
+    { name: "valueCurrency", label: "Value Currency", type: "text" },
+    { name: "coverageStart", label: "Coverage Start", type: "datetime-local" },
+    { name: "coverageEnd", label: "Coverage End", type: "datetime-local" },
+    { name: "premiumAmount", label: "Premium Amount", type: "text" },
+    { name: "premiumRate", label: "Premium Rate", type: "text" },
+    { name: "premiumCurrency", label: "Premium Currency", type: "text" },
+    { name: "deductibleAmount", label: "Deductible Amount", type: "text" },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "blNumber", label: "BL Number", type: "text" },
+    { name: "certificateNumber", label: "Certificate Number", type: "text" },
+    { name: "brokerName", label: "Broker Name", type: "text" },
+    { name: "specialConditions", label: "Special Conditions", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getCargoInsurancePolicy(id, session.tenantId);

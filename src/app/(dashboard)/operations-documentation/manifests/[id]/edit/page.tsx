@@ -8,35 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { odmManifests } from "@/db/schema";
 import { OdmForm } from "@/components/operations-documentation/odm-form";
 import type { FieldConfig } from "@/components/operations-documentation/odm-form";
-
-const MANIFEST_FIELDS: FieldConfig[] = [
-  { name: "manifestNumber", label: "Manifest Number", type: "text", required: true },
-  { name: "manifestType", label: "Type", type: "select", options: [
-    { value: "export", label: "Export" },
-    { value: "import", label: "Import" },
-    { value: "transit", label: "Transit" },
-    { value: "transshipment", label: "Transshipment" },
-  ]},
-  { name: "vesselName", label: "Vessel Name", type: "text", required: true },
-  { name: "voyageNumber", label: "Voyage Number", type: "text", required: true },
-  { name: "portOfLoading", label: "Port of Loading", type: "text" },
-  { name: "portOfDischarge", label: "Port of Discharge", type: "text" },
-  { name: "estimatedDeparture", label: "Est. Departure", type: "datetime-local" },
-  { name: "estimatedArrival", label: "Est. Arrival", type: "datetime-local" },
-  { name: "totalBls", label: "Total B/Ls", type: "number" },
-  { name: "totalContainers", label: "Total Containers", type: "number" },
-  { name: "totalWeight", label: "Total Weight", type: "number" },
-  { name: "submittedTo", label: "Submitted To", type: "text" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "draft", label: "Draft" },
-    { value: "prepared", label: "Prepared" },
-    { value: "submitted", label: "Submitted" },
-    { value: "acknowledged", label: "Acknowledged" },
-    { value: "rejected", label: "Rejected" },
-    { value: "amended", label: "Amended" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function EditManifestPage({
   params,
@@ -47,6 +19,40 @@ export default async function EditManifestPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "operations:edit")))
     redirect("/operations-documentation/manifests");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const MANIFEST_FIELDS: FieldConfig[] = [
+    { name: "manifestNumber", label: "Manifest Number", type: "text", required: true },
+    { name: "manifestType", label: "Type", type: "select", options: [
+      { value: "export", label: "Export" },
+      { value: "import", label: "Import" },
+      { value: "transit", label: "Transit" },
+      { value: "transshipment", label: "Transshipment" },
+    ]},
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts, required: true },
+    { name: "voyageNumber", label: "Voyage Number", type: "text", required: true },
+    { name: "portOfLoading", label: "Port of Loading", type: "select", options: portOpts },
+    { name: "portOfDischarge", label: "Port of Discharge", type: "select", options: portOpts },
+    { name: "estimatedDeparture", label: "Est. Departure", type: "datetime-local" },
+    { name: "estimatedArrival", label: "Est. Arrival", type: "datetime-local" },
+    { name: "totalBls", label: "Total B/Ls", type: "number" },
+    { name: "totalContainers", label: "Total Containers", type: "number" },
+    { name: "totalWeight", label: "Total Weight", type: "number" },
+    { name: "submittedTo", label: "Submitted To", type: "text" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "draft", label: "Draft" },
+      { value: "prepared", label: "Prepared" },
+      { value: "submitted", label: "Submitted" },
+      { value: "acknowledged", label: "Acknowledged" },
+      { value: "rejected", label: "Rejected" },
+      { value: "amended", label: "Amended" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await db

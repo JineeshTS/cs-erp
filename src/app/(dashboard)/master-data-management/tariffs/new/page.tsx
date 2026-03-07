@@ -4,62 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { MdmForm } from "@/components/master-data-management/mdm-form";
-
-const TARIFF_FIELDS = [
-  {
-    name: "code",
-    label: "Tariff Code",
-    type: "text" as const,
-    required: true,
-  },
-  {
-    name: "description",
-    label: "Description",
-    type: "textarea" as const,
-    required: true,
-  },
-  {
-    name: "rateType",
-    label: "Rate Type",
-    type: "select" as const,
-    required: true,
-    options: [
-      { value: "flat", label: "Flat" },
-      { value: "per_unit", label: "Per Unit" },
-      { value: "percentage", label: "Percentage" },
-      { value: "tiered", label: "Tiered" },
-    ],
-  },
-  {
-    name: "rateAmount",
-    label: "Rate Amount",
-    type: "number" as const,
-    required: true,
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text" as const,
-    placeholder: "USD",
-  },
-  {
-    name: "perUnit",
-    label: "Per Unit",
-    type: "text" as const,
-    placeholder: "TEU",
-  },
-  {
-    name: "effectiveFrom",
-    label: "Effective From",
-    type: "date" as const,
-    required: true,
-  },
-  {
-    name: "effectiveTo",
-    label: "Effective To",
-    type: "date" as const,
-  },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewTariffCodePage() {
   const session = await getSession();
@@ -67,6 +12,62 @@ export default async function NewTariffCodePage() {
   if (!(await hasPermission(session.id, session.tenantId, "masterdata:create")))
     redirect("/master-data-management/tariffs");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const TARIFF_FIELDS = [
+    {
+      name: "code",
+      label: "Tariff Code",
+      type: "text" as const,
+      required: true,
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea" as const,
+      required: true,
+    },
+    {
+      name: "rateType",
+      label: "Rate Type",
+      type: "select" as const,
+      required: true,
+      options: [
+        { value: "flat", label: "Flat" },
+        { value: "per_unit", label: "Per Unit" },
+        { value: "percentage", label: "Percentage" },
+        { value: "tiered", label: "Tiered" },
+      ],
+    },
+    {
+      name: "rateAmount",
+      label: "Rate Amount",
+      type: "number" as const,
+      required: true,
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select" as const, options: currencyOpts,
+    },
+    {
+      name: "perUnit",
+      label: "Per Unit",
+      type: "text" as const,
+      placeholder: "TEU",
+    },
+    {
+      name: "effectiveFrom",
+      label: "Effective From",
+      type: "date" as const,
+      required: true,
+    },
+    {
+      name: "effectiveTo",
+      label: "Effective To",
+      type: "date" as const,
+    },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

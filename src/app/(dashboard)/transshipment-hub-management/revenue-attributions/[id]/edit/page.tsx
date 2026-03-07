@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getRevenueAttribution } from "@/lib/transshipment-hub-management/service";
 import { ThmForm, type FieldConfig } from "@/components/transshipment-hub-management/thm-form";
-
-const REVENUE_ATTRIBUTION_FIELDS: FieldConfig[] = [
-  {
-    name: "attributionType",
-    label: "Attribution Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "leg_allocation", label: "Leg Allocation" },
-      { value: "hub_cost_sharing", label: "Hub Cost Sharing" },
-      { value: "feeder_revenue", label: "Feeder Revenue" },
-      { value: "mother_revenue", label: "Mother Revenue" },
-      { value: "margin_analysis", label: "Margin Analysis" },
-    ],
-  },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "hubPort", label: "Hub Port", type: "text" },
-  { name: "legFrom", label: "Leg From", type: "text" },
-  { name: "legTo", label: "Leg To", type: "text" },
-  { name: "freightRevenue", label: "Freight Revenue", type: "text" },
-  { name: "handlingCost", label: "Handling Cost", type: "text" },
-  { name: "hubCost", label: "Hub Cost", type: "text" },
-  { name: "netMargin", label: "Net Margin", type: "text" },
-  { name: "currency", label: "Currency", type: "text" },
-  { name: "marginPct", label: "Margin %", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditRevenueAttributionPage({
   params,
@@ -43,6 +17,34 @@ export default async function EditRevenueAttributionPage({
   if (!(await hasPermission(session.id, session.tenantId, "thm:edit")))
     redirect("/transshipment-hub-management/revenue-attributions");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const REVENUE_ATTRIBUTION_FIELDS: FieldConfig[] = [
+    {
+      name: "attributionType",
+      label: "Attribution Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "leg_allocation", label: "Leg Allocation" },
+        { value: "hub_cost_sharing", label: "Hub Cost Sharing" },
+        { value: "feeder_revenue", label: "Feeder Revenue" },
+        { value: "mother_revenue", label: "Mother Revenue" },
+        { value: "margin_analysis", label: "Margin Analysis" },
+      ],
+    },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "hubPort", label: "Hub Port", type: "text" },
+    { name: "legFrom", label: "Leg From", type: "text" },
+    { name: "legTo", label: "Leg To", type: "text" },
+    { name: "freightRevenue", label: "Freight Revenue", type: "text" },
+    { name: "handlingCost", label: "Handling Cost", type: "text" },
+    { name: "hubCost", label: "Hub Cost", type: "text" },
+    { name: "netMargin", label: "Net Margin", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "marginPct", label: "Margin %", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getRevenueAttribution(id, session.tenantId);

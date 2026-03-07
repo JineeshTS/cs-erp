@@ -6,41 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getLetterOfCredit } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const LC_FIELDS: FieldConfig[] = [
-  {
-    name: "lcType",
-    label: "LC Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "irrevocable", label: "Irrevocable" },
-      { value: "revocable", label: "Revocable" },
-      { value: "standby", label: "Standby" },
-      { value: "transferable", label: "Transferable" },
-      { value: "back_to_back", label: "Back to Back" },
-      { value: "revolving", label: "Revolving" },
-    ],
-  },
-  { name: "issuingBank", label: "Issuing Bank", type: "text" },
-  { name: "advisingBank", label: "Advising Bank", type: "text" },
-  { name: "confirmingBank", label: "Confirming Bank", type: "text" },
-  { name: "applicant", label: "Applicant", type: "text" },
-  { name: "beneficiary", label: "Beneficiary", type: "text" },
-  { name: "lcAmount", label: "LC Amount", type: "text" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "issueDate", label: "Issue Date", type: "datetime-local" },
-  { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
-  { name: "shipmentDeadline", label: "Shipment Deadline", type: "datetime-local" },
-  { name: "presentationPeriod", label: "Presentation Period (days)", type: "number" },
-  { name: "partialShipment", label: "Partial Shipment Allowed", type: "checkbox" },
-  { name: "transshipment", label: "Transshipment Allowed", type: "checkbox" },
-  { name: "termsAndConditions", label: "Terms and Conditions", type: "textarea" },
-  { name: "utilizationAmount", label: "Utilization Amount", type: "text" },
-  { name: "availableAmount", label: "Available Amount", type: "text" },
-  { name: "charges", label: "Charges", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditLetterOfCreditPage({
   params,
@@ -54,6 +20,42 @@ export default async function EditLetterOfCreditPage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/letters-of-credit");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const LC_FIELDS: FieldConfig[] = [
+    {
+      name: "lcType",
+      label: "LC Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "irrevocable", label: "Irrevocable" },
+        { value: "revocable", label: "Revocable" },
+        { value: "standby", label: "Standby" },
+        { value: "transferable", label: "Transferable" },
+        { value: "back_to_back", label: "Back to Back" },
+        { value: "revolving", label: "Revolving" },
+      ],
+    },
+    { name: "issuingBank", label: "Issuing Bank", type: "text" },
+    { name: "advisingBank", label: "Advising Bank", type: "text" },
+    { name: "confirmingBank", label: "Confirming Bank", type: "text" },
+    { name: "applicant", label: "Applicant", type: "text" },
+    { name: "beneficiary", label: "Beneficiary", type: "text" },
+    { name: "lcAmount", label: "LC Amount", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "issueDate", label: "Issue Date", type: "datetime-local" },
+    { name: "expiryDate", label: "Expiry Date", type: "datetime-local" },
+    { name: "shipmentDeadline", label: "Shipment Deadline", type: "datetime-local" },
+    { name: "presentationPeriod", label: "Presentation Period (days)", type: "number" },
+    { name: "partialShipment", label: "Partial Shipment Allowed", type: "checkbox" },
+    { name: "transshipment", label: "Transshipment Allowed", type: "checkbox" },
+    { name: "termsAndConditions", label: "Terms and Conditions", type: "textarea" },
+    { name: "utilizationAmount", label: "Utilization Amount", type: "text" },
+    { name: "availableAmount", label: "Available Amount", type: "text" },
+    { name: "charges", label: "Charges", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const record = await getLetterOfCredit(id, session.tenantId);
   if (!record) notFound();
 

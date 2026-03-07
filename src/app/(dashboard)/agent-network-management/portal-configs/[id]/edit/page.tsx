@@ -5,33 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getPortalConfig } from "@/lib/agent-network-management/service";
 import { AnmForm, type FieldConfig } from "@/components/agent-network-management/anm-form";
-
-const PORTAL_CONFIG_FIELDS: FieldConfig[] = [
-  {
-    name: "configType",
-    label: "Config Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "portal_access", label: "Portal Access" },
-      { value: "branding_setup", label: "Branding Setup" },
-      { value: "module_permissions", label: "Module Permissions" },
-      { value: "api_integration", label: "API Integration" },
-      { value: "sso_config", label: "SSO Config" },
-    ],
-  },
-  { name: "agentName", label: "Agent Name", type: "text" },
-  { name: "agentCode", label: "Agent Code", type: "text" },
-  { name: "portalUrl", label: "Portal URL", type: "text" },
-  { name: "brandingTheme", label: "Branding Theme", type: "text" },
-  { name: "enabledModules", label: "Enabled Modules", type: "textarea" },
-  { name: "maxUsers", label: "Max Users", type: "number" },
-  { name: "ssoEnabled", label: "SSO Enabled", type: "checkbox" },
-  { name: "apiKeyIssued", label: "API Key Issued", type: "checkbox" },
-  { name: "lastLoginAt", label: "Last Login At", type: "datetime-local" },
-  { name: "activeSessions", label: "Active Sessions", type: "number" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions } from "@/lib/lookups";
 
 export default async function EditPortalConfigPage({
   params,
@@ -43,6 +17,34 @@ export default async function EditPortalConfigPage({
   if (!(await hasPermission(session.id, session.tenantId, "anm:edit")))
     redirect("/agent-network-management/portal-configs");
 
+  const customerOpts = await getCustomerOptions(session.tenantId);
+
+  const PORTAL_CONFIG_FIELDS: FieldConfig[] = [
+    {
+      name: "configType",
+      label: "Config Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "portal_access", label: "Portal Access" },
+        { value: "branding_setup", label: "Branding Setup" },
+        { value: "module_permissions", label: "Module Permissions" },
+        { value: "api_integration", label: "API Integration" },
+        { value: "sso_config", label: "SSO Config" },
+      ],
+    },
+    { name: "agentName", label: "Agent Name", type: "select", options: customerOpts },
+    { name: "agentCode", label: "Agent Code", type: "text" },
+    { name: "portalUrl", label: "Portal URL", type: "text" },
+    { name: "brandingTheme", label: "Branding Theme", type: "text" },
+    { name: "enabledModules", label: "Enabled Modules", type: "textarea" },
+    { name: "maxUsers", label: "Max Users", type: "number" },
+    { name: "ssoEnabled", label: "SSO Enabled", type: "checkbox" },
+    { name: "apiKeyIssued", label: "API Key Issued", type: "checkbox" },
+    { name: "lastLoginAt", label: "Last Login At", type: "datetime-local" },
+    { name: "activeSessions", label: "Active Sessions", type: "number" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getPortalConfig(id, session.tenantId);

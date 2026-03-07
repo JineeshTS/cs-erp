@@ -5,85 +5,88 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CapForm } from "@/components/capacity-voyage-management/cap-form";
 import type { FieldConfig } from "@/components/capacity-voyage-management/cap-form";
-
-const FIELDS: FieldConfig[] = [
-  { name: "bookingReference", label: "Booking Reference", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  {
-    name: "originPort",
-    label: "Origin Port",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "transshipmentPort",
-    label: "Transshipment Port",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "destinationPort",
-    label: "Destination Port",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "firstVesselScheduleId",
-    label: "First Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "secondVesselScheduleId",
-    label: "Second Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "expectedArrival",
-    label: "Expected Arrival",
-    type: "datetime-local",
-  },
-  {
-    name: "expectedConnection",
-    label: "Expected Connection",
-    type: "datetime-local",
-  },
-  { name: "dwellDays", label: "Dwell Days", type: "number" },
-  {
-    name: "connectionType",
-    label: "Connection Type",
-    type: "select",
-    options: [
-      { value: "direct", label: "Direct" },
-      { value: "indirect", label: "Indirect" },
-      { value: "relay", label: "Relay" },
-    ],
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "planned", label: "Planned" },
-      { value: "in_transit", label: "In Transit" },
-      { value: "at_hub", label: "At Hub" },
-      { value: "connected", label: "Connected" },
-      { value: "completed", label: "Completed" },
-      { value: "failed", label: "Failed" },
-    ],
-  },
-  {
-    name: "coordinationNotes",
-    label: "Coordination Notes",
-    type: "textarea",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function NewTransshipmentPlanPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "capacity:create")))
     redirect("/capacity-voyage-management");
+
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const FIELDS: FieldConfig[] = [
+    { name: "bookingReference", label: "Booking Reference", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    {
+      name: "originPort",
+      label: "Origin Port",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "transshipmentPort",
+      label: "Transshipment Port",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "destinationPort",
+      label: "Destination Port",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "firstVesselScheduleId",
+      label: "First Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "secondVesselScheduleId",
+      label: "Second Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "expectedArrival",
+      label: "Expected Arrival",
+      type: "datetime-local",
+    },
+    {
+      name: "expectedConnection",
+      label: "Expected Connection",
+      type: "datetime-local",
+    },
+    { name: "dwellDays", label: "Dwell Days", type: "number" },
+    {
+      name: "connectionType",
+      label: "Connection Type",
+      type: "select",
+      options: [
+        { value: "direct", label: "Direct" },
+        { value: "indirect", label: "Indirect" },
+        { value: "relay", label: "Relay" },
+      ],
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "planned", label: "Planned" },
+        { value: "in_transit", label: "In Transit" },
+        { value: "at_hub", label: "At Hub" },
+        { value: "connected", label: "Connected" },
+        { value: "completed", label: "Completed" },
+        { value: "failed", label: "Failed" },
+      ],
+    },
+    {
+      name: "coordinationNotes",
+      label: "Coordination Notes",
+      type: "textarea",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

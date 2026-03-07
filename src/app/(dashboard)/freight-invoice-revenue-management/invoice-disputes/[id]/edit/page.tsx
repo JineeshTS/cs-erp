@@ -8,47 +8,7 @@ import {
   FirmForm,
   type FieldConfig,
 } from "@/components/freight-invoice-revenue-management/firm-form";
-
-const DISPUTE_FIELDS: FieldConfig[] = [
-  { name: "invoiceId", label: "Invoice ID", type: "text", required: true },
-  {
-    name: "invoiceNumber",
-    label: "Invoice Number",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "customerName",
-    label: "Customer Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "disputeType",
-    label: "Dispute Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "rate_dispute", label: "Rate Dispute" },
-      { value: "quantity_dispute", label: "Quantity Dispute" },
-      { value: "charge_dispute", label: "Charge Dispute" },
-      { value: "documentation_error", label: "Documentation Error" },
-      { value: "service_issue", label: "Service Issue" },
-      { value: "duplicate_billing", label: "Duplicate Billing" },
-      { value: "other", label: "Other" },
-    ],
-  },
-  {
-    name: "disputedAmount",
-    label: "Disputed Amount",
-    type: "number",
-    required: true,
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "reason", label: "Reason", type: "textarea", required: true },
-  { name: "assignedToName", label: "Assigned To", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditInvoiceDisputePage({
   params,
@@ -59,6 +19,52 @@ export default async function EditInvoiceDisputePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "invoice:edit")))
     redirect("/freight-invoice-revenue-management/invoice-disputes");
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const DISPUTE_FIELDS: FieldConfig[] = [
+    { name: "invoiceId", label: "Invoice ID", type: "text", required: true },
+    {
+      name: "invoiceNumber",
+      label: "Invoice Number",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "customerName",
+      label: "Customer Name",
+      type: "select", options: customerOpts,
+      required: true,
+    },
+    {
+      name: "disputeType",
+      label: "Dispute Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "rate_dispute", label: "Rate Dispute" },
+        { value: "quantity_dispute", label: "Quantity Dispute" },
+        { value: "charge_dispute", label: "Charge Dispute" },
+        { value: "documentation_error", label: "Documentation Error" },
+        { value: "service_issue", label: "Service Issue" },
+        { value: "duplicate_billing", label: "Duplicate Billing" },
+        { value: "other", label: "Other" },
+      ],
+    },
+    {
+      name: "disputedAmount",
+      label: "Disputed Amount",
+      type: "number",
+      required: true,
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "reason", label: "Reason", type: "textarea", required: true },
+    { name: "assignedToName", label: "Assigned To", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const dispute = await getInvoiceDispute(id, session.tenantId);

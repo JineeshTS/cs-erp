@@ -5,45 +5,53 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const FIXTURE_FIELDS: FieldConfig[] = [
-  { name: "fixtureReference", label: "Fixture Reference", type: "text", required: true },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "fixtureType", label: "Fixture Type", type: "select", options: [
-    { value: "voyage", label: "Voyage" },
-    { value: "time_charter", label: "Time Charter" },
-    { value: "bareboat", label: "Bareboat" },
-    { value: "coa", label: "COA" },
-  ]},
-  { name: "counterpartyName", label: "Counterparty Name", type: "text", required: true },
-  { name: "brokerName", label: "Broker Name", type: "text" },
-  { name: "cargoType", label: "Cargo Type", type: "text" },
-  { name: "cargoQuantity", label: "Cargo Quantity", type: "number" },
-  { name: "laycanFrom", label: "Laycan From", type: "datetime-local" },
-  { name: "laycanTo", label: "Laycan To", type: "datetime-local" },
-  { name: "originPort", label: "Origin Port", type: "text" },
-  { name: "destinationPort", label: "Destination Port", type: "text" },
-  { name: "freightRate", label: "Freight Rate", type: "number" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "commissionPercent", label: "Commission %", type: "number" },
-  { name: "status", label: "Status", type: "select", options: [
-    { value: "open", label: "Open" },
-    { value: "negotiating", label: "Negotiating" },
-    { value: "fixed", label: "Fixed" },
-    { value: "subjects", label: "Subjects" },
-    { value: "failed", label: "Failed" },
-    { value: "withdrawn", label: "Withdrawn" },
-  ]},
-  { name: "subjectDetails", label: "Subject Details", type: "textarea" },
-  { name: "terms", label: "Terms", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewFixturePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "chartering:create")))
     redirect("/chartering-vessel-management");
+
+  const [portOpts, vesselOpts, customerOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const FIXTURE_FIELDS: FieldConfig[] = [
+    { name: "fixtureReference", label: "Fixture Reference", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "fixtureType", label: "Fixture Type", type: "select", options: [
+      { value: "voyage", label: "Voyage" },
+      { value: "time_charter", label: "Time Charter" },
+      { value: "bareboat", label: "Bareboat" },
+      { value: "coa", label: "COA" },
+    ]},
+    { name: "counterpartyName", label: "Counterparty Name", type: "select", options: customerOpts, required: true },
+    { name: "brokerName", label: "Broker Name", type: "text" },
+    { name: "cargoType", label: "Cargo Type", type: "text" },
+    { name: "cargoQuantity", label: "Cargo Quantity", type: "number" },
+    { name: "laycanFrom", label: "Laycan From", type: "datetime-local" },
+    { name: "laycanTo", label: "Laycan To", type: "datetime-local" },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts },
+    { name: "freightRate", label: "Freight Rate", type: "number" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "commissionPercent", label: "Commission %", type: "number" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "open", label: "Open" },
+      { value: "negotiating", label: "Negotiating" },
+      { value: "fixed", label: "Fixed" },
+      { value: "subjects", label: "Subjects" },
+      { value: "failed", label: "Failed" },
+      { value: "withdrawn", label: "Withdrawn" },
+    ]},
+    { name: "subjectDetails", label: "Subject Details", type: "textarea" },
+    { name: "terms", label: "Terms", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

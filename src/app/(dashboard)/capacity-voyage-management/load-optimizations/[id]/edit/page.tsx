@@ -8,82 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { capLoadOptimizations } from "@/db/schema";
 import { CapForm } from "@/components/capacity-voyage-management/cap-form";
 import type { FieldConfig } from "@/components/capacity-voyage-management/cap-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "vesselScheduleId",
-    label: "Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "optimizationRunId",
-    label: "Optimization Run ID",
-    type: "text",
-  },
-  {
-    name: "algorithm",
-    label: "Algorithm",
-    type: "text",
-  },
-  {
-    name: "objective",
-    label: "Objective",
-    type: "select",
-    options: [
-      { value: "maximize_teu", label: "Maximize TEU" },
-      { value: "maximize_revenue", label: "Maximize Revenue" },
-      { value: "minimize_shifts", label: "Minimize Shifts" },
-      { value: "balance_weight", label: "Balance Weight" },
-    ],
-  },
-  {
-    name: "totalTeuBefore",
-    label: "Total TEU Before",
-    type: "number",
-  },
-  {
-    name: "totalTeuAfter",
-    label: "Total TEU After",
-    type: "number",
-  },
-  {
-    name: "improvementPercent",
-    label: "Improvement %",
-    type: "number",
-  },
-  {
-    name: "revenueImpact",
-    label: "Revenue Impact",
-    type: "number",
-  },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "USD",
-  },
-  {
-    name: "aiModel",
-    label: "AI Model",
-    type: "text",
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "pending", label: "Pending" },
-      { value: "running", label: "Running" },
-      { value: "completed", label: "Completed" },
-      { value: "failed", label: "Failed" },
-    ],
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditLoadOptimizationPage({
   params,
@@ -94,6 +19,83 @@ export default async function EditLoadOptimizationPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "capacity:edit")))
     redirect("/capacity-voyage-management");
+
+  const currencyOpts = await getCurrencyOptions();
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "vesselScheduleId",
+      label: "Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "optimizationRunId",
+      label: "Optimization Run ID",
+      type: "text",
+    },
+    {
+      name: "algorithm",
+      label: "Algorithm",
+      type: "text",
+    },
+    {
+      name: "objective",
+      label: "Objective",
+      type: "select",
+      options: [
+        { value: "maximize_teu", label: "Maximize TEU" },
+        { value: "maximize_revenue", label: "Maximize Revenue" },
+        { value: "minimize_shifts", label: "Minimize Shifts" },
+        { value: "balance_weight", label: "Balance Weight" },
+      ],
+    },
+    {
+      name: "totalTeuBefore",
+      label: "Total TEU Before",
+      type: "number",
+    },
+    {
+      name: "totalTeuAfter",
+      label: "Total TEU After",
+      type: "number",
+    },
+    {
+      name: "improvementPercent",
+      label: "Improvement %",
+      type: "number",
+    },
+    {
+      name: "revenueImpact",
+      label: "Revenue Impact",
+      type: "number",
+    },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    {
+      name: "aiModel",
+      label: "AI Model",
+      type: "text",
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "pending", label: "Pending" },
+        { value: "running", label: "Running" },
+        { value: "completed", label: "Completed" },
+        { value: "failed", label: "Failed" },
+      ],
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   const { id } = await params;
   const lo = await db

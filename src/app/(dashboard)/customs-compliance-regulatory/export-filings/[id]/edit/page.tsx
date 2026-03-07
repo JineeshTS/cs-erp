@@ -6,46 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getExportFiling } from "@/lib/customs-compliance-regulatory/service";
 import { CcrForm } from "@/components/customs-compliance-regulatory/ccr-form";
 import type { FieldConfig } from "@/components/customs-compliance-regulatory/ccr-form";
-
-const EXPORT_FILING_FIELDS: FieldConfig[] = [
-  {
-    name: "declarationType",
-    label: "Declaration Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "export", label: "Export" },
-      { value: "re_export", label: "Re-Export" },
-      { value: "temporary_export", label: "Temporary Export" },
-    ],
-  },
-  { name: "declarationNumber", label: "Declaration Number", type: "text" },
-  { name: "customsOffice", label: "Customs Office", type: "text" },
-  { name: "exporterName", label: "Exporter Name", type: "text", required: true },
-  { name: "exporterCode", label: "Exporter Code", type: "text" },
-  { name: "exporterTaxId", label: "Exporter Tax ID", type: "text" },
-  { name: "consigneeName", label: "Consignee Name", type: "text" },
-  { name: "consigneeCountry", label: "Consignee Country", type: "text" },
-  { name: "blNumber", label: "BL Number", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "voyageNumber", label: "Voyage Number", type: "text" },
-  { name: "portOfLoading", label: "Port of Loading", type: "text", required: true },
-  { name: "portOfDischarge", label: "Port of Discharge", type: "text" },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "hsCode", label: "HS Code", type: "text" },
-  { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text", placeholder: "0.00" },
-  { name: "numberOfPackages", label: "Number of Packages", type: "number" },
-  { name: "fobValue", label: "FOB Value", type: "text", placeholder: "0.00" },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "exportLicenseRequired", label: "Export License Required", type: "checkbox" },
-  { name: "exportLicenseNumber", label: "Export License Number", type: "text" },
-  { name: "filedAt", label: "Filed At", type: "datetime-local" },
-  { name: "approvedAt", label: "Approved At", type: "datetime-local" },
-  { name: "brokerName", label: "Broker Name", type: "text" },
-  { name: "brokerLicense", label: "Broker License", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditExportFilingPage({
   params,
@@ -56,6 +17,52 @@ export default async function EditExportFilingPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "customs:edit")))
     redirect("/customs-compliance-regulatory/export-filings");
+
+  const [portOpts, vesselOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const EXPORT_FILING_FIELDS: FieldConfig[] = [
+    {
+      name: "declarationType",
+      label: "Declaration Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "export", label: "Export" },
+        { value: "re_export", label: "Re-Export" },
+        { value: "temporary_export", label: "Temporary Export" },
+      ],
+    },
+    { name: "declarationNumber", label: "Declaration Number", type: "text" },
+    { name: "customsOffice", label: "Customs Office", type: "text" },
+    { name: "exporterName", label: "Exporter Name", type: "text", required: true },
+    { name: "exporterCode", label: "Exporter Code", type: "text" },
+    { name: "exporterTaxId", label: "Exporter Tax ID", type: "text" },
+    { name: "consigneeName", label: "Consignee Name", type: "text" },
+    { name: "consigneeCountry", label: "Consignee Country", type: "text" },
+    { name: "blNumber", label: "BL Number", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "voyageNumber", label: "Voyage Number", type: "text" },
+    { name: "portOfLoading", label: "Port of Loading", type: "select", options: portOpts, required: true },
+    { name: "portOfDischarge", label: "Port of Discharge", type: "select", options: portOpts },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "hsCode", label: "HS Code", type: "text" },
+    { name: "grossWeightKg", label: "Gross Weight (kg)", type: "text", placeholder: "0.00" },
+    { name: "numberOfPackages", label: "Number of Packages", type: "number" },
+    { name: "fobValue", label: "FOB Value", type: "text", placeholder: "0.00" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "exportLicenseRequired", label: "Export License Required", type: "checkbox" },
+    { name: "exportLicenseNumber", label: "Export License Number", type: "text" },
+    { name: "filedAt", label: "Filed At", type: "datetime-local" },
+    { name: "approvedAt", label: "Approved At", type: "datetime-local" },
+    { name: "brokerName", label: "Broker Name", type: "text" },
+    { name: "brokerLicense", label: "Broker License", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getExportFiling(id, session.tenantId);

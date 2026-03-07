@@ -8,36 +8,7 @@ import {
   PttForm,
   type FieldConfig,
 } from "@/components/port-tariff-terminal-billing/ptt-form";
-
-const BUDGET_FIELDS: FieldConfig[] = [
-  {
-    name: "budgetType",
-    label: "Budget Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "annual_budget", label: "Annual Budget" },
-      { value: "quarterly_forecast", label: "Quarterly Forecast" },
-      { value: "monthly_actual", label: "Monthly Actual" },
-      { value: "variance_analysis", label: "Variance Analysis" },
-      { value: "rolling_forecast", label: "Rolling Forecast" },
-    ],
-  },
-  { name: "portCode", label: "Port Code", type: "text" },
-  { name: "portName", label: "Port Name", type: "text" },
-  { name: "fiscalYear", label: "Fiscal Year", type: "number" },
-  { name: "fiscalPeriod", label: "Fiscal Period", type: "text" },
-  { name: "budgetedAmount", label: "Budgeted Amount", type: "number" },
-  { name: "actualAmount", label: "Actual Amount", type: "number" },
-  { name: "varianceAmount", label: "Variance Amount", type: "number" },
-  { name: "variancePercentage", label: "Variance Percentage", type: "number" },
-  { name: "budgetCurrency", label: "Currency", type: "text" },
-  { name: "costCategory", label: "Cost Category", type: "text" },
-  { name: "forecastedAmount", label: "Forecasted Amount", type: "number" },
-  { name: "approvedBy", label: "Approved By", type: "text" },
-  { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function EditBudgetPlanningPage({
   params,
@@ -49,6 +20,37 @@ export default async function EditBudgetPlanningPage({
   if (!(await hasPermission(session.id, session.tenantId, "ptt:edit")))
     redirect("/");
 
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const BUDGET_FIELDS: FieldConfig[] = [
+    {
+      name: "budgetType",
+      label: "Budget Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "annual_budget", label: "Annual Budget" },
+        { value: "quarterly_forecast", label: "Quarterly Forecast" },
+        { value: "monthly_actual", label: "Monthly Actual" },
+        { value: "variance_analysis", label: "Variance Analysis" },
+        { value: "rolling_forecast", label: "Rolling Forecast" },
+      ],
+    },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
+    { name: "portName", label: "Port Name", type: "select", options: portOpts },
+    { name: "fiscalYear", label: "Fiscal Year", type: "number" },
+    { name: "fiscalPeriod", label: "Fiscal Period", type: "text" },
+    { name: "budgetedAmount", label: "Budgeted Amount", type: "number" },
+    { name: "actualAmount", label: "Actual Amount", type: "number" },
+    { name: "varianceAmount", label: "Variance Amount", type: "number" },
+    { name: "variancePercentage", label: "Variance Percentage", type: "number" },
+    { name: "budgetCurrency", label: "Currency", type: "text" },
+    { name: "costCategory", label: "Cost Category", type: "text" },
+    { name: "forecastedAmount", label: "Forecasted Amount", type: "number" },
+    { name: "approvedBy", label: "Approved By", type: "text" },
+    { name: "approvalDate", label: "Approval Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await getBudgetPlanning(id, session.tenantId);
   if (!record) notFound();

@@ -8,42 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { cvmCoaContracts } from "@/db/schema";
 import { CvmForm } from "@/components/chartering-vessel-management/cvm-form";
 import type { FieldConfig } from "@/components/chartering-vessel-management/cvm-form";
-
-const COA_FIELDS: FieldConfig[] = [
-  { name: "contractReference", label: "Contract Reference", type: "text", required: true },
-  { name: "chartererName", label: "Charterer Name", type: "text", required: true },
-  { name: "cargoType", label: "Cargo Type", type: "text", required: true },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  { name: "quantityMin", label: "Quantity Min", type: "number" },
-  { name: "quantityMax", label: "Quantity Max", type: "number" },
-  {
-    name: "quantityUnit",
-    label: "Quantity Unit",
-    type: "select",
-    options: [
-      { value: "MT", label: "MT" },
-      { value: "TEU", label: "TEU" },
-    ],
-  },
-  { name: "liftingsPerPeriod", label: "Liftings Per Period", type: "number" },
-  { name: "periodFrom", label: "Period From", type: "datetime-local", required: true },
-  { name: "periodTo", label: "Period To", type: "datetime-local", required: true },
-  { name: "rate", label: "Rate", type: "number", required: true },
-  {
-    name: "rateBasis",
-    label: "Rate Basis",
-    type: "select",
-    options: [
-      { value: "per_mt", label: "Per MT" },
-      { value: "per_teu", label: "Per TEU" },
-      { value: "lumpsum", label: "Lumpsum" },
-    ],
-  },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "originPort", label: "Origin Port", type: "text" },
-  { name: "destinationPort", label: "Destination Port", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditCoaContractPage({
   params,
@@ -54,6 +19,47 @@ export default async function EditCoaContractPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "chartering:edit")))
     redirect("/chartering-vessel-management");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
+
+  const COA_FIELDS: FieldConfig[] = [
+    { name: "contractReference", label: "Contract Reference", type: "text", required: true },
+    { name: "chartererName", label: "Charterer Name", type: "text", required: true },
+    { name: "cargoType", label: "Cargo Type", type: "text", required: true },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    { name: "quantityMin", label: "Quantity Min", type: "number" },
+    { name: "quantityMax", label: "Quantity Max", type: "number" },
+    {
+      name: "quantityUnit",
+      label: "Quantity Unit",
+      type: "select",
+      options: [
+        { value: "MT", label: "MT" },
+        { value: "TEU", label: "TEU" },
+      ],
+    },
+    { name: "liftingsPerPeriod", label: "Liftings Per Period", type: "number" },
+    { name: "periodFrom", label: "Period From", type: "datetime-local", required: true },
+    { name: "periodTo", label: "Period To", type: "datetime-local", required: true },
+    { name: "rate", label: "Rate", type: "number", required: true },
+    {
+      name: "rateBasis",
+      label: "Rate Basis",
+      type: "select",
+      options: [
+        { value: "per_mt", label: "Per MT" },
+        { value: "per_teu", label: "Per TEU" },
+        { value: "lumpsum", label: "Lumpsum" },
+      ],
+    },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "originPort", label: "Origin Port", type: "select", options: portOpts },
+    { name: "destinationPort", label: "Destination Port", type: "select", options: portOpts },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
 

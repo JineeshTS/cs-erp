@@ -8,97 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { capPortRotations } from "@/db/schema";
 import { CapForm } from "@/components/capacity-voyage-management/cap-form";
 import type { FieldConfig } from "@/components/capacity-voyage-management/cap-form";
-
-const FIELDS: FieldConfig[] = [
-  {
-    name: "vesselScheduleId",
-    label: "Vessel Schedule ID",
-    type: "text",
-  },
-  {
-    name: "portCode",
-    label: "Port Code",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "portName",
-    label: "Port Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "sequenceNumber",
-    label: "Sequence Number",
-    type: "number",
-    required: true,
-  },
-  {
-    name: "arrivalEta",
-    label: "Arrival ETA",
-    type: "datetime-local",
-  },
-  {
-    name: "departureEtd",
-    label: "Departure ETD",
-    type: "datetime-local",
-  },
-  {
-    name: "actualArrival",
-    label: "Actual Arrival",
-    type: "datetime-local",
-  },
-  {
-    name: "actualDeparture",
-    label: "Actual Departure",
-    type: "datetime-local",
-  },
-  {
-    name: "terminalName",
-    label: "Terminal Name",
-    type: "text",
-  },
-  {
-    name: "berthName",
-    label: "Berth Name",
-    type: "text",
-  },
-  {
-    name: "callPurpose",
-    label: "Call Purpose",
-    type: "select",
-    options: [
-      { value: "loading", label: "Loading" },
-      { value: "discharging", label: "Discharging" },
-      { value: "both", label: "Both" },
-      { value: "bunker", label: "Bunker" },
-      { value: "transit", label: "Transit" },
-    ],
-  },
-  {
-    name: "timeZone",
-    label: "Time Zone",
-    type: "text",
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "scheduled", label: "Scheduled" },
-      { value: "arrived", label: "Arrived" },
-      { value: "berthed", label: "Berthed" },
-      { value: "departed", label: "Departed" },
-      { value: "cancelled", label: "Cancelled" },
-      { value: "skipped", label: "Skipped" },
-    ],
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-  },
-];
+import { getPortOptions } from "@/lib/lookups";
 
 export default async function EditPortRotationPage({
   params,
@@ -109,6 +19,99 @@ export default async function EditPortRotationPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "capacity:edit")))
     redirect("/capacity-voyage-management");
+
+  const portOpts = await getPortOptions(session.tenantId);
+
+  const FIELDS: FieldConfig[] = [
+    {
+      name: "vesselScheduleId",
+      label: "Vessel Schedule ID",
+      type: "text",
+    },
+    {
+      name: "portCode",
+      label: "Port Code",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "portName",
+      label: "Port Name",
+      type: "select", options: portOpts,
+      required: true,
+    },
+    {
+      name: "sequenceNumber",
+      label: "Sequence Number",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "arrivalEta",
+      label: "Arrival ETA",
+      type: "datetime-local",
+    },
+    {
+      name: "departureEtd",
+      label: "Departure ETD",
+      type: "datetime-local",
+    },
+    {
+      name: "actualArrival",
+      label: "Actual Arrival",
+      type: "datetime-local",
+    },
+    {
+      name: "actualDeparture",
+      label: "Actual Departure",
+      type: "datetime-local",
+    },
+    {
+      name: "terminalName",
+      label: "Terminal Name",
+      type: "text",
+    },
+    {
+      name: "berthName",
+      label: "Berth Name",
+      type: "text",
+    },
+    {
+      name: "callPurpose",
+      label: "Call Purpose",
+      type: "select",
+      options: [
+        { value: "loading", label: "Loading" },
+        { value: "discharging", label: "Discharging" },
+        { value: "both", label: "Both" },
+        { value: "bunker", label: "Bunker" },
+        { value: "transit", label: "Transit" },
+      ],
+    },
+    {
+      name: "timeZone",
+      label: "Time Zone",
+      type: "text",
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "scheduled", label: "Scheduled" },
+        { value: "arrived", label: "Arrived" },
+        { value: "berthed", label: "Berthed" },
+        { value: "departed", label: "Departed" },
+        { value: "cancelled", label: "Cancelled" },
+        { value: "skipped", label: "Skipped" },
+      ],
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+    },
+  ];
 
   const { id } = await params;
   const pr = await db

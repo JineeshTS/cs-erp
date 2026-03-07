@@ -1,0 +1,49 @@
+{
+  "node_type": "feature",
+  "id": "F-002",
+  "name": "Booking Form Master Data Wiring",
+  "created_at": "2026-03-07",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-002", "relationship_type": "implements" },
+    { "target_id": "F-001", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Forms & Data Integrity",
+    "priority": "must_have",
+    "complexity": "low",
+    "description": "Wire booking new/edit forms to load Customer, Port, and Container Type options from master data tables (mdm_customers, mdm_ports, mdm_container_types) instead of plain text inputs.",
+    "capabilities": [
+      "Customer field: select dropdown from mdm_customers (name, shortName)",
+      "Origin/Destination Port: select dropdown from mdm_ports (name, unLocode)",
+      "Container Type: select dropdown from mdm_container_types (isoCode, description)",
+      "Options fetched server-side at render time (no client API calls)",
+      "Validation schema relaxed to accept DB ISO codes"
+    ],
+    "acceptance_criteria": [
+      "New booking form shows Customer as select with 6 options from DB",
+      "Origin/Destination Port shows 13 ports as 'Name (UNLOCODE)' options",
+      "Container Type shows 14 ISO-coded options from DB",
+      "Edit booking form pre-selects existing values correctly",
+      "containerType validation accepts any string up to 10 chars (not hardcoded enum)",
+      "npx tsc --noEmit passes with 0 errors"
+    ],
+    "edge_cases": [
+      "No customers in DB — dropdown shows empty with 'Select...' placeholder",
+      "Existing booking has container type not in current DB — edit form shows blank selection",
+      "Tenant with no ports configured — port dropdown empty"
+    ],
+    "error_handling": [
+      "DB query failure — page render error caught by Next.js error boundary"
+    ],
+    "affected_files": [
+      "src/lib/customer-portal/lookups.ts",
+      "src/app/(dashboard)/customer-portal/bookings/new/page.tsx",
+      "src/app/(dashboard)/customer-portal/bookings/[id]/edit/page.tsx",
+      "src/lib/customer-portal/validation.ts"
+    ],
+    "implementation_commit": "081bb2a"
+  }
+}

@@ -8,19 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { odmBlCharges } from "@/db/schema";
 import { OdmForm } from "@/components/operations-documentation/odm-form";
 import type { FieldConfig } from "@/components/operations-documentation/odm-form";
-
-const CHARGE_FIELDS: FieldConfig[] = [
-  { name: "chargeCode", label: "Charge Code", type: "text", required: true },
-  { name: "chargeName", label: "Charge Name", type: "text", required: true },
-  { name: "chargeType", label: "Charge Type", type: "text", required: true },
-  { name: "amount", label: "Amount", type: "number", required: true },
-  { name: "currency", label: "Currency", type: "text", placeholder: "USD" },
-  { name: "prepaidCollect", label: "Prepaid/Collect", type: "select", options: [
-    { value: "prepaid", label: "Prepaid" },
-    { value: "collect", label: "Collect" },
-  ]},
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBlChargePage({
   params,
@@ -32,6 +20,20 @@ export default async function EditBlChargePage({
   if (!(await hasPermission(session.id, session.tenantId, "operations:edit")))
     redirect("/operations-documentation/bl-charges");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const CHARGE_FIELDS: FieldConfig[] = [
+    { name: "chargeCode", label: "Charge Code", type: "text", required: true },
+    { name: "chargeName", label: "Charge Name", type: "text", required: true },
+    { name: "chargeType", label: "Charge Type", type: "text", required: true },
+    { name: "amount", label: "Amount", type: "number", required: true },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
+    { name: "prepaidCollect", label: "Prepaid/Collect", type: "select", options: [
+      { value: "prepaid", label: "Prepaid" },
+      { value: "collect", label: "Collect" },
+    ]},
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
   const record = await db
     .select()

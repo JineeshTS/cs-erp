@@ -6,41 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getClaimsRecovery } from "@/lib/insurance-claims-management/service";
 import { IcmForm } from "@/components/insurance-claims-management/icm-form";
 import type { FieldConfig } from "@/components/insurance-claims-management/icm-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "recoveryType",
-    label: "Recovery Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "subrogation", label: "Subrogation" },
-      { value: "contribution", label: "Contribution" },
-      { value: "salvage", label: "Salvage" },
-      { value: "general_average", label: "General Average" },
-      { value: "third_party", label: "Third Party" },
-    ],
-  },
-  { name: "claimRef", label: "Claim Ref", type: "text" },
-  { name: "policyRef", label: "Policy Ref", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "respondentName", label: "Respondent Name", type: "text" },
-  { name: "respondentContact", label: "Respondent Contact", type: "text" },
-  { name: "respondentInsurer", label: "Respondent Insurer", type: "text" },
-  { name: "originalClaimAmount", label: "Original Claim Amount", type: "text" },
-  { name: "targetRecoveryAmount", label: "Target Recovery Amount", type: "text" },
-  { name: "recoveredAmount", label: "Recovered Amount", type: "text" },
-  { name: "recoveryCurrency", label: "Recovery Currency", type: "text" },
-  { name: "recoveryBasis", label: "Recovery Basis", type: "textarea" },
-  { name: "legalCounsel", label: "Legal Counsel", type: "text" },
-  { name: "legalCosts", label: "Legal Costs", type: "text" },
-  { name: "filedAt", label: "Filed At", type: "datetime-local" },
-  { name: "settledAt", label: "Settled At", type: "datetime-local" },
-  { name: "limitationDate", label: "Limitation Date", type: "datetime-local" },
-  { name: "courtJurisdiction", label: "Court Jurisdiction", type: "text" },
-  { name: "arbitrationClause", label: "Arbitration Clause", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditClaimsRecoveryPage({
   params,
@@ -50,6 +16,43 @@ export default async function EditClaimsRecoveryPage({
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "insurance:edit"))) redirect("/login");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "recoveryType",
+      label: "Recovery Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "subrogation", label: "Subrogation" },
+        { value: "contribution", label: "Contribution" },
+        { value: "salvage", label: "Salvage" },
+        { value: "general_average", label: "General Average" },
+        { value: "third_party", label: "Third Party" },
+      ],
+    },
+    { name: "claimRef", label: "Claim Ref", type: "text" },
+    { name: "policyRef", label: "Policy Ref", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "respondentName", label: "Respondent Name", type: "text" },
+    { name: "respondentContact", label: "Respondent Contact", type: "text" },
+    { name: "respondentInsurer", label: "Respondent Insurer", type: "text" },
+    { name: "originalClaimAmount", label: "Original Claim Amount", type: "text" },
+    { name: "targetRecoveryAmount", label: "Target Recovery Amount", type: "text" },
+    { name: "recoveredAmount", label: "Recovered Amount", type: "text" },
+    { name: "recoveryCurrency", label: "Recovery Currency", type: "text" },
+    { name: "recoveryBasis", label: "Recovery Basis", type: "textarea" },
+    { name: "legalCounsel", label: "Legal Counsel", type: "text" },
+    { name: "legalCosts", label: "Legal Costs", type: "text" },
+    { name: "filedAt", label: "Filed At", type: "datetime-local" },
+    { name: "settledAt", label: "Settled At", type: "datetime-local" },
+    { name: "limitationDate", label: "Limitation Date", type: "datetime-local" },
+    { name: "courtJurisdiction", label: "Court Jurisdiction", type: "text" },
+    { name: "arbitrationClause", label: "Arbitration Clause", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getClaimsRecovery(id, session.tenantId);

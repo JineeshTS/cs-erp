@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ArccForm } from "@/components/accounts-receivable-credit-control/arcc-form";
 import type { FieldConfig } from "@/components/accounts-receivable-credit-control/arcc-form";
+import { getCustomerOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function NewCashApplicationPage() {
   const session = await getSession();
@@ -10,11 +11,16 @@ export default async function NewCashApplicationPage() {
   if (!(await hasPermission(session.id, session.tenantId, "receivable:create")))
     redirect("/");
 
+
+  const [customerOpts, currencyOpts] = await Promise.all([
+    getCustomerOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   const fields: FieldConfig[] = [
     {
       name: "customerName",
       label: "Customer Name",
-      type: "text",
+      type: "select", options: customerOpts,
       required: true,
     },
     { name: "accountNumber", label: "Account Number", type: "text" },
@@ -45,7 +51,7 @@ export default async function NewCashApplicationPage() {
       type: "datetime-local",
       required: true,
     },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     {
       name: "paymentAmount",
       label: "Payment Amount",

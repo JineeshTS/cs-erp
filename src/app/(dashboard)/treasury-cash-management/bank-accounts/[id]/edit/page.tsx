@@ -6,45 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getBankAccount } from "@/lib/treasury-cash-management/service";
 import { TcmForm } from "@/components/treasury-cash-management/tcm-form";
 import type { FieldConfig } from "@/components/treasury-cash-management/tcm-form";
-
-const BANK_ACCOUNT_FIELDS: FieldConfig[] = [
-  {
-    name: "accountType",
-    label: "Account Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "current", label: "Current" },
-      { value: "savings", label: "Savings" },
-      { value: "fixed_deposit", label: "Fixed Deposit" },
-      { value: "nostro", label: "Nostro" },
-      { value: "vostro", label: "Vostro" },
-      { value: "escrow", label: "Escrow" },
-    ],
-  },
-  { name: "bankName", label: "Bank Name", type: "text", required: true },
-  { name: "accountNumber", label: "Account Number", type: "text" },
-  { name: "iban", label: "IBAN", type: "text" },
-  { name: "swiftCode", label: "SWIFT Code", type: "text" },
-  { name: "branchName", label: "Branch Name", type: "text" },
-  { name: "branchCode", label: "Branch Code", type: "text" },
-  {
-    name: "currency",
-    label: "Currency",
-    type: "text",
-    placeholder: "QAR",
-  },
-  { name: "currentBalance", label: "Current Balance", type: "text" },
-  { name: "availableBalance", label: "Available Balance", type: "text" },
-  { name: "overdraftLimit", label: "Overdraft Limit", type: "text" },
-  { name: "interestRate", label: "Interest Rate", type: "text" },
-  { name: "accountHolder", label: "Account Holder", type: "text" },
-  { name: "entityId", label: "Entity ID", type: "text" },
-  { name: "glAccountCode", label: "GL Account Code", type: "text" },
-  { name: "openingDate", label: "Opening Date", type: "datetime-local" },
-  { name: "closingDate", label: "Closing Date", type: "datetime-local" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditBankAccountPage({
   params,
@@ -56,6 +18,45 @@ export default async function EditBankAccountPage({
   if (!(await hasPermission(session.id, session.tenantId, "treasury:edit")))
     redirect("/treasury-cash-management/bank-accounts");
 
+  const currencyOpts = await getCurrencyOptions();
+
+  const BANK_ACCOUNT_FIELDS: FieldConfig[] = [
+    {
+      name: "accountType",
+      label: "Account Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "current", label: "Current" },
+        { value: "savings", label: "Savings" },
+        { value: "fixed_deposit", label: "Fixed Deposit" },
+        { value: "nostro", label: "Nostro" },
+        { value: "vostro", label: "Vostro" },
+        { value: "escrow", label: "Escrow" },
+      ],
+    },
+    { name: "bankName", label: "Bank Name", type: "text", required: true },
+    { name: "accountNumber", label: "Account Number", type: "text" },
+    { name: "iban", label: "IBAN", type: "text" },
+    { name: "swiftCode", label: "SWIFT Code", type: "text" },
+    { name: "branchName", label: "Branch Name", type: "text" },
+    { name: "branchCode", label: "Branch Code", type: "text" },
+    {
+      name: "currency",
+      label: "Currency",
+      type: "select", options: currencyOpts,
+    },
+    { name: "currentBalance", label: "Current Balance", type: "text" },
+    { name: "availableBalance", label: "Available Balance", type: "text" },
+    { name: "overdraftLimit", label: "Overdraft Limit", type: "text" },
+    { name: "interestRate", label: "Interest Rate", type: "text" },
+    { name: "accountHolder", label: "Account Holder", type: "text" },
+    { name: "entityId", label: "Entity ID", type: "text" },
+    { name: "glAccountCode", label: "GL Account Code", type: "text" },
+    { name: "openingDate", label: "Opening Date", type: "datetime-local" },
+    { name: "closingDate", label: "Closing Date", type: "datetime-local" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const record = await getBankAccount(id, session.tenantId);

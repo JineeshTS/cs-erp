@@ -5,56 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getQualityTest } from "@/lib/bunker-fuel-management/service";
 import { BfmForm, FieldConfig } from "@/components/bunker-fuel-management/bfm-form";
-
-const QUALITY_TEST_FIELDS: FieldConfig[] = [
-  { name: "stemId", label: "Stem ID", type: "text", placeholder: "Stem UUID" },
-  {
-    name: "orderId",
-    label: "Order ID",
-    type: "text",
-    placeholder: "Order UUID",
-  },
-  {
-    name: "vesselName",
-    label: "Vessel Name",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "sampleDate",
-    label: "Sample Date",
-    type: "datetime-local",
-    required: true,
-  },
-  { name: "labName", label: "Lab Name", type: "text" },
-  {
-    name: "fuelType",
-    label: "Fuel Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "VLSFO", label: "VLSFO" },
-      { value: "HSFO", label: "HSFO" },
-      { value: "LSMGO", label: "LSMGO" },
-      { value: "MGO", label: "MGO" },
-      { value: "MDO", label: "MDO" },
-      { value: "LNG", label: "LNG" },
-      { value: "ULSFO", label: "ULSFO" },
-      { value: "HFO", label: "HFO" },
-      { value: "BIOFUEL", label: "BIOFUEL" },
-    ],
-  },
-  { name: "density", label: "Density", type: "number" },
-  { name: "viscosity", label: "Viscosity", type: "number" },
-  { name: "sulphurContent", label: "Sulphur Content", type: "number" },
-  { name: "flashPoint", label: "Flash Point", type: "number" },
-  { name: "waterContent", label: "Water Content", type: "number" },
-  { name: "ashContent", label: "Ash Content", type: "number" },
-  { name: "calorificValue", label: "Calorific Value", type: "number" },
-  { name: "isoCompliant", label: "ISO Compliant", type: "checkbox" },
-  { name: "marpolCompliant", label: "MARPOL Compliant", type: "checkbox" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditQualityTestPage({
   params,
@@ -66,6 +17,57 @@ export default async function EditQualityTestPage({
   if (!(await hasPermission(session.id, session.tenantId, "bunker:edit")))
     redirect("/bunker-fuel-management/quality-tests");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const QUALITY_TEST_FIELDS: FieldConfig[] = [
+    { name: "stemId", label: "Stem ID", type: "text", placeholder: "Stem UUID" },
+    {
+      name: "orderId",
+      label: "Order ID",
+      type: "text",
+      placeholder: "Order UUID",
+    },
+    {
+      name: "vesselName",
+      label: "Vessel Name",
+      type: "select", options: vesselOpts,
+      required: true,
+    },
+    {
+      name: "sampleDate",
+      label: "Sample Date",
+      type: "datetime-local",
+      required: true,
+    },
+    { name: "labName", label: "Lab Name", type: "text" },
+    {
+      name: "fuelType",
+      label: "Fuel Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "VLSFO", label: "VLSFO" },
+        { value: "HSFO", label: "HSFO" },
+        { value: "LSMGO", label: "LSMGO" },
+        { value: "MGO", label: "MGO" },
+        { value: "MDO", label: "MDO" },
+        { value: "LNG", label: "LNG" },
+        { value: "ULSFO", label: "ULSFO" },
+        { value: "HFO", label: "HFO" },
+        { value: "BIOFUEL", label: "BIOFUEL" },
+      ],
+    },
+    { name: "density", label: "Density", type: "number" },
+    { name: "viscosity", label: "Viscosity", type: "number" },
+    { name: "sulphurContent", label: "Sulphur Content", type: "number" },
+    { name: "flashPoint", label: "Flash Point", type: "number" },
+    { name: "waterContent", label: "Water Content", type: "number" },
+    { name: "ashContent", label: "Ash Content", type: "number" },
+    { name: "calorificValue", label: "Calorific Value", type: "number" },
+    { name: "isoCompliant", label: "ISO Compliant", type: "checkbox" },
+    { name: "marpolCompliant", label: "MARPOL Compliant", type: "checkbox" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   const { id } = await params;
 
   const test = await getQualityTest(id, session.tenantId);

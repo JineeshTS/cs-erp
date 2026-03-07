@@ -4,35 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { LprForm, type FieldConfig } from "@/components/loss-prevention-risk-management/lpr-form";
-
-const PI_CLUB_SCORING_FIELDS: FieldConfig[] = [
-  {
-    name: "scoringType",
-    label: "Scoring Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "vessel_assessment", label: "Vessel Assessment" },
-      { value: "fleet_review", label: "Fleet Review" },
-      { value: "claims_analysis", label: "Claims Analysis" },
-      { value: "premium_calculation", label: "Premium Calculation" },
-      { value: "benchmark", label: "Benchmark" },
-    ],
-  },
-  { name: "title", label: "Title", type: "text" },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "piClubName", label: "P&I Club Name", type: "text" },
-  { name: "assessmentDate", label: "Assessment Date", type: "datetime-local" },
-  { name: "overallScore", label: "Overall Score", type: "text" },
-  { name: "safetyScore", label: "Safety Score", type: "text" },
-  { name: "claimsScore", label: "Claims Score", type: "text" },
-  { name: "complianceScore", label: "Compliance Score", type: "text" },
-  { name: "riskGrade", label: "Risk Grade", type: "text" },
-  { name: "premiumImpact", label: "Premium Impact", type: "text" },
-  { name: "recommendations", label: "Recommendations", type: "textarea" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function NewPiClubScoringPage() {
   const session = await getSession();
@@ -42,6 +14,36 @@ export default async function NewPiClubScoringPage() {
   )
     redirect("/loss-prevention-risk-management/pi-club-scorings");
 
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const PI_CLUB_SCORING_FIELDS: FieldConfig[] = [
+    {
+      name: "scoringType",
+      label: "Scoring Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "vessel_assessment", label: "Vessel Assessment" },
+        { value: "fleet_review", label: "Fleet Review" },
+        { value: "claims_analysis", label: "Claims Analysis" },
+        { value: "premium_calculation", label: "Premium Calculation" },
+        { value: "benchmark", label: "Benchmark" },
+      ],
+    },
+    { name: "title", label: "Title", type: "text" },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "piClubName", label: "P&I Club Name", type: "text" },
+    { name: "assessmentDate", label: "Assessment Date", type: "datetime-local" },
+    { name: "overallScore", label: "Overall Score", type: "text" },
+    { name: "safetyScore", label: "Safety Score", type: "text" },
+    { name: "claimsScore", label: "Claims Score", type: "text" },
+    { name: "complianceScore", label: "Compliance Score", type: "text" },
+    { name: "riskGrade", label: "Risk Grade", type: "text" },
+    { name: "premiumImpact", label: "Premium Impact", type: "text" },
+    { name: "recommendations", label: "Recommendations", type: "textarea" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">

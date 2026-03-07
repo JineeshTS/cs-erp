@@ -3,35 +3,7 @@ import { hasPermission } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
 import { MecForm, type FieldConfig } from "@/components/marpol-environmental-compliance/mec-form";
 import { getEnvironmentalIncident } from "@/lib/marpol-environmental-compliance/service";
-
-const fields: FieldConfig[] = [
-  {
-    name: "incidentType",
-    label: "Incident Type",
-    type: "select",
-    options: [
-      { label: "Oil Spill", value: "oil_spill" },
-      { label: "Chemical Release", value: "chemical_release" },
-      { label: "Sewage Discharge", value: "sewage_discharge" },
-      { label: "Garbage Violation", value: "garbage_violation" },
-      { label: "Air Emission", value: "air_emission" },
-      { label: "Ballast Violation", value: "ballast_violation" },
-    ],
-    required: true,
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "vesselName", label: "Vessel Name", type: "text" },
-  { name: "imoNumber", label: "IMO Number", type: "text" },
-  { name: "incidentDate", label: "Incident Date", type: "datetime-local" },
-  { name: "locationDescription", label: "Location Description", type: "text" },
-  { name: "severity", label: "Severity", type: "text" },
-  { name: "quantitySpilled", label: "Quantity Spilled", type: "text" },
-  { name: "rootCause", label: "Root Cause", type: "textarea" },
-  { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
-  { name: "reportedToAuthority", label: "Reported to Authority", type: "checkbox" },
-  { name: "fineAmount", label: "Fine Amount", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditEnvironmentalIncidentPage({
   params,
@@ -42,6 +14,37 @@ export default async function EditEnvironmentalIncidentPage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "mec:edit")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "incidentType",
+      label: "Incident Type",
+      type: "select",
+      options: [
+        { label: "Oil Spill", value: "oil_spill" },
+        { label: "Chemical Release", value: "chemical_release" },
+        { label: "Sewage Discharge", value: "sewage_discharge" },
+        { label: "Garbage Violation", value: "garbage_violation" },
+        { label: "Air Emission", value: "air_emission" },
+        { label: "Ballast Violation", value: "ballast_violation" },
+      ],
+      required: true,
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "imoNumber", label: "IMO Number", type: "text" },
+    { name: "incidentDate", label: "Incident Date", type: "datetime-local" },
+    { name: "locationDescription", label: "Location Description", type: "text" },
+    { name: "severity", label: "Severity", type: "text" },
+    { name: "quantitySpilled", label: "Quantity Spilled", type: "text" },
+    { name: "rootCause", label: "Root Cause", type: "textarea" },
+    { name: "correctiveActions", label: "Corrective Actions", type: "textarea" },
+    { name: "reportedToAuthority", label: "Reported to Authority", type: "checkbox" },
+    { name: "fineAmount", label: "Fine Amount", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   const { id } = await params;
   const record = await getEnvironmentalIncident(id, session.tenantId);

@@ -7,6 +7,7 @@ import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { cpmDetentionDemurrage } from "@/db/schema";
 import { CpmForm, type FieldConfig } from "@/components/commercial-pricing-management/cpm-form";
+import { getPortOptions, getCurrencyOptions } from "@/lib/lookups";
 
 export default async function EditDetentionDemurragePage({
   params,
@@ -15,6 +16,11 @@ export default async function EditDetentionDemurragePage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const [portOpts, currencyOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getCurrencyOptions(),
+  ]);
   await hasPermission(session.id, session.tenantId, "commercial:read");
 
   const { id } = await params;
@@ -46,7 +52,7 @@ export default async function EditDetentionDemurragePage({
         { label: "Combined", value: "combined" },
       ],
     },
-    { name: "portCode", label: "Port Code", type: "text" },
+    { name: "portCode", label: "Port Code", type: "select", options: portOpts },
     { name: "containerType", label: "Container Type", type: "text" },
     { name: "containerSize", label: "Container Size", type: "text" },
     { name: "freeTimeDays", label: "Free Time (Days)", type: "number", required: true },
@@ -54,7 +60,7 @@ export default async function EditDetentionDemurragePage({
     { name: "escalationRate", label: "Escalation Rate", type: "number" },
     { name: "escalationAfterDays", label: "Escalation After (Days)", type: "number" },
     { name: "maximumDays", label: "Maximum Days", type: "number" },
-    { name: "currency", label: "Currency", type: "text" },
+    { name: "currency", label: "Currency", type: "select", options: currencyOpts },
     { name: "customerSegment", label: "Customer Segment", type: "text" },
     { name: "effectiveFrom", label: "Effective From", type: "datetime-local", required: true },
     { name: "effectiveTo", label: "Effective To", type: "datetime-local" },

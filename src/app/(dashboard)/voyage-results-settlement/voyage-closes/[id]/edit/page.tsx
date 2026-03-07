@@ -6,94 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getVoyageClose } from "@/lib/voyage-results-settlement/service";
 import { VrsForm } from "@/components/voyage-results-settlement/vrs-form";
 import type { FieldConfig } from "@/components/voyage-results-settlement/vrs-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "closeType",
-    label: "Close Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "preliminary", label: "Preliminary" },
-      { value: "final", label: "Final" },
-      { value: "interim", label: "Interim" },
-      { value: "reopened", label: "Reopened" },
-      { value: "cancelled", label: "Cancelled" },
-    ],
-  },
-  {
-    name: "title",
-    label: "Title",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "voyageNumber",
-    label: "Voyage Number",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "vesselName",
-    label: "Vessel Name",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "voyageStartDate",
-    label: "Voyage Start Date",
-    type: "datetime-local",
-    required: false,
-  },
-  {
-    name: "voyageEndDate",
-    label: "Voyage End Date",
-    type: "datetime-local",
-    required: false,
-  },
-  {
-    name: "signOffBy",
-    label: "Sign Off By",
-    type: "text",
-    required: false,
-  },
-  {
-    name: "signOffDate",
-    label: "Sign Off Date",
-    type: "datetime-local",
-    required: false,
-  },
-  {
-    name: "totalRevenue",
-    label: "Total Revenue",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "totalCost",
-    label: "Total Cost",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "netResult",
-    label: "Net Result",
-    type: "number",
-    required: false,
-  },
-  {
-    name: "isSignedOff",
-    label: "Is Signed Off",
-    type: "checkbox",
-    required: false,
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    type: "textarea",
-    required: false,
-  },
-];
+import { getVesselOptions } from "@/lib/lookups";
 
 export default async function EditVoyageClosePage({
   params,
@@ -104,6 +17,96 @@ export default async function EditVoyageClosePage({
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "vrs:edit")))
     redirect("/");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "closeType",
+      label: "Close Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "preliminary", label: "Preliminary" },
+        { value: "final", label: "Final" },
+        { value: "interim", label: "Interim" },
+        { value: "reopened", label: "Reopened" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    {
+      name: "title",
+      label: "Title",
+      type: "text",
+      required: false,
+    },
+    {
+      name: "voyageNumber",
+      label: "Voyage Number",
+      type: "text",
+      required: false,
+    },
+    {
+      name: "vesselName",
+      label: "Vessel Name",
+      type: "select", options: vesselOpts,
+      required: false,
+    },
+    {
+      name: "voyageStartDate",
+      label: "Voyage Start Date",
+      type: "datetime-local",
+      required: false,
+    },
+    {
+      name: "voyageEndDate",
+      label: "Voyage End Date",
+      type: "datetime-local",
+      required: false,
+    },
+    {
+      name: "signOffBy",
+      label: "Sign Off By",
+      type: "text",
+      required: false,
+    },
+    {
+      name: "signOffDate",
+      label: "Sign Off Date",
+      type: "datetime-local",
+      required: false,
+    },
+    {
+      name: "totalRevenue",
+      label: "Total Revenue",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "totalCost",
+      label: "Total Cost",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "netResult",
+      label: "Net Result",
+      type: "number",
+      required: false,
+    },
+    {
+      name: "isSignedOff",
+      label: "Is Signed Off",
+      type: "checkbox",
+      required: false,
+    },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+      required: false,
+    },
+  ];
 
   const { id } = await params;
   const record = await getVoyageClose(id, session.tenantId);
