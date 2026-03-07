@@ -921,6 +921,9 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             {hasAny(perms, "admin:") && (
               <NavItem href="/admin-portal/downloads" label="Downloads" icon={Download} collapsed={collapsed} />
             )}
+            {hasAny(perms, "admin:") && (
+              <NavItem href="/admin-portal/aws-deploy" label="Deploy to AWS" icon={Cloud} collapsed={collapsed} />
+            )}
             {hasAny(perms, "users:") && (
               <NavItem href="/admin/users" label="Users" icon={UserCog} collapsed={collapsed} />
             )}

@@ -184,3 +184,19 @@ export const createNotificationConfigSchema = z.object({
   recipientConfig: z.record(z.string(), z.unknown()).optional(),
 });
 export const updateNotificationConfigSchema = createNotificationConfigSchema.partial();
+
+// AWS Deployment schemas
+export const saveAwsCredentialsSchema = z.object({
+  accessKeyId: z.string().min(16).max(128),
+  secretAccessKey: z.string().min(16).max(128),
+  region: z.string().min(5).max(30),
+  label: z.string().min(1).max(255).optional().default("Default"),
+});
+
+export const triggerDeploymentSchema = z.object({
+  region: z.string().min(5).max(30),
+  instanceSize: z.enum(["small", "medium", "large", "xlarge"]),
+  customDomain: z.string().max(255).optional().default(""),
+  enableBackups: z.boolean().optional().default(true),
+  enableMonitoring: z.boolean().optional().default(true),
+});

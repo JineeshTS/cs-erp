@@ -1,310 +1,226 @@
-# CS ERP v1.0.0 Release Notes
+# CS-ERP Release Notes
 
-**Release Date:** March 6, 2026  
+---
+
+## v1.0.0 -- Initial Release
+
+**Release Date:** March 6, 2026
 **Status:** Production Ready
+**Platform:** https://cs-erp.codilla.ai
+**Target Markets:** Qatar, UAE, KSA, India
 
-CS ERP is a comprehensive AI-First Container Shipping ERP platform built for Qatar, UAE, KSA, and India markets. This v1.0.0 release includes all 61 core modules covering vessel management, cargo operations, finance, HR, sustainability, and advanced AI capabilities.
+### Overview
 
-## Overview
+CS-ERP v1.0.0 is the initial release of the AI-First Container Shipping ERP system. It delivers 61 modules covering the full spectrum of container shipping operations, from sales and booking through vessel management, finance, compliance, and analytics.
 
-61 modules across 12 primary business domains covering the complete container shipping lifecycle from chartering through delivery and finance settlement.
+### Key Highlights
 
----
-
-## Core Shipping Operations (MOD-001 to MOD-020)
-
-### MOD-001: Vessel Management
-Core vessel registry and lifecycle management. Track vessel details (IMO, capacity, dimensions), ownership, operators, maintenance schedules, compliance certifications, and operational status. Supports multi-vessel fleets with tenure and deployment tracking.
-
-### MOD-002: Charter Party Management
-Agreement management for full-ship charters, slot charters, and space charters. Define commercial terms (rate, free time, demurrage), schedule availability windows, allocate capacity by customer, track charter status from negotiation through conclusion.
-
-### MOD-003: Voyage Planning & Scheduling
-Create and manage voyage schedules. Define port rotation, laycan (loading window), estimated transit times, berth requirements, and ETA/ETD estimates. Link bookings to voyages, manage cancellations and rescheduling with automated impact analysis.
-
-### MOD-004: Booking Management
-Customer booking requests and confirmations. Capture shipper/consignee, container count/type, commodity, weight, dimensions, special requirements (hazmat, reefer, OOG). Generate quotations, confirm bookings, and create bills of lading. Integrated rate calculation and availability checking.
-
-### MOD-005: Bill of Lading (B/L) Management
-Create, issue, and manage transport documents. Generate multilingual B/Ls with watermarks, original/copy tracking, signature capture. Support straight and order B/Ls, electronic release, consignee notification, and archival.
-
-### MOD-006: Container Management
-Container lifecycle tracking (creation, loading, discharge, damage, scrapping). Track container number, owner, current status, last known location. Integrate with equipment providers for lease tracking, maintenance scheduling, depot operations.
-
-### MOD-007: Port Operations
-Port call management with berth assignment, ETA/ETD tracking, equipment moves (load/discharge), NOR (Notice of Readiness) logging, demurrage calculation, and port documentation. Real-time vessel scheduling dashboard and port performance analytics.
-
-### MOD-008: Terminal Coordination
-Coordination between vessel and terminal operations. Gate appointment scheduling, stowage planning, equipment positioning, load/discharge sequencing. Real-time update sync with Port Community Systems.
-
-### MOD-009: Cargo Tracking & Visibility
-Real-time container visibility across supply chain. Live position tracking via vessel AIS, port gate movements, rail/truck status. Automated geofencing alerts, exception handling, delivery confirmation.
-
-### MOD-010: Dangerous Goods Management
-Specialized handling for hazardous cargo (Class 3-9). Declare commodity codes, UN numbers, packing groups, technical specifications. Generate placards, safety documentation, custom stowage instructions, compliance audit trails.
-
-### MOD-011: Reefer Container Management
-Specialized management for temperature-controlled containers. Set/monitor temperature setpoints per container, generate alerts for temperature deviation, track fuel consumption, humidity control. Integrated with vessel reefer capacity planning.
-
-### MOD-012: Over/Out-of-Gauge (OOG) Cargo
-Management of containers exceeding standard dimensions. Calculate lashing points, reserve deck space, coordinate special equipment. Fee management for OOG surcharges.
-
-### MOD-013: Customs & Regulatory Compliance
-Electronic customs manifest submission (CUSCAR) to port authorities. Generate import/export declarations, manage permit workflows, track clearance status. Pre-clearance with customs and goods in transit (GIT) management.
-
-### MOD-014: Bunker Fuel Management
-Track fuel consumption per voyage, manage bunker contracts with suppliers, calculate hedging impacts on costing. Monitor fuel efficiency (ISO 19030 standard). Integrate bunker costs into voyage profitability.
-
-### MOD-015: Documentation Management
-Central repository for all voyage and booking documents. Contract storage, insurance certificates, permits, declarations, customs paperwork. Document version control, approval workflows, archival with retention policies.
-
-### MOD-016: Customer Portal
-Self-service portal for shipping customers. Real-time booking status, shipment visibility, B/L download, invoice review, request support tickets. Mobile-responsive interface with multi-language support (EN, AR).
-
-### MOD-017: Demurrage & Detention Management
-Calculate and track demurrage (vessel) and detention (container) charges. Automated calculation based on charter terms and free time policies. Generate chargeable notices, manage disputes, track aging of demurrage claims.
-
-### MOD-018: Crew Management & Planning
-Track crew assignments to vessels, manage rotation cycles, training certifications, medical exams, contract expiry. Integrated with flag state compliance requirements. Manpower forecasting and scheduling.
-
-### MOD-019: Liner Service Operations
-Management of scheduled weekly services with fixed port rotation. Capacity planning across multiple sailings, rate card management by lane, booking allocation across service schedule, capacity forecast.
-
-### MOD-020: Container Leasing
-Track company-owned vs. leased containers. Monitor lease agreements, utilization rates, return schedules, damage claims. Lease cost tracking and depreciation schedules integrated with accounting.
+- **61 operational modules** spanning all container shipping functions
+- **528+ database tables** with full multi-tenant isolation (RLS)
+- **100 AI agents** with configurable automation levels
+- **220+ operational processes** with workflow engine support
+- **20+ end-to-end flows** connecting modules seamlessly
+- **RS256 JWT authentication** with token rotation
+- **Arabic RTL support** and dark mode
+- **Cursor-based pagination** on all list endpoints
 
 ---
 
-## Sustainability & Environmental (MOD-021 to MOD-025)
+### All 61 Modules
 
-### MOD-021: CII (Carbon Intensity Indicator) Tracking
-Monitor IMO CII compliance per vessel annually. Track grams CO2/TEU-mile, generate A-E rating, monitor trend year-over-year. Alert operations for vessels at risk of non-compliance. Link to bunker strategy and slow-steaming policies.
+#### Sales & Commercial (6 modules)
 
-### MOD-022: ESG Reporting
-Comprehensive environmental, social, governance reporting. Dashboards for carbon footprint, safety metrics, diversity, community engagement. Generate CSRD, TCFD, and external sustainability reports. Benchmark against industry standards.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 1 | Sales & CRM | Lead management, opportunity tracking, customer accounts, pipeline analytics |
+| 2 | Commercial Pricing Management | Tariff rates, surcharges, AI pricing models, yield targets, rate benchmarks |
+| 3 | Liner Revenue Management | Revenue optimization, dynamic pricing, demand forecasting |
+| 4 | Agent Network Management | GA agreements, agent commissions, booking authorities, sub-agent configs |
+| 5 | Customer Service Operations | Service requests, complaints, SLA policies, escalations |
+| 6 | Customer Portal | Self-service bookings, tracking, documents, invoices, payments |
 
-### MOD-023: MARPOL Compliance
-Track international maritime pollution prevention regulations. Manage ballast water records, oil record books, garbage logs, air emissions. Automated alerts for compliance deadlines, audit-ready documentation.
+#### Booking & Documentation (3 modules)
 
-### MOD-024: Sustainability Initiatives
-Track carbon reduction programs: slow steaming, alternative fuels (LNG, methanol), fleet renewal, route optimization. Measure impact on emissions and cost per container. Link to board-level sustainability targets.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 7 | Operations & Documentation | Shipping instructions, BL management, manifest compilation |
+| 8 | Freight Invoice & Revenue Management | Invoice generation, credit/debit notes, revenue recognition |
+| 9 | Document Management System | Storage, OCR, templates, digital signatures, retention policies |
 
-### MOD-025: Green Port Certifications
-Track certifications and compliance with port environmental standards (Green Port, EcoPorts, Clean Cargo Working Group). Manage certification applications, audit responses, fee payments.
+#### Vessel & Voyage (9 modules)
 
----
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 10 | Schedule & Voyage Planning | Port rotations, vessel schedules, ETA management |
+| 11 | Capacity & Voyage Management | Bay plans, stowage optimization, space controls |
+| 12 | Chartering & Vessel Management | Charter parties, TC contracts, hire statements, voyage P&L |
+| 13 | Fleet Deployment Planning | Deployment optimization, network design, vessel swaps |
+| 14 | Vessel Performance & Efficiency | Noon reports, speed optimization, CII ratings, hull performance |
+| 15 | Vessel Technical Management | Planned maintenance, dry dock scheduling, class surveys, spare parts |
+| 16 | Liner Operations Control | Real-time vessel monitoring, port call coordination |
+| 17 | Liner Trade Route Management | Trade lanes, service strings, port pairs, transit times |
+| 18 | Voyage Results & Settlement | Voyage P&L analysis, cost settlement, accruals |
 
-## Finance & Accounting (MOD-026 to MOD-035)
+#### Container & Equipment (6 modules)
 
-### MOD-026: General Ledger (GL)
-Double-entry accounting system with COA (Chart of Accounts), journal entries, auto-posting from operational modules. Period close, balance sheet, P&L generation, compliance with local GAAP.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 19 | Equipment Control & Yard Management | Container fleet, gate movements, yard slots, M&R |
+| 20 | Container Leasing Management | Lease agreements, on-hire/off-hire, MNR billing, fleet optimization |
+| 21 | Empty Container Repositioning (AI) | AI-driven repositioning plans, demand forecasts, route optimization |
+| 22 | Reefer Container Management | Temperature monitoring, PTI scheduling, power allocation |
+| 23 | Demurrage & Detention Management | D&D calculations, free-time rules, waivers, disputes |
+| 24 | Real-Time IoT Asset Tracking | GPS tracking, sensor data, geofencing, anomaly detection |
 
-### MOD-027: Accounts Receivable (AR)
-Invoice generation from bookings/port charges, customer statements, aging analysis, dunning management. Automated payment matching, credit note issuance, bad debt provisioning.
+#### Port & Terminal (5 modules)
 
-### MOD-028: Accounts Payable (AP)
-Supplier invoice processing, receipt matching, payment approval workflows. Purchase order creation, goods receipt tracking, accrual posting, vendor management dashboard.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 25 | Port Agency Management | Port agent assignments, service coordination |
+| 26 | Port Disbursement Accounting | PDA estimates, FDA reconciliation, cost verification |
+| 27 | Port Tariff & Terminal Billing | Terminal tariffs, THC calculations, billing verification |
+| 28 | Transshipment Hub Management | Hub operations, relay planning, dwell time optimization |
+| 29 | Intermodal & ICD Operations | Rail/truck coordination, ICD management, multimodal routing |
 
-### MOD-029: Treasury Management
-Cash flow forecasting, bank account management, currency exposure tracking. Automated intercompany settlements, bank reconciliation, hedge accounting, liquidity dashboard.
+#### Finance & Accounting (7 modules)
 
-### MOD-030: Freight Rate Management
-Centralized rate card management by lane (origin/destination pair), container type, commodity. Rate versioning with effective dates, customer-specific rate overrides, automated rate refreshment from market data.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 30 | General Ledger & Financial Reporting | Chart of accounts, journal entries, financial statements |
+| 31 | Accounts Payable & Vendor Management | Vendor masters, PO, three-way match, OCR extraction |
+| 32 | Accounts Receivable & Credit Control | Customer accounts, credit limits, aging, cash application |
+| 33 | Costing & Financial Management | Cost centres, voyage budgets, variance analysis, revenue recognition |
+| 34 | Treasury & Cash Management | Bank accounts, FX management, cash flow forecasting |
+| 35 | Fixed Assets Management | Asset registry, depreciation, lease accounting, impairment |
+| 36 | Multi-Entity Legal Structure | Intercompany transactions, consolidation, transfer pricing |
 
-### MOD-031: Revenue Recognition
-IFRS 15 compliant revenue recognition. Performance obligation tracking at booking creation, revenue by port rotation, settlement lag management. Automated accrual and deferral posting to GL.
+#### Bunker & Fuel (1 module)
 
-### MOD-032: Fixed Asset Management
-Track vessel and equipment assets, depreciation schedules, maintenance capitalization, disposal tracking. Integration with GL for FA module integration, asset registers by company.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 37 | Bunker Fuel Management | Bunker orders, stems, quality tests, emissions, sulphur compliance |
 
-### MOD-033: Pricing & Quotation Engine
-Dynamic pricing based on fuel surcharge (BAF), currency surcharge (CAF), seasonal demand, competitor rates. Automated quote generation with surcharge calculations, discount matrices by customer tier.
+#### Compliance & Risk (9 modules)
 
-### MOD-034: Cost Allocation & Voyage Profitability
-Allocate shared costs to voyages: fuel, port charges, tolls, insurance. Calculate voyage and container-level profitability, analyze margin by lane/customer, variance analysis for budget vs. actual.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 38 | Customs & Compliance Regulatory | Import/export filings, duty calculations, AEO, ISPS compliance |
+| 39 | Dangerous Goods Management | IMDG compliance, segregation rules, DG manifests, emergency procedures |
+| 40 | MARPOL & Environmental Compliance | Emissions monitoring, ballast water, pollution prevention |
+| 41 | Audit & Compliance Management | Internal audits, risk registers, SOX controls, ISO certifications |
+| 42 | Loss Prevention & Risk Management | Risk assessment, incident investigation, loss prevention |
+| 43 | Insurance & Claims Management | Policy management, claims handling, P&I coverage |
+| 44 | Cargo Claims Management | Claim registration, damage surveys, liability assessment, settlements |
+| 45 | Survey & Inspection Management | Class surveys, condition inspections, PSC preparation |
+| 46 | Sustainability & ESG Reporting | Carbon footprint, ESG metrics, sustainability reporting |
 
-### MOD-035: Audit & Compliance Reporting
-Generate audit trails, regulatory reports (tax, import/export). Compliance dashboards for banking covenants, leverage ratios, working capital metrics. Automated month-end close checklists.
+#### Special Cargo (1 module)
 
----
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 47 | OOG & Special Cargo Management | Out-of-gauge cargo, breakbulk, project cargo handling |
 
-## Human Resources & Payroll (MOD-036 to MOD-042)
+#### HR & Procurement (3 modules)
 
-### MOD-036: Employee Management
-Centralized employee registry with employment contracts, job titles, departments, reporting structure. Training records, performance evaluations, career development planning.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 48 | HR & Payroll (Shore Staff) | Employee management, payroll, leave, recruitment |
+| 49 | Crew Management | Rotations, certifications, MLC compliance, payroll allotments |
+| 50 | Procurement & Supply Chain | Purchase requisitions, vendor selection, contract management |
 
-### MOD-037: Payroll Processing
-Monthly/bi-weekly payroll processing. Salary, overtime, allowances, deductions, tax withholding. Integration with local tax authorities (UAE MOM, KSA GOSI, India EPFO). Payslip generation and payment advices.
+#### AI & Analytics (3 modules)
 
-### MOD-038: Crew Compensation & Settlements
-Specialized payroll for seafarers: monthly wages, leave accrual, home leave entitlements, cash advances, repatriation funds. Integration with vessel assignments.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 51 | AI Agent Framework | 100 AI agents, workflow orchestration, document processing |
+| 52 | AI Provider Management | Multi-provider config, cost tracking, failover |
+| 53 | Analytics & Business Intelligence | BI reports, KPI dashboards, predictive analytics, trade lane analytics |
 
-### MOD-039: Leave & Attendance Management
-Track annual leave, sick leave, special leave, compassionate leave by local regulations. Attendance tracking, overtime management, leave approval workflows.
+#### Platform & Infrastructure (8 modules)
 
-### MOD-040: HR Analytics & Reporting
-Headcount dashboards, recruitment pipeline, turnover analysis, compensation benchmarking. Departmental KPIs, training spend, cost per employee by region.
-
-### MOD-041: Compliance & Labor Law
-Track local labor law compliance per jurisdiction (UAE VAE, KSA Saaudization, India ESI/EPF). Automated alerts for contract expirations, visa renewals, training deadlines. Audit-ready documentation.
-
-### MOD-042: Training & Development
-Training calendar, course management, certification tracking. Mandatory training (safety, STCW, ISO), skills matrix, learning path planning, training ROI analysis.
-
----
-
-## Procurement & Supply Chain (MOD-043 to MOD-048)
-
-### MOD-043: Procurement
-PO creation, vendor RFQ, invoice matching (3-way), expediting tracking. Supplier performance scorecards, contract management, terms negotiation.
-
-### MOD-044: Inventory Management
-Spare parts inventory for vessel operations. Stock levels, reorder points, consumption tracking, obsolescence management. Location tracking by vessel/depot.
-
-### MOD-045: Port Charges & Invoicing
-Port service invoicing (wharfage, handling, berth hire, document fees). Auto-calculation from port tariffs, invoice reconciliation with port statements.
-
-### MOD-046: Insurance Claims & Management
-Cargo insurance claim initiation from damage reports, documentation upload, third-party communication. Hull & machinery claims, liability claims, premium management.
-
-### MOD-047: Vendor Management
-Vendor master data, vendor scorecards (quality, delivery, cost), contract management, dispute resolution. Vendor onboarding and compliance verification.
-
-### MOD-048: Quality Assurance
-Quality inspections for containers/equipment pre-loading, damage assessment, repair vendor management. Quality metrics and defect trending.
-
----
-
-## Analytics & Business Intelligence (MOD-049 to MOD-053)
-
-### MOD-049: Executive Dashboard
-Real-time KPI dashboard: revenue, containers, utilization %, profitability, cash position. Lane/customer/vessel performance, forecast vs. actual tracking. Configurable widgets, export reports.
-
-### MOD-050: Operational Analytics
-Voyage analysis: load factor %, port utilization, turnaround time, average container rate. Benchmarking against fleet and industry. Bottleneck identification and impact analysis.
-
-### MOD-051: Financial Analytics & Reporting
-Revenue by lane, customer, voyage, container type. Expense tracking and variance analysis. Margin analysis, trend analysis, scenario modeling for pricing strategy.
-
-### MOD-052: Customer Analytics
-Customer segmentation, lifetime value, booking patterns, payment reliability, concentration risk. Geographic and commodity distribution, growth trajectory.
-
-### MOD-053: Supply Chain Analytics
-End-to-end visibility: order to cash cycle, cash conversion cycle, DPO/DSO. Route optimization, equipment utilization, carrier performance benchmarking.
-
----
-
-## Advanced AI & Automation (MOD-054 to MOD-058)
-
-### MOD-054: AI Agent Framework
-Extensible framework for domain-specific AI agents. Integration with Claude API, GPT-4, and local models. Multi-turn conversation with context, document understanding, task delegation to RPA bots.
-
-### MOD-055: Demand Forecasting & Capacity Planning
-ML-based demand forecasting by lane, seasonal patterns, special events. Automated vessel scheduling recommendations, spare capacity alerts, network optimization suggestions.
-
-### MOD-056: Pricing Intelligence & Optimization
-Market rate monitoring, competitive intelligence, dynamic pricing suggestions. Demand elasticity analysis, customer price sensitivity, promotional impact simulation.
-
-### MOD-057: Predictive Maintenance
-Vessel maintenance prediction based on operational data. Component failure risk scoring, maintenance schedule optimization, spare parts demand forecasting.
-
-### MOD-058: Anomaly Detection & Fraud Prevention
-Real-time monitoring for booking anomalies, unusual patterns, potential fraud. Automated alerts for high-risk transactions, rule-based and ML-based detection, investigation workflow.
+| # | Module | Key Capabilities |
+|---|--------|-----------------|
+| 54 | Admin Portal | System config, feature flags, module configs, integration endpoints |
+| 55 | Master Data Management | Ports, vessels, currencies, UN/LOCODE, container types |
+| 56 | Workflow & Notification Engine | Approval workflows, email/SMS/push notifications, escalation rules |
+| 57 | Integration & EDI Layer | EDI messages (BAPLIE, COPARN), API integrations, message queues |
+| 58 | Infrastructure & Security | SSL, backup, monitoring, security policies |
+| 59 | Implementation & Change Management | Go-live planning, change requests, training tracking |
+| 60 | Knowledge Management & Training | Training modules, SOPs, knowledge base |
+| 61 | Mobile Operations App | Mobile-optimized operations for field staff |
 
 ---
 
-## Advanced Modules (MOD-059 to MOD-061)
+### Technical Specifications
 
-### MOD-059: IoT & Real-Time Tracking
-Integration with IoT sensors on containers (temperature, humidity, GPS), vessels (AIS), equipment. Real-time dashboards, geofencing alerts, cold chain monitoring, proof-of-delivery.
+| Specification | Detail |
+|---------------|--------|
+| Framework | Next.js 16 (App Router, Server Components) |
+| Language | TypeScript (strict mode) |
+| Database | PostgreSQL with 528+ tables |
+| ORM | Drizzle ORM with postgres-js driver |
+| Cache | Redis 7 |
+| Job Queue | BullMQ (background jobs for PDF, email, exports) |
+| Authentication | RS256 JWT (asymmetric keys, 15min access / 30d refresh) |
+| Validation | Zod v4 |
+| UI | Radix UI primitives + Tailwind CSS |
+| Icons | Lucide React |
+| Container | Docker (multi-stage build, Node.js 22 Alpine) |
+| Reverse Proxy | Caddy (automatic HTTPS via Let's Encrypt) |
+| Connection Pool | PgBouncer |
 
-### MOD-060: Mobile Operations App
-iOS/Android app for field operations: gate operations, stowage supervision, damage inspection, crew timesheets. Offline-capable, photo/signature capture, real-time sync.
+### Security
 
-### MOD-061: Customer API & Integrations
-REST API for third-party customer integrations. Booking creation, shipment tracking, invoice download, notification webhooks. Rate limiting, comprehensive API documentation, sandbox environment.
+- Row-Level Security (RLS) on all tables for tenant isolation
+- CSRF protection on all mutations
+- Rate limiting on all endpoints
+- httpOnly, Secure, SameSite=Strict cookies
+- Input validation via Zod on every API route
+- Parameterized queries only via Drizzle ORM (no SQL injection)
+- Non-root Docker user
 
----
+### Known Limitations
 
-## Technology Stack
-
-- **Frontend:** Next.js 16 with React, TypeScript, Tailwind CSS, Radix UI
-- **Backend:** Next.js API routes with Node.js 20
-- **Database:** PostgreSQL 16 with Drizzle ORM, PgBouncer connection pooling
-- **Cache/Queue:** Redis 7 with BullMQ for background jobs
-- **Authentication:** RS256 JWT with asymmetric key cryptography
-- **Infrastructure:** Docker Compose, Caddy reverse proxy, Docker networking
-- **Analytics:** Real-time dashboards, historical trend analysis
-- **AI/ML:** Claude API, GPT-4 integration, custom models
-
----
-
-## Deployment
-
-- **Container:** Docker multi-stage build, standalone Next.js output
-- **Port:** 3100
-- **SSL:** Automatic certificate management via Caddy/Let's Encrypt
-- **Database:** PostgreSQL on Docker with automated backups
-- **Scaling:** Horizontal scaling via Docker Compose replicas, PgBouncer connection pooling
-- **CDN:** Ready for CloudFlare or similar for static assets
-
----
-
-## Testing & Quality Assurance
-
-- TypeScript strict mode: 100% type coverage
-- Unit tests: Vitest framework
-- Integration tests: E2E with Playwright
-- Security: OWASP compliance, rate limiting, Zod validation
-- Performance: Lighthouse green scores, Core Web Vitals compliant
-- Audit: npm audit passing with 0 high/critical vulnerabilities
+- Offline mode not yet available for mobile app
+- PDF generation is English-only in v1.0.0 (Arabic PDF planned for v1.1)
+- Maximum 50 records per API page (cursor pagination)
+- AI agents require external LLM provider configuration
+- Multi-currency: USD primary; other currencies via conversion rates
 
 ---
 
-## Documentation
+### Upgrade Path
 
-Complete documentation included:
+This is the initial release. Future releases will follow semantic versioning:
 
-- Deployment Guide: Docker, Caddy, PostgreSQL backup procedures
-- Data Dictionary: Maritime terminology, entity definitions, status enums
-- Integration Guide: EDI messaging (BAPLIE, COPARN, CUSCAR), API auth, webhooks
-- Local Development Setup: Prerequisites, migrations, seed data
-- Architecture Guide: System design, performance optimization, security
-- Module Reference: Detailed module specifications, API endpoints
-- Operational Processes: SOPs for common tasks
-- Admin Guide: User management, system configuration
-- User Guide: End-user operations manual
-- AI Agents Guide: Agent framework, custom agent development
+- **v1.1.0** -- Arabic PDF generation, enhanced mobile app
+- **v1.2.0** -- Offline mode, advanced BI dashboards, custom report builder
+- **v2.0.0** -- Multi-region deployment, real-time collaboration, blockchain BL
 
 ---
 
-## Known Limitations & Future Work
+### Documentation
 
-- Multi-currency support: Currently USD primary; other currencies via conversion rates
-- Blockchain integration: Planned for future release (immutable B/L records)
-- Advanced analytics: Custom report builder coming Q2 2026
-- Machine learning: Additional predictive models for fuel consumption, ETA accuracy
-- Mobile: Native iOS/Android apps planned post v1.0
+Complete documentation included in `/docs/`:
 
----
-
-## Support & Documentation
-
-Full documentation available in `/docs/`:
-- Getting started guide
-- API reference
-- Database schema
-- Integration specifications
-- Operational runbooks
-
-Support: support@codilla.ai  
-Community: Slack channel #cs-erp-users
+- [Architecture Guide](./architecture.md)
+- [Modules Reference](./modules-reference.md)
+- [API Reference](./api-reference.md)
+- [Database Schema](./database-schema.md)
+- [User Guide](./user-guide.md)
+- [AI Agents Guide](./ai-agents-guide.md)
+- [Operational Processes](./operational-processes.md)
+- [Admin Guide](./admin-guide.md)
+- [Deployment Guide](./deployment-guide.md)
+- [Data Dictionary](./data-dictionary.md)
+- [Integration Guide](./integration-guide.md)
+- [Local Development Setup](./local-development-setup.md)
 
 ---
 
-## Credits
+### Credits
 
-Developed by Codilla AI for Qatar, UAE, KSA, and India container shipping market.
+Developed by Codilla AI for the Qatar, UAE, KSA, and India container shipping market.
 
-**v1.0.0** — Production Ready  
+**v1.0.0** -- Production Ready
 March 6, 2026

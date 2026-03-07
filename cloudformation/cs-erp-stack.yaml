@@ -1,0 +1,561 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CS-ERP Full Stack Deployment — VPC, RDS, ElastiCache, ECS Fargate, ALB, WAF
+
+Parameters:
+  TenantId:
+    Type: String
+    Description: Tenant identifier (first 8 chars of UUID)
+  InstanceCpu:
+    Type: String
+    Default: '1024'
+    AllowedValues: ['512', '1024', '2048', '4096']
+  InstanceMemory:
+    Type: String
+    Default: '2048'
+    AllowedValues: ['1024', '2048', '4096', '8192']
+  RdsInstanceClass:
+    Type: String
+    Default: db.t3.small
+  CacheNodeType:
+    Type: String
+    Default: cache.t3.small
+  CustomDomain:
+    Type: String
+    Default: ''
+  EnableBackups:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+  EnableMonitoring:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref CustomDomain, '']]
+  BackupsEnabled: !Equals [!Ref EnableBackups, 'true']
+  MonitoringEnabled: !Equals [!Ref EnableMonitoring, 'true']
+
+Resources:
+  # ==========================================
+  # Networking
+  # ==========================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-vpc'
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-igw'
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-public-1'
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-public-2'
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-private-1'
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-private-2'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-public-rt'
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  NatEip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-nat'
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-private-rt'
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  # ==========================================
+  # Security Groups
+  # ==========================================
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB Security Group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-alb-sg'
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS App Security Group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-app-sg'
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS Security Group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-db-sg'
+
+  CacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ElastiCache Security Group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-cache-sg'
+
+  # ==========================================
+  # Database (RDS PostgreSQL)
+  # ==========================================
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub 'cs-erp-${TenantId} DB subnets'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub 'cs-erp-${TenantId}'
+      Engine: postgres
+      EngineVersion: '16.4'
+      DBInstanceClass: !Ref RdsInstanceClass
+      AllocatedStorage: 50
+      MaxAllocatedStorage: 200
+      StorageType: gp3
+      StorageEncrypted: true
+      MasterUsername: cs_erp_admin
+      ManageMasterUserPassword: true
+      DBName: cs_erp
+      MultiAZ: true
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroup
+      BackupRetentionPeriod: !If [BackupsEnabled, 7, 1]
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+      DeletionProtection: true
+      EnablePerformanceInsights: !If [MonitoringEnabled, true, false]
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-db'
+
+  # ==========================================
+  # Cache (ElastiCache Redis)
+  # ==========================================
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: !Sub 'cs-erp-${TenantId} Cache subnets'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  CacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      ClusterName: !Sub 'cs-erp-${TenantId}'
+      Engine: redis
+      EngineVersion: '7.1'
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref CacheSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-cache'
+
+  # ==========================================
+  # Compute (ECS Fargate)
+  # ==========================================
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub 'cs-erp-${TenantId}'
+      ClusterSettings:
+        - Name: containerInsights
+          Value: !If [MonitoringEnabled, enabled, disabled]
+
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'cs-erp-${TenantId}-ecs-exec'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'cs-erp-${TenantId}-ecs-task'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/cs-erp-${TenantId}'
+      RetentionInDays: 30
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub 'cs-erp-${TenantId}'
+      Cpu: !Ref InstanceCpu
+      Memory: !Ref InstanceMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt EcsTaskRole.Arn
+      ContainerDefinitions:
+        - Name: cs-erp-web
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/cs-erp:latest'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: web
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: '3000'
+
+  EcsService:
+    Type: AWS::ECS::Service
+    DependsOn: AlbListener
+    Properties:
+      ServiceName: !Sub 'cs-erp-${TenantId}'
+      Cluster: !Ref EcsCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 2
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          SecurityGroups:
+            - !Ref AppSecurityGroup
+      LoadBalancers:
+        - ContainerName: cs-erp-web
+          ContainerPort: 3000
+          TargetGroupArn: !Ref TargetGroup
+      HealthCheckGracePeriodSeconds: 120
+
+  # ==========================================
+  # Load Balancer
+  # ==========================================
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub 'cs-erp-${TenantId}'
+      Type: application
+      Scheme: internet-facing
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-alb'
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub 'cs-erp-${TenantId}-tg'
+      Port: 3000
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      TargetType: ip
+      HealthCheckPath: /api/health
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      HealthCheckTimeoutSeconds: 10
+
+  AlbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  AlbHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasCustomDomain
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref AcmCertificate
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # ==========================================
+  # Security (ACM + WAF)
+  # ==========================================
+  AcmCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: HasCustomDomain
+    Properties:
+      DomainName: !Ref CustomDomain
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Sub 'cs-erp-${TenantId}-cert'
+
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub 'cs-erp-${TenantId}-waf'
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: !If [MonitoringEnabled, true, false]
+        MetricName: !Sub 'cs-erp-${TenantId}-waf'
+      Rules:
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: CommonRuleSet
+        - Name: AWSManagedRulesSQLiRuleSet
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: SQLiRuleSet
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: KnownBadInputs
+
+  WebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !GetAtt Alb.Arn
+      WebACLArn: !GetAtt WebAcl.Arn
+
+  # ==========================================
+  # DNS (conditional)
+  # ==========================================
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCustomDomain
+    Properties:
+      HostedZoneName: !Sub
+        - '${Domain}.'
+        - Domain: !Select [1, !Split ['.', !Ref CustomDomain]]
+      Name: !Ref CustomDomain
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Alb.DNSName
+        HostedZoneId: !GetAtt Alb.CanonicalHostedZoneID
+
+Outputs:
+  ApplicationUrl:
+    Description: Application URL
+    Value: !If
+      - HasCustomDomain
+      - !Sub 'https://${CustomDomain}'
+      - !Sub 'http://${Alb.DNSName}'
+
+  AlbDnsName:
+    Description: ALB DNS name
+    Value: !GetAtt Alb.DNSName
+
+  RdsEndpoint:
+    Description: RDS endpoint
+    Value: !GetAtt Database.Endpoint.Address
+
+  RedisEndpoint:
+    Description: ElastiCache Redis endpoint
+    Value: !GetAtt CacheCluster.RedisEndpoint.Address
+
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC

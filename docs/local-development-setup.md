@@ -1,106 +1,49 @@
-# Local Development Setup — CS ERP
+# CS-ERP Local Development Setup
 
-This guide walks through setting up CS ERP for local development on your machine.
-
-## Prerequisites
-
-### System Requirements
-
-- **OS:** macOS 12+, Ubuntu 20.04+, or Windows 11 with WSL2
-- **Node.js:** 20.0 or higher (use nvm or fnm for version management)
-- **PostgreSQL:** 16 (local or via Docker)
-- **Redis:** 7.0 (local or via Docker)
-- **Git:** 2.30+
-- **RAM:** 4GB minimum (8GB+ recommended)
-- **Disk:** 10GB free space
-
-### Package Manager
-
-- **npm:** v10+ (included with Node.js)
-
-### Code Editor (Recommended)
-
-- VS Code with Extensions:
-  - TypeScript Vue Plugin
-  - Tailwind CSS IntelliSense
-  - Prettier
-  - ESLint
-  - Thunder Client (or Postman for API testing)
+This guide walks through setting up CS-ERP for local development.
 
 ---
 
-## Step 1: Install Prerequisites
+## Prerequisites
 
-### macOS
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Node.js | 22+ (use nvm for version management) | Runtime |
+| npm | 10+ (included with Node.js) | Package manager |
+| PostgreSQL | 16+ | Database |
+| Redis | 7+ | Cache and job queue |
+| Git | 2.40+ | Version control |
+| OpenSSL | 3+ | JWT key generation |
+| Docker (optional) | 24+ | For containerized PostgreSQL/Redis |
+
+**System requirements:** macOS 12+, Ubuntu 20.04+, or Windows 11 with WSL2. 4GB RAM minimum (8GB+ recommended).
+
+---
+
+## Step 1: Clone the Repository
 
 ```bash
-# Install Homebrew if not already installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Node.js (via nvm recommended)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-source ~/.bashrc
-nvm install 20
-nvm use 20
-
-# Install PostgreSQL
-brew install postgresql@16
-brew services start postgresql@16
-
-# Install Redis
-brew install redis
-brew services start redis
-
-# Verify installations
-node --version  # v20.x.x
-npm --version   # 10.x.x
-psql --version  # psql (PostgreSQL) 16.x
-redis-cli --version  # redis-cli x.x.x
+git clone <repository-url> cs-erp
+cd cs-erp
 ```
 
-### Ubuntu / Debian
+---
+
+## Step 2: Install Dependencies
 
 ```bash
-# Update package manager
-sudo apt update && sudo apt upgrade -y
-
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Install PostgreSQL
-sudo apt install -y postgresql-16 postgresql-contrib-16
-sudo systemctl start postgresql
-
-# Install Redis
-sudo apt install -y redis-server
-sudo systemctl start redis-server
-
-# Verify
-node --version
-npm --version
-psql --version
-redis-cli --version
+npm install
 ```
 
-### Windows (WSL2)
+This installs all dependencies including Next.js 16, Drizzle ORM, Zod v4, Radix UI, Tailwind CSS, Lucide React, BullMQ, and bcrypt.
+
+---
+
+## Step 3: Database Setup
+
+### Option A: Docker (Recommended)
 
 ```bash
-# In WSL2 terminal, follow Ubuntu instructions above
-wsl --install
-
-# Verify Node.js in WSL
-wsl node --version
-```
-
-### Using Docker (Alternative)
-
-Instead of local PostgreSQL/Redis, use Docker:
-
-```bash
-# Install Docker Desktop: https://www.docker.com/products/docker-desktop
-
-# Start PostgreSQL and Redis containers
 docker run -d \
   --name cs-erp-postgres \
   -e POSTGRES_DB=cs_erp \
@@ -118,82 +61,66 @@ docker run -d \
 docker ps
 ```
 
----
-
-## Step 2: Clone Repository
+### Option B: Local PostgreSQL
 
 ```bash
-# Clone from GitHub (or your git host)
-git clone https://github.com/codilla-ai/cs-erp.git
-cd cs-erp
+# macOS
+brew install postgresql@16
+brew services start postgresql@16
 
-# Verify directory structure
-ls -la
-# You should see: src/, drizzle/, docs/, package.json, next.config.ts, etc.
+# Ubuntu
+sudo apt install -y postgresql-16 postgresql-contrib-16
+sudo systemctl start postgresql
+
+# Create database and user
+sudo -u postgres psql
+CREATE USER codilla WITH PASSWORD 'localdevpass';
+CREATE DATABASE cs_erp OWNER codilla;
+GRANT ALL PRIVILEGES ON DATABASE cs_erp TO codilla;
+\q
 ```
 
----
-
-## Step 3: Install Dependencies
+Ensure Redis is running locally on port 6379:
 
 ```bash
-# Install npm packages (this may take 2-3 minutes)
-npm install
+# macOS
+brew install redis && brew services start redis
 
-# Verify installation
-npm list --depth=0
+# Ubuntu
+sudo apt install -y redis-server && sudo systemctl start redis-server
 ```
-
-Expected major dependencies:
-- next@16
-- react@18 or 19
-- drizzle-orm@latest
-- zod@4
-- @radix-ui/react-*
-- tailwindcss
-- typescript
 
 ---
 
 ## Step 4: Generate JWT Keys
 
-CS ERP uses RS256 asymmetric JWT. Generate key pair:
+CS-ERP uses RS256 asymmetric JWT tokens. Generate the key pair:
 
 ```bash
-# Create .keys directory
 mkdir -p .keys
-
-# Generate private key (2048-bit RSA)
 openssl genrsa -out .keys/private.pem 2048
-
-# Generate public key from private key
 openssl rsa -in .keys/private.pem -pubout -out .keys/public.pem
-
-# Verify files were created
-ls -la .keys/
-
-# Set secure permissions (private key readable by you only)
 chmod 600 .keys/private.pem
 chmod 644 .keys/public.pem
-
-# View public key (for reference)
-cat .keys/public.pem
 ```
+
+The `.keys/` directory is in `.gitignore` -- never commit these files.
 
 ---
 
-## Step 5: Configure Environment Variables
+## Step 5: Environment Variables
 
-Create `.env.local` in project root:
+Create a `.env.local` file in the project root:
 
-```bash
-cat > .env.local << 'ENVEOF'
+```env
 # Application
 NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:3100
+NEXT_PUBLIC_APP_URL=http://localhost:3100
 PORT=3100
+NEXT_TELEMETRY_DISABLED=1
+LOG_LEVEL=debug
 
-# Database
+# Database (direct connection for development)
 DATABASE_URL=postgresql://codilla:localdevpass@localhost:5432/cs_erp
 DIRECT_DATABASE_URL=postgresql://codilla:localdevpass@localhost:5432/cs_erp
 
@@ -204,200 +131,83 @@ REDIS_URL=redis://localhost:6379
 JWT_PRIVATE_KEY_PATH=.keys/private.pem
 JWT_PUBLIC_KEY_PATH=.keys/public.pem
 
-# Auth Secrets (generate random strings)
-CSRF_SECRET=your-random-32-char-secret-123456789
-SESSION_SECRET=your-random-32-char-secret-987654321
-
-# Optional (for advanced features)
-OPENAI_API_KEY=sk_test_... (if using AI features)
-NEXT_TELEMETRY_DISABLED=1
-LOG_LEVEL=debug
-ENVEOF
+# Auth Secrets (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+CSRF_SECRET=your-random-32-char-secret-here
+COOKIE_DOMAIN=localhost
 ```
 
-**Generate Random Secrets:**
-
-```bash
-# Generate CSRF and Session secrets
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+The `.env.local` file is in `.gitignore` -- never commit it.
 
 ---
 
-## Step 6: Setup Database
+## Step 6: Run Database Migrations
 
-### 6a. Create Database (if using local PostgreSQL)
-
-```bash
-# Connect to PostgreSQL as superuser
-sudo -u postgres psql
-
-# In psql shell:
-CREATE USER codilla WITH PASSWORD 'localdevpass';
-CREATE DATABASE cs_erp OWNER codilla;
-GRANT ALL PRIVILEGES ON DATABASE cs_erp TO codilla;
-\q
-```
-
-### 6b. Run Migrations
+Apply all Drizzle migrations to create the 528+ tables:
 
 ```bash
-# Generate Drizzle migrations from schema
-npx drizzle-kit generate
-
-# Apply migrations to database
 npx drizzle-kit migrate
-
-# Verify database structure (optional)
-npx drizzle-kit studio  # Opens Drizzle Studio UI at localhost:5555
 ```
 
-### 6c. Seed Initial Data (Optional)
+To check migration status:
 
 ```bash
-# Check if seed script exists
-ls -la scripts/seed.* 2>/dev/null || echo "No seed script found"
+npx drizzle-kit status
+```
 
-# If seed script exists, run it:
-npm run seed
+To browse the database visually:
+
+```bash
+npx drizzle-kit studio   # Opens at localhost:5555
 ```
 
 ---
 
-## Step 7: TypeScript Compilation Check
+## Step 7: TypeScript Check
 
-Verify TypeScript has no errors:
+Verify TypeScript compiles cleanly:
 
 ```bash
-# Type check without emitting output
 npx tsc --noEmit
-
-# If errors occur, fix them before proceeding
-# Common issues:
-# - Missing types: npm install --save-dev @types/node
-# - Zod schema mismatch: Verify schema files in src/lib/validation.ts
 ```
 
 ---
 
-## Step 8: Start Development Server
+## Step 8: Start the Development Server
 
 ```bash
-# Run Next.js development server
 npm run dev
-
-# Expected output:
-# ▲ Next.js 16.0.0
-# - Local: http://localhost:3100
-# - Environments: .env.local
-# ○ Ready in 2.5s
 ```
 
-Open browser: http://localhost:3100
-
-You should see the login page (or homepage if already authenticated).
+The application starts on **http://localhost:3100**.
 
 ---
 
-## Step 9: Create First User (Optional)
+## Step 9: Create Initial User
 
-### Via Database (Manual)
-
-```bash
-# Generate password hash
-node << 'HASHEOF'
-const bcrypt = require('bcrypt');
-bcrypt.hash('password123', 10, (err, hash) => {
-  console.log('Hashed password:', hash);
-});
-HASHEOF
-
-# Insert user into database
-psql -U codilla cs_erp << 'SQLEOF'
-INSERT INTO users (id, tenant_id, email, password_hash, created_at, updated_at)
-VALUES (
-  gen_random_uuid(),
-  gen_random_uuid(),
-  'admin@example.com',
-  '$2b$10$...',  -- Replace with hashed password from above
-  NOW(),
-  NOW()
-);
-SQLEOF
-```
-
-### Via Registration Endpoint
+Use the registration API:
 
 ```bash
 curl -X POST http://localhost:3100/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "dev@example.com",
-    "password": "TestPassword123!"
+    "email": "admin@localhost.com",
+    "password": "SecureP@ss123",
+    "full_name": "Admin User"
   }'
 ```
 
-Then login with: dev@example.com / TestPassword123!
+Then log in at http://localhost:3100/login.
 
----
-
-## Step 10: Verify Everything Works
+### Verify Everything Works
 
 ```bash
-# 1. Check API health
+# Check health endpoint
 curl http://localhost:3100/api/health
 
-# 2. Login and get JWT token
+# Login and get token
 curl -X POST http://localhost:3100/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "dev@example.com",
-    "password": "TestPassword123!"
-  }'
-
-# 3. Use token to call protected endpoint
-curl http://localhost:3100/api/v1/bookings \
-  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_2>"
-
-# 4. Expected response: { data: [], meta: { total: 0, cursor: null } }
-```
-
----
-
-## Common Development Commands
-
-```bash
-# Start dev server with hot reload
-npm run dev
-
-# Build production bundle (for testing)
-npm run build
-
-# Run production build locally
-npm run start
-
-# Lint TypeScript and JavaScript
-npm run lint
-
-# Format code with Prettier
-npm run format
-
-# Type check
-npm run type-check
-
-# Run tests (if configured)
-npm test
-
-# Database Studio (visual DB browser)
-npx drizzle-kit studio
-
-# Generate new migration after schema changes
-npx drizzle-kit generate
-npx drizzle-kit migrate
-
-# View database directly
-psql -U codilla cs_erp
-# Then SQL commands like: \dt (show tables), \d users (describe table)
+  -d '{"email": "admin@localhost.com", "password": "SecureP@ss123"}'
 ```
 
 ---
@@ -405,84 +215,96 @@ psql -U codilla cs_erp
 ## Project Structure
 
 ```
-/root/cs-erp/
-├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── (modules)/          # Feature modules
-│   │   │   └── {module}/       # e.g., booking/, vessel/
-│   │   ├── api/                # API routes
-│   │   │   └── v1/             # API v1 endpoints
-│   │   └── layout.tsx          # Root layout
-│   ├── db/
-│   │   ├── schema/             # Drizzle ORM schemas
-│   │   └── index.ts            # DB client
-│   ├── lib/                    # Utility functions
-│   │   ├── auth/               # Authentication
-│   │   ├── jwt.ts              # JWT signing/verification
-│   │   ├── validation.ts       # Zod schemas
-│   │   └── ...
-│   ├── types/                  # TypeScript type definitions
-│   ├── components/             # Reusable React components
-│   └── styles/                 # Global styles
-├── drizzle/                    # Migrations folder
-├── docs/                       # Documentation
-├── public/                     # Static assets
-├── .env.local                  # Local environment variables
-├── .keys/                      # JWT key pair (DO NOT COMMIT)
-├── next.config.ts             # Next.js configuration
-├── tsconfig.json              # TypeScript configuration
-├── tailwind.config.ts         # Tailwind CSS configuration
-└── package.json               # Dependencies and scripts
+cs-erp/
+  .keys/                          # JWT key pair (gitignored)
+  drizzle/                        # Migration files
+    meta/                         # Migration metadata
+  docs/                           # Documentation
+  public/                         # Static assets
+  src/
+    app/
+      (auth)/                     # Auth pages (login, register)
+      (dashboard)/                # Dashboard and module pages
+      api/
+        auth/                     # Auth API routes
+        health/                   # Health check
+        v1/                       # Module API routes
+          {module-slug}/
+            route.ts
+      globals.css                 # Tailwind + CSS variables
+      layout.tsx                  # Root layout
+    db/
+      schema/                     # Drizzle schema files (61+ files)
+        {module-slug}.ts
+        index.ts                  # Barrel export
+      index.ts                    # DB connection
+    lib/
+      auth/                       # Auth utilities
+      {module-slug}/              # Module-specific utilities
+      jwt.ts                      # RS256 JWT sign/verify
+      password.ts                 # bcrypt hashing
+      rate-limit.ts               # In-memory rate limiter
+      validation.ts               # Shared Zod schemas
+      cookies.ts                  # Cookie helpers
+      audit.ts                    # Audit logging
+    types/
+      {module-slug}.ts            # Module type definitions
+    middleware.ts                  # Route protection
+  drizzle.config.ts               # Drizzle configuration
+  next.config.ts                  # Next.js configuration (standalone output)
+  tailwind.config.ts              # Tailwind configuration
+  tsconfig.json                   # TypeScript configuration (strict)
+  package.json
+  CLAUDE.md                       # AI coding standards
 ```
 
 ---
 
-## Debugging
+## Common Development Commands
 
-### VS Code Debugger
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server on port 3100 with hot reload |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npx tsc --noEmit` | TypeScript type check (0 errors required) |
+| `npx drizzle-kit generate` | Generate migration from schema changes |
+| `npx drizzle-kit migrate` | Apply pending migrations |
+| `npx drizzle-kit status` | Check migration status |
+| `npx drizzle-kit studio` | Open Drizzle Studio (DB browser) at localhost:5555 |
+| `npm audit --audit-level=high` | Security audit (0 high/critical required) |
 
-Create `.vscode/launch.json`:
+---
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Next.js",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/node_modules/.bin/next",
-      "args": ["dev"],
-      "console": "integratedTerminal",
-      "env": {
-        "NODE_ENV": "development"
-      }
-    }
-  ]
-}
-```
+## Development Guidelines
 
-### Server Logs
+### Server Components vs Client Components
 
-```bash
-# Dev server logs are visible in terminal where npm run dev is running
-# For persistent logging:
-npm run dev > logs/dev.log 2>&1
-tail -f logs/dev.log
-```
+- Default to Server Components (no directive needed)
+- Add `'use client'` only when the component needs interactivity (event handlers, hooks, browser APIs)
+- Place `loading.tsx` in every route segment for Suspense boundaries
 
-### Database Logs
+### Database Queries
 
-```bash
-# PostgreSQL logs (macOS)
-tail -f /usr/local/var/log/postgres.log
+- Always use Drizzle ORM -- never raw SQL strings
+- Use indexes on all WHERE clause columns
+- Use JOINs or batch fetches -- N+1 queries are forbidden
+- All list queries must use cursor-based pagination (max 50 rows)
 
-# PostgreSQL logs (Ubuntu)
-tail -f /var/log/postgresql/postgresql-16-main.log
+### API Routes
 
-# Redis logs
-redis-cli INFO
-```
+- Validate all input with Zod before processing
+- Wrap in try/catch; return generic error messages to clients
+- Check auth (`requireAuth()`) and permissions (`requirePermission()`) on every route
+- Return consistent response format (`{ data }` or `{ error }`)
+- Include CSRF token check on mutations
+
+### Styling
+
+- Use Tailwind CSS utility classes
+- Use CSS variables from `globals.css` for colors
+- Use logical properties (`ms-`, `me-`) instead of `ml-`, `mr-` for RTL support
+- Test at 375px width for mobile responsiveness
 
 ---
 
@@ -490,61 +312,20 @@ redis-cli INFO
 
 | Issue | Solution |
 |-------|----------|
-| `ECONNREFUSED 127.0.0.1:5432` | PostgreSQL not running. Try `brew services start postgresql@16` or docker command |
+| `ECONNREFUSED 127.0.0.1:5432` | PostgreSQL not running. Start with `brew services start postgresql@16` or `docker start cs-erp-postgres` |
 | `Error: Cannot find module 'bcrypt'` | Run `npm install` again; bcrypt needs native build |
-| `PORT 3100 already in use` | Kill process: `lsof -i :3100 \| grep LISTEN \| awk '{print $2}' \| xargs kill -9` |
-| JWT validation fails | Regenerate keys: `rm .keys/* && follow Step 4` |
-| `psql: error: role "codilla" does not exist` | Create user: `sudo -u postgres createuser codilla` |
-| `Database does not exist` | Create DB: `createdb -U postgres cs_erp` (or use SQL commands in Step 6a) |
-| TypeScript errors on `drizzle-orm` | Run `npm install` and `npm run type-check` again |
-
----
-
-## Environment Variables Reference
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `NODE_ENV` | Environment mode | development, production |
-| `NEXT_PUBLIC_API_URL` | Public API URL (accessible to browser) | http://localhost:3100 |
-| `PORT` | Server port | 3100 |
-| `DATABASE_URL` | Pooled DB connection (app) | postgresql://user:pass@localhost/cs_erp |
-| `DIRECT_DATABASE_URL` | Direct DB connection (migrations) | postgresql://user:pass@localhost/cs_erp |
-| `REDIS_URL` | Redis connection | redis://localhost:6379 |
-| `JWT_PRIVATE_KEY_PATH` | RS256 private key file path | .keys/private.pem |
-| `JWT_PUBLIC_KEY_PATH` | RS256 public key file path | .keys/public.pem |
-| `CSRF_SECRET` | CSRF token secret | random 32-char string |
-| `SESSION_SECRET` | Session encryption secret | random 32-char string |
+| `PORT 3100 already in use` | `lsof -i :3100` to find PID, then `kill -9 <PID>` |
+| JWT validation fails | Regenerate keys: `rm .keys/*` and redo Step 4 |
+| `role "codilla" does not exist` | Create user: `sudo -u postgres createuser codilla` |
+| `database "cs_erp" does not exist` | Create DB: `sudo -u postgres createdb -O codilla cs_erp` |
+| TypeScript errors | Run `npx tsc --noEmit` to see all errors; fix before proceeding |
+| Redis connection fails | Verify Redis: `redis-cli ping` should return `PONG` |
 
 ---
 
 ## Next Steps
 
 1. Read the [Architecture Guide](./architecture.md) for system design
-2. Check [Module Reference](./modules-reference.md) for module specifications
+2. Check [Modules Reference](./modules-reference.md) for module specifications
 3. Review [API Reference](./api-reference.md) for endpoint documentation
-4. Explore [Operational Processes](./operational-processes.md) for use cases
-5. Start coding! Make sure to follow standards in [CLAUDE.md](../CLAUDE.md)
-
----
-
-## Tips for Development
-
-- Use TypeScript strict mode: catch errors early
-- Commit frequently with descriptive messages
-- Write tests alongside features
-- Use Drizzle Studio for database inspection
-- Enable Prettier auto-format on save (VS Code)
-- Check database migrations before pushing code
-- Test on mobile viewport (DevTools: CMD+SHIFT+M)
-- Test RTL layout (add `dir="rtl"` to html tag temporarily)
-
----
-
-## Getting Help
-
-- **Questions:** Check documentation in `/docs/`
-- **Bugs:** GitHub Issues (if public repo)
-- **Support:** Email development@codilla.ai
-- **Slack:** Join #cs-erp-dev channel
-
-Happy coding!
+4. Follow coding standards in [CLAUDE.md](../CLAUDE.md)

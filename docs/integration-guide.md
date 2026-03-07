@@ -1,14 +1,17 @@
-# CS ERP Integration Guide
+# CS-ERP Integration Guide
 
-This guide covers integrations with external systems including EDI messaging, API authentication, webhooks, and third-party platforms used in container shipping operations.
+This document covers integrating external systems with CS-ERP via APIs, EDI messaging, webhooks, and third-party platform connections.
 
-## Authentication & API Access
+---
+
+## API Authentication
 
 ### RS256 JWT Authentication
 
-CS ERP uses asymmetric JWT (RS256) for API authentication. All API requests must include a valid token.
+CS-ERP uses asymmetric JWT (RS256) for API authentication. All API requests must include a valid token.
 
 **Token Structure:**
+
 ```json
 {
   "sub": "user-id",
@@ -21,84 +24,162 @@ CS ERP uses asymmetric JWT (RS256) for API authentication. All API requests must
 }
 ```
 
-**Access Token:**
-- Validity: 15 minutes
-- Refresh: Use refresh token before expiry
-
-**Refresh Token:**
-- Validity: 30 days
-- Rotation: New refresh token issued with each refresh
-- Storage: httpOnly cookie (never in localStorage)
+- **Access Token:** 15-minute validity; refresh before expiry
+- **Refresh Token:** 30-day validity with rotation (new token issued each refresh)
+- **Storage:** httpOnly cookies (never in localStorage)
 
 **Obtaining Tokens:**
 
 ```bash
-curl -X POST https://cs-erp.codilla.ai/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "secure-password"
-  }'
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "api-user@company.com",
+  "password": "..."
+}
 
 # Response
 {
   "data": {
-    "accessToken": "eyJhbGc...",
-    "refreshToken": "eyJhbGc...",
+    "accessToken": "eyJhbGciOiJSUzI1NiI...",
+    "refreshToken": "eyJhbGciOiJSUzI1NiI...",
     "user": { "id": "...", "email": "..." }
   }
 }
 ```
 
-**Using Access Token:**
+**Using Tokens:**
 
 ```bash
-curl https://cs-erp.codilla.ai/api/v1/bookings \
-  -H "Authorization: Bearer eyJhbGc..."
+GET /api/v1/operations-documentation/bookings
+Authorization: Bearer eyJhbGciOiJSUzI1NiI...
+X-CSRF-Token: {csrf_token}
 ```
 
-**Refreshing Token:**
+**Refreshing:**
 
 ```bash
-curl -X POST https://cs-erp.codilla.ai/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{ "refreshToken": "eyJhbGc..." }'
-```
-
-## EDI Message Types
-
-### BAPLIE (Bayplan and Stowage Plan Message)
-
-**Purpose:** Submit container stowage plan to port/terminal
-
-**Message Flow:**
-1. Vessel completes loading at origin port
-2. System generates BAPLIE with container positions on vessel
-3. Sent to destination port 48-72 hours before arrival
-4. Port uses for pre-planning discharge operations
-
-**Content:**
-```
-UNB+UNOC:3+SENDER+RECEIVER+DATE+REF'
-UNH+MESSAGE-REF+BAPLIE:D:96A:UN'
-BGM+340+BAPLIE-NO+9'
-DTM+137:DATE:102'
-NAD+MS+VESSEL-CODE:::9'
-TDT+20+VOYAGE+1++VESSEL-NAME'
-LOC+9+PORT-CODE'
-CPI+1'
-DIM+3+M'
-CAP+***'
-EQD+CN+CONTAINER-NUMBER'
-EQN+1+1+5'
-EOF'
-UNZ+1+MESSAGE-REF'
-```
-
-**Endpoint:**
-```
-POST /api/v1/edi/baplie
+POST /api/auth/refresh
 Content-Type: application/json
+
+{ "refreshToken": "eyJhbGc..." }
+```
+
+All mutation requests require `X-CSRF-Token` header.
+
+---
+
+## API Response Format
+
+All endpoints return a consistent format:
+
+```json
+// Success (single)
+{ "data": { ... } }
+
+// Success (list with cursor pagination)
+{
+  "data": [ ... ],
+  "meta": { "total": 1542, "cursor": "eyJpZCI6Ijc..." }
+}
+
+// Error
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid booking date",
+    "details": { ... }
+  }
+}
+```
+
+### Pagination
+
+All list endpoints use cursor-based pagination (max 50 per page):
+
+```
+GET /api/v1/{module}/records?limit=50&cursor={cursor}
+```
+
+---
+
+## Rate Limiting
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| List/read endpoints | 1000 requests/hour |
+| Mutation endpoints | 100 requests/hour |
+| Auth endpoints | 30 requests/minute |
+| EDI submission | 500 messages/day |
+| Webhook deliveries | 10,000/day |
+
+**Rate Limit Headers:**
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1700000060
+```
+
+Exceeding limits returns `429 Too Many Requests` with `Retry-After` header.
+
+---
+
+## EDI Integration
+
+CS-ERP supports standard maritime EDI message types via the Integration & EDI Layer module.
+
+### Supported Standards
+
+| Standard | Description |
+|----------|-------------|
+| **UN/EDIFACT** | United Nations EDI standard (primary) |
+| **ANSI X12** | North American EDI standard |
+| **XML/JSON** | Modern API-based alternatives |
+
+### EDI Message Types
+
+#### Booking & Documentation
+
+| Message | Code | Direction | Description |
+|---------|------|-----------|-------------|
+| Booking Request | IFTMIN | Inbound | Customer booking request |
+| Booking Confirmation | IFTMCS | Outbound | Carrier booking confirmation |
+| Shipping Instructions | IFTMBC | Inbound | Customer SI submission |
+| Cargo Manifest | CUSCAR | Outbound | Customs cargo declaration |
+| Container Release | COREOR | Outbound | Container release order |
+
+#### Vessel & Container
+
+| Message | Code | Direction | Description |
+|---------|------|-----------|-------------|
+| Bay Plan | BAPLIE | Both | Container stowage positions |
+| Container Order | COPARN | Outbound | Container pre-announcement |
+| Gate In/Out | CODECO | Inbound | Terminal gate events |
+| Container Status | COSCON | Both | Container event updates |
+
+#### Financial
+
+| Message | Code | Direction | Description |
+|---------|------|-----------|-------------|
+| Invoice | INVOIC | Outbound | Freight invoice |
+| Payment Advice | PAYORD | Inbound | Payment notification |
+| Credit Note | CREMUL | Outbound | Credit note |
+
+### EDI Endpoints
+
+```
+POST /api/v1/edi/baplie     # Bay plan submission
+POST /api/v1/edi/coparn      # Container pre-announcement
+POST /api/v1/edi/cuscar      # Customs cargo report
+POST /api/v1/edi/iftmin      # Dangerous goods declaration
+```
+
+### BAPLIE Example
+
+```json
+POST /api/v1/edi/baplie
 Authorization: Bearer {token}
 
 {
@@ -106,7 +187,7 @@ Authorization: Bearer {token}
   "portId": "...",
   "containers": [
     {
-      "containerNumber": "OOCL1234567",
+      "containerNumber": "CSEU1234567",
       "position": "Bay-Row-Tier",
       "weight": 18000,
       "commodity": "General Cargo",
@@ -116,84 +197,25 @@ Authorization: Bearer {token}
 }
 ```
 
-### COPARN (Container Pre-Announcement Message)
+### CUSCAR Example
 
-**Purpose:** Notify port of arriving containers 24-48 hours before arrival
-
-**Content:** Container number, booking reference, shipper, consignee, commodity, weight, equipment
-
-**Endpoint:**
-```
-POST /api/v1/edi/coparn
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "voyageId": "...",
-  "destPortId": "...",
-  "eta": "2026-03-15T08:00:00Z",
-  "containers": [
-    {
-      "containerNumber": "OOCL1234567",
-      "bookingRef": "OOCL202601234",
-      "shipper": { "name": "...", "address": "..." },
-      "consignee": { "name": "...", "address": "..." },
-      "commodity": "Cotton Textiles",
-      "weight": 18000
-    }
-  ]
-}
-```
-
-### IFTMIN (Intermodal Transport Dangerous Goods)
-
-**Purpose:** Transmit dangerous goods declaration for containers
-
-**Content:** UN class, proper shipping name, technical name, packing group, marine pollutant flag
-
-**Endpoint:**
-```
-POST /api/v1/edi/iftmin
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "containerNumber": "OOCL1234567",
-  "hazmatClass": "3",
-  "properShippingName": "Paint",
-  "technicalName": "Petroleum distillates",
-  "packingGroup": "II",
-  "marineMarked": true,
-  "quantity": 18000,
-  "unit": "kg"
-}
-```
-
-### CUSCAR (Customs Cargo Report Message)
-
-**Purpose:** Electronic customs manifest submission to authorities
-
-**Required 24-72 hours before vessel arrival**
-
-**Content:**
-```
+```json
 POST /api/v1/edi/cuscar
-Content-Type: application/json
 Authorization: Bearer {token}
 
 {
   "voyageId": "...",
   "destCountry": "AE",
   "manifest": {
-    "vessel": "OOCL ASIA",
+    "vessel": "CS DOHA",
     "imo": "9652409",
-    "voyage": "W001",
+    "voyage": "V042/2026",
     "eta": "2026-03-15T08:00:00Z",
     "containers": [
       {
-        "containerNumber": "OOCL1234567",
+        "containerNumber": "CSEU1234567",
         "hsCode": "6209.20.00",
-        "description": "Men's Shirts Cotton",
+        "description": "Cotton Textiles",
         "weight": 18000,
         "origin": "CN",
         "shipper": "...",
@@ -204,300 +226,181 @@ Authorization: Bearer {token}
 }
 ```
 
-## Webhook Patterns
+### EDI Partner Configuration
 
-### Event Subscriptions
+Configure EDI partners at **Admin > Integrations > EDI Partners**:
 
-Subscribe to system events via webhook callbacks.
+1. Partner identification (GLN, SCAC code)
+2. Communication protocol (AS2, SFTP, API)
+3. Message types enabled
+4. Character encoding (UTF-8, ISO-8859-1)
+5. Acknowledgment requirements (CONTRL/997)
+6. Retry policy on failure
 
-**Register Webhook:**
+### EDI Processing Flow
+
 ```
+Inbound:  External System -> EDI Gateway -> Message Queue -> Parser -> Validator -> CS-ERP
+Outbound: CS-ERP -> Generator -> Validator -> Message Queue -> EDI Gateway -> External System
+```
+
+All EDI messages are logged with full audit trail including raw message content.
+
+---
+
+## Webhooks
+
+CS-ERP sends real-time event notifications to external systems via webhooks.
+
+### Registering Webhooks
+
+```json
 POST /api/v1/webhooks
-Content-Type: application/json
 Authorization: Bearer {token}
 
 {
   "url": "https://your-system.com/webhook",
-  "events": ["booking.confirmed", "voyage.arrived", "container.damaged"],
+  "events": ["booking.confirmed", "vessel.arrived", "container.gate_in"],
   "active": true
 }
 ```
 
-**Event: Booking Confirmed**
+### Available Events
+
+| Event | Trigger |
+|-------|---------|
+| `booking.created` | New booking created |
+| `booking.confirmed` | Booking confirmed |
+| `booking.cancelled` | Booking cancelled |
+| `bl.issued` | Bill of lading issued |
+| `bl.released` | Cargo release authorized |
+| `container.gate_in` | Container enters terminal |
+| `container.gate_out` | Container exits terminal |
+| `container.loaded` | Container loaded on vessel |
+| `container.discharged` | Container discharged from vessel |
+| `container.damaged` | Container damage reported |
+| `vessel.departed` | Vessel departed port |
+| `vessel.arrived` | Vessel arrived at port |
+| `invoice.issued` | Invoice sent to customer |
+| `payment.received` | Payment applied |
+
+### Webhook Payload
+
 ```json
 {
   "id": "evt_123",
   "type": "booking.confirmed",
-  "timestamp": "2026-03-06T10:00:00Z",
+  "timestamp": "2026-03-06T10:30:00Z",
   "data": {
-    "bookingId": "...",
-    "voyageId": "...",
-    "shipper": "...",
-    "containers": 2,
-    "revenue": 1500000
+    "booking_id": "uuid",
+    "booking_number": "BK-202603-00142",
+    "customer_id": "uuid",
+    "vessel": "CS DOHA",
+    "voyage": "V042/2026"
   }
 }
 ```
 
-**Event: Voyage Arrived**
-```json
-{
-  "id": "evt_456",
-  "type": "voyage.arrived",
-  "timestamp": "2026-03-15T08:30:00Z",
-  "data": {
-    "voyageId": "...",
-    "vesselName": "OOCL ASIA",
-    "port": "AEDXB",
-    "ata": "2026-03-15T08:30:00Z",
-    "containersLoaded": 580
-  }
-}
+### Signature Verification
+
+All webhooks include an HMAC-SHA256 signature in the `X-Signature` header:
+
+```
+X-Signature: sha256=abc123...
 ```
 
-**Event: Container Damaged**
-```json
-{
-  "id": "evt_789",
-  "type": "container.damaged",
-  "timestamp": "2026-03-15T10:00:00Z",
-  "data": {
-    "containerNumber": "OOCL1234567",
-    "bookingId": "...",
-    "severity": "major",
-    "description": "Door seal broken"
-  }
-}
-```
+Verify by computing `HMAC-SHA256(request_body, webhook_secret)` and comparing.
 
-### Webhook Signature Verification
+### Retry Policy
 
-All webhook payloads include HMAC-SHA256 signature.
+- Failed deliveries (non-2xx response) retry with exponential backoff
+- Schedule: 1 min, 5 min, 30 min, 2 hours, 12 hours
+- After 5 failures, webhook is marked as failing; admin notified
+- Manual retry available in admin panel
 
-**Header:** `X-Signature: sha256={signature}`
+---
 
-**Verification:**
-```javascript
-const crypto = require('crypto');
-const signature = req.headers['x-signature'];
-const body = JSON.stringify(req.body);
-const secret = process.env.WEBHOOK_SECRET;
-
-const computed = 'sha256=' + crypto
-  .createHmac('sha256', secret)
-  .update(body)
-  .digest('hex');
-
-if (computed === signature) {
-  // Valid webhook
-}
-```
-
-## Third-Party System Integrations
-
-### Port Community Systems (PCS)
-
-Integrates with port systems for real-time vessel schedules, berth availability, container movements.
-
-**API Endpoints Consumed:**
-- `GET /vessel-schedule` - Vessel ETA/ETD updates
-- `POST /berth-booking` - Reserve berth for port call
-- `GET /equipment-status` - Container/equipment location tracking
-
-**Configuration:**
-```
-PORT_COMMUNITY_BASE_URL=https://pcs.dubaiports.ae/api
-PORT_COMMUNITY_API_KEY=xyz123
-PORT_COMMUNITY_TIMEOUT=30000
-```
+## External System Integrations
 
 ### Customs Authority Systems
 
-Electronic submission of manifests and declarations.
+| Country | System | Integration Method |
+|---------|--------|-------------------|
+| Qatar | Hamad Port Authority | API + EDI |
+| UAE | Dubai Trade / Mirsal 2 | API |
+| KSA | FASAH (Saudi Customs) | API + EDI |
+| India | ICEGATE | EDI (EDIFACT) |
 
-**Supported Authorities:**
-- UAE: General Directorate of Customs (DGC)
-- KSA: Saudi Customs (GAZT)
-- India: ICEGATE
-- Qatar: Hamad Port Authority
+### AIS Vessel Tracking
 
-**Integration Method:** SOAP/REST API for CUSCAR, manifest clearance, permit validation
+- Real-time vessel position data via AIS providers (MarineTraffic or equivalent)
+- Polling interval: 5-15 minutes
+- Data: position, speed, heading, draught, destination
+- Used by: Schedule & Voyage, Liner Operations, Customer Portal
 
-**Error Handling:** System retries failed submissions hourly for 24 hours, alerts ops team
+**API:** `GET /api/v1/vessel/{vesselId}/position`
 
-### AIS (Automatic Identification System) for Vessel Tracking
+### Port Community Systems
 
-Real-time vessel position, speed, heading from AIS data feeds.
+- Integration with terminal operating systems (TOS)
+- Container event feeds (gate, load, discharge)
+- Berth and crane allocation data
+- Real-time vessel schedule updates
 
-**Data Provider:** MarineTraffic or Automatic Tracking System
+### Banking & Payments
 
-**Updates:** Every 5-10 minutes per vessel
-
-**Fields Captured:**
-- Position (latitude, longitude)
-- Speed over ground (knots)
-- Heading (degrees)
-- Destination port/ETA
-- Timestamp
-
-**API Usage:**
-```
-GET /api/v1/vessel/{vesselId}/position
-→ Returns latest AIS position data
-```
-
-### Banking & Payment Gateway
-
-Integration with payment processors for freight invoicing and settlements.
-
-**Supported Gateways:**
-- Stripe (international)
-- PayPal
-- Local bank APIs (UAE, India)
-
-**Flows:**
-1. Invoice generated on bill of lading issuance
-2. Payment link created via gateway API
-3. Payment status webhook updates invoice status
-4. Revenue recognized in GL
-
-**Configuration:**
-```
-PAYMENT_GATEWAY=stripe
-STRIPE_API_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
+- SWIFT messaging for international payments
+- Local payment networks: NAPS (Qatar), UAEFTS (UAE), SARIE (KSA), NEFT/RTGS (India)
+- Bank statement import (MT940/CAMT.053)
+- Payment gateway integration (Stripe, local bank APIs)
 
 ### Email & Communication
 
-SMTP for transactional emails (booking confirmations, B/L release, notifications).
+SMTP for transactional emails:
 
-**Configuration:**
-```
-SMTP_HOST=mail.example.com
-SMTP_PORT=587
-SMTP_USER=noreply@cs-erp.example
-SMTP_PASS={secure}
-EMAIL_FROM=noreply@cs-erp.example
-```
+- Booking confirmations
+- BL issuance notifications
+- Customs clearance alerts
+- Delivery notifications
+- D&D warnings
+- Invoice delivery
 
-**Transactional Templates:**
-- Booking confirmation
-- Bill of lading issued
-- Cargo ready for pickup
-- Customs clearance required
-- Delivery notification
-- Demurrage/detention warning
+### Analytics & BI Tools
 
-### Analytics & Business Intelligence
-
-Integration with BI tools for reporting and dashboards.
-
-**Supported Tools:**
-- Tableau
-- PowerBI
-- Looker
-
-**Data Export:**
+- Data export API for Tableau, PowerBI, Looker
 - Daily batch export of transactional data
-- Real-time data access via API
+- Real-time dashboard data: `GET /api/v1/analytics/dashboard-data`
 
-**API Endpoint:**
-```
-GET /api/v1/analytics/dashboard-data?period=month&metrics=revenue,containers,utilization
-```
-
-## Rate Limiting & Quotas
-
-All API endpoints enforce rate limits by tenant.
-
-**Standard Limits:**
-- List endpoints: 1000 requests/hour
-- Mutation endpoints: 100 requests/hour
-- EDI submission: 500 messages/day
-- Webhook deliveries: 10,000/day
-
-**Rate Limit Headers:**
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1700000060
-```
-
-**Exceeding Limits:**
-- Returns 429 Too Many Requests
-- Retry-After header included
+---
 
 ## Error Codes
 
-Standard API error format:
+| Code | Description |
+|------|-------------|
+| `AUTH_INVALID_TOKEN` | Token expired or invalid |
+| `AUTH_MISSING_PERMISSION` | User lacks required permission |
+| `VALIDATION_ERROR` | Input validation failed |
+| `NOT_FOUND` | Resource not found |
+| `CONFLICT` | Resource state prevents operation |
+| `RATE_LIMIT_EXCEEDED` | Too many requests |
 
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid booking reference format",
-    "details": {
-      "bookingRef": "must match pattern [A-Z]{3}[0-9]{11}"
-    }
-  }
-}
-```
+---
 
-**Common Codes:**
-- `AUTH_INVALID_TOKEN` - Token expired or invalid
-- `AUTH_MISSING_PERMISSION` - User lacks required permission
-- `VALIDATION_ERROR` - Input validation failed
-- `NOT_FOUND` - Resource not found
-- `CONFLICT` - Resource state prevents operation
-- `RATE_LIMIT_EXCEEDED` - Too many requests
+## Integration Security
 
-## Data Synchronization
+- All external connections use TLS 1.2+
+- API keys stored encrypted in database
+- IP allowlisting available for EDI partners
+- All integration traffic logged for audit
+- Sensitive fields (credentials) never appear in logs
+- Webhook secrets rotatable without downtime
 
-### Outbound Sync
+---
 
-System publishes events to external systems:
-- Booking confirmation
-- Voyage schedule changes
-- Container position updates
-- Invoice creation
-- Delivery notifications
+## Testing
 
-### Inbound Sync
+**Staging Environment:** `https://staging-cs-erp.codilla.ai/api/v1`
 
-System subscribes to external updates:
-- Vessel AIS position
-- Port berth availability
-- Customs clearance status
-- Payment confirmations
+Test all integrations in staging before production. Staging data resets daily at 02:00 UTC.
 
-### Sync Frequency
-
-- Real-time: Vessel position, customs status
-- Hourly: Port schedules, equipment status
-- Daily: Financial reconciliation, BI exports
-- On-demand: Ad-hoc data exports, API queries
-
-## Testing Integrations
-
-Use Postman collection (available in `/docs/postman-collection.json`) to test:
-- Authentication flows
-- EDI message submission
-- Webhook registration and signature verification
-- Third-party API integrations
-
-**Test Environment:**
-```
-https://staging-cs-erp.codilla.ai/api/v1
-```
-
-Staging credentials provided by DevOps team. Test data reset daily at 02:00 UTC.
-
-## Support & Escalation
-
-**Integration Issues:** Email integration-support@codilla.ai
-
-**Incident Response:**
-- P1 (system down): 15-minute response
-- P2 (data loss risk): 1-hour response
-- P3 (degraded): 4-hour response
+**Support:** Email integration-support@codilla.ai for integration issues.
