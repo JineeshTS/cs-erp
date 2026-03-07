@@ -6,69 +6,88 @@ import { hasPermission } from "@/lib/rbac";
 import { getBooking } from "@/lib/customer-portal/service";
 import { CspForm } from "@/components/customer-portal/csp-form";
 import type { FieldConfig } from "@/components/customer-portal/csp-form";
+import {
+  getPortOptions,
+  getCustomerOptions,
+  getContainerTypeOptions,
+} from "@/lib/customer-portal/lookups";
 
-const BOOKING_FIELDS: FieldConfig[] = [
-  { name: "customerName", label: "Customer Name", type: "text", required: true },
-  { name: "originPort", label: "Origin Port", type: "text", required: true },
-  { name: "destinationPort", label: "Destination Port", type: "text", required: true },
-  {
-    name: "cargoType",
-    label: "Cargo Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "general", label: "General" },
-      { value: "reefer", label: "Reefer" },
-      { value: "hazardous", label: "Hazardous" },
-      { value: "bulk", label: "Bulk" },
-      { value: "breakbulk", label: "Breakbulk" },
-      { value: "roro", label: "RoRo" },
-      { value: "tank", label: "Tank" },
-      { value: "oversized", label: "Oversized" },
-    ],
-  },
-  { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
-  {
-    name: "containerType",
-    label: "Container Type",
-    type: "select",
-    options: [
-      { value: "20GP", label: "20GP" },
-      { value: "40GP", label: "40GP" },
-      { value: "40HC", label: "40HC" },
-      { value: "20RF", label: "20RF" },
-      { value: "40RF", label: "40RF" },
-      { value: "20OT", label: "20OT" },
-      { value: "40OT", label: "40OT" },
-      { value: "20FR", label: "20FR" },
-      { value: "40FR", label: "40FR" },
-    ],
-  },
-  { name: "containerCount", label: "Container Count", type: "number" },
-  { name: "weight", label: "Weight (kg)", type: "number" },
-  { name: "volume", label: "Volume (cbm)", type: "number" },
-  { name: "preferredVesselDate", label: "Preferred Vessel Date", type: "datetime-local" },
-  { name: "hazardous", label: "Hazardous", type: "checkbox" },
-  { name: "temperature", label: "Temperature (C)", type: "number" },
-  {
-    name: "incoterm",
-    label: "Incoterm",
-    type: "select",
-    options: [
-      { value: "FOB", label: "FOB" },
-      { value: "CIF", label: "CIF" },
-      { value: "CFR", label: "CFR" },
-      { value: "EXW", label: "EXW" },
-      { value: "FCA", label: "FCA" },
-      { value: "CPT", label: "CPT" },
-      { value: "CIP", label: "CIP" },
-      { value: "DAP", label: "DAP" },
-      { value: "DPU", label: "DPU" },
-      { value: "DDP", label: "DDP" },
-    ],
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+function buildBookingFields(
+  customerOpts: { value: string; label: string }[],
+  portOpts: { value: string; label: string }[],
+  containerTypeOpts: { value: string; label: string }[]
+): FieldConfig[] {
+  return [
+    {
+      name: "customerName",
+      label: "Customer",
+      type: "select",
+      required: true,
+      options: customerOpts,
+    },
+    {
+      name: "originPort",
+      label: "Origin Port",
+      type: "select",
+      required: true,
+      options: portOpts,
+    },
+    {
+      name: "destinationPort",
+      label: "Destination Port",
+      type: "select",
+      required: true,
+      options: portOpts,
+    },
+    {
+      name: "cargoType",
+      label: "Cargo Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "general", label: "General" },
+        { value: "reefer", label: "Reefer" },
+        { value: "hazardous", label: "Hazardous" },
+        { value: "bulk", label: "Bulk" },
+        { value: "breakbulk", label: "Breakbulk" },
+        { value: "roro", label: "RoRo" },
+        { value: "tank", label: "Tank" },
+        { value: "oversized", label: "Oversized" },
+      ],
+    },
+    { name: "cargoDescription", label: "Cargo Description", type: "textarea" },
+    {
+      name: "containerType",
+      label: "Container Type",
+      type: "select",
+      options: containerTypeOpts,
+    },
+    { name: "containerCount", label: "Container Count", type: "number" },
+    { name: "weight", label: "Weight (kg)", type: "number" },
+    { name: "volume", label: "Volume (cbm)", type: "number" },
+    { name: "preferredVesselDate", label: "Preferred Vessel Date", type: "datetime-local" },
+    { name: "hazardous", label: "Hazardous", type: "checkbox" },
+    { name: "temperature", label: "Temperature (C)", type: "number" },
+    {
+      name: "incoterm",
+      label: "Incoterm",
+      type: "select",
+      options: [
+        { value: "FOB", label: "FOB" },
+        { value: "CIF", label: "CIF" },
+        { value: "CFR", label: "CFR" },
+        { value: "EXW", label: "EXW" },
+        { value: "FCA", label: "FCA" },
+        { value: "CPT", label: "CPT" },
+        { value: "CIP", label: "CIP" },
+        { value: "DAP", label: "DAP" },
+        { value: "DPU", label: "DPU" },
+        { value: "DDP", label: "DDP" },
+      ],
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+}
 
 export default async function EditBookingPage({
   params,
@@ -82,8 +101,16 @@ export default async function EditBookingPage({
 
   const { id } = await params;
 
-  const booking = await getBooking(id, session.tenantId);
+  const [booking, customerOpts, portOpts, containerTypeOpts] = await Promise.all([
+    getBooking(id, session.tenantId),
+    getCustomerOptions(session.tenantId),
+    getPortOptions(session.tenantId),
+    getContainerTypeOptions(session.tenantId),
+  ]);
+
   if (!booking) notFound();
+
+  const fields = buildBookingFields(customerOpts, portOpts, containerTypeOpts);
 
   return (
     <div className="space-y-6">
@@ -101,7 +128,7 @@ export default async function EditBookingPage({
         <CspForm
           entityType="Booking"
           apiPath={`/api/v1/customer-portal/bookings/${id}`}
-          fields={BOOKING_FIELDS}
+          fields={fields}
           initialData={{
             customerName: booking.customerName,
             originPort: booking.originPort,

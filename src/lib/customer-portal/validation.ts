@@ -10,7 +10,7 @@ export const createBookingSchema = z.object({
   destinationPort: z.string().min(1).max(20),
   cargoType: z.enum(["general", "reefer", "hazardous", "bulk", "breakbulk", "roro", "tank", "oversized"]),
   cargoDescription: z.string().optional(),
-  containerType: z.enum(["20GP", "40GP", "40HC", "20RF", "40RF", "20OT", "40OT", "20FR", "40FR"]).optional(),
+  containerType: z.string().max(10).optional(),
   containerCount: z.number().int().min(1).optional(),
   weight: z.number().int().optional(),
   volume: z.number().int().optional(),
