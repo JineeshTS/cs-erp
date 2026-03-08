@@ -76,3 +76,69 @@ export const TRIGGER_LABELS: Record<TriggerType, string> = {
   manual: "Manual",
   api: "API",
 };
+
+// ── Process Categories (functional grouping of domains) ──
+
+export type ProcessCategory =
+  | "core_operations"
+  | "commercial_pricing"
+  | "financial_accounting"
+  | "compliance_regulatory"
+  | "fleet_asset"
+  | "analytics_intelligence"
+  | "platform_admin";
+
+export const PROCESS_CATEGORY_LABELS: Record<
+  ProcessCategory,
+  { label: string; description: string; icon: string }
+> = {
+  core_operations: {
+    label: "Core Operations",
+    description: "Booking, documentation, vessel scheduling, container handling, and port operations",
+    icon: "Ship",
+  },
+  commercial_pricing: {
+    label: "Commercial & Pricing",
+    description: "Sales pipeline, rate management, revenue optimization, and customer relationships",
+    icon: "BadgeDollarSign",
+  },
+  financial_accounting: {
+    label: "Financial & Accounting",
+    description: "Invoicing, receivables, payables, treasury, and general ledger operations",
+    icon: "DollarSign",
+  },
+  compliance_regulatory: {
+    label: "Compliance & Regulatory",
+    description: "Customs, MARPOL, insurance, audits, risk management, and regulatory filings",
+    icon: "ShieldCheck",
+  },
+  fleet_asset: {
+    label: "Fleet & Asset Management",
+    description: "Crew management, vessel maintenance, surveys, and HR/procurement operations",
+    icon: "Users",
+  },
+  analytics_intelligence: {
+    label: "Analytics & Intelligence",
+    description: "KPI dashboards, market intelligence, ESG reporting, and predictive analytics",
+    icon: "BarChart3",
+  },
+  platform_admin: {
+    label: "Platform Administration",
+    description: "Tenant setup, user management, workflows, integrations, and system operations",
+    icon: "Settings",
+  },
+};
+
+export const DOMAIN_TO_CATEGORY: Record<ProcessDomain, ProcessCategory> = {
+  booking_documentation: "core_operations",
+  vessel_voyage: "core_operations",
+  equipment_container: "core_operations",
+  port_terminal: "core_operations",
+  trade_route: "core_operations",
+  sales_customer: "commercial_pricing",
+  financial: "financial_accounting",
+  compliance_risk: "compliance_regulatory",
+  hr_procurement: "fleet_asset",
+  analytics_intelligence: "analytics_intelligence",
+  platform_admin: "platform_admin",
+};

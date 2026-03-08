@@ -4863,4 +4863,161 @@ export const OPERATIONAL_PROCESSES: OperationalProcess[] = [
     sla: "< 1 hour",
     crossDependencies: ["PRC-204", "PRC-218"]
   },
+  // ============================================================
+  // L. ADDITIONAL PROCESSES (PRC-221 to PRC-227)
+  // ============================================================
+  {
+    id: "PRC-221",
+    name: "Vessel Arrival Notification",
+    description: "Generates and distributes vessel arrival notifications to all stakeholders including port authorities, agents, customs, terminals, and consignees with ETA updates.",
+    domain: "port_terminal",
+    agentName: "Port Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Vessel ETA update with port call details and cargo manifest",
+    aiProcessingSteps: [
+      "Monitor vessel position and calculate updated ETA using AIS and weather data",
+      "Compile arrival notification with vessel particulars, cargo summary, and special requirements",
+      "Identify all required recipients per port and regulatory requirements",
+      "Distribute notifications via EDI, email, and port community system integration"
+    ],
+    output: "Distributed arrival notifications to all stakeholders with confirmed ETA and requirements",
+    humanTouchpoints: ["Port agent confirms local arrangements and pilot booking"],
+    connectedModules: ["Port Operations", "Vessel Operations", "Documentation", "Customs", "Notifications"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-081", "PRC-043", "PRC-058"]
+  },
+  {
+    id: "PRC-222",
+    name: "CFS Consolidation/Deconsolidation",
+    description: "Manages container freight station operations for consolidating LCL shipments into FCL containers and deconsolidating at destination for last-mile delivery.",
+    domain: "port_terminal",
+    agentName: "CFS Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "LCL cargo bookings with dimensions, weights, and delivery requirements",
+    aiProcessingSteps: [
+      "Optimize cargo grouping by destination, cargo compatibility, and container utilization",
+      "Generate stuffing plan with cargo placement sequence for weight distribution",
+      "Track individual LCL shipment status through consolidation and deconsolidation stages",
+      "Coordinate delivery scheduling with consignees and transport providers"
+    ],
+    output: "Consolidated containers with stuffing plans and individual LCL tracking updates",
+    humanTouchpoints: ["CFS supervisor oversees physical stuffing and cargo verification", "Delivery coordinator confirms consignee availability"],
+    connectedModules: ["CFS Operations", "Booking Management", "Container Operations", "Transport", "Documentation"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-096", "PRC-023", "PRC-064"]
+  },
+  {
+    id: "PRC-223",
+    name: "NVOCC House B/L Management",
+    description: "Manages house bills of lading for NVOCC operations including issuance, tracking, and surrender with master B/L cross-referencing.",
+    domain: "booking_documentation",
+    agentName: "Documentation Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "NVOCC booking with shipper/consignee details and master B/L reference",
+    aiProcessingSteps: [
+      "Generate house B/L from booking data with NVOCC terms and conditions",
+      "Cross-reference house B/L details against master B/L for consistency",
+      "Track house B/L surrender status and coordinate with destination agent",
+      "Maintain audit trail of house-to-master B/L relationships for regulatory compliance"
+    ],
+    output: "Issued house B/L with master B/L cross-reference and surrender tracking",
+    humanTouchpoints: ["Documentation clerk verifies shipper details and cargo description accuracy", "Destination agent confirms house B/L surrender and cargo release"],
+    connectedModules: ["Documentation", "Booking Management", "NVOCC Operations", "Agent Network"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-025", "PRC-034", "PRC-032"]
+  },
+  {
+    id: "PRC-224",
+    name: "Container Damage Assessment — AI Image",
+    description: "Uses AI-powered image recognition to assess container damage from photographs taken during gate inspections, surveys, and maintenance checks.",
+    domain: "equipment_container",
+    agentName: "Container Vision Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Container inspection photographs from gate cameras, mobile devices, or drones",
+    aiProcessingSteps: [
+      "Process container images using computer vision to detect damage types (dents, rust, holes, structural)",
+      "Classify damage severity per IICL standards with location mapping on container diagram",
+      "Estimate repair costs using damage classification and current repair rate tables",
+      "Generate damage report with photographic evidence and recommended repair/reject decision"
+    ],
+    output: "AI damage assessment report with severity classification, repair estimate, and photographic evidence",
+    humanTouchpoints: ["Inspector reviews AI assessment for borderline damage cases", "Maintenance manager approves repair authorization for significant damage"],
+    connectedModules: ["Container Operations", "Maintenance", "Leasing", "Insurance", "Gate Operations"],
+    sla: "< 2 minutes",
+    crossDependencies: ["PRC-069", "PRC-066", "PRC-067"]
+  },
+  {
+    id: "PRC-225",
+    name: "Regional Customs Integration",
+    description: "Manages customs integration for Qatar, UAE, KSA, and India including region-specific documentation, duty calculations, and electronic filing with local customs authorities.",
+    domain: "compliance_risk",
+    agentName: "Regional Customs Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Shipment details with HS codes, values, and origin/destination for target customs authority",
+    aiProcessingSteps: [
+      "Apply region-specific customs rules (Qatar QCD, UAE FTA, KSA ZATCA, India ICEGATE)",
+      "Calculate duties and taxes using local tariff schedules and trade agreement preferences",
+      "Generate customs declarations in authority-required electronic format",
+      "Submit filings electronically and track clearance status with automated follow-up"
+    ],
+    output: "Submitted customs declarations with duty calculations and clearance tracking",
+    humanTouchpoints: ["Customs broker reviews complex classifications and valuation disputes", "Compliance officer handles customs queries and examination requests"],
+    connectedModules: ["Customs", "Documentation", "Compliance", "Financial", "Integration"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-027", "PRC-039", "PRC-040"]
+  },
+  {
+    id: "PRC-226",
+    name: "Feeder Agency Operations",
+    description: "Manages feeder vessel agency operations including cargo coordination between mainline and feeder services, documentation handover, and local port operations.",
+    domain: "trade_route",
+    agentName: "Feeder Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Transshipment cargo list with feeder vessel schedule and mainline connections",
+    aiProcessingSteps: [
+      "Match transshipment cargo to available feeder sailings with connection time validation",
+      "Generate feeder cargo plans and coordinate container movements between vessels",
+      "Produce local documentation including feeder B/Ls and port-specific filings",
+      "Track cargo through feeder leg with milestone updates to mainline tracking system"
+    ],
+    output: "Feeder cargo plan with documentation, tracking updates, and connection confirmations",
+    humanTouchpoints: ["Feeder agent coordinates local port operations and customs", "Operations controller monitors connection times and manages delays"],
+    connectedModules: ["Trade Route", "Transshipment", "Documentation", "Port Operations", "Agent Network"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-104", "PRC-095", "PRC-108"]
+  },
+  {
+    id: "PRC-227",
+    name: "Container Depot/Yard Operations",
+    description: "Manages container depot and yard operations including gate processing, stacking, maintenance scheduling, and inventory management at off-dock facilities.",
+    domain: "equipment_container",
+    agentName: "Yard Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Container movements (gate-in/out), maintenance requests, and inventory queries",
+    aiProcessingSteps: [
+      "Optimize yard stacking based on container type, status, and expected pickup/delivery times",
+      "Schedule maintenance and cleaning activities based on container condition and booking demand",
+      "Track container inventory with real-time yard position and status updates",
+      "Generate yard utilization reports and forecast space requirements"
+    ],
+    output: "Optimized yard operations with real-time inventory tracking and maintenance scheduling",
+    humanTouchpoints: ["Yard planner adjusts stacking for special cargo requirements", "Gate clerk verifies container condition during gate transactions"],
+    connectedModules: ["Container Operations", "Maintenance", "Gate Operations", "Transport", "Booking Management"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-064", "PRC-065", "PRC-087"]
+  },
 ];

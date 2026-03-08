@@ -10,6 +10,7 @@ import {
   Truck,
   ShieldCheck,
   Settings,
+  Workflow,
 } from "lucide-react";
 
 export interface ModuleCard {
@@ -35,6 +36,14 @@ export const CATEGORIES: NavCategory[] = [
     label: "Dashboard",
     icon: LayoutDashboard,
     href: "/",
+    permissionPrefixes: [],
+    modules: [],
+  },
+  {
+    slug: "processes",
+    label: "Processes",
+    icon: Workflow,
+    href: "/processes",
     permissionPrefixes: [],
     modules: [],
   },
