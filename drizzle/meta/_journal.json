@@ -463,6 +463,13 @@
       "when": 1772911999400,
       "tag": "0065_majestic_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1772963784147,
+      "tag": "0066_sparkling_bishop",
+      "breakpoints": true
     }
   ]
 }
