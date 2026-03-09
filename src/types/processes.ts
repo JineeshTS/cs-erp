@@ -31,10 +31,24 @@ export interface OperationalProcess {
   crossDependencies: string[];
 }
 
+export type ExecutorType = "ai_agent" | "human" | "system" | "external";
+export type GateType = "approval" | "decision" | "input" | "exception";
+export type FlowCategory =
+  | "revenue_cycle"
+  | "vessel_operations"
+  | "container_operations"
+  | "finance"
+  | "compliance_safety"
+  | "commercial_strategy"
+  | "platform";
+
 export interface E2EFlowStep {
   module: string;
   step: string;
   type: "ai" | "human" | "system";
+  processRef?: string;
+  executorType?: ExecutorType;
+  gateType?: GateType;
 }
 
 export interface E2EProcessFlow {
@@ -47,7 +61,30 @@ export interface E2EProcessFlow {
   handoffPoints: string[];
   typicalTimeline: string;
   kpis: string[];
+  triggerEvent?: string;
+  entityType?: string;
+  category?: FlowCategory;
+  humanGates?: string[];
+  conditionalBranches?: string[];
+  childFlows?: string[];
 }
+
+export const FLOW_CATEGORY_LABELS: Record<FlowCategory, string> = {
+  revenue_cycle: "Revenue Cycle",
+  vessel_operations: "Vessel Operations",
+  container_operations: "Container Operations",
+  finance: "Finance",
+  compliance_safety: "Compliance & Safety",
+  commercial_strategy: "Commercial Strategy",
+  platform: "Platform",
+};
+
+export const GATE_TYPE_LABELS: Record<GateType, { label: string; color: string }> = {
+  approval: { label: "Approval", color: "yellow" },
+  decision: { label: "Decision", color: "orange" },
+  input: { label: "Input Required", color: "blue" },
+  exception: { label: "Exception", color: "red" },
+};
 
 export const DOMAIN_LABELS: Record<ProcessDomain, string> = {
   sales_customer: "Sales & Customer Management",
