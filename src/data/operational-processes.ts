@@ -5020,4 +5020,2034 @@ export const OPERATIONAL_PROCESSES: OperationalProcess[] = [
     sla: "< 30 minutes",
     crossDependencies: ["PRC-064", "PRC-065", "PRC-087"]
   },
+  // ============================================================
+  // M. CARGO ROUTING & ITINERARY (PRC-228 to PRC-230)
+  // ============================================================
+  {
+    id: "PRC-228",
+    name: "Cargo Route Calculation",
+    description: "Determines optimal route from origin to destination considering direct, hub-spoke, and multi-transshipment options. Evaluates transit time, cost, reliability, and equipment availability across available service strings.",
+    domain: "trade_route",
+    agentName: "Routing Engine Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Origin port, destination port, cargo type, weight, equipment requirements, and preferred transit time",
+    aiProcessingSteps: [
+      "Enumerate all viable routing options across current service network including feeder connections",
+      "Calculate transit time, cost, and reliability score for each route option using historical data",
+      "Factor in equipment availability at origin and transshipment hub capacity constraints",
+      "Rank routes by composite score (cost × 0.3 + transit × 0.3 + reliability × 0.25 + availability × 0.15)"
+    ],
+    output: "Ranked list of route options with transit time, cost breakdown, reliability score, and connection details",
+    humanTouchpoints: ["Operations reviews non-standard routes with multiple transshipments"],
+    connectedModules: ["Trade Route", "Vessel Schedule", "Equipment", "Rate Management"],
+    sla: "< 10 seconds",
+    crossDependencies: ["PRC-229", "PRC-230", "PRC-041"]
+  },
+  {
+    id: "PRC-229",
+    name: "Transit Time Optimization",
+    description: "Calculates and compares transit time options across available services for a given trade lane. Considers vessel speed, port stays, connection times, and historical delay patterns.",
+    domain: "trade_route",
+    agentName: "Routing Engine Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Trade lane pair with cargo urgency level and acceptable transit window",
+    aiProcessingSteps: [
+      "Retrieve all active service rotations covering the origin-destination pair",
+      "Calculate port-to-port transit including sea time, port stays, and connection dwell at hubs",
+      "Apply historical delay factors per route segment and season",
+      "Generate transit time comparison matrix with fastest, cheapest, and most reliable options"
+    ],
+    output: "Transit time comparison with confidence intervals and delay risk assessment per option",
+    humanTouchpoints: ["Customer service selects option matching customer priority"],
+    connectedModules: ["Trade Route", "Vessel Schedule", "Analytics"],
+    sla: "< 5 seconds",
+    crossDependencies: ["PRC-228", "PRC-042"]
+  },
+  {
+    id: "PRC-230",
+    name: "Multi-Leg Itinerary Planning",
+    description: "Builds complete door-to-door itinerary for cargo requiring multiple transport legs including inland pickup, feeder connections, mainline voyage, and last-mile delivery.",
+    domain: "trade_route",
+    agentName: "Routing Engine Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Door-to-door shipment request with origin address, destination address, and cargo details",
+    aiProcessingSteps: [
+      "Decompose door-to-door movement into inland, port, sea, and delivery legs",
+      "Match each leg to available transport modes (truck, rail, barge, feeder, mainline)",
+      "Calculate connection times and buffer requirements between legs",
+      "Generate consolidated itinerary with milestone timeline and cost per leg"
+    ],
+    output: "Complete multi-leg itinerary with per-leg details, milestones, costs, and risk assessment",
+    humanTouchpoints: ["Operations validates complex multi-modal itineraries", "Customer approves itinerary and cost"],
+    connectedModules: ["Trade Route", "Inland Transport", "Vessel Schedule", "Feeder Operations", "Rate Management"],
+    sla: "< 2 minutes",
+    crossDependencies: ["PRC-228", "PRC-247", "PRC-232"]
+  },
+  // ============================================================
+  // N. FEEDER VESSEL OPERATIONS (PRC-231 to PRC-241)
+  // ============================================================
+  {
+    id: "PRC-231",
+    name: "Feeder Service Design",
+    description: "Plans hub-spoke feeder routes including port coverage, sailing frequency, vessel size requirements, and network optimization for connecting spoke ports to mainline hub.",
+    domain: "trade_route",
+    agentName: "Network Planning Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Hub port, candidate spoke ports, cargo volume data, and mainline schedule",
+    aiProcessingSteps: [
+      "Analyze cargo volumes per spoke port to determine service viability and frequency",
+      "Design rotation pattern optimizing port sequence for minimal steaming and maximum connectivity",
+      "Calculate vessel size requirements based on peak demand plus buffer",
+      "Model P&L scenarios for proposed feeder service at different utilization levels"
+    ],
+    output: "Feeder service proposal with rotation, frequency, vessel spec, and financial projection",
+    humanTouchpoints: ["Network planning team reviews and approves service design", "Commercial team validates cargo projections"],
+    connectedModules: ["Trade Route", "Vessel Operations", "Fleet Management", "Commercial"],
+    sla: "< 2 days",
+    crossDependencies: ["PRC-238", "PRC-232", "PRC-057"]
+  },
+  {
+    id: "PRC-232",
+    name: "Feeder Schedule Synchronization",
+    description: "Aligns feeder vessel ETA/ETD with mainline vessel calls at hub port to ensure reliable cargo connections. Adjusts feeder speed and port stays to maintain connection windows.",
+    domain: "vessel_voyage",
+    agentName: "Feeder Coordination Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Mainline schedule at hub port and current feeder rotation plan",
+    aiProcessingSteps: [
+      "Map all mainline vessel calls at hub with cargo cut-off times",
+      "Calculate required feeder arrival time at hub for each mainline connection",
+      "Optimize feeder rotation timing to maximize connection reliability across all mainline services",
+      "Generate synchronized schedule with connection windows and buffer times"
+    ],
+    output: "Synchronized feeder schedule with connection matrix showing all mainline connection windows",
+    humanTouchpoints: ["Operations controller reviews schedule alignment during disruptions"],
+    connectedModules: ["Vessel Schedule", "Trade Route", "Feeder Operations"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-231", "PRC-233", "PRC-042"]
+  },
+  {
+    id: "PRC-233",
+    name: "Feeder Connection Risk Monitoring",
+    description: "Real-time monitoring of feeder-mainline connection windows. Continuously evaluates whether feeder will arrive at hub before mainline departure cut-off, flagging at-risk connections.",
+    domain: "vessel_voyage",
+    agentName: "Feeder Coordination Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Live feeder position (AIS), current speed, weather, and mainline departure schedule at hub",
+    aiProcessingSteps: [
+      "Calculate real-time ETA for feeder at hub port using AIS position and weather forecast",
+      "Compare feeder ETA against mainline cargo cut-off time for each connecting service",
+      "Classify connection risk: green (>12h buffer), amber (6-12h), red (<6h), critical (<3h)",
+      "Generate risk alerts with recommended actions (speed up, priority discharge, cargo roll)"
+    ],
+    output: "Connection risk dashboard with alerts for at-risk connections and recommended mitigations",
+    humanTouchpoints: ["Operations controller acts on critical connection alerts"],
+    connectedModules: ["Vessel Tracking", "Feeder Operations", "Container Operations"],
+    sla: "< 1 minute",
+    crossDependencies: ["PRC-232", "PRC-234", "PRC-054"]
+  },
+  {
+    id: "PRC-234",
+    name: "Feeder Delay Impact Assessment",
+    description: "When feeder is delayed, assesses cascading impact on all mainline connections, identifies which containers must roll, and recommends mitigation actions.",
+    domain: "vessel_voyage",
+    agentName: "Feeder Coordination Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Feeder delay notification with revised ETA and list of containers on board",
+    aiProcessingSteps: [
+      "Cross-reference delayed feeder cargo manifest against all pending mainline connections",
+      "Identify which connections are now missed and which containers must roll to next sailing",
+      "Calculate customer impact: revised ETAs, SLA breaches, penalty exposure",
+      "Generate mitigation options: priority handling at hub, speed increase, alternative routing"
+    ],
+    output: "Impact assessment report with affected containers, missed connections, and mitigation plan",
+    humanTouchpoints: ["Operations decides on mitigation strategy for high-value cargo"],
+    connectedModules: ["Feeder Operations", "Container Operations", "Customer Service", "Vessel Schedule"],
+    sla: "< 5 minutes",
+    crossDependencies: ["PRC-233", "PRC-266", "PRC-269"]
+  },
+  {
+    id: "PRC-235",
+    name: "Feeder-Mainline Cargo Handover",
+    description: "Manages physical and data handover of transshipment cargo between feeder and mainline vessels at hub port. Coordinates discharge, yard positioning, and loading sequences.",
+    domain: "port_terminal",
+    agentName: "Feeder Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Feeder discharge list, mainline load plan, and yard availability at hub",
+    aiProcessingSteps: [
+      "Match feeder discharge containers to mainline loading slots by booking reference",
+      "Optimize yard positioning for efficient transfer between vessels",
+      "Generate handover checklist with container status, seal integrity, and special handling requirements",
+      "Update tracking systems with transfer milestones for all affected shipments"
+    ],
+    output: "Completed handover report with transfer confirmations and updated tracking milestones",
+    humanTouchpoints: ["Terminal planner coordinates physical moves", "Operations verifies all TS cargo transferred"],
+    connectedModules: ["Terminal Operations", "Container Tracking", "Feeder Operations", "Documentation"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-084", "PRC-043", "PRC-099"]
+  },
+  {
+    id: "PRC-236",
+    name: "Feeder BL Management",
+    description: "Handles feeder bill of lading vs through BL split, BL switching at hub port, and ensures documentation continuity across feeder-mainline transport chain.",
+    domain: "booking_documentation",
+    agentName: "Feeder Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Booking with feeder leg, through BL requirements, and hub port transfer details",
+    aiProcessingSteps: [
+      "Determine BL structure: through BL (origin to final destination) vs split feeder + mainline BLs",
+      "Generate feeder BL for spoke-to-hub leg with correct carrier and vessel details",
+      "Process BL switch at hub if needed (change shipper/consignee for trading transactions)",
+      "Reconcile feeder BL details against through BL and update documentation chain"
+    ],
+    output: "Completed feeder BL documentation with through BL cross-references and audit trail",
+    humanTouchpoints: ["Documentation reviews BL switch requests", "Customer confirms BL details"],
+    connectedModules: ["Documentation", "Booking Management", "Feeder Operations"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-026", "PRC-264", "PRC-235"]
+  },
+  {
+    id: "PRC-237",
+    name: "Feeder Cargo Cutoff Management",
+    description: "Sets feeder-specific cargo receiving and documentation cut-offs at spoke ports, ensuring sufficient time for cargo to transfer to mainline at hub before mainline departure.",
+    domain: "booking_documentation",
+    agentName: "Feeder Coordination Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Feeder schedule, mainline cut-offs at hub, and historical handling times",
+    aiProcessingSteps: [
+      "Calculate backward from mainline cut-off at hub: subtract feeder transit, hub handling, and buffers",
+      "Set documentation cut-off (earliest), VGM cut-off, and cargo receiving cut-off per spoke port",
+      "Apply port-specific adjustments for customs processing and terminal operating hours",
+      "Publish cut-offs to booking system and notify all affected customers and agents"
+    ],
+    output: "Published feeder cut-off schedule per spoke port aligned to mainline connections",
+    humanTouchpoints: ["Operations reviews cut-offs during schedule disruptions"],
+    connectedModules: ["Booking Management", "Feeder Operations", "Vessel Schedule", "Notifications"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-270", "PRC-232", "PRC-271"]
+  },
+  {
+    id: "PRC-238",
+    name: "Feeder Fleet Deployment",
+    description: "Assigns feeder vessels to spoke routes, optimizing frequency and capacity utilization. Balances fleet across feeder services based on demand patterns and vessel availability.",
+    domain: "vessel_voyage",
+    agentName: "Network Planning Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Feeder fleet roster, spoke route requirements, and demand forecasts",
+    aiProcessingSteps: [
+      "Analyze demand patterns per spoke route by season, day-of-week, and cargo type",
+      "Match vessel capacities to route requirements considering draft restrictions and port limitations",
+      "Optimize fleet assignment to maximize utilization across all feeder services",
+      "Model scenarios for vessel swaps, additions, or reductions based on demand changes"
+    ],
+    output: "Fleet deployment plan with vessel-to-route assignments and utilization projections",
+    humanTouchpoints: ["Fleet management approves deployment plan", "Commercial validates service frequency"],
+    connectedModules: ["Fleet Management", "Trade Route", "Vessel Operations", "Commercial"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-231", "PRC-057", "PRC-232"]
+  },
+  {
+    id: "PRC-239",
+    name: "Feeder Performance Monitoring",
+    description: "Monitors feeder service KPIs including connection success rate, schedule reliability, utilization per spoke route, and cost efficiency. Identifies underperforming routes.",
+    domain: "analytics_intelligence",
+    agentName: "Feeder Analytics Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Feeder operational data: voyages, connections, delays, utilization, costs",
+    aiProcessingSteps: [
+      "Calculate connection success rate per mainline service (target > 98%)",
+      "Measure schedule reliability (on-time arrival within 6-hour window) per spoke route",
+      "Analyze capacity utilization trends by route, direction, and season",
+      "Generate performance scorecard with variance against targets and improvement recommendations"
+    ],
+    output: "Feeder performance dashboard with KPIs, trends, and actionable recommendations",
+    humanTouchpoints: ["Network planning reviews underperforming routes quarterly"],
+    connectedModules: ["Analytics", "Feeder Operations", "Trade Route", "Financial"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-233", "PRC-241", "PRC-056"]
+  },
+  {
+    id: "PRC-240",
+    name: "Feeder Cost Allocation",
+    description: "Allocates feeder leg costs to mainline voyages and individual bookings. Distributes feeder vessel operating costs, port charges, and handling fees to cargo using the feeder service.",
+    domain: "financial",
+    agentName: "Cost Allocation Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Feeder voyage costs, cargo manifest, and mainline booking references",
+    aiProcessingSteps: [
+      "Collect all feeder voyage costs: vessel charter/opex, bunker, port dues, terminal handling",
+      "Allocate costs to individual containers based on TEU-equivalent and cargo type weighting",
+      "Map allocated costs to mainline bookings for accurate voyage P&L reporting",
+      "Generate cost allocation entries for financial system posting"
+    ],
+    output: "Cost allocation breakdown per container and mainline booking with journal entries",
+    humanTouchpoints: ["Finance reviews allocation methodology changes"],
+    connectedModules: ["Financial", "Feeder Operations", "Voyage P&L", "Cost Accounting"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-241", "PRC-059", "PRC-133"]
+  },
+  {
+    id: "PRC-241",
+    name: "Feeder Voyage P&L",
+    description: "Calculates profit and loss for each feeder rotation including revenue per leg, vessel costs, port costs, and contribution margin. Enables feeder service viability analysis.",
+    domain: "financial",
+    agentName: "Voyage P&L Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Completed feeder voyage data with revenue, costs, and cargo statistics",
+    aiProcessingSteps: [
+      "Aggregate revenue per leg from freight allocations and local charges",
+      "Compile costs: vessel hire/opex, bunker consumption, port disbursements, terminal handling",
+      "Calculate contribution margin per leg and per rotation",
+      "Compare against budget and previous rotations, flag variances > 10%"
+    ],
+    output: "Feeder voyage P&L report with per-leg breakdown, margin analysis, and variance commentary",
+    humanTouchpoints: ["Finance reviews voyage P&L and approves final settlement"],
+    connectedModules: ["Voyage P&L", "Financial", "Feeder Operations", "Budgeting"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-240", "PRC-059", "PRC-060"]
+  },
+  // ============================================================
+  // O. ALLIANCE & VESSEL SHARING (PRC-242 to PRC-246)
+  // ============================================================
+  {
+    id: "PRC-242",
+    name: "VSA Agreement Management",
+    description: "Manages vessel sharing agreement terms including slot allocations, partner obligations, cost sharing formulas, and operational coordination requirements with alliance partners.",
+    domain: "trade_route",
+    agentName: "Alliance Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "manual",
+    input: "VSA contract terms, partner details, and service string specifications",
+    aiProcessingSteps: [
+      "Parse VSA agreement terms: slot allocations per partner per port, cost sharing formula, operational rules",
+      "Set up agreement in system with per-voyage slot entitlements and cost split parameters",
+      "Monitor partner compliance with operational obligations (schedule adherence, equipment supply)",
+      "Track agreement validity, renewal dates, and amendment history"
+    ],
+    output: "Active VSA record with slot allocation matrix, cost sharing parameters, and compliance tracking",
+    humanTouchpoints: ["Commercial negotiates agreement terms", "Legal reviews non-standard clauses"],
+    connectedModules: ["Trade Route", "Fleet Management", "Financial", "Legal"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-243", "PRC-244", "PRC-245"]
+  },
+  {
+    id: "PRC-243",
+    name: "Slot Purchase & Sale",
+    description: "Manages buying and selling of vessel slots per voyage with alliance partners. Optimizes slot utilization by selling excess capacity and purchasing additional space when needed.",
+    domain: "trade_route",
+    agentName: "Alliance Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Voyage booking levels, slot entitlements, and partner availability",
+    aiProcessingSteps: [
+      "Compare current bookings against slot entitlement per voyage to identify surplus/deficit",
+      "Evaluate partner slot availability and pricing for purchase opportunities",
+      "Calculate optimal slot buy/sell strategy based on demand forecast and margin impact",
+      "Execute slot transactions and update capacity allocation for affected voyages"
+    ],
+    output: "Slot transaction records with updated capacity allocations and financial impact",
+    humanTouchpoints: ["Commercial approves slot purchase/sale above threshold", "Partner confirms slot availability"],
+    connectedModules: ["Trade Route", "Capacity Management", "Financial", "Booking Management"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-242", "PRC-044", "PRC-024"]
+  },
+  {
+    id: "PRC-244",
+    name: "Alliance Schedule Coordination",
+    description: "Coordinates service strings, port rotations, and ETAs with alliance partners. Ensures schedule changes are communicated and agreed across all VSA participants.",
+    domain: "trade_route",
+    agentName: "Alliance Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Proposed schedule changes, partner schedules, and port rotation requirements",
+    aiProcessingSteps: [
+      "Consolidate schedule proposals from all partners for shared service strings",
+      "Identify conflicts in port rotations, berth windows, and terminal commitments",
+      "Evaluate impact of schedule changes on connection reliability and transit times",
+      "Generate schedule coordination report with recommendations for resolution"
+    ],
+    output: "Coordinated alliance schedule with agreed port rotations and partner commitments",
+    humanTouchpoints: ["Operations coordinates with partner counterparts", "Management approves service changes"],
+    connectedModules: ["Vessel Schedule", "Trade Route", "Port Operations"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-242", "PRC-042", "PRC-232"]
+  },
+  {
+    id: "PRC-245",
+    name: "Revenue Sharing Calculation",
+    description: "Calculates revenue and cost share per voyage per partner according to VSA formula. Reconciles actual volumes and costs against contractual entitlements.",
+    domain: "financial",
+    agentName: "Alliance Finance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Completed voyage data, partner slot usage, revenue by container, and shared costs",
+    aiProcessingSteps: [
+      "Calculate each partner's revenue contribution based on actual slot usage and freight rates",
+      "Allocate shared voyage costs (bunker, port dues, canal transit) per agreed formula",
+      "Compute net settlement amounts between partners (receivable or payable)",
+      "Generate revenue sharing statement with supporting details for partner reconciliation"
+    ],
+    output: "Revenue sharing statement per partner with settlement amounts and reconciliation details",
+    humanTouchpoints: ["Finance reviews settlement statement before sending to partner"],
+    connectedModules: ["Financial", "Trade Route", "Voyage P&L"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-242", "PRC-059", "PRC-240"]
+  },
+  {
+    id: "PRC-246",
+    name: "Equipment Interchange",
+    description: "Manages container interchange with partner lines under SOC/COC agreements. Tracks partner-owned containers in our custody and our containers with partners.",
+    domain: "equipment_container",
+    agentName: "Equipment Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Container interchange notifications, partner equipment lists, and custody changes",
+    aiProcessingSteps: [
+      "Record container interchange events (pick-up/drop-off) with partner attribution",
+      "Track partner containers in our network: location, status, duration, and charges",
+      "Calculate per-diem charges for containers held beyond free interchange period",
+      "Generate interchange reconciliation for partner settlement"
+    ],
+    output: "Equipment interchange report with per-diem calculations and settlement amounts",
+    humanTouchpoints: ["Equipment controller reviews interchange disputes", "Operations approves non-standard interchange"],
+    connectedModules: ["Container Operations", "Equipment Management", "Financial", "Alliance"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-062", "PRC-074", "PRC-242"]
+  },
+  // ============================================================
+  // P. INLAND TRANSPORT & DOOR DELIVERY (PRC-247 to PRC-250)
+  // ============================================================
+  {
+    id: "PRC-247",
+    name: "Inland Transport Mode Selection",
+    description: "Determines optimal inland transport mode (truck, rail, barge) for container pickup or delivery based on cost, transit time, availability, and environmental factors.",
+    domain: "port_terminal",
+    agentName: "Inland Transport Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Origin/destination address, container details, delivery deadline, and customer preference",
+    aiProcessingSteps: [
+      "Evaluate available transport modes for the specific inland corridor",
+      "Calculate cost, transit time, and CO2 emissions for each mode option",
+      "Check real-time availability of trucks, rail slots, and barge schedules",
+      "Select optimal mode based on weighted criteria (cost, time, availability, emissions)"
+    ],
+    output: "Selected transport mode with booking details, cost estimate, and environmental impact",
+    humanTouchpoints: ["Customer service overrides mode selection for special requirements"],
+    connectedModules: ["Inland Transport", "Booking Management", "Rate Management", "ESG"],
+    sla: "< 30 seconds",
+    crossDependencies: ["PRC-248", "PRC-249", "PRC-228"]
+  },
+  {
+    id: "PRC-248",
+    name: "Truck Dispatch & Booking",
+    description: "Books trucking for container pickup or delivery, assigns driver and vehicle, optimizes route, and provides real-time tracking of inland truck movements.",
+    domain: "port_terminal",
+    agentName: "Inland Transport Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Transport request with pickup location, delivery address, container details, and time window",
+    aiProcessingSteps: [
+      "Match transport request to available trucking providers based on location and capacity",
+      "Assign driver and vehicle with optimal route calculation",
+      "Generate pickup/delivery instructions with gate appointment and document requirements",
+      "Activate GPS tracking for real-time visibility of container movement"
+    ],
+    output: "Confirmed truck booking with driver details, route, ETA, and live tracking link",
+    humanTouchpoints: ["Dispatcher handles exceptions and rescheduling", "Driver confirms pickup/delivery"],
+    connectedModules: ["Inland Transport", "Container Tracking", "Gate Operations", "Notifications"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-247", "PRC-250", "PRC-094"]
+  },
+  {
+    id: "PRC-249",
+    name: "Rail Booking & Coordination",
+    description: "Books rail transport for containers, coordinates terminal-to-terminal movements, and tracks containers through rail network with milestone updates.",
+    domain: "port_terminal",
+    agentName: "Inland Transport Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Rail transport request with origin terminal, destination terminal, container count, and schedule",
+    aiProcessingSteps: [
+      "Check rail slot availability on target trains and alternative schedules",
+      "Book rail slots and generate wagon loading plan",
+      "Coordinate container delivery to rail terminal with gate appointment",
+      "Track container through rail network with milestone updates at interchange points"
+    ],
+    output: "Confirmed rail booking with train schedule, wagon assignment, and tracking milestones",
+    humanTouchpoints: ["Rail coordinator handles delays and re-routing", "Terminal confirms container handover"],
+    connectedModules: ["Inland Transport", "Container Tracking", "Terminal Operations"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-247", "PRC-250", "PRC-062"]
+  },
+  {
+    id: "PRC-250",
+    name: "Proof of Delivery Management",
+    description: "Captures and validates proof of delivery for completed container deliveries. Supports electronic POD with signature, photos, and GPS timestamp for audit trail.",
+    domain: "port_terminal",
+    agentName: "Inland Transport Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Delivery completion event with driver confirmation, recipient signature, and condition notes",
+    aiProcessingSteps: [
+      "Validate POD data completeness: signature, timestamp, GPS location, condition assessment",
+      "Match POD against delivery order and verify recipient authorization",
+      "Flag discrepancies between delivered and ordered (quantity, condition, timing)",
+      "Update shipment status to 'delivered' and close delivery tracking loop"
+    ],
+    output: "Validated POD record with delivery confirmation, condition report, and audit trail",
+    humanTouchpoints: ["Customer service investigates disputed deliveries"],
+    connectedModules: ["Inland Transport", "Container Tracking", "Documentation", "Customer Service"],
+    sla: "< 5 minutes",
+    crossDependencies: ["PRC-248", "PRC-094", "PRC-040"]
+  },
+  // ============================================================
+  // Q. LETTER OF CREDIT & TRADE FINANCE (PRC-251 to PRC-254)
+  // ============================================================
+  {
+    id: "PRC-251",
+    name: "L/C Receipt & Checking",
+    description: "Receives letter of credit from advising bank, validates terms against booking and contract, identifies discrepancies between L/C conditions and shipment requirements.",
+    domain: "financial",
+    agentName: "Trade Finance Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "L/C document from bank with terms, conditions, expiry date, and shipment requirements",
+    aiProcessingSteps: [
+      "Parse L/C document and extract key terms: beneficiary, amount, expiry, shipment deadline, documents required",
+      "Cross-reference L/C terms against booking details: ports, cargo description, quantities, packaging",
+      "Identify discrepancies between L/C conditions and actual shipment capability",
+      "Generate compliance checklist with flag severity (critical, warning, info) for each term"
+    ],
+    output: "L/C compliance report with term-by-term validation and discrepancy flags",
+    humanTouchpoints: ["Trade finance reviews critical discrepancies", "Commercial decides whether to request L/C amendment"],
+    connectedModules: ["Financial", "Booking Management", "Documentation", "Customer Service"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-252", "PRC-253", "PRC-254"]
+  },
+  {
+    id: "PRC-252",
+    name: "Document Presentation to Bank",
+    description: "Prepares compliant document set for bank presentation under L/C terms. Ensures BL, invoice, packing list, certificate of origin, and other required documents match L/C requirements exactly.",
+    domain: "financial",
+    agentName: "Trade Finance Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "L/C terms, shipping documents (BL, invoice, packing list, CO), and presentation deadline",
+    aiProcessingSteps: [
+      "Compile required document set as specified in L/C (typically BL, commercial invoice, packing list, CO, insurance cert)",
+      "Verify each document against L/C terms: exact wording, amounts, dates, document references",
+      "Check for common discrepancies: late shipment, port deviation, quantity tolerance, description mismatch",
+      "Generate presentation cover letter and document checklist for bank submission"
+    ],
+    output: "Compliant document package ready for bank presentation with compliance certification",
+    humanTouchpoints: ["Trade finance verifies document package before bank submission", "Documentation ensures BL matches L/C exactly"],
+    connectedModules: ["Financial", "Documentation", "Booking Management"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-251", "PRC-026", "PRC-121"]
+  },
+  {
+    id: "PRC-253",
+    name: "L/C Discrepancy Handling",
+    description: "Manages discrepancies identified by bank between L/C terms and presented documents. Negotiates amendments, obtains waivers, or corrects documents to achieve compliant presentation.",
+    domain: "financial",
+    agentName: "Trade Finance Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Bank discrepancy notice with specific discrepancy details and L/C terms",
+    aiProcessingSteps: [
+      "Analyze discrepancy nature: document error, timing issue, term mismatch, or missing document",
+      "Recommend resolution: correct document, request L/C amendment, or seek applicant waiver",
+      "Draft amendment request or corrected document based on resolution strategy",
+      "Track discrepancy resolution timeline against L/C expiry and payment deadline"
+    ],
+    output: "Discrepancy resolution plan with corrective actions and timeline",
+    humanTouchpoints: ["Trade finance negotiates with bank and applicant", "Commercial decides on acceptable concessions"],
+    connectedModules: ["Financial", "Documentation", "Customer Service"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-251", "PRC-252", "PRC-254"]
+  },
+  {
+    id: "PRC-254",
+    name: "Trade Finance Tracking",
+    description: "Tracks L/C lifecycle from receipt through payment including amendment requests, document presentation status, bank acceptance, payment timelines, and expiry monitoring.",
+    domain: "financial",
+    agentName: "Trade Finance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Active L/C portfolio with status updates from banks and internal milestones",
+    aiProcessingSteps: [
+      "Monitor all active L/Cs for approaching deadlines: shipment date, presentation period, expiry",
+      "Track amendment requests and bank responses with turnaround times",
+      "Update payment forecasts based on L/C maturity dates and bank processing times",
+      "Generate dashboard with L/C pipeline, aging, and risk exposure summary"
+    ],
+    output: "Trade finance dashboard with L/C status tracking, deadline alerts, and payment forecast",
+    humanTouchpoints: ["Treasury reviews L/C exposure for cash planning"],
+    connectedModules: ["Financial", "Treasury", "Documentation", "Analytics"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-251", "PRC-138", "PRC-126"]
+  },
+  // ============================================================
+  // R. TAX / VAT / GST (PRC-255 to PRC-258)
+  // ============================================================
+  {
+    id: "PRC-255",
+    name: "Tax Calculation per Jurisdiction",
+    description: "Calculates VAT/GST per invoice based on transaction jurisdiction. Applies correct rates for UAE (5%), KSA (15%), India (18% GST with CGST/SGST/IGST split), and Qatar (0% with future readiness).",
+    domain: "financial",
+    agentName: "Tax Compliance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Invoice details with supplier/customer jurisdiction, supply type, and taxable amount",
+    aiProcessingSteps: [
+      "Determine applicable tax jurisdiction based on place of supply rules",
+      "Look up current tax rates for the jurisdiction and service category (freight, handling, storage, etc.)",
+      "Calculate tax amount with correct split (e.g., India: CGST + SGST for intra-state, IGST for inter-state)",
+      "Apply exemptions if applicable (international shipping freight often VAT-exempt) and generate tax line items"
+    ],
+    output: "Tax calculation with jurisdiction, rate, amount, exemption basis, and tax line items for invoice",
+    humanTouchpoints: ["Tax accountant reviews complex cross-border tax scenarios"],
+    connectedModules: ["Financial", "Invoicing", "Compliance", "Reporting"],
+    sla: "< 5 seconds",
+    crossDependencies: ["PRC-121", "PRC-256", "PRC-257"]
+  },
+  {
+    id: "PRC-256",
+    name: "VAT/GST Filing",
+    description: "Prepares and submits periodic VAT/GST returns per country. Compiles output tax (sales), input tax (purchases), and net payable/refundable with supporting schedules.",
+    domain: "financial",
+    agentName: "Tax Compliance Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "scheduled",
+    input: "Tax period data with all sales and purchase invoices, tax calculations, and adjustments",
+    aiProcessingSteps: [
+      "Aggregate output tax from all sales invoices for the filing period by tax category",
+      "Aggregate input tax from all purchase invoices and import declarations",
+      "Calculate net tax payable or refundable with adjustment entries",
+      "Generate return in authority-required format (UAE FTA, KSA ZATCA, India GSTR)"
+    ],
+    output: "Completed tax return ready for submission with supporting schedules and reconciliation",
+    humanTouchpoints: ["Tax accountant reviews return before submission", "Finance approves payment of net tax liability"],
+    connectedModules: ["Financial", "Compliance", "Reporting"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-255", "PRC-258", "PRC-140"]
+  },
+  {
+    id: "PRC-257",
+    name: "Withholding Tax Management",
+    description: "Calculates and applies withholding tax on payments to foreign vendors per applicable treaty rates. Manages WHT certificates and compliance across jurisdictions.",
+    domain: "financial",
+    agentName: "Tax Compliance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Vendor payment with vendor jurisdiction, payment type, and applicable tax treaty",
+    aiProcessingSteps: [
+      "Determine WHT applicability based on vendor residency and payment type (royalties, fees, services)",
+      "Look up applicable treaty rate between payer and payee jurisdictions",
+      "Calculate WHT amount and net payment to vendor",
+      "Generate WHT certificate for vendor and update tax liability records"
+    ],
+    output: "WHT calculation with treaty reference, certificate, and adjusted payment amount",
+    humanTouchpoints: ["Tax accountant reviews non-standard treaty applications"],
+    connectedModules: ["Financial", "Vendor Management", "Compliance"],
+    sla: "< 1 minute",
+    crossDependencies: ["PRC-255", "PRC-131", "PRC-256"]
+  },
+  {
+    id: "PRC-258",
+    name: "Tax Audit Preparation",
+    description: "Compiles documentation for tax authority audits. Reconciles filed returns against accounting records, prepares supporting schedules, and organizes evidence files.",
+    domain: "compliance_risk",
+    agentName: "Tax Compliance Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Tax audit notification with scope period, jurisdiction, and information requests",
+    aiProcessingSteps: [
+      "Reconcile filed tax returns against general ledger tax accounts for audit period",
+      "Compile supporting documents: invoices, contracts, customs declarations, bank statements",
+      "Identify potential risk areas: large adjustments, unusual transactions, cross-border flows",
+      "Generate audit response package with organized documentation and reconciliation workpapers"
+    ],
+    output: "Tax audit response package with reconciliations, supporting documents, and risk assessment",
+    humanTouchpoints: ["Tax manager leads audit response", "External tax advisor reviews complex issues"],
+    connectedModules: ["Compliance", "Financial", "Documentation", "Audit"],
+    sla: "< 3 days",
+    crossDependencies: ["PRC-256", "PRC-173", "PRC-175"]
+  },
+  // ============================================================
+  // S. MULTI-CURRENCY OPERATIONS (PRC-259 to PRC-261)
+  // ============================================================
+  {
+    id: "PRC-259",
+    name: "Multi-Currency Invoice Generation",
+    description: "Generates invoices in customer's preferred currency with FX rate at invoice date. Maintains functional currency equivalent for accounting and handles rounding per currency rules.",
+    domain: "financial",
+    agentName: "Financial Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Invoice request with charges in base currency and customer billing currency preference",
+    aiProcessingSteps: [
+      "Retrieve current FX rate from treasury rate table (daily rates from central bank or market feed)",
+      "Convert all charge lines from functional currency to billing currency",
+      "Apply currency-specific rounding rules (e.g., JPY no decimals, USD 2 decimals, KWD 3 decimals)",
+      "Generate dual-currency invoice showing both billing and functional currency amounts"
+    ],
+    output: "Multi-currency invoice with billing currency amounts, FX rate, and functional currency equivalent",
+    humanTouchpoints: ["Finance reviews invoices in uncommon currencies"],
+    connectedModules: ["Financial", "Invoicing", "Treasury", "Customer Management"],
+    sla: "< 30 seconds",
+    crossDependencies: ["PRC-121", "PRC-260", "PRC-255"]
+  },
+  {
+    id: "PRC-260",
+    name: "FX Gain/Loss Calculation",
+    description: "Calculates realized and unrealized foreign exchange gains and losses on multi-currency transactions. Processes FX differences at payment, month-end revaluation, and settlement.",
+    domain: "financial",
+    agentName: "Financial Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Payment received/made in foreign currency with original invoice FX rate",
+    aiProcessingSteps: [
+      "Calculate realized FX gain/loss: difference between invoice rate and payment rate × amount",
+      "At month-end: revalue all open foreign currency receivables and payables at closing rate",
+      "Calculate unrealized FX gain/loss on open positions",
+      "Generate FX journal entries for realized and unrealized gains/losses by currency pair"
+    ],
+    output: "FX gain/loss calculation with journal entries for posting to general ledger",
+    humanTouchpoints: ["Treasury reviews significant FX exposures"],
+    connectedModules: ["Financial", "Treasury", "General Ledger"],
+    sla: "< 1 minute",
+    crossDependencies: ["PRC-259", "PRC-135", "PRC-261"]
+  },
+  {
+    id: "PRC-261",
+    name: "FX Hedging Execution",
+    description: "Executes forward contracts or other hedging instruments per treasury policy to manage foreign exchange exposure on anticipated cash flows and firm commitments.",
+    domain: "financial",
+    agentName: "Treasury Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "FX exposure report with currency pair, amount, and tenor from treasury",
+    aiProcessingSteps: [
+      "Analyze net FX exposure by currency pair and time bucket from receivables and payables",
+      "Recommend hedging strategy based on exposure size, volatility, and treasury policy limits",
+      "Calculate hedge ratio and forward rate quotes from banking partners",
+      "Record hedge instrument details and link to underlying exposure for hedge accounting"
+    ],
+    output: "Hedging recommendation with execution details, forward rates, and hedge accounting entries",
+    humanTouchpoints: ["Treasury approves hedging strategy", "Finance executes forward contract with bank"],
+    connectedModules: ["Treasury", "Financial", "Risk Management"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-260", "PRC-138", "PRC-174"]
+  },
+  // ============================================================
+  // T. DOCUMENT RELEASE & BL MANAGEMENT (PRC-262 to PRC-265)
+  // ============================================================
+  {
+    id: "PRC-262",
+    name: "BL Release Type Determination",
+    description: "Determines bill of lading release method based on customer agreement, trade terms, and payment status. Options: original BL, telex release, seaway bill, or express release.",
+    domain: "booking_documentation",
+    agentName: "Documentation Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Booking details with payment terms, customer agreement, and trade lane",
+    aiProcessingSteps: [
+      "Check customer master for default BL release type and credit terms",
+      "Validate against trade lane rules (some routes require original BLs for customs)",
+      "Verify payment/credit status: prepaid → auto-release, collect → hold until payment/guarantee",
+      "Set BL release type and notify relevant parties (origin, destination, customer)"
+    ],
+    output: "BL release type decision with rules applied and notification to all parties",
+    humanTouchpoints: ["Documentation overrides for non-standard release requests"],
+    connectedModules: ["Documentation", "Booking Management", "Customer Management", "Financial"],
+    sla: "< 1 minute",
+    crossDependencies: ["PRC-026", "PRC-263", "PRC-264"]
+  },
+  {
+    id: "PRC-263",
+    name: "Telex Release Processing",
+    description: "Processes telex release requests: verifies payment or credit approval, issues telex release notification to destination agent, and updates BL status to released.",
+    domain: "booking_documentation",
+    agentName: "Documentation Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Telex release request with BL number, payment confirmation, and customer authorization",
+    aiProcessingSteps: [
+      "Verify all freight charges paid or covered by approved credit",
+      "Check for any holds: customs, claims, lien, or operational holds on cargo",
+      "Generate telex release message to destination office/agent with BL details",
+      "Update BL status in system to 'telex released' with timestamp and authorization reference"
+    ],
+    output: "Telex release confirmation with destination notification and updated BL status",
+    humanTouchpoints: ["Documentation verifies payment for high-value shipments", "Destination confirms telex release receipt"],
+    connectedModules: ["Documentation", "Financial", "Agent Network", "Customer Service"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-262", "PRC-126", "PRC-040"]
+  },
+  {
+    id: "PRC-264",
+    name: "Switch BL Processing",
+    description: "Processes BL switch at intermediate port: changes shipper, consignee, or notify party on an existing BL for trading transactions. Maintains audit trail of all BL amendments.",
+    domain: "booking_documentation",
+    agentName: "Documentation Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "BL switch request with original BL, new party details, and authorization",
+    aiProcessingSteps: [
+      "Validate BL switch request: original BLs surrendered, authorized party requesting, no holds",
+      "Verify new party details against sanctions screening and KYC requirements",
+      "Generate new BL with updated parties while maintaining cargo and voyage details",
+      "Create audit trail linking original and switched BLs with full amendment history"
+    ],
+    output: "Switched BL with updated parties, audit trail, and compliance verification",
+    humanTouchpoints: ["Documentation manager approves BL switch", "Compliance reviews new party for sanctions"],
+    connectedModules: ["Documentation", "Compliance", "Customer Management", "Audit"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-262", "PRC-026", "PRC-309"]
+  },
+  {
+    id: "PRC-265",
+    name: "Original BL Courier Tracking",
+    description: "Tracks physical dispatch of original bill of lading documents via courier. Monitors courier status, delivery confirmation, and handles lost or delayed BL originals.",
+    domain: "booking_documentation",
+    agentName: "Documentation Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Original BL dispatch notification with courier provider, tracking number, and recipient details",
+    aiProcessingSteps: [
+      "Record courier dispatch with tracking number, sender, recipient, and expected delivery date",
+      "Monitor courier tracking API for status updates and delivery confirmation",
+      "Flag delays: if not delivered within expected window, escalate with courier and notify recipient",
+      "Close tracking loop on delivery confirmation with signed receipt timestamp"
+    ],
+    output: "BL courier tracking record with delivery confirmation and recipient signature",
+    humanTouchpoints: ["Documentation handles lost BL originals with indemnity process"],
+    connectedModules: ["Documentation", "Customer Service", "Notifications"],
+    sla: "< 5 minutes",
+    crossDependencies: ["PRC-262", "PRC-026"]
+  },
+  // ============================================================
+  // U. ROLL-OVER MANAGEMENT (PRC-266 to PRC-269)
+  // ============================================================
+  {
+    id: "PRC-266",
+    name: "Roll-Over Decision",
+    description: "Determines if cargo must roll to next sailing due to vessel full, late gate-in, equipment shortage, or operational constraint. Recommends next available sailing with impact assessment.",
+    domain: "vessel_voyage",
+    agentName: "Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Vessel loading status, pending cargo list, and reasons for potential roll",
+    aiProcessingSteps: [
+      "Identify cargo at risk of roll: late arrivals, excess bookings, weight/slot constraints",
+      "Prioritize cargo retention by customer value, SLA commitments, and cargo urgency",
+      "Find next available sailing for rolled cargo with acceptable transit time impact",
+      "Calculate roll-over impact: customer SLA breach, penalty exposure, connection impacts"
+    ],
+    output: "Roll-over decision with cargo list, next sailing assignment, and impact assessment",
+    humanTouchpoints: ["Operations approves roll priority list for premium customers"],
+    connectedModules: ["Vessel Operations", "Booking Management", "Customer Service", "Container Operations"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-267", "PRC-268", "PRC-269"]
+  },
+  {
+    id: "PRC-267",
+    name: "Roll-Over Rebooking",
+    description: "Rebooks rolled cargo on next available vessel. Updates space allocation, equipment reservation, and all dependent bookings and documentation.",
+    domain: "vessel_voyage",
+    agentName: "Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Roll-over decision with cargo list and next sailing details",
+    aiProcessingSteps: [
+      "Create new booking or amend existing booking to next sailing",
+      "Reserve space and equipment on new vessel with priority handling flag",
+      "Update all dependent records: customs declarations, manifests, container assignments",
+      "Recalculate transit time and update ETA notifications to all stakeholders"
+    ],
+    output: "Rebooking confirmation with new vessel, updated ETA, and amended documentation",
+    humanTouchpoints: ["Customer confirms acceptance of revised schedule"],
+    connectedModules: ["Booking Management", "Vessel Schedule", "Equipment", "Documentation"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-266", "PRC-024", "PRC-025"]
+  },
+  {
+    id: "PRC-268",
+    name: "Roll-Over Customer Notification",
+    description: "Notifies customer of cargo roll-over with reason, new vessel/ETA, and compensation details if applicable. Manages customer communication with empathy and resolution focus.",
+    domain: "vessel_voyage",
+    agentName: "Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Roll-over details with original and new schedule, reason, and customer contract terms",
+    aiProcessingSteps: [
+      "Draft customer notification with clear explanation, apology, and new schedule details",
+      "Check contract terms for roll-over compensation obligations or SLA penalties",
+      "Include positive framing: confirmed space on next vessel, priority handling, revised tracking",
+      "Send multi-channel notification: email, portal update, and push notification"
+    ],
+    output: "Customer notification sent with roll-over details, revised ETA, and any applicable compensation",
+    humanTouchpoints: ["Customer service handles escalated customer complaints about repeated rolls"],
+    connectedModules: ["Customer Service", "Notifications", "Contract Management"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-266", "PRC-267", "PRC-016"]
+  },
+  {
+    id: "PRC-269",
+    name: "Roll-Over Impact Assessment",
+    description: "Assesses downstream impact of cargo roll-over: connecting cargo at destination, feeder connections, customer SLA breaches, and cascading effects on other bookings.",
+    domain: "vessel_voyage",
+    agentName: "Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Rolled cargo manifest with original and new routing, connecting bookings, and SLA data",
+    aiProcessingSteps: [
+      "Trace all downstream dependencies: feeder connections at hub, customer delivery commitments",
+      "Identify connecting cargo that will miss connections due to delayed arrival at hub",
+      "Calculate total SLA exposure: number of customers affected, penalty amounts, service credit obligations",
+      "Generate impact report with mitigation recommendations per affected shipment"
+    ],
+    output: "Cascade impact report with affected parties, financial exposure, and mitigation actions",
+    humanTouchpoints: ["Operations prioritizes mitigation actions for highest-impact cargo"],
+    connectedModules: ["Operations", "Feeder Operations", "Customer Service", "Financial"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-266", "PRC-234", "PRC-233"]
+  },
+  // ============================================================
+  // V. BOOKING CUT-OFF MANAGEMENT (PRC-270 to PRC-272)
+  // ============================================================
+  {
+    id: "PRC-270",
+    name: "Cut-Off Schedule Setting",
+    description: "Sets documentation, VGM, cargo receiving, and dangerous goods cut-offs per port per vessel. Considers terminal operating hours, customs requirements, and vessel departure schedule.",
+    domain: "booking_documentation",
+    agentName: "Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Vessel schedule with port rotation, terminal agreements, and regulatory requirements",
+    aiProcessingSteps: [
+      "Calculate backward from vessel ETD: loading window, customs clearance, terminal processing",
+      "Set cargo receiving cut-off (typically 24-48h before ETD depending on port)",
+      "Set documentation cut-off (typically 48-72h before ETD) and VGM deadline",
+      "Set DG documentation cut-off (typically 72-96h before ETD for hazmat approval)"
+    ],
+    output: "Published cut-off schedule per port with all deadline types and justification",
+    humanTouchpoints: ["Operations adjusts cut-offs for port-specific constraints"],
+    connectedModules: ["Booking Management", "Vessel Schedule", "Terminal Operations", "Notifications"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-271", "PRC-272", "PRC-237"]
+  },
+  {
+    id: "PRC-271",
+    name: "Cut-Off Enforcement & Alert",
+    description: "Monitors approaching cut-offs, alerts customers and operations, and enforces gate-in restrictions after cut-off. Prevents late cargo acceptance that would delay vessel operations.",
+    domain: "booking_documentation",
+    agentName: "Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Active bookings with cargo receipt status and cut-off deadlines",
+    aiProcessingSteps: [
+      "Scan all bookings for approaching cut-offs (72h, 48h, 24h, 12h, 6h thresholds)",
+      "Identify bookings where cargo not yet received and send progressive alert notifications",
+      "At cut-off time: flag booking as cut-off passed, restrict terminal gate-in",
+      "Generate cut-off compliance report for operations review"
+    ],
+    output: "Cut-off alerts sent, restrictions applied, and compliance dashboard updated",
+    humanTouchpoints: ["Customer service handles customer inquiries about cut-off deadlines"],
+    connectedModules: ["Booking Management", "Gate Operations", "Notifications", "Customer Service"],
+    sla: "< 1 minute",
+    crossDependencies: ["PRC-270", "PRC-272", "PRC-064"]
+  },
+  {
+    id: "PRC-272",
+    name: "Late Arrival Exception Handling",
+    description: "Handles cargo arriving after published cut-off. Evaluates whether late acceptance is operationally feasible, applies penalties if applicable, or rolls cargo to next vessel.",
+    domain: "booking_documentation",
+    agentName: "Operations Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Late cargo arrival notification with booking details, delay reason, and vessel loading status",
+    aiProcessingSteps: [
+      "Assess operational feasibility: vessel loading progress, remaining capacity, terminal capability",
+      "Check customer agreement for late arrival penalty terms",
+      "If acceptable: calculate late acceptance fee and generate approval request",
+      "If not feasible: trigger roll-over process (PRC-266) to next available sailing"
+    ],
+    output: "Late arrival decision: accept with penalty, or roll to next vessel with customer notification",
+    humanTouchpoints: ["Operations manager approves late acceptance", "Customer service communicates outcome"],
+    connectedModules: ["Booking Management", "Operations", "Gate Operations", "Financial"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-270", "PRC-271", "PRC-266"]
+  },
+  // ============================================================
+  // W. CUSTOMS HOLD & EXAMINATION (PRC-273 to PRC-275)
+  // ============================================================
+  {
+    id: "PRC-273",
+    name: "Customs Hold Response",
+    description: "Responds to customs hold on cargo: identifies hold reason, prepares required documentation, coordinates with customs broker, and manages cargo release process.",
+    domain: "compliance_risk",
+    agentName: "Customs Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Customs hold notification with hold type, cargo details, and customs reference",
+    aiProcessingSteps: [
+      "Parse customs hold notification to identify hold reason (document check, valuation, classification, security)",
+      "Compile required response documentation based on hold type",
+      "Draft customs response letter with supporting documents attached",
+      "Track hold resolution timeline and escalate if exceeding standard processing period"
+    ],
+    output: "Customs response package with documentation and resolution tracking",
+    humanTouchpoints: ["Customs broker handles in-person queries", "Compliance reviews complex hold situations"],
+    connectedModules: ["Compliance", "Documentation", "Customs", "Container Operations"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-274", "PRC-275", "PRC-161"]
+  },
+  {
+    id: "PRC-274",
+    name: "Duty Calculation & Payment",
+    description: "Calculates customs duty based on HS classification, declared value, country of origin, and applicable trade agreements. Processes duty payment to customs authority.",
+    domain: "compliance_risk",
+    agentName: "Customs Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Import declaration with HS codes, cargo value, origin country, and trade agreement eligibility",
+    aiProcessingSteps: [
+      "Look up duty rate from tariff schedule based on HS code classification",
+      "Apply preferential rate if trade agreement (GCC FTA, India CEPA, etc.) is applicable with valid CO",
+      "Calculate total duty: basic duty + additional duty + cess + anti-dumping (if applicable)",
+      "Generate payment instruction for customs duty settlement"
+    ],
+    output: "Duty calculation with tariff reference, preferential treatment basis, and payment instruction",
+    humanTouchpoints: ["Customs broker reviews complex classifications", "Finance approves duty payment"],
+    connectedModules: ["Compliance", "Financial", "Customs", "Documentation"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-273", "PRC-225", "PRC-161"]
+  },
+  {
+    id: "PRC-275",
+    name: "Customs Examination Coordination",
+    description: "Coordinates physical customs examination: schedules examination, arranges cargo presentation, attends examination, documents results, and obtains release clearance.",
+    domain: "compliance_risk",
+    agentName: "Customs Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Customs examination order with examination type, cargo location, and authority requirements",
+    aiProcessingSteps: [
+      "Schedule examination appointment with customs authority and terminal/CFS",
+      "Prepare cargo for examination: arrange unstuffing, weighing, or sampling as required",
+      "Generate examination preparation checklist with required documents and personnel",
+      "Document examination results and submit findings to customs for release decision"
+    ],
+    output: "Examination coordination plan with schedule, logistics, and result documentation",
+    humanTouchpoints: ["Customs broker attends physical examination", "Operations arranges cargo handling for examination"],
+    connectedModules: ["Compliance", "Terminal Operations", "Documentation", "Container Operations"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-273", "PRC-274", "PRC-064"]
+  },
+  // ============================================================
+  // X. CONTAINER DEPOT MANAGEMENT (PRC-276 to PRC-279)
+  // ============================================================
+  {
+    id: "PRC-276",
+    name: "Depot Gate Management",
+    description: "Manages container depot gate operations including truck appointments, check-in/check-out processing, container inspection at gate, and real-time yard position assignment.",
+    domain: "equipment_container",
+    agentName: "Depot Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Truck arrival at depot gate with container number, booking reference, and movement type",
+    aiProcessingSteps: [
+      "Validate truck appointment and verify driver credentials and container booking",
+      "Process gate transaction: check-in with photo capture, seal verification, and condition check",
+      "Assign yard position based on container status, type, and expected dwell time",
+      "Update inventory system and generate gate receipt with timestamp and condition record"
+    ],
+    output: "Completed gate transaction with yard position, condition record, and gate receipt",
+    humanTouchpoints: ["Gate clerk handles exceptions and non-standard containers"],
+    connectedModules: ["Container Operations", "Gate Operations", "Transport", "Booking Management"],
+    sla: "< 3 minutes",
+    crossDependencies: ["PRC-064", "PRC-277", "PRC-227"]
+  },
+  {
+    id: "PRC-277",
+    name: "Depot Inventory Control",
+    description: "Tracks empty container stock levels by type and grade at each depot. Triggers alerts on shortages or surpluses and supports equipment planning and repositioning decisions.",
+    domain: "equipment_container",
+    agentName: "Depot Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Real-time depot inventory data with container type, grade, status, and dwell time",
+    aiProcessingSteps: [
+      "Maintain real-time inventory count by container type (20DC, 40DC, 40HC, reefer, etc.) and grade (A/B/C)",
+      "Compare stock levels against booking demand forecast for next 7-14 days",
+      "Identify imbalances: shortage alerts for high-demand types, surplus alerts for low-demand",
+      "Generate inventory report with recommended actions: reposition, off-hire, or lease additional"
+    ],
+    output: "Depot inventory dashboard with stock levels, demand forecast, and imbalance alerts",
+    humanTouchpoints: ["Equipment controller reviews stock alerts and approves repositioning"],
+    connectedModules: ["Equipment Management", "Container Operations", "Booking Management", "Analytics"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-276", "PRC-079", "PRC-080"]
+  },
+  {
+    id: "PRC-278",
+    name: "Depot M&R Vendor Coordination",
+    description: "Manages maintenance and repair vendors at container depots. Creates work orders, tracks repair progress, approves costs, and ensures quality standards for container repairs.",
+    domain: "equipment_container",
+    agentName: "Depot Operations Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Container damage report with repair requirements, vendor availability, and authorization limits",
+    aiProcessingSteps: [
+      "Create repair work order from damage assessment with IICL-standard repair codes",
+      "Assign to available M&R vendor based on repair type, capacity, and cost rates",
+      "Estimate repair cost and compare against authorization limits and replacement value",
+      "Track repair progress and quality check upon completion"
+    ],
+    output: "Repair work order with vendor assignment, cost estimate, and completion tracking",
+    humanTouchpoints: ["Depot manager approves repairs above cost threshold", "Quality inspector verifies repair completion"],
+    connectedModules: ["Container Operations", "Maintenance", "Vendor Management", "Financial"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-065", "PRC-224", "PRC-279"]
+  },
+  {
+    id: "PRC-279",
+    name: "Depot Storage Charge Calculation",
+    description: "Calculates storage charges for containers held at depot beyond free time. Applies tariff rates based on container type, duration tiers, and customer contract terms.",
+    domain: "equipment_container",
+    agentName: "Depot Operations Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Container dwell time data, depot tariff schedule, and customer free time agreements",
+    aiProcessingSteps: [
+      "Calculate dwell time per container from gate-in to current date or gate-out",
+      "Apply free time rules from customer contract or standard tariff",
+      "Calculate storage charges using progressive tier rates (e.g., day 1-5: $X, day 6-10: $2X, day 11+: $3X)",
+      "Generate storage charge invoices for containers exceeding free time"
+    ],
+    output: "Storage charge calculation with per-container breakdown and invoice generation",
+    humanTouchpoints: ["Finance reviews waiver requests for long-standing containers"],
+    connectedModules: ["Container Operations", "Financial", "Invoicing", "Customer Management"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-276", "PRC-121", "PRC-064"]
+  },
+  // ============================================================
+  // Y. CUSTOMER REBATES & VOLUME INCENTIVES (PRC-280 to PRC-282)
+  // ============================================================
+  {
+    id: "PRC-280",
+    name: "Volume Commitment Tracking",
+    description: "Tracks actual shipping volumes against contractual volume commitments per customer per trade lane. Monitors progress toward volume tiers that trigger rebate thresholds.",
+    domain: "sales_customer",
+    agentName: "Commercial Intelligence Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Booking and shipment data per customer, contract volume commitments, and reporting period",
+    aiProcessingSteps: [
+      "Aggregate actual volumes per customer per trade lane for current contract period",
+      "Compare against committed volume tiers and calculate achievement percentage",
+      "Project end-of-period volumes based on current trend and seasonality",
+      "Flag customers approaching tier thresholds (within 10%) for commercial follow-up"
+    ],
+    output: "Volume tracking dashboard with achievement rates, projections, and threshold alerts",
+    humanTouchpoints: ["Commercial reviews volume underperformance for contract discussion"],
+    connectedModules: ["Sales", "Contract Management", "Analytics", "Financial"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-281", "PRC-006", "PRC-012"]
+  },
+  {
+    id: "PRC-281",
+    name: "Rebate Calculation",
+    description: "Calculates earned rebates based on volume tier achievement, performance thresholds, and contractual rebate formulas. Supports multiple rebate structures per customer.",
+    domain: "sales_customer",
+    agentName: "Commercial Intelligence Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Volume achievement data, rebate tier structures, and contract terms",
+    aiProcessingSteps: [
+      "Determine achieved volume tier per customer per trade lane",
+      "Apply rebate formula: flat per-TEU rebate, percentage of freight, or lump sum per tier",
+      "Calculate total rebate amount with breakdown by trade lane and tier",
+      "Verify calculation against contract terms and flag anomalies for review"
+    ],
+    output: "Rebate calculation with per-customer breakdown, formula applied, and total amount",
+    humanTouchpoints: ["Commercial reviews rebate calculations before customer communication"],
+    connectedModules: ["Sales", "Financial", "Contract Management"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-280", "PRC-282", "PRC-006"]
+  },
+  {
+    id: "PRC-282",
+    name: "Rebate Settlement",
+    description: "Generates rebate credit notes, obtains approval for settlement, and processes rebate payments or credit against outstanding invoices for qualifying customers.",
+    domain: "sales_customer",
+    agentName: "Commercial Intelligence Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Approved rebate calculation with customer details and settlement preference",
+    aiProcessingSteps: [
+      "Generate credit note for approved rebate amount with contract reference",
+      "Determine settlement method: credit against outstanding invoices or cash payment",
+      "Apply credit note to oldest outstanding invoices if credit settlement",
+      "Process payment if cash settlement and update accounts receivable"
+    ],
+    output: "Rebate settlement completed with credit note, payment/credit application, and customer notification",
+    humanTouchpoints: ["Finance approves rebate settlement above threshold", "Customer confirms settlement method"],
+    connectedModules: ["Financial", "Invoicing", "Customer Management", "Accounts Receivable"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-281", "PRC-121", "PRC-126"]
+  },
+  // ============================================================
+  // Z. LINER AGENCY (PRC-283 to PRC-285)
+  // ============================================================
+  {
+    id: "PRC-283",
+    name: "Liner Agency Appointment",
+    description: "Manages appointment as port agent for principal shipping line. Handles agreement terms, scope definition, territory allocation, and operational setup for agency relationship.",
+    domain: "trade_route",
+    agentName: "Agency Management Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Agency appointment request with principal line details, port coverage, and scope of services",
+    aiProcessingSteps: [
+      "Evaluate agency opportunity: principal's service profile, port call frequency, revenue potential",
+      "Draft agency agreement terms covering scope, commission rates, liability, and termination",
+      "Set up operational framework: communication protocols, reporting requirements, escalation paths",
+      "Configure system for dual operations: own bookings and principal's agency bookings"
+    ],
+    output: "Agency appointment agreement with operational setup plan and system configuration",
+    humanTouchpoints: ["Management negotiates and signs agency agreement", "Legal reviews non-standard terms"],
+    connectedModules: ["Trade Route", "Port Operations", "Financial", "Legal"],
+    sla: "< 3 days",
+    crossDependencies: ["PRC-284", "PRC-285", "PRC-106"]
+  },
+  {
+    id: "PRC-284",
+    name: "Liner Agency Operations",
+    description: "Handles day-to-day cargo operations, documentation, and customer service on behalf of principal shipping line. Coordinates port calls, bookings, and local operations per agency scope.",
+    domain: "trade_route",
+    agentName: "Agency Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Principal's vessel call notice with cargo plan, booking list, and operational requirements",
+    aiProcessingSteps: [
+      "Prepare port call operations: berth booking, pilot arrangement, stevedoring coordination",
+      "Process principal's bookings: cargo receiving, documentation, customs filings on their behalf",
+      "Handle customer inquiries and complaints for principal's shipments at local port",
+      "Generate operational report for principal with performance metrics and exception summary"
+    ],
+    output: "Completed agency operations report with vessel call summary and customer service log",
+    humanTouchpoints: ["Port operations team handles physical vessel call", "Customer service manages local customer interactions"],
+    connectedModules: ["Port Operations", "Documentation", "Customer Service", "Vessel Operations"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-283", "PRC-081", "PRC-085"]
+  },
+  {
+    id: "PRC-285",
+    name: "Liner Agency Commission Settlement",
+    description: "Calculates commission earned from agency operations, reconciles with principal's records, and processes settlement. Supports per-TEU, per-BL, and per-vessel-call commission structures.",
+    domain: "financial",
+    agentName: "Agency Management Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Agency operations data for settlement period with commission rate schedule",
+    aiProcessingSteps: [
+      "Compile all agency activities: vessel calls handled, BLs processed, containers handled, services provided",
+      "Calculate commission per activity type using agreed rate schedule",
+      "Generate settlement statement with activity breakdown and total commission earned",
+      "Reconcile against principal's statement and flag discrepancies for resolution"
+    ],
+    output: "Commission settlement statement with activity details and reconciliation",
+    humanTouchpoints: ["Finance reviews settlement before sending to principal"],
+    connectedModules: ["Financial", "Trade Route", "Invoicing"],
+    sla: "< 2 days",
+    crossDependencies: ["PRC-283", "PRC-284", "PRC-121"]
+  },
+  // ============================================================
+  // AA. NVOCC & LCL OPERATIONS (PRC-286 to PRC-289)
+  // ============================================================
+  {
+    id: "PRC-286",
+    name: "House BL Generation",
+    description: "Generates house bills of lading for NVOCC and freight forwarder operations. Creates HBL on top of master BL with distinct shipper/consignee and cargo details per LCL shipment.",
+    domain: "booking_documentation",
+    agentName: "NVOCC Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "LCL booking with shipper, consignee, cargo details, and master BL reference",
+    aiProcessingSteps: [
+      "Generate house BL number in NVOCC's numbering sequence",
+      "Populate HBL with shipper/consignee details, cargo description, and measurement per LCL booking",
+      "Cross-reference against master BL to ensure total HBL quantities match MBL",
+      "Apply NVOCC-specific terms and conditions to house BL"
+    ],
+    output: "House BL document with master BL cross-reference and cargo details",
+    humanTouchpoints: ["Documentation verifies shipper details on house BL"],
+    connectedModules: ["Documentation", "Booking Management", "NVOCC Operations"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-289", "PRC-026", "PRC-287"]
+  },
+  {
+    id: "PRC-287",
+    name: "LCL Consolidation Planning",
+    description: "Plans consolidation of multiple LCL shipments into FCL containers. Optimizes fill rate, considers cargo compatibility, and generates stuffing sequence for CFS operations.",
+    domain: "booking_documentation",
+    agentName: "NVOCC Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "LCL bookings for same destination cluster with dimensions, weights, and cargo types",
+    aiProcessingSteps: [
+      "Group LCL shipments by destination and compatible cargo types",
+      "Optimize container fill rate: select container size (20/40) and calculate packing arrangement",
+      "Check cargo compatibility: DG segregation, reefer vs dry, odor, contamination risk",
+      "Generate stuffing plan with loading sequence and weight distribution diagram"
+    ],
+    output: "Consolidation plan with container assignment, stuffing sequence, and fill rate optimization",
+    humanTouchpoints: ["CFS supervisor reviews stuffing plan for special cargo"],
+    connectedModules: ["NVOCC Operations", "Booking Management", "CFS Operations"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-286", "PRC-288", "PRC-025"]
+  },
+  {
+    id: "PRC-288",
+    name: "CFS Stuffing/Destuffing",
+    description: "Coordinates container freight station operations for LCL cargo. Manages physical stuffing of consolidated containers and destuffing at destination with cargo verification.",
+    domain: "port_terminal",
+    agentName: "NVOCC Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Consolidation plan with cargo details, CFS availability, and vessel cut-off deadlines",
+    aiProcessingSteps: [
+      "Schedule CFS operations within cut-off window allowing for customs and transport time",
+      "Generate work order for CFS with handling instructions, equipment needs, and labor estimate",
+      "Track cargo receipt at CFS: verify piece count, condition, and marks against booking",
+      "Generate tally report after stuffing/destuffing with variance notes"
+    ],
+    output: "CFS operation report with tally, condition notes, and container seal record",
+    humanTouchpoints: ["CFS supervisor oversees physical operations", "Cargo checker verifies piece count and condition"],
+    connectedModules: ["CFS Operations", "Container Operations", "Documentation", "NVOCC Operations"],
+    sla: "< 8 hours",
+    crossDependencies: ["PRC-287", "PRC-222", "PRC-029"]
+  },
+  {
+    id: "PRC-289",
+    name: "House-to-Master BL Reconciliation",
+    description: "Reconciles house BL quantities, weights, and measurements against master BL for customs compliance and accurate accounting. Flags discrepancies for correction.",
+    domain: "booking_documentation",
+    agentName: "NVOCC Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "All house BLs under a master BL with cargo quantities and measurements",
+    aiProcessingSteps: [
+      "Sum all house BL quantities: packages, gross weight, measurement (CBM)",
+      "Compare aggregated HBL totals against master BL declared quantities",
+      "Identify discrepancies: over-declaration, under-declaration, or measurement variance",
+      "Generate reconciliation report with variance analysis and correction recommendations"
+    ],
+    output: "HBL-to-MBL reconciliation report with variance flags and correction actions",
+    humanTouchpoints: ["Documentation corrects discrepancies before customs filing"],
+    connectedModules: ["Documentation", "NVOCC Operations", "Customs", "Compliance"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-286", "PRC-026", "PRC-028"]
+  },
+  // ============================================================
+  // AB. PORT CONGESTION & EXCEPTION (PRC-290 to PRC-292)
+  // ============================================================
+  {
+    id: "PRC-290",
+    name: "Port Congestion Assessment",
+    description: "Monitors port congestion levels including anchorage waiting times, berth occupancy, terminal delays, and yard utilization. Provides early warning for operational planning.",
+    domain: "port_terminal",
+    agentName: "Port Intelligence Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Port data feeds: AIS vessel density, terminal reports, berth schedules, and weather forecasts",
+    aiProcessingSteps: [
+      "Analyze current port congestion indicators: vessels at anchorage, average waiting time, berth utilization",
+      "Assess terminal yard density and identify storage capacity constraints",
+      "Predict congestion trend for next 7-14 days based on vessel arrival schedule and historical patterns",
+      "Generate congestion index per port with severity classification (normal, elevated, high, critical)"
+    ],
+    output: "Port congestion dashboard with current status, forecast, and operational recommendations",
+    humanTouchpoints: ["Operations reviews congestion alerts for schedule impact decisions"],
+    connectedModules: ["Port Operations", "Vessel Schedule", "Analytics", "Notifications"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-291", "PRC-292", "PRC-054"]
+  },
+  {
+    id: "PRC-291",
+    name: "Alternative Routing Decision",
+    description: "When congestion or disruption impacts schedule, evaluates alternatives: port diversion, port omission, vessel wait, or cargo transshipment via alternate hub.",
+    domain: "port_terminal",
+    agentName: "Port Intelligence Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Disruption event with affected port, vessel position, cargo manifest, and alternative port options",
+    aiProcessingSteps: [
+      "Enumerate alternatives: wait at anchorage, divert to alternate port, omit port call, discharge at hub for relay",
+      "Calculate cost and time impact per alternative including additional handling, transport, and fuel",
+      "Assess cargo impact: which customers affected, delivery delays, contractual obligations",
+      "Generate decision matrix with pros/cons and recommended option"
+    ],
+    output: "Alternative routing analysis with decision matrix, cost comparison, and recommendation",
+    humanTouchpoints: ["Operations director decides on route change", "Commercial assesses customer impact"],
+    connectedModules: ["Vessel Operations", "Port Operations", "Customer Service", "Financial"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-290", "PRC-292", "PRC-052"]
+  },
+  {
+    id: "PRC-292",
+    name: "Disruption Impact Communication",
+    description: "Communicates operational disruptions to all affected parties: customers, agents, terminals, and partners. Provides clear information on impact, revised schedule, and alternative arrangements.",
+    domain: "port_terminal",
+    agentName: "Port Intelligence Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Disruption decision with impact scope, affected bookings, and revised schedule",
+    aiProcessingSteps: [
+      "Identify all affected parties: customers with cargo on vessel, destination agents, connecting services",
+      "Generate tailored communications per audience: customer (delivery impact), agent (ops changes), terminal (schedule update)",
+      "Include actionable information: revised ETA, alternative arrangements, contact for queries",
+      "Track communication delivery and customer acknowledgment"
+    ],
+    output: "Multi-channel disruption notifications sent to all affected parties with tracking",
+    humanTouchpoints: ["Customer service handles individual customer follow-up queries"],
+    connectedModules: ["Notifications", "Customer Service", "Vessel Operations", "Agent Network"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-290", "PRC-291", "PRC-268"]
+  },
+  // ============================================================
+  // AC. INSURANCE POLICY MANAGEMENT (PRC-293 to PRC-296)
+  // ============================================================
+  {
+    id: "PRC-293",
+    name: "Insurance Policy Renewal",
+    description: "Manages insurance policy renewal cycle for all insurance types: P&I (Protection & Indemnity), H&M (Hull & Machinery), cargo insurance, and FD&D (Freight, Demurrage & Defence).",
+    domain: "compliance_risk",
+    agentName: "Insurance Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "scheduled",
+    input: "Policy portfolio with renewal dates, current terms, claims history, and fleet changes",
+    aiProcessingSteps: [
+      "Track all policy renewal dates and initiate renewal process 90 days before expiry",
+      "Compile renewal submission: updated fleet list, claims record, loss ratio, and operational changes",
+      "Compare renewal quotes from existing and alternative insurers/P&I clubs",
+      "Generate renewal recommendation with coverage comparison and premium analysis"
+    ],
+    output: "Insurance renewal recommendation with quote comparison and coverage analysis",
+    humanTouchpoints: ["Insurance manager reviews and selects renewal terms", "Finance approves premium budget"],
+    connectedModules: ["Compliance", "Fleet Management", "Financial", "Risk Management"],
+    sla: "< 1 week",
+    crossDependencies: ["PRC-294", "PRC-295", "PRC-296"]
+  },
+  {
+    id: "PRC-294",
+    name: "Premium Calculation",
+    description: "Calculates insurance premium based on fleet value, loss record, coverage scope, vessel age, and trading area. Supports budgeting and cost allocation to vessels.",
+    domain: "compliance_risk",
+    agentName: "Insurance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Fleet data, insured values, loss history, coverage scope, and deductible levels",
+    aiProcessingSteps: [
+      "Calculate premium per vessel based on hull value, age, flag, and classification society",
+      "Apply no-claims discount or loss ratio surcharge based on claims history",
+      "Factor in trading area restrictions, cargo type exposure, and crew competency",
+      "Allocate premium cost to vessels for voyage P&L and budget tracking"
+    ],
+    output: "Premium calculation per vessel with allocation for cost accounting",
+    humanTouchpoints: ["Finance reviews premium allocation methodology"],
+    connectedModules: ["Financial", "Fleet Management", "Compliance", "Budgeting"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-293", "PRC-059", "PRC-133"]
+  },
+  {
+    id: "PRC-295",
+    name: "Coverage Gap Assessment",
+    description: "Identifies gaps between current insurance coverage and operational risk profile. Ensures all material risks are covered and coverage limits are adequate for exposure.",
+    domain: "compliance_risk",
+    agentName: "Insurance Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Insurance policy portfolio, risk register, fleet operations profile, and regulatory requirements",
+    aiProcessingSteps: [
+      "Map current coverage against risk register: P&I, H&M, cargo, war, strikes, cyber, environmental",
+      "Identify uncovered or underinsured risks based on fleet size, trading areas, and cargo types",
+      "Check coverage limits against maximum probable loss scenarios",
+      "Generate gap analysis report with recommendations for additional coverage"
+    ],
+    output: "Insurance coverage gap analysis with risk-ranked recommendations",
+    humanTouchpoints: ["Risk manager reviews and prioritizes coverage gaps"],
+    connectedModules: ["Risk Management", "Compliance", "Fleet Management", "Insurance"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-293", "PRC-174", "PRC-294"]
+  },
+  {
+    id: "PRC-296",
+    name: "H&M Survey Coordination",
+    description: "Coordinates Hull & Machinery condition surveys with classification society and underwriters. Manages survey scheduling, findings follow-up, and certificate maintenance.",
+    domain: "compliance_risk",
+    agentName: "Insurance Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "scheduled",
+    input: "Survey schedule, vessel location, class society requirements, and underwriter requests",
+    aiProcessingSteps: [
+      "Schedule survey based on vessel location, dry dock plan, and class survey due dates",
+      "Prepare survey documentation: vessel particulars, maintenance records, previous survey findings",
+      "Track survey findings and generate corrective action plan with deadlines",
+      "Update certificate records and notify underwriters of survey completion"
+    ],
+    output: "Survey coordination plan with schedule, documentation, and findings follow-up tracker",
+    humanTouchpoints: ["Technical superintendent attends survey", "Class surveyor conducts inspection"],
+    connectedModules: ["Compliance", "Fleet Management", "Maintenance", "Documentation"],
+    sla: "< 2 days",
+    crossDependencies: ["PRC-293", "PRC-167", "PRC-293"]
+  },
+  // ============================================================
+  // AD. VOYAGE BUNKER MANAGEMENT (PRC-297 to PRC-299)
+  // ============================================================
+  {
+    id: "PRC-297",
+    name: "Bunker ROB Tracking",
+    description: "Tracks Remaining on Board (ROB) fuel quantities per vessel per fuel type (VLSFO, LSMGO, HSFO). Maintains accurate fuel inventory for voyage planning and bunker procurement decisions.",
+    domain: "vessel_voyage",
+    agentName: "Bunker Management Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Noon reports with daily fuel consumption, bunker delivery receipts, and sounding reports",
+    aiProcessingSteps: [
+      "Update ROB from noon reports: previous ROB minus daily consumption per fuel type",
+      "Add bunker deliveries with quality reference (BDN number, ISO 8217 spec)",
+      "Reconcile physical soundings against calculated ROB and flag variances > 2%",
+      "Calculate days of fuel remaining at current consumption rate per fuel type"
+    ],
+    output: "Updated ROB per vessel per fuel type with days remaining and variance alerts",
+    humanTouchpoints: ["Chief engineer validates soundings during physical checks"],
+    connectedModules: ["Vessel Operations", "Bunker Management", "Voyage Planning"],
+    sla: "< 5 minutes",
+    crossDependencies: ["PRC-298", "PRC-299", "PRC-051"]
+  },
+  {
+    id: "PRC-298",
+    name: "Consumption vs Plan Analysis",
+    description: "Compares actual fuel consumption per voyage leg against voyage plan estimates. Identifies variances and their causes: weather, speed deviation, hull fouling, or engine performance.",
+    domain: "vessel_voyage",
+    agentName: "Bunker Management Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Actual consumption data from noon reports and planned consumption from voyage plan",
+    aiProcessingSteps: [
+      "Extract planned consumption per leg from voyage plan (speed × distance × specific fuel consumption)",
+      "Compare actual consumption against plan per leg and per day",
+      "Analyze variance drivers: weather factor, speed deviation, hull condition, aux consumption",
+      "Generate consumption variance report with corrective recommendations"
+    ],
+    output: "Consumption variance analysis with driver attribution and efficiency recommendations",
+    humanTouchpoints: ["Technical superintendent reviews significant variances for hull cleaning or engine maintenance decisions"],
+    connectedModules: ["Vessel Operations", "Voyage Planning", "Fleet Performance", "Analytics"],
+    sla: "< 30 minutes",
+    crossDependencies: ["PRC-297", "PRC-051", "PRC-056"]
+  },
+  {
+    id: "PRC-299",
+    name: "Charter Bunker Clause Settlement",
+    description: "Calculates bunker adjustment under charter party terms at delivery and redelivery. Handles bunker price differences, ROB quantities, and on-hire/off-hire fuel valuation.",
+    domain: "vessel_voyage",
+    agentName: "Bunker Management Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Charter party bunker clause, ROB at delivery/redelivery, bunker prices, and fuel type specifications",
+    aiProcessingSteps: [
+      "Record bunker ROB quantities and quality at delivery (on-hire) per charter surveyor report",
+      "Record bunker ROB quantities and quality at redelivery (off-hire) per charter surveyor report",
+      "Calculate bunker adjustment: (delivery ROB - redelivery ROB) × agreed price per fuel type",
+      "Generate settlement statement per charter party bunker clause terms"
+    ],
+    output: "Bunker clause settlement calculation with quantity reconciliation and financial adjustment",
+    humanTouchpoints: ["Operations validates ROB quantities against survey reports", "Finance approves settlement amount"],
+    connectedModules: ["Vessel Operations", "Charter Management", "Financial"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-297", "PRC-046", "PRC-060"]
+  },
+  // ============================================================
+  // AE. OFF-HIRE & PERFORMANCE CLAIMS (PRC-300 to PRC-302)
+  // ============================================================
+  {
+    id: "PRC-300",
+    name: "Off-Hire Period Calculation",
+    description: "Calculates off-hire time for vessel breakdowns, dry dock periods, deviation from charter route, and other events reducing vessel availability under charter party terms.",
+    domain: "vessel_voyage",
+    agentName: "Charter Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "event",
+    input: "Off-hire event notification with start/end times, reason, and charter party off-hire clause",
+    aiProcessingSteps: [
+      "Classify off-hire event per charter party clause: mechanical breakdown, dry dock, deviation, etc.",
+      "Calculate off-hire duration: exact hours from event start to vessel resuming charter service",
+      "Deduct off-hire time from charter hire period and calculate hire reduction amount",
+      "Generate off-hire record with evidence documentation and financial impact"
+    ],
+    output: "Off-hire calculation with duration, classification, hire deduction, and supporting evidence",
+    humanTouchpoints: ["Chartering reviews off-hire claims and negotiates with owner/charterer"],
+    connectedModules: ["Charter Management", "Vessel Operations", "Financial"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-301", "PRC-046", "PRC-060"]
+  },
+  {
+    id: "PRC-301",
+    name: "Speed & Consumption Claim",
+    description: "Assesses vessel performance against charter party warranty for speed and fuel consumption. Calculates claims for underperformance after adjusting for weather, currents, and sea state.",
+    domain: "vessel_voyage",
+    agentName: "Charter Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Voyage performance data, CP warranty terms, weather data, and noon reports",
+    aiProcessingSteps: [
+      "Extract CP warranty: guaranteed speed (knots) and consumption (MT/day) per fuel type",
+      "Calculate actual performance from noon reports with weather adjustment (Beaufort scale correction)",
+      "Determine performance shortfall: speed deficit and excess consumption vs warranty",
+      "Calculate claim amount: time loss from speed deficit × charter hire rate, or excess fuel × bunker price"
+    ],
+    output: "Performance claim calculation with weather-adjusted analysis and claim amount",
+    humanTouchpoints: ["Chartering reviews claim methodology and negotiates with counterparty"],
+    connectedModules: ["Charter Management", "Vessel Operations", "Financial", "Weather"],
+    sla: "< 1 day",
+    crossDependencies: ["PRC-300", "PRC-302", "PRC-056"]
+  },
+  {
+    id: "PRC-302",
+    name: "Weather Routing Dispute Resolution",
+    description: "Resolves disputes over weather routing decisions and their impact on performance claims. Analyzes whether adverse weather was avoidable and its true impact on speed/consumption.",
+    domain: "vessel_voyage",
+    agentName: "Charter Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Disputed voyage performance data, weather records, routing decisions, and expert opinions",
+    aiProcessingSteps: [
+      "Reconstruct actual weather conditions along voyage route using hindcast weather data",
+      "Analyze whether alternative routing would have avoided adverse weather",
+      "Calculate good weather vs bad weather performance to isolate weather impact from vessel performance",
+      "Generate dispute resolution brief with evidence-based analysis and settlement recommendation"
+    ],
+    output: "Weather routing dispute analysis with evidence package and recommended settlement",
+    humanTouchpoints: ["Chartering negotiates dispute resolution", "Legal advises on arbitration if unresolved"],
+    connectedModules: ["Charter Management", "Weather Routing", "Legal", "Analytics"],
+    sla: "< 3 days",
+    crossDependencies: ["PRC-301", "PRC-052", "PRC-056"]
+  },
+  // ============================================================
+  // AF. FLEET STRATEGY & SHIP S&P (PRC-303 to PRC-305)
+  // ============================================================
+  {
+    id: "PRC-303",
+    name: "Fleet Renewal Planning",
+    description: "Analyzes fleet age profile, capacity needs, market outlook, and environmental regulations to plan fleet renewal cycle. Balances owned, chartered, and newbuilding strategy.",
+    domain: "vessel_voyage",
+    agentName: "Fleet Strategy Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Current fleet roster with ages, charter expiry dates, trade demand forecasts, and regulatory timeline",
+    aiProcessingSteps: [
+      "Analyze fleet age profile and identify vessels approaching economic end-of-life or regulatory phase-out",
+      "Model future capacity needs based on trade growth forecasts and network expansion plans",
+      "Evaluate fleet composition options: extend charters, buy secondhand, order newbuilds, or exit tonnage",
+      "Generate fleet plan with vessel replacement timeline and financial projection"
+    ],
+    output: "Fleet renewal plan with 5-year vessel pipeline, financial projections, and risk assessment",
+    humanTouchpoints: ["Senior management reviews and approves fleet strategy", "Board approves major vessel investments"],
+    connectedModules: ["Fleet Management", "Financial", "Strategy", "Commercial"],
+    sla: "< 1 week",
+    crossDependencies: ["PRC-304", "PRC-305", "PRC-057"]
+  },
+  {
+    id: "PRC-304",
+    name: "Ship S&P Evaluation",
+    description: "Evaluates vessel sale or purchase opportunities against fleet plan and current market values. Provides valuation analysis and transaction recommendations.",
+    domain: "vessel_voyage",
+    agentName: "Fleet Strategy Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Vessel details (age, size, specifications), market comparables, and fleet plan requirements",
+    aiProcessingSteps: [
+      "Estimate vessel market value using comparable sales, age-adjusted depreciation, and market indices",
+      "Evaluate vessel specifications against fleet requirements: size, fuel type, speed, cargo capacity",
+      "Calculate ROI on purchase: expected charter income minus opex, financing, and depreciation",
+      "Generate investment analysis with sensitivity to market rate changes and residual value"
+    ],
+    output: "S&P evaluation with valuation, ROI analysis, and buy/sell recommendation",
+    humanTouchpoints: ["Chartering reviews vessel inspection report", "Finance approves acquisition budget"],
+    connectedModules: ["Fleet Management", "Financial", "Charter Management", "Strategy"],
+    sla: "< 3 days",
+    crossDependencies: ["PRC-303", "PRC-305", "PRC-045"]
+  },
+  {
+    id: "PRC-305",
+    name: "Newbuilding Specification",
+    description: "Develops detailed vessel specifications for newbuilding orders based on trade requirements, fuel efficiency targets, and regulatory compliance. Covers hull design, machinery, and cargo systems.",
+    domain: "vessel_voyage",
+    agentName: "Fleet Strategy Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Trade requirements, fuel strategy, regulatory timeline, and industry technology trends",
+    aiProcessingSteps: [
+      "Define vessel particulars based on target trade lane requirements: capacity, draft, speed",
+      "Specify fuel system: LNG-ready, methanol, ammonia, or conventional with scrubber",
+      "Ensure compliance with upcoming regulations: EEDI Phase 3, CII trajectory, EU ETS, FuelEU",
+      "Generate technical specification document for shipyard tendering"
+    ],
+    output: "Newbuilding technical specification with owner's requirements for shipyard tendering",
+    humanTouchpoints: ["Technical team reviews and refines specifications", "Management approves final spec for tendering"],
+    connectedModules: ["Fleet Management", "Technical", "Compliance", "Strategy"],
+    sla: "< 2 weeks",
+    crossDependencies: ["PRC-303", "PRC-304", "PRC-050"]
+  },
+  // ============================================================
+  // AG. BREAK-BULK & PROJECT CARGO (PRC-306 to PRC-308)
+  // ============================================================
+  {
+    id: "PRC-306",
+    name: "Break-Bulk Booking Assessment",
+    description: "Assesses non-containerized cargo for shipping feasibility: dimensions, weight, lifting requirements, vessel suitability, and special handling needs for break-bulk shipments.",
+    domain: "booking_documentation",
+    agentName: "Special Cargo Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Break-bulk cargo details: dimensions, weight, center of gravity, handling requirements",
+    aiProcessingSteps: [
+      "Validate cargo dimensions against vessel hatch/hold clearances and crane capacity",
+      "Calculate stowage factor and deck/hold space requirement including securing allowances",
+      "Assess lifting plan: crane capacity at load/discharge ports, special rigging needs",
+      "Generate feasibility assessment with vessel options, cost estimate, and risk factors"
+    ],
+    output: "Break-bulk feasibility assessment with vessel options, handling plan, and cost estimate",
+    humanTouchpoints: ["Operations reviews complex cargo dimensions", "Marine warranty surveyor for heavy lifts"],
+    connectedModules: ["Booking Management", "Vessel Operations", "Special Cargo"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-307", "PRC-308", "PRC-035"]
+  },
+  {
+    id: "PRC-307",
+    name: "Project Cargo Planning",
+    description: "End-to-end logistics planning for project cargo shipments: multi-modal transport chain, permits, insurance, timing coordination, and site delivery requirements.",
+    domain: "booking_documentation",
+    agentName: "Special Cargo Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "manual",
+    input: "Project cargo specifications, origin site, destination site, delivery schedule, and budget",
+    aiProcessingSteps: [
+      "Design complete transport chain: factory pickup, inland transport, port handling, sea freight, last mile",
+      "Identify permit requirements per jurisdiction: oversize transport, port entry, import licenses",
+      "Arrange specialized insurance coverage for project cargo value and transit risks",
+      "Create detailed project schedule with milestone dependencies and contingency buffers"
+    ],
+    output: "Project cargo logistics plan with transport chain, permits, insurance, and schedule",
+    humanTouchpoints: ["Project manager reviews and approves logistics plan", "Client confirms delivery schedule"],
+    connectedModules: ["Special Cargo", "Inland Transport", "Insurance", "Documentation", "Port Operations"],
+    sla: "< 2 days",
+    crossDependencies: ["PRC-306", "PRC-308", "PRC-247"]
+  },
+  {
+    id: "PRC-308",
+    name: "Lashing & Securing Plan",
+    description: "Generates cargo securing plan per IMO CSS Code for break-bulk and OOG cargo. Calculates lashing forces, securing points, and materials required. Arranges marine warranty surveyor for heavy cargo.",
+    domain: "booking_documentation",
+    agentName: "Special Cargo Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Cargo weight, dimensions, center of gravity, stowage position, and vessel motion characteristics",
+    aiProcessingSteps: [
+      "Calculate external forces: gravity, wind, sea motion (roll, pitch, heave) per IMO CSS Code",
+      "Design securing arrangement: lashing points, wire/chain/strap specification, and timber blocking",
+      "Calculate safety factors and verify against minimum regulatory requirements",
+      "Generate lashing plan drawing with bill of materials for securing equipment"
+    ],
+    output: "Cargo securing plan with calculations, lashing diagram, and material requirements",
+    humanTouchpoints: ["Marine warranty surveyor approves plan for heavy lifts", "Chief officer supervises execution"],
+    connectedModules: ["Special Cargo", "Vessel Operations", "Safety", "Documentation"],
+    sla: "< 8 hours",
+    crossDependencies: ["PRC-306", "PRC-043", "PRC-035"]
+  },
+  // ============================================================
+  // AH. SANCTIONS & EMBARGO OPERATIONS (PRC-309 to PRC-311)
+  // ============================================================
+  {
+    id: "PRC-309",
+    name: "Ongoing Sanctions Monitoring",
+    description: "Continuously monitors existing customers, vendors, and counterparties against updated global sanctions lists (OFAC, EU, UN, UK). Triggers alerts on new matches or near-matches.",
+    domain: "compliance_risk",
+    agentName: "Compliance Screening Agent",
+    agentType: "autonomous",
+    automationLevel: "full_auto",
+    trigger: "scheduled",
+    input: "Updated sanctions lists, customer/vendor master data, and vessel/port databases",
+    aiProcessingSteps: [
+      "Screen all active customers and vendors against updated OFAC SDN, EU consolidated, UN, and UK sanctions lists",
+      "Apply fuzzy matching to catch name variations, transliterations, and aliases",
+      "Check vessels against flag state restrictions and port calls to sanctioned countries",
+      "Generate match report with confidence scores and recommended actions"
+    ],
+    output: "Sanctions screening report with matches, false positive assessment, and action items",
+    humanTouchpoints: ["Compliance officer investigates potential matches", "Legal advises on borderline cases"],
+    connectedModules: ["Compliance", "Customer Management", "Vendor Management", "Vessel Operations"],
+    sla: "< 4 hours",
+    crossDependencies: ["PRC-310", "PRC-311", "PRC-163"]
+  },
+  {
+    id: "PRC-310",
+    name: "Sanctioned Party Response",
+    description: "Manages response when existing customer or counterparty is confirmed sanctioned. Freezes operations, reports to authorities, and seeks legal guidance on wind-down obligations.",
+    domain: "compliance_risk",
+    agentName: "Compliance Screening Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Confirmed sanctions match with party details, active transactions, and legal guidance",
+    aiProcessingSteps: [
+      "Immediately freeze all active bookings and financial transactions with sanctioned party",
+      "Compile inventory of all affected transactions: in-transit cargo, unpaid invoices, pending shipments",
+      "Draft regulatory notification per jurisdiction requirements (OFAC report, EU notification)",
+      "Generate wind-down plan for existing obligations under applicable license or authorization"
+    ],
+    output: "Sanctions response action plan with frozen transactions, regulatory filings, and wind-down timeline",
+    humanTouchpoints: ["Compliance manager oversees response execution", "Legal handles regulatory filings"],
+    connectedModules: ["Compliance", "Legal", "Financial", "Operations", "Customer Management"],
+    sla: "< 2 hours",
+    crossDependencies: ["PRC-309", "PRC-174", "PRC-180"]
+  },
+  {
+    id: "PRC-311",
+    name: "Dual-Use Goods License Management",
+    description: "Tracks export control licenses for dual-use goods. Ensures valid licenses exist before shipment, monitors license conditions and expiry, and maintains compliance records.",
+    domain: "compliance_risk",
+    agentName: "Compliance Screening Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Booking with controlled goods classification, export license details, and destination",
+    aiProcessingSteps: [
+      "Check cargo HS code against dual-use goods control lists per exporting country",
+      "Verify valid export license exists covering: goods, quantity, destination, and end-user",
+      "Validate license conditions: quantity limits, validity period, end-use certificate requirements",
+      "Record license usage against quantity limits and flag approaching exhaustion"
+    ],
+    output: "Export license verification with compliance status and remaining license capacity",
+    humanTouchpoints: ["Compliance reviews borderline classifications", "Documentation includes license reference in customs filing"],
+    connectedModules: ["Compliance", "Documentation", "Customs", "Booking Management"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-309", "PRC-163", "PRC-161"]
+  },
+  // ============================================================
+  // AI. CREDIT INSURANCE (PRC-312 to PRC-313)
+  // ============================================================
+  {
+    id: "PRC-312",
+    name: "Credit Insurance Application",
+    description: "Applies for trade credit insurance coverage for high-value customer accounts. Submits customer financial data to insurer, negotiates coverage limits, and manages policy administration.",
+    domain: "financial",
+    agentName: "Credit Risk Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "manual",
+    input: "Customer credit profile, outstanding balance, trade volume, and insurer requirements",
+    aiProcessingSteps: [
+      "Compile credit insurance application with customer financials, payment history, and trade details",
+      "Calculate optimal coverage amount based on credit exposure and risk appetite",
+      "Submit application to credit insurer with supporting documentation",
+      "Track application status and negotiate coverage limits and premium"
+    ],
+    output: "Credit insurance application with coverage request and supporting documentation",
+    humanTouchpoints: ["Credit manager approves insurance application", "Finance negotiates premium with insurer"],
+    connectedModules: ["Financial", "Credit Management", "Customer Management", "Risk Management"],
+    sla: "< 2 days",
+    crossDependencies: ["PRC-313", "PRC-010", "PRC-011"]
+  },
+  {
+    id: "PRC-313",
+    name: "Credit Insurance Claim",
+    description: "Files claim with credit insurer when covered customer defaults on payment. Compiles evidence of debt, collection efforts, and loss calculation per policy terms.",
+    domain: "financial",
+    agentName: "Credit Risk Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Customer default notification with outstanding invoices, collection history, and policy details",
+    aiProcessingSteps: [
+      "Compile claim documentation: original invoices, delivery proof, collection correspondence, aging report",
+      "Calculate insured loss per policy terms: covered amount minus deductible and co-insurance",
+      "Prepare claim submission per insurer requirements with complete evidence package",
+      "Track claim processing and negotiate with insurer on coverage disputes"
+    ],
+    output: "Credit insurance claim submission with evidence package and loss calculation",
+    humanTouchpoints: ["Credit manager reviews claim before submission", "Legal supports claim disputes with insurer"],
+    connectedModules: ["Financial", "Credit Management", "Legal", "Accounts Receivable"],
+    sla: "< 1 week",
+    crossDependencies: ["PRC-312", "PRC-125", "PRC-128"]
+  },
+  // ============================================================
+  // AJ. EMERGENCY & SALVAGE (PRC-314 to PRC-316)
+  // ============================================================
+  {
+    id: "PRC-314",
+    name: "Emergency Response Activation",
+    description: "Activates emergency response protocol for critical maritime incidents: grounding, collision, fire, piracy, crew injury, or environmental spill. Coordinates immediate response actions.",
+    domain: "compliance_risk",
+    agentName: "Emergency Response Agent",
+    agentType: "semi-autonomous",
+    automationLevel: "semi_auto",
+    trigger: "event",
+    input: "Emergency notification with incident type, vessel position, severity, and initial assessment",
+    aiProcessingSteps: [
+      "Classify incident severity and trigger appropriate response protocol level",
+      "Compile emergency contact list: coast guard, P&I club, salvors, legal, port authority, flag state",
+      "Generate initial notification messages per audience with known facts and response actions",
+      "Activate crisis management team and establish communication protocol"
+    ],
+    output: "Emergency response activation with notifications sent and crisis management team assembled",
+    humanTouchpoints: ["DPA (Designated Person Ashore) leads emergency response", "Master reports situation updates from vessel"],
+    connectedModules: ["Safety", "Compliance", "Insurance", "Vessel Operations", "Communications"],
+    sla: "< 15 minutes",
+    crossDependencies: ["PRC-315", "PRC-316", "PRC-179"]
+  },
+  {
+    id: "PRC-315",
+    name: "General Average Declaration",
+    description: "Manages General Average declaration process: appoints average adjusters, notifies cargo interests and their insurers, collects GA security, and tracks adjustment proceedings.",
+    domain: "compliance_risk",
+    agentName: "Emergency Response Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "GA triggering event (jettison, salvage, extraordinary sacrifice) with vessel and cargo details",
+    aiProcessingSteps: [
+      "Assess GA criteria: was sacrifice/expenditure extraordinary and for common safety?",
+      "Compile cargo interest data: BL holders, declared values, insurance details",
+      "Draft GA declaration and security bond requirements per York-Antwerp Rules",
+      "Track GA security collection from cargo interests before releasing cargo"
+    ],
+    output: "GA declaration with cargo interest notifications, security requirements, and adjuster appointment",
+    humanTouchpoints: ["Management declares GA", "Average adjuster manages proceedings", "Legal oversees GA process"],
+    connectedModules: ["Legal", "Insurance", "Documentation", "Financial", "Customer Service"],
+    sla: "< 24 hours",
+    crossDependencies: ["PRC-314", "PRC-316", "PRC-169"]
+  },
+  {
+    id: "PRC-316",
+    name: "Salvage Coordination",
+    description: "Coordinates salvage operations for distressed vessels: engages salvors, manages authorities and environmental response, tracks costs, and handles Lloyd's Open Form or other salvage contracts.",
+    domain: "compliance_risk",
+    agentName: "Emergency Response Agent",
+    agentType: "assistive",
+    automationLevel: "ai_assisted",
+    trigger: "event",
+    input: "Vessel distress notification with position, nature of emergency, and environmental risk assessment",
+    aiProcessingSteps: [
+      "Assess salvage requirements: towing, firefighting, pollution response, cargo lightering",
+      "Identify and contact qualified salvors with appropriate equipment and proximity",
+      "Coordinate with maritime authorities: coast guard, port authority, environmental agencies",
+      "Track salvage costs and compile documentation for insurance and GA claims"
+    ],
+    output: "Salvage coordination plan with salvor engagement, authority notifications, and cost tracking",
+    humanTouchpoints: ["Master accepts salvage terms (LOF or contract)", "DPA coordinates with P&I club and salvors"],
+    connectedModules: ["Safety", "Insurance", "Legal", "Vessel Operations", "Environmental"],
+    sla: "< 1 hour",
+    crossDependencies: ["PRC-314", "PRC-315", "PRC-179"]
+  },
 ];
