@@ -8,10 +8,15 @@ import {
   CreditCard,
   Activity,
   ClipboardCheck,
+  MapPin,
+  Workflow,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import type { ActivityCategory } from "@/components/dashboard/activity-feed";
 import { BookingPipelineFunnel } from "@/components/dashboard/booking-pipeline";
 import { VesselScheduleTimeline } from "@/components/dashboard/vessel-schedule-timeline";
 import { FinancialSummary } from "@/components/dashboard/financial-summary";
@@ -27,6 +32,7 @@ import {
   arccCustomerAccounts,
   peProcessInstances,
   peApprovals,
+  peEventLog,
   capVesselSchedules,
   capPortRotations,
   pdaProformaEstimates,
@@ -258,6 +264,40 @@ export default async function DashboardPage() {
     db.select({ total: sum(bfmBunkerOrders.totalAmount) }).from(bfmBunkerOrders)
       .where(and(eq(bfmBunkerOrders.tenantId, tid), inArray(bfmBunkerOrders.status, ["confirmed", "delivered"]), gte(bfmBunkerOrders.deliveryDate, thisMonthStart), isNull(bfmBunkerOrders.deletedAt)))
       .then((r) => Number(r[0]?.total ?? 0)),
+
+    // 24: Recent process instances (F-013)
+    db.select({
+      id: peProcessInstances.id,
+      processName: peProcessInstances.processName,
+      status: peProcessInstances.status,
+      createdAt: peProcessInstances.createdAt,
+    }).from(peProcessInstances)
+      .where(and(eq(peProcessInstances.tenantId, tid), isNull(peProcessInstances.deletedAt)))
+      .orderBy(desc(peProcessInstances.createdAt))
+      .limit(5),
+
+    // 25: Recent decided approvals (F-013)
+    db.select({
+      id: peApprovals.id,
+      decision: peApprovals.decision,
+      decidedAt: peApprovals.decidedAt,
+      processInstanceId: peApprovals.processInstanceId,
+    }).from(peApprovals)
+      .where(and(eq(peApprovals.tenantId, tid), isNull(peApprovals.deletedAt), sql`${peApprovals.decision} IS NOT NULL`))
+      .orderBy(desc(peApprovals.decidedAt))
+      .limit(5),
+
+    // 26: Recent event log entries (F-013)
+    db.select({
+      id: peEventLog.id,
+      eventType: peEventLog.eventType,
+      entityType: peEventLog.entityType,
+      entityId: peEventLog.entityId,
+      createdAt: peEventLog.createdAt,
+    }).from(peEventLog)
+      .where(eq(peEventLog.tenantId, tid))
+      .orderBy(desc(peEventLog.createdAt))
+      .limit(5),
   ]);
 
   // Extract values with fallback for failed queries
@@ -426,21 +466,50 @@ export default async function DashboardPage() {
     },
   ];
 
-  // Activity feed
-  const activityItems = [
+  // F-013: Enhanced activity feed — merge 5 sources
+  const recentProcesses = val<Array<{ id: string; processName: string; status: string; createdAt: Date }>>(24, []);
+  const recentApprovals = val<Array<{ id: string; decision: string | null; decidedAt: Date | null; processInstanceId: string }>>(25, []);
+  const recentEvents = val<Array<{ id: string; eventType: string; entityType: string; entityId: string; createdAt: Date }>>(26, []);
+
+  const activityItems: Array<{ id: string; message: string; timestamp: string; sortDate: Date; category: ActivityCategory }> = [
     ...recentBookings.map((b) => ({
       id: b.id,
       message: `Booking ${b.ref} — ${b.status}`,
       timestamp: formatRelativeTime(b.createdAt),
+      sortDate: b.createdAt,
+      category: "booking" as ActivityCategory,
     })),
     ...recentClearances.map((c) => ({
       id: c.id,
       message: `Customs ${c.ref} — ${c.status}`,
       timestamp: formatRelativeTime(c.createdAt),
+      sortDate: c.createdAt,
+      category: "customs" as ActivityCategory,
+    })),
+    ...recentProcesses.map((p) => ({
+      id: p.id,
+      message: `Process ${p.processName} — ${p.status}`,
+      timestamp: formatRelativeTime(p.createdAt),
+      sortDate: p.createdAt,
+      category: "process" as ActivityCategory,
+    })),
+    ...recentApprovals.filter((a) => a.decision && a.decidedAt).map((a) => ({
+      id: a.id,
+      message: `Approval ${a.decision} for process`,
+      timestamp: formatRelativeTime(a.decidedAt!),
+      sortDate: a.decidedAt!,
+      category: "approval" as ActivityCategory,
+    })),
+    ...recentEvents.map((e) => ({
+      id: e.id,
+      message: `${e.eventType.replace(/_/g, " ")} on ${e.entityType} ${e.entityId.slice(0, 8)}`,
+      timestamp: formatRelativeTime(e.createdAt),
+      sortDate: e.createdAt,
+      category: "event" as ActivityCategory,
     })),
   ]
-    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-    .slice(0, 10);
+    .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+    .slice(0, 15);
 
   return (
     <div className="space-y-6">
@@ -493,13 +562,17 @@ export default async function DashboardPage() {
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Quick Actions</h3>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {[
-              { label: "New Booking", href: "/bookings-hub", icon: FileText },
+              { label: "New Booking", href: "/customer-portal/bookings", icon: FileText },
               { label: "Track Container", href: "/tracking", icon: Container },
               { label: "Vessel Schedule", href: "/vessels-hub", icon: Ship },
-              { label: "AI Assistant", href: "/admin-hub", icon: FileArchive },
+              { label: "Live Tracking", href: "/tracking", icon: MapPin },
+              { label: "Process Hub", href: "/processes", icon: Workflow },
+              { label: "Customs Filing", href: "/customs-compliance-regulatory", icon: ShieldCheck },
+              { label: "Freight Invoice", href: "/freight-invoice-revenue-management", icon: DollarSign },
+              { label: "AI Agents", href: "/ai-agent-framework", icon: Sparkles },
             ].map((action) => (
               <Link
-                key={action.href}
+                key={action.label}
                 href={action.href}
                 className="group flex items-center gap-3 rounded-lg border border-slate-200/60 p-3.5 text-sm font-medium text-slate-700 transition-all hover:border-brand-200 hover:bg-brand-50/50 hover:shadow-sm dark:border-slate-700/60 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/30"
               >

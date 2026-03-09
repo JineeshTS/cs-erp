@@ -1,0 +1,107 @@
+{
+  "node_type": "feature",
+  "id": "F-013",
+  "name": "Dashboard Enhanced Activity Feed + Quick Actions",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-009", "relationship_type": "depends_on" },
+    { "target_id": "F-012", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Command Center Dashboard",
+    "priority": "must_have",
+    "complexity": "low",
+    "description": "Replace the current simple activity feed (plain text + timestamp) with a categorized feed showing events from bookings, vessels, customs, processes, and approvals. Each entry has a category icon, color-coded dot, descriptive message, and relative timestamp. Also expand the quick actions from 4 to 8 items covering key shipping operations. Add process execution events from peEventLog table. Feed shows latest 15 events merged and sorted by timestamp.",
+
+    "activity_feed_enhancements": {
+      "data_sources": [
+        "cspPortalBookings — recent 5, message: 'Booking {ref} — {status}'",
+        "ccrImportClearances — recent 5, message: 'Customs {ref} — {status}'",
+        "peProcessInstances — recent 5, message: 'Process {processCode} — {status}'",
+        "peApprovals — recent 5 (decided), message: 'Approval {decision} for {processInstanceId}'",
+        "peEventLog — recent 5, message: '{eventType} on {entityType} {entityId}'"
+      ],
+      "categories": {
+        "booking": { "color": "blue", "icon": "FileText" },
+        "customs": { "color": "amber", "icon": "ShieldCheck" },
+        "process": { "color": "violet", "icon": "Workflow" },
+        "approval": { "color": "emerald", "icon": "ClipboardCheck" },
+        "event": { "color": "slate", "icon": "Activity" }
+      },
+      "max_items": 15,
+      "sort": "by createdAt descending, merge all sources"
+    },
+
+    "quick_actions_expansion": {
+      "current_actions": ["New Booking", "Track Container", "Vessel Schedule", "AI Assistant"],
+      "new_actions": [
+        { "label": "New Booking", "href": "/customer-portal/bookings", "icon": "FileText" },
+        { "label": "Track Container", "href": "/tracking", "icon": "Container" },
+        { "label": "Vessel Schedule", "href": "/vessels-hub", "icon": "Ship" },
+        { "label": "Live Tracking", "href": "/tracking", "icon": "MapPin" },
+        { "label": "Process Hub", "href": "/processes", "icon": "Workflow" },
+        { "label": "Customs Filing", "href": "/customs-compliance-regulatory", "icon": "ShieldCheck" },
+        { "label": "Freight Invoice", "href": "/freight-invoice-revenue-management", "icon": "DollarSign" },
+        { "label": "AI Agents", "href": "/ai-agent-framework", "icon": "Sparkles" }
+      ]
+    },
+
+    "acceptance_criteria": [
+      "Activity feed shows up to 15 events from 5 data sources (bookings, customs, processes, approvals, event log)",
+      "Each feed item has a category-colored dot (blue/amber/violet/emerald/slate) and descriptive message",
+      "Feed items show relative time (Just now, 5m ago, 2h ago, 3d ago)",
+      "Feed items are sorted by createdAt descending across all sources",
+      "Quick actions expanded from 4 to 8 items covering key operations",
+      "Quick actions include: New Booking, Track Container, Vessel Schedule, Live Tracking, Process Hub, Customs Filing, Freight Invoice, AI Agents",
+      "Each quick action has an icon and navigates to the correct hub/page",
+      "Activity feed queries include tenantId filter and deletedAt IS NULL",
+      "Process events query from peEventLog ordered by createdAt DESC limit 5",
+      "Process instances query from peProcessInstances ordered by updatedAt DESC limit 5",
+      "Approval events query decided approvals from peApprovals ordered by decidedAt DESC limit 5",
+      "Dark mode support on all elements",
+      "Empty state preserved if no activity exists",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ],
+
+    "edge_cases": [
+      "All data sources empty — show existing empty state",
+      "Only one source has data — feed shows just those items",
+      "Very recent events (seconds ago) — show 'Just now'",
+      "Process event types with underscores — format as Title Case with spaces",
+      "Approval without decision yet — skip (only show decided approvals in feed)"
+    ],
+
+    "error_handling": [
+      "Any individual query failure — val() fallback returns empty array, feed shows remaining items",
+      "All queries fail — show empty state"
+    ],
+
+    "security_considerations": [
+      "tenantId filter mandatory on ALL queries",
+      "Read-only — no mutations"
+    ],
+
+    "implementation_notes": "Rewrite the ActivityFeed component at src/components/dashboard/activity-feed.tsx to accept categorized items with category field and color. Add 3 new queries to Promise.allSettled in page.tsx: recent process instances (index 24), recent decided approvals (index 25), recent event log entries (index 26). Merge all activity sources into a single sorted array. Update quick actions array in page.tsx JSX from 4 to 8 items with correct icons and hrefs.",
+
+    "affected_files": [
+      "src/components/dashboard/activity-feed.tsx — REWRITE: categorized feed with colored dots and category icons",
+      "src/app/(dashboard)/page.tsx — add 3 queries (processes, approvals, events), merge activity sources, expand quick actions to 8"
+    ],
+
+    "testing_requirements": [
+      "Activity feed shows categorized items from multiple sources",
+      "Items are correctly sorted by timestamp",
+      "Category colors render correctly per source",
+      "Quick actions expanded to 8 with correct navigation",
+      "Empty state still works when no data exists",
+      "Dark mode renders correctly",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ]
+  }
+}
