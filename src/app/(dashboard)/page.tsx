@@ -14,6 +14,7 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { BookingPipelineFunnel } from "@/components/dashboard/booking-pipeline";
 import { VesselScheduleTimeline } from "@/components/dashboard/vessel-schedule-timeline";
+import { FinancialSummary } from "@/components/dashboard/financial-summary";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import {
@@ -28,6 +29,8 @@ import {
   peApprovals,
   capVesselSchedules,
   capPortRotations,
+  pdaProformaEstimates,
+  bfmBunkerOrders,
 } from "@/db/schema";
 import { eq, and, or, isNull, notInArray, inArray, count, desc, sum, gte, lte, sql } from "drizzle-orm";
 
@@ -235,6 +238,26 @@ export default async function DashboardPage() {
         )
       ))
       .orderBy(capPortRotations.arrivalEta),
+
+    // 20: Revenue collected MTD — sum of paidAmount (F-012)
+    db.select({ total: sum(firmFreightInvoices.paidAmount) }).from(firmFreightInvoices)
+      .where(and(eq(firmFreightInvoices.tenantId, tid), inArray(firmFreightInvoices.status, ["issued", "dispatched", "paid"]), gte(firmFreightInvoices.issuedAt, thisMonthStart), isNull(firmFreightInvoices.deletedAt)))
+      .then((r) => Number(r[0]?.total ?? 0)),
+
+    // 21: Revenue outstanding — sum of outstandingAmount for open invoices (F-012)
+    db.select({ total: sum(firmFreightInvoices.outstandingAmount) }).from(firmFreightInvoices)
+      .where(and(eq(firmFreightInvoices.tenantId, tid), inArray(firmFreightInvoices.status, ["issued", "dispatched"]), isNull(firmFreightInvoices.deletedAt)))
+      .then((r) => Number(r[0]?.total ?? 0)),
+
+    // 22: Port disbursements MTD (F-012)
+    db.select({ total: sum(pdaProformaEstimates.totalEstimate) }).from(pdaProformaEstimates)
+      .where(and(eq(pdaProformaEstimates.tenantId, tid), inArray(pdaProformaEstimates.status, ["approved", "submitted", "final"]), gte(pdaProformaEstimates.estimateDate, thisMonthStart), isNull(pdaProformaEstimates.deletedAt)))
+      .then((r) => Number(r[0]?.total ?? 0)),
+
+    // 23: Bunker costs MTD (F-012)
+    db.select({ total: sum(bfmBunkerOrders.totalAmount) }).from(bfmBunkerOrders)
+      .where(and(eq(bfmBunkerOrders.tenantId, tid), inArray(bfmBunkerOrders.status, ["confirmed", "delivered"]), gte(bfmBunkerOrders.deliveryDate, thisMonthStart), isNull(bfmBunkerOrders.deletedAt)))
+      .then((r) => Number(r[0]?.total ?? 0)),
   ]);
 
   // Extract values with fallback for failed queries
@@ -308,6 +331,12 @@ export default async function DashboardPage() {
   const allVesselRows = Array.from(vesselGroupMap.values());
   const vesselTimelineData = allVesselRows.slice(0, 8);
   const vesselOverflowCount = Math.max(0, allVesselRows.length - 8);
+
+  // F-012: Financial summary data
+  const collectedMtd = val<number>(20, 0);
+  const outstandingInvoices = val<number>(21, 0);
+  const portDisbursementsMtd = val<number>(22, 0);
+  const bunkerCostsMtd = val<number>(23, 0);
 
   // Calculate trends
   const vesselTrend = calcTrend(vesselCount, vesselPrev);
@@ -444,6 +473,16 @@ export default async function DashboardPage() {
 
       {/* F-011: Vessel Schedule Timeline */}
       <VesselScheduleTimeline vessels={vesselTimelineData} overflowCount={vesselOverflowCount} />
+
+      {/* F-012: Financial Summary */}
+      <FinancialSummary
+        invoicedMtd={revenueMtd}
+        collectedMtd={collectedMtd}
+        outstanding={outstandingInvoices}
+        portDisbursements={portDisbursementsMtd}
+        bunkerCosts={bunkerCostsMtd}
+        currency={currency}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Activity Feed */}
