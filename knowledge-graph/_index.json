@@ -1,7 +1,7 @@
 {
   "project": "cs-erp",
   "last_updated": "2026-03-09",
-  "total_nodes": 20,
+  "total_nodes": 21,
   "nodes": [
     { "id": "D-001", "node_type": "decision", "name": "Simplified Category Sidebar + Hub Pages", "file": "decisions/D-001.json", "status": "final" },
     { "id": "D-002", "node_type": "decision", "name": "Master Data Wiring Strategy for All Forms", "file": "decisions/D-002.json", "status": "final" },
@@ -22,6 +22,7 @@
     { "id": "F-012", "node_type": "feature", "name": "Dashboard Financial Summary", "file": "features/F-012.json", "status": "draft" },
     { "id": "F-013", "node_type": "feature", "name": "Dashboard Enhanced Activity Feed + Quick Actions", "file": "features/F-013.json", "status": "draft" },
     { "id": "F-014", "node_type": "feature", "name": "Process Execution — Run Now Button + Manual Trigger", "file": "features/F-014.json", "status": "draft" },
-    { "id": "F-015", "node_type": "feature", "name": "Process Instance Monitor — Live Dashboard", "file": "features/F-015.json", "status": "draft" }
+    { "id": "F-015", "node_type": "feature", "name": "Process Instance Monitor — Live Dashboard", "file": "features/F-015.json", "status": "draft" },
+    { "id": "D-005", "node_type": "decision", "name": "AI-First Process Orchestration — Complete Process & E2E Flow Redesign", "file": "decisions/D-005.json", "status": "draft" }
   ]
 }

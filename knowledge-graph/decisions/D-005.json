@@ -1,0 +1,719 @@
+{
+  "node_type": "decision",
+  "id": "D-005",
+  "name": "AI-First Process Orchestration — Complete Process & E2E Flow Redesign",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "supersedes", "description": "D-004 was human-first (catalog + run button). D-005 replaces it with AI-first event-driven orchestration" },
+    { "target_id": "D-001", "relationship_type": "enhances", "description": "Module sidebar now needs process orchestration layer underneath" },
+    { "target_id": "D-003", "relationship_type": "depends_on", "description": "AIS/GPS events from D-003 tracking become triggers for E2E flows" },
+    { "target_id": "F-014", "relationship_type": "supersedes", "description": "Run Now button replaced by event-driven auto-triggering" },
+    { "target_id": "F-015", "relationship_type": "enhances", "description": "Monitor page redesigned for E2E flow tracking, not just process instances" }
+  ],
+  "content": {
+    "category": "Architecture — Process Orchestration",
+
+    "problem_statement": {
+      "summary": "The ERP was built human-first: humans navigate modules, click buttons, enter data. AI agents are helpers called on demand. 227 processes and 20 E2E flows exist as documentation — nothing actually executes. This is a traditional ERP with AI sprinkled on top, not an AI-first ERP.",
+      "specific_failures": [
+        "81 of 227 processes (35.7%) are ORPHANED — not part of any E2E flow",
+        "72 processes (31.7%) are only PARTIALLY covered — the E2E flow mentions the module but not the specific process",
+        "All 20 E2E flows have only ~8 steps each — real shipping operations need 15-30 steps per flow",
+        "E2E flows reference MODULES, not specific PRC-xxx process IDs — no actual linkage",
+        "No transaction-to-process binding — a booking exists in a DB table but nothing knows what E2E flow it should follow",
+        "No event-driven triggers — everything waits for a human to click 'Run'",
+        "24 entire business areas are MISSING from the process catalog (feeder ops, alliance/VSA, trade finance, tax/VAT, document release, roll-over management, cargo routing, etc.)",
+        "Feeder vessel operations — critical for Qatar/UAE/KSA/India market — have near-zero coverage despite feeders being the primary connectivity for Hamad Port, smaller Indian ports, and KSA ports"
+      ]
+    },
+
+    "decision": "Complete redesign of the process and E2E flow layer into an AI-first, event-driven orchestration system where: (1) AI agents are primary operators executing processes 24/7, (2) humans are decision-makers brought in only at explicit gates, (3) every transaction automatically triggers the correct E2E flow(s), (4) every step is tracked with full auditability, (5) every one of ~280 processes belongs to at least one E2E flow — zero orphans.",
+
+    "ai_first_principles": [
+      "AI is the OPERATOR, humans are SUPERVISORS — AI executes 90% of steps, humans handle decisions, exceptions, and approvals",
+      "EVENT-DRIVEN, not click-driven — when a booking is confirmed, a vessel arrives, a payment is received, the system acts immediately without human initiation",
+      "TRANSACTIONS ARE FLOWS — a booking IS a Booking-to-Cash flow instance. A container IS an Import/Export flow instance. Creating the transaction creates the flow.",
+      "CASCADING FLOWS — one E2E flow creates sub-entities (booking creates containers, containers create BLs, BLs create invoices) and each sub-entity can trigger its own E2E flow",
+      "HUMAN GATES are explicit — every point where a human must decide is defined with: who, what info they see, SLA for decision, escalation if SLA breached",
+      "FULL TRACEABILITY — at any moment, for any transaction, you can see exactly where it stands, what happened, what's next, and who's responsible",
+      "PROACTIVE, not reactive — AI predicts problems (feeder delay, customs hold risk, SLA breach) and acts before humans even notice"
+    ],
+
+    "gap_analysis_summary": {
+      "current_state": {
+        "processes": 227,
+        "e2e_flows": 20,
+        "covered_processes": 74,
+        "partially_covered": 72,
+        "orphaned_processes": 81,
+        "avg_steps_per_flow": 8,
+        "transaction_binding": "none",
+        "event_triggers": "none"
+      },
+      "target_state": {
+        "processes": "~290 (227 existing + ~63 new)",
+        "e2e_flows": "~35 (20 redesigned + ~15 new)",
+        "covered_processes": "290 (100% — zero orphans)",
+        "avg_steps_per_flow": "18-25",
+        "transaction_binding": "every transaction type mapped to E2E flow(s)",
+        "event_triggers": "~60 event types triggering flow creation or step advancement"
+      }
+    },
+
+    "missing_business_areas": {
+      "description": "24 business areas identified as completely or significantly missing from the current 227 processes",
+      "areas": [
+        {
+          "area": "Cargo Routing & Itinerary Planning",
+          "why_critical": "Before anything else, the system must determine HOW cargo gets from A to B: direct, hub-spoke, multi-transshipment, which vessels, which feeders, transit time options",
+          "new_processes": ["PRC-228 Cargo Route Calculation", "PRC-229 Transit Time Optimization", "PRC-230 Multi-Leg Itinerary Planning"]
+        },
+        {
+          "area": "Feeder Vessel Operations",
+          "why_critical": "Hamad Port (Qatar), smaller Indian ports, KSA ports are served primarily by feeders. Feeder ops have different lifecycle: shorter voyages, connection timing is critical, feeder BL management, hub coordination",
+          "new_processes": ["PRC-231 Feeder Service Design", "PRC-232 Feeder Schedule Synchronization", "PRC-233 Feeder Connection Risk Monitoring", "PRC-234 Feeder Delay Impact Assessment", "PRC-235 Feeder-Mainline Cargo Handover", "PRC-236 Feeder BL Management", "PRC-237 Feeder Cargo Cutoff Management", "PRC-238 Feeder Fleet Deployment", "PRC-239 Feeder Performance Monitoring", "PRC-240 Feeder Cost Allocation", "PRC-241 Feeder Voyage P&L"]
+        },
+        {
+          "area": "Alliance & Vessel Sharing Agreements",
+          "why_critical": "Most shipping lines operate through alliances or VSAs. Slot purchase/sale, revenue sharing, schedule coordination, equipment interchange with partners",
+          "new_processes": ["PRC-242 VSA Agreement Management", "PRC-243 Slot Purchase & Sale", "PRC-244 Alliance Schedule Coordination", "PRC-245 Revenue Sharing Calculation", "PRC-246 Equipment Interchange"]
+        },
+        {
+          "area": "Inland Transport & Door Delivery",
+          "why_critical": "Door-to-door vs CY-CY terms define who manages inland transport. Trucking, rail, drayage, last-mile delivery coordination",
+          "new_processes": ["PRC-247 Inland Transport Mode Selection", "PRC-248 Truck Dispatch & Booking", "PRC-249 Rail Booking & Coordination", "PRC-250 Proof of Delivery Management"]
+        },
+        {
+          "area": "Letter of Credit & Trade Finance",
+          "why_critical": "Many Middle East and India transactions involve L/Cs. Bank guarantees payment upon compliant document presentation",
+          "new_processes": ["PRC-251 L/C Receipt & Checking", "PRC-252 Document Presentation to Bank", "PRC-253 L/C Discrepancy Handling", "PRC-254 Trade Finance Tracking"]
+        },
+        {
+          "area": "Tax / VAT / GST Management",
+          "why_critical": "Qatar (no VAT yet), UAE (5% VAT), KSA (15% ZATCA), India (18% GST + customs duty). Multi-country tax calculation, filing, withholding tax",
+          "new_processes": ["PRC-255 Tax Calculation per Jurisdiction", "PRC-256 VAT/GST Filing", "PRC-257 Withholding Tax Management", "PRC-258 Tax Audit Preparation"]
+        },
+        {
+          "area": "Multi-Currency Operations",
+          "why_critical": "Invoicing in customer currency, settlement in different currency, FX gain/loss calculation, hedging contracts",
+          "new_processes": ["PRC-259 Multi-Currency Invoice Generation", "PRC-260 FX Gain/Loss Calculation", "PRC-261 FX Hedging Execution"]
+        },
+        {
+          "area": "Document Release & Original BL Management",
+          "why_critical": "Physical BL originals must be released. Telex release, surrender at origin/destination, switch BL at intermediate port, express release, seaway bill — daily documentation function",
+          "new_processes": ["PRC-262 BL Release Type Determination", "PRC-263 Telex Release Processing", "PRC-264 Switch BL Processing", "PRC-265 Original BL Courier Tracking"]
+        },
+        {
+          "area": "Roll-Over Management",
+          "why_critical": "Cargo that can't be loaded on planned vessel rolls to next sailing. Happens DAILY. Major customer pain point — affects trust and SLA",
+          "new_processes": ["PRC-266 Roll-Over Decision", "PRC-267 Roll-Over Rebooking", "PRC-268 Roll-Over Customer Notification", "PRC-269 Roll-Over Impact Assessment"]
+        },
+        {
+          "area": "Booking Cut-Off Management",
+          "why_critical": "Each port/vessel has multiple cut-offs: documentation, VGM, cargo receiving, DG — different deadlines that must be enforced",
+          "new_processes": ["PRC-270 Cut-Off Schedule Setting", "PRC-271 Cut-Off Enforcement & Alert", "PRC-272 Late Arrival Exception Handling"]
+        },
+        {
+          "area": "Customs Hold & Examination Management",
+          "why_critical": "When customs holds cargo for examination — duty payment, physical inspection, documentation review. Must be managed as part of import flow",
+          "new_processes": ["PRC-273 Customs Hold Response", "PRC-274 Duty Calculation & Payment", "PRC-275 Customs Examination Coordination"]
+        },
+        {
+          "area": "Container Depot Management",
+          "why_critical": "Own or contracted depots: gate hours, inspection capacity, M&R vendors, storage charges, empty stock levels",
+          "new_processes": ["PRC-276 Depot Gate Management", "PRC-277 Depot Inventory Control", "PRC-278 Depot M&R Vendor Coordination", "PRC-279 Depot Storage Charge Calculation"]
+        },
+        {
+          "area": "Customer Rebates & Volume Incentives",
+          "why_critical": "Contract volume commitments, rebate calculation based on actual vs committed, quarterly/annual settlement",
+          "new_processes": ["PRC-280 Volume Commitment Tracking", "PRC-281 Rebate Calculation", "PRC-282 Rebate Settlement"]
+        },
+        {
+          "area": "Liner Agency (acting AS agent for another line)",
+          "why_critical": "Many Gulf shipping companies act as liner agents for other lines. Different business model — earn commission, handle port ops, documentation for another line",
+          "new_processes": ["PRC-283 Liner Agency Appointment", "PRC-284 Liner Agency Operations", "PRC-285 Liner Agency Commission Settlement"]
+        },
+        {
+          "area": "NVOCC & LCL Operations",
+          "why_critical": "Non-Vessel Operating Common Carrier: house BL on top of master BL, LCL consolidation/deconsolidation, CFS management",
+          "new_processes": ["PRC-286 House BL Generation", "PRC-287 LCL Consolidation Planning", "PRC-288 CFS Stuffing/Destuffing", "PRC-289 House-to-Master BL Reconciliation"]
+        },
+        {
+          "area": "Port Congestion & Exception Management",
+          "why_critical": "Vessel waiting at anchorage (common at Indian ports), terminal closures, equipment shortages. Must manage operational disruptions",
+          "new_processes": ["PRC-290 Port Congestion Assessment", "PRC-291 Alternative Routing Decision", "PRC-292 Disruption Impact Communication"]
+        },
+        {
+          "area": "Insurance Policy Management",
+          "why_critical": "Beyond claims — policy renewal, premium calculation, coverage assessment, H&M surveys, P&I club calls",
+          "new_processes": ["PRC-293 Insurance Policy Renewal", "PRC-294 Premium Calculation", "PRC-295 Coverage Gap Assessment", "PRC-296 H&M Survey Coordination"]
+        },
+        {
+          "area": "Voyage Bunker Management (beyond procurement)",
+          "why_critical": "ROB tracking, consumption per leg vs plan, bunker adjustment for charter hire, bunker clause settlement",
+          "new_processes": ["PRC-297 Bunker ROB Tracking", "PRC-298 Consumption vs Plan Analysis", "PRC-299 Charter Bunker Clause Settlement"]
+        },
+        {
+          "area": "Off-Hire & Performance Claims",
+          "why_critical": "For chartered vessels: off-hire period calculation, speed/consumption warranty claims, weather routing disputes",
+          "new_processes": ["PRC-300 Off-Hire Period Calculation", "PRC-301 Speed & Consumption Claim", "PRC-302 Weather Routing Dispute Resolution"]
+        },
+        {
+          "area": "Fleet Strategy & Ship Sale/Purchase",
+          "why_critical": "Long-term fleet decisions: buy/sell/charter-in/charter-out, newbuilding orders, S&P market monitoring",
+          "new_processes": ["PRC-303 Fleet Renewal Planning", "PRC-304 Ship S&P Evaluation", "PRC-305 Newbuilding Specification"]
+        },
+        {
+          "area": "Break-Bulk & Project Cargo",
+          "why_critical": "Non-containerized cargo has a completely different lifecycle: heavy lift, project logistics, lashing/securing, marine warranty surveyor",
+          "new_processes": ["PRC-306 Break-Bulk Booking Assessment", "PRC-307 Project Cargo Planning", "PRC-308 Lashing & Securing Plan"]
+        },
+        {
+          "area": "Sanctions & Embargo Operations",
+          "why_critical": "Beyond KYC screening — ongoing monitoring of existing customers, mid-contract sanctions, license management for dual-use goods",
+          "new_processes": ["PRC-309 Ongoing Sanctions Monitoring", "PRC-310 Sanctioned Party Response", "PRC-311 Dual-Use Goods License Management"]
+        },
+        {
+          "area": "Credit Insurance & Trade Credit",
+          "why_critical": "Trade credit insurance (Euler Hermes, Coface) to protect against customer default — common in shipping",
+          "new_processes": ["PRC-312 Credit Insurance Application", "PRC-313 Credit Insurance Claim"]
+        },
+        {
+          "area": "Emergency & Salvage Operations",
+          "why_critical": "Grounding, collision, fire, piracy — emergency response protocols, salvage coordination, GA (General Average) declaration",
+          "new_processes": ["PRC-314 Emergency Response Activation", "PRC-315 General Average Declaration", "PRC-316 Salvage Coordination"]
+        }
+      ],
+      "total_new_processes": 63,
+      "new_total": "290 (227 existing + 63 new)"
+    },
+
+    "complete_e2e_flow_catalog": {
+      "description": "35 E2E flows organized by business domain. Each flow will have 15-30 steps, reference specific PRC-xxx process IDs, define AI vs human executor, specify trigger events, and include human decision gates.",
+      "flows": {
+        "revenue_cycle": [
+          {
+            "id": "E2E-01",
+            "name": "Booking-to-Cash (REDESIGNED)",
+            "status": "expand from 8 to ~25 steps",
+            "trigger": "booking.confirmed OR quote.accepted",
+            "key_additions": "Credit check, cargo routing, equipment depot selection, cut-off management, SI processing, BL type determination, document release, multi-currency invoicing, dunning/collections, cash application, revenue recognition",
+            "process_refs": ["PRC-004", "PRC-010", "PRC-011", "PRC-021", "PRC-024", "PRC-025", "PRC-228", "PRC-229", "PRC-038", "PRC-026", "PRC-262", "PRC-263", "PRC-028", "PRC-029", "PRC-032", "PRC-161", "PRC-121", "PRC-259", "PRC-126", "PRC-127", "PRC-132", "PRC-125"]
+          },
+          {
+            "id": "E2E-16",
+            "name": "Customer Lifecycle (REDESIGNED)",
+            "status": "expand from 8 to ~20 steps",
+            "trigger": "lead.created OR customer.tier_change",
+            "key_additions": "Opportunity qualification, rate negotiation, contract creation, contract renewal, SLA monitoring, complaint handling, rebate tracking",
+            "process_refs": ["PRC-001", "PRC-002", "PRC-003", "PRC-004", "PRC-005", "PRC-006", "PRC-007", "PRC-008", "PRC-009", "PRC-010", "PRC-012", "PRC-013", "PRC-014", "PRC-015", "PRC-016", "PRC-017", "PRC-280", "PRC-281"]
+          },
+          {
+            "id": "E2E-18",
+            "name": "Trade Route Launch (REDESIGNED)",
+            "status": "expand from 9 to ~20 steps",
+            "trigger": "trade_route.proposal_approved",
+            "key_additions": "Alliance/slot coordination, demand forecasting, agent appointment, competitive monitoring, feeder service design for new route",
+            "process_refs": ["PRC-101", "PRC-102", "PRC-110", "PRC-111", "PRC-242", "PRC-243", "PRC-106", "PRC-231", "PRC-041", "PRC-057", "PRC-019", "PRC-014", "PRC-117", "PRC-118"]
+          }
+        ],
+        "vessel_operations": [
+          {
+            "id": "E2E-02",
+            "name": "Vessel Voyage Lifecycle (REDESIGNED)",
+            "status": "expand from 8 to ~25 steps",
+            "trigger": "voyage.created OR vessel.schedule_published",
+            "key_additions": "Noon report analysis, weather routing, speed optimization, ETA prediction, emissions tracking, bunker ROB, port state control prep, performance monitoring",
+            "process_refs": ["PRC-041", "PRC-042", "PRC-043", "PRC-044", "PRC-047", "PRC-048", "PRC-049", "PRC-050", "PRC-051", "PRC-052", "PRC-053", "PRC-054", "PRC-055", "PRC-056", "PRC-059", "PRC-060", "PRC-297", "PRC-298", "PRC-084"]
+          },
+          {
+            "id": "E2E-08",
+            "name": "Charter Party Lifecycle (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "charter.requirement_identified",
+            "key_additions": "Off-hire calculation, speed claims, bunker clause settlement, performance warranty dispute",
+            "process_refs": ["PRC-045", "PRC-046", "PRC-300", "PRC-301", "PRC-302", "PRC-299", "PRC-059", "PRC-060"]
+          },
+          {
+            "id": "E2E-12",
+            "name": "Port Call Management (REDESIGNED)",
+            "status": "expand from 8 to ~20 steps",
+            "trigger": "vessel.eta_24h (24 hours before arrival)",
+            "key_additions": "Vessel clearance, PSC preparation, immigration, health check, husbandry detail, cash-to-master, congestion check, anchorage management",
+            "process_refs": ["PRC-081", "PRC-082", "PRC-083", "PRC-084", "PRC-085", "PRC-086", "PRC-087", "PRC-088", "PRC-089", "PRC-165", "PRC-290"]
+          },
+          {
+            "id": "E2E-17",
+            "name": "Vessel Dry Dock (REDESIGNED)",
+            "status": "expand from 9 to ~18 steps",
+            "trigger": "dry_dock.planned",
+            "key_additions": "Class survey scheduling, detailed work list management, additional work discovery, insurance notification",
+            "process_refs": ["PRC-167", "PRC-296", "PRC-293"]
+          },
+          {
+            "id": "E2E-21",
+            "name": "Feeder Voyage Lifecycle (NEW)",
+            "status": "new — ~20 steps",
+            "trigger": "feeder_schedule.published OR feeder_vessel.ready",
+            "description": "Complete feeder vessel rotation from hub departure through spoke port calls, cargo operations, and return to hub for mainline connection",
+            "process_refs": ["PRC-231", "PRC-232", "PRC-233", "PRC-234", "PRC-235", "PRC-236", "PRC-237", "PRC-238", "PRC-239", "PRC-240", "PRC-241"]
+          },
+          {
+            "id": "E2E-22",
+            "name": "Feeder-Mainline Connection Management (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "mainline_vessel.arrived_hub WITH transshipment_cargo",
+            "description": "Managing cargo transfer from mainline to feeder at hub port, with connection risk monitoring and contingency planning",
+            "process_refs": ["PRC-233", "PRC-234", "PRC-235", "PRC-099", "PRC-100"]
+          }
+        ],
+        "container_operations": [
+          {
+            "id": "E2E-03",
+            "name": "Import Container Flow (REDESIGNED)",
+            "status": "expand from 8 to ~22 steps",
+            "trigger": "vessel.arrived_destination WITH import_cargo",
+            "key_additions": "Customs hold management, duty calculation, delivery order generation, inland transport selection, proof of delivery, depot inspection, damage liability",
+            "process_refs": ["PRC-030", "PRC-032", "PRC-161", "PRC-273", "PRC-274", "PRC-275", "PRC-039", "PRC-040", "PRC-247", "PRC-248", "PRC-250", "PRC-062", "PRC-064", "PRC-065", "PRC-121", "PRC-126"]
+          },
+          {
+            "id": "E2E-04",
+            "name": "Export Container Flow (REDESIGNED)",
+            "status": "expand from 8 to ~22 steps",
+            "trigger": "booking.confirmed WITH export_cargo",
+            "key_additions": "Depot selection, empty release, inland pickup coordination, cut-off enforcement, VGM validation, DG/reefer screening, stowage, BL type/release, invoice",
+            "process_refs": ["PRC-025", "PRC-061", "PRC-248", "PRC-029", "PRC-270", "PRC-271", "PRC-064", "PRC-033", "PRC-043", "PRC-161", "PRC-026", "PRC-262", "PRC-028", "PRC-121"]
+          },
+          {
+            "id": "E2E-05",
+            "name": "Reefer Cargo Flow (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "booking.confirmed WITH reefer_equipment",
+            "key_additions": "Pre-cooling verification, genset management, power plug allocation, contingency for power failure",
+            "process_refs": ["PRC-066", "PRC-067", "PRC-068", "PRC-069"]
+          },
+          {
+            "id": "E2E-06",
+            "name": "DG Cargo Flow (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "booking.confirmed WITH dg_cargo",
+            "key_additions": "DG acceptance policy check, port-specific DG rules, emergency response plan per class",
+            "process_refs": ["PRC-033", "PRC-034", "PRC-036", "PRC-043"]
+          },
+          {
+            "id": "E2E-07",
+            "name": "Transshipment Flow (REDESIGNED)",
+            "status": "expand from 7 to ~18 steps",
+            "trigger": "vessel.arrived_hub WITH transshipment_cargo",
+            "key_additions": "Connection risk monitoring, feeder coordination, through BL update, missed connection contingency",
+            "process_refs": ["PRC-099", "PRC-100", "PRC-063", "PRC-233", "PRC-234"]
+          },
+          {
+            "id": "E2E-20",
+            "name": "Empty Repositioning (REDESIGNED)",
+            "status": "expand from 8 to ~16 steps",
+            "trigger": "scheduled.weekly OR imbalance.detected",
+            "key_additions": "Street turn opportunity, depot coordination, multi-modal repo (sea/rail/truck)",
+            "process_refs": ["PRC-079", "PRC-080", "PRC-062", "PRC-277"]
+          },
+          {
+            "id": "E2E-13",
+            "name": "Demurrage & Detention Management (REDESIGNED)",
+            "status": "expand from 7 to ~15 steps",
+            "trigger": "container.free_time_expired",
+            "key_additions": "Free time rule application, waiver policy engine, dispute workflow, write-off approval",
+            "process_refs": ["PRC-064", "PRC-121", "PRC-126"]
+          },
+          {
+            "id": "E2E-23",
+            "name": "Container Leasing Lifecycle (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "lease.agreement_signed OR fleet.capacity_shortfall",
+            "description": "Container leasing from evaluation through on-hire, fleet operations, damage tracking, off-hire, and lessor reconciliation",
+            "process_refs": ["PRC-070", "PRC-071", "PRC-072", "PRC-073", "PRC-074"]
+          },
+          {
+            "id": "E2E-24",
+            "name": "OOG & Special Cargo Flow (NEW)",
+            "status": "new — ~18 steps",
+            "trigger": "booking.confirmed WITH oog_cargo OR break_bulk",
+            "description": "Oversized, heavy-lift, and project cargo from assessment through securing plan, permits, terminal handling, and delivery",
+            "process_refs": ["PRC-035", "PRC-036", "PRC-306", "PRC-307", "PRC-308"]
+          }
+        ],
+        "finance": [
+          {
+            "id": "E2E-14",
+            "name": "Financial Month-End (REDESIGNED)",
+            "status": "expand from 9 to ~22 steps",
+            "trigger": "scheduled.month_end",
+            "key_additions": "FX revaluation, intercompany elimination, tax accruals, budget variance, cash flow forecast, multi-entity consolidation",
+            "process_refs": ["PRC-132", "PRC-133", "PRC-134", "PRC-135", "PRC-136", "PRC-137", "PRC-138", "PRC-139", "PRC-140", "PRC-260"]
+          },
+          {
+            "id": "E2E-15",
+            "name": "Procure-to-Pay (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "requisition.approved",
+            "key_additions": "Vendor onboarding check, vendor scoring, contract compliance, payment optimization, FX hedging for foreign vendors",
+            "process_refs": ["PRC-151", "PRC-152", "PRC-153", "PRC-154", "PRC-155", "PRC-156", "PRC-158", "PRC-129", "PRC-130", "PRC-131", "PRC-160"]
+          },
+          {
+            "id": "E2E-09",
+            "name": "Bunker Procurement (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "bunker.requirement_identified OR voyage.planned",
+            "key_additions": "ROB tracking, consumption forecast accuracy, charter bunker clause, quality dispute",
+            "process_refs": ["PRC-047", "PRC-048", "PRC-297", "PRC-298", "PRC-299", "PRC-129", "PRC-130"]
+          },
+          {
+            "id": "E2E-25",
+            "name": "Collections & Credit Control (NEW)",
+            "status": "new — ~16 steps",
+            "trigger": "invoice.overdue OR customer.credit_limit_breach",
+            "description": "From AR aging through dunning cycle, credit limit adjustment, payment plan negotiation, legal action, and write-off",
+            "process_refs": ["PRC-011", "PRC-125", "PRC-128", "PRC-126", "PRC-312", "PRC-313"]
+          },
+          {
+            "id": "E2E-26",
+            "name": "Trade Finance & Letter of Credit (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "booking.payment_terms = 'lc'",
+            "description": "L/C receipt, document preparation, bank presentation, discrepancy handling, settlement",
+            "process_refs": ["PRC-251", "PRC-252", "PRC-253", "PRC-254"]
+          },
+          {
+            "id": "E2E-27",
+            "name": "Revenue Management & Yield Optimization (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "scheduled.weekly OR capacity.threshold_reached",
+            "description": "Dynamic pricing, yield optimization, revenue integrity checking, competitive rate monitoring, seasonal adjustment",
+            "process_refs": ["PRC-019", "PRC-020", "PRC-113", "PRC-114", "PRC-116", "PRC-118"]
+          }
+        ],
+        "compliance_safety": [
+          {
+            "id": "E2E-10",
+            "name": "Claims Lifecycle (REDESIGNED)",
+            "status": "expand from 8 to ~20 steps",
+            "trigger": "incident.reported OR cargo_damage.detected",
+            "key_additions": "Loss prevention analysis, insurance policy check, subrogation tracking, General Average scenario",
+            "process_refs": ["PRC-170", "PRC-171", "PRC-172", "PRC-169", "PRC-293", "PRC-315"]
+          },
+          {
+            "id": "E2E-19",
+            "name": "ESG Reporting Cycle (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "scheduled.quarterly OR imo.reporting_deadline",
+            "key_additions": "MARPOL compliance, ballast water, TCFD scenario analysis, Poseidon scoring, decarbonization milestones, EU ETS",
+            "process_refs": ["PRC-049", "PRC-050", "PRC-176", "PRC-177", "PRC-178", "PRC-187", "PRC-188", "PRC-189", "PRC-190", "PRC-191", "PRC-192"]
+          },
+          {
+            "id": "E2E-11",
+            "name": "Crew Change (REDESIGNED)",
+            "status": "expand from 8 to ~18 steps",
+            "trigger": "crew.rotation_due OR certificate.expiring",
+            "key_additions": "Training requirements, rest hour compliance, flag state notification, allotment adjustment",
+            "process_refs": ["PRC-141", "PRC-142", "PRC-143", "PRC-144", "PRC-145", "PRC-150"]
+          },
+          {
+            "id": "E2E-28",
+            "name": "Maritime Safety & Compliance (NEW)",
+            "status": "new — ~18 steps",
+            "trigger": "vessel.psc_inspection_due OR vessel.class_survey_due OR incident.reported",
+            "description": "PSC preparation, ISPS compliance, class surveys, flag state inspections, incident investigation, corrective actions",
+            "process_refs": ["PRC-165", "PRC-166", "PRC-167", "PRC-168", "PRC-179", "PRC-173", "PRC-174", "PRC-175"]
+          },
+          {
+            "id": "E2E-29",
+            "name": "Sanctions & Trade Compliance (NEW)",
+            "status": "new — ~12 steps",
+            "trigger": "sanctions_list.updated OR customer.flagged OR booking.high_risk_destination",
+            "description": "Ongoing screening, sanctioned party response, license management, embargo enforcement",
+            "process_refs": ["PRC-009", "PRC-163", "PRC-309", "PRC-310", "PRC-311"]
+          },
+          {
+            "id": "E2E-30",
+            "name": "Emergency & Salvage Response (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "incident.severity = 'critical' (grounding, collision, fire, piracy)",
+            "description": "Emergency activation, salvage coordination, General Average declaration, insurance notification, regulatory reporting",
+            "process_refs": ["PRC-314", "PRC-315", "PRC-316", "PRC-179"]
+          }
+        ],
+        "commercial_strategy": [
+          {
+            "id": "E2E-31",
+            "name": "Alliance & VSA Operations (NEW)",
+            "status": "new — ~16 steps",
+            "trigger": "vsa.period_start OR alliance.schedule_change",
+            "description": "Vessel sharing agreement management, slot purchase/sale, revenue sharing, equipment interchange, joint service coordination",
+            "process_refs": ["PRC-242", "PRC-243", "PRC-244", "PRC-245", "PRC-246", "PRC-103", "PRC-104"]
+          },
+          {
+            "id": "E2E-32",
+            "name": "Liner Agency Operations (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "agency.appointment_confirmed",
+            "description": "Acting as liner agent for another shipping line: port operations, documentation, customer handling, commission settlement",
+            "process_refs": ["PRC-283", "PRC-284", "PRC-285", "PRC-108"]
+          },
+          {
+            "id": "E2E-33",
+            "name": "NVOCC & LCL Operations (NEW)",
+            "status": "new — ~18 steps",
+            "trigger": "lcl_booking.confirmed OR consolidation.planned",
+            "description": "LCL consolidation planning, CFS stuffing/destuffing, house BL generation, master-house reconciliation",
+            "process_refs": ["PRC-286", "PRC-287", "PRC-288", "PRC-289", "PRC-222", "PRC-223"]
+          },
+          {
+            "id": "E2E-34",
+            "name": "Fleet Strategy & Renewal (NEW)",
+            "status": "new — ~12 steps",
+            "trigger": "scheduled.annual OR vessel.end_of_charter",
+            "description": "Fleet capacity assessment, buy/sell/charter decisions, S&P market evaluation, newbuilding specs",
+            "process_refs": ["PRC-303", "PRC-304", "PRC-305", "PRC-057", "PRC-058"]
+          }
+        ],
+        "platform_operations": [
+          {
+            "id": "E2E-35",
+            "name": "Platform Administration & Tenant Lifecycle (NEW)",
+            "status": "new — ~15 steps",
+            "trigger": "tenant.signup OR system.health_alert",
+            "description": "Tenant provisioning, user management, role setup, master data initialization, system health monitoring, AI agent configuration",
+            "process_refs": ["PRC-201", "PRC-202", "PRC-203", "PRC-204", "PRC-205", "PRC-206", "PRC-207", "PRC-208", "PRC-209", "PRC-210", "PRC-211", "PRC-212", "PRC-218", "PRC-219", "PRC-220"]
+          }
+        ]
+      },
+      "flow_count": {
+        "redesigned": 20,
+        "new": 15,
+        "total": 35
+      }
+    },
+
+    "transaction_process_binding": {
+      "description": "Every business transaction type maps to one or more E2E flows that are automatically instantiated when the transaction is created or reaches a trigger state",
+      "bindings": [
+        { "entity_type": "booking", "trigger_event": "booking.confirmed", "e2e_flows": ["E2E-01"], "conditional_flows": ["E2E-05 (if reefer)", "E2E-06 (if DG)", "E2E-24 (if OOG)", "E2E-26 (if L/C terms)"] },
+        { "entity_type": "booking", "trigger_event": "booking.confirmed", "e2e_flows": ["E2E-04 (per container — export)"], "conditional_flows": ["E2E-03 (per container — import at destination)"] },
+        { "entity_type": "vessel_schedule", "trigger_event": "voyage.created", "e2e_flows": ["E2E-02"] },
+        { "entity_type": "vessel_schedule", "trigger_event": "vessel.eta_24h", "e2e_flows": ["E2E-12 (per port call)"] },
+        { "entity_type": "vessel_arrival", "trigger_event": "vessel.arrived_hub", "e2e_flows": ["E2E-07", "E2E-22"], "conditional_flows": ["E2E-21 (feeder departure)"] },
+        { "entity_type": "charter_party", "trigger_event": "charter.fixture_confirmed", "e2e_flows": ["E2E-08"] },
+        { "entity_type": "bunker_order", "trigger_event": "bunker.requirement_identified", "e2e_flows": ["E2E-09"] },
+        { "entity_type": "incident", "trigger_event": "incident.reported", "e2e_flows": ["E2E-10"], "conditional_flows": ["E2E-30 (if severity=critical)"] },
+        { "entity_type": "crew_rotation", "trigger_event": "crew.rotation_due", "e2e_flows": ["E2E-11"] },
+        { "entity_type": "container", "trigger_event": "container.free_time_expired", "e2e_flows": ["E2E-13"] },
+        { "entity_type": "period", "trigger_event": "scheduled.month_end", "e2e_flows": ["E2E-14"] },
+        { "entity_type": "requisition", "trigger_event": "requisition.approved", "e2e_flows": ["E2E-15"] },
+        { "entity_type": "lead", "trigger_event": "lead.created", "e2e_flows": ["E2E-16"] },
+        { "entity_type": "dry_dock", "trigger_event": "dry_dock.planned", "e2e_flows": ["E2E-17"] },
+        { "entity_type": "trade_route", "trigger_event": "trade_route.proposal_approved", "e2e_flows": ["E2E-18"] },
+        { "entity_type": "period", "trigger_event": "scheduled.quarterly", "e2e_flows": ["E2E-19"] },
+        { "entity_type": "empty_forecast", "trigger_event": "scheduled.weekly", "e2e_flows": ["E2E-20"] },
+        { "entity_type": "feeder_schedule", "trigger_event": "feeder_schedule.published", "e2e_flows": ["E2E-21"] },
+        { "entity_type": "lease_agreement", "trigger_event": "lease.agreement_signed", "e2e_flows": ["E2E-23"] },
+        { "entity_type": "invoice", "trigger_event": "invoice.overdue", "e2e_flows": ["E2E-25"] },
+        { "entity_type": "capacity", "trigger_event": "scheduled.weekly", "e2e_flows": ["E2E-27"] },
+        { "entity_type": "vessel", "trigger_event": "vessel.psc_inspection_due", "e2e_flows": ["E2E-28"] },
+        { "entity_type": "sanctions_list", "trigger_event": "sanctions_list.updated", "e2e_flows": ["E2E-29"] },
+        { "entity_type": "vsa", "trigger_event": "vsa.period_start", "e2e_flows": ["E2E-31"] },
+        { "entity_type": "agency", "trigger_event": "agency.appointment_confirmed", "e2e_flows": ["E2E-32"] },
+        { "entity_type": "lcl_booking", "trigger_event": "lcl_booking.confirmed", "e2e_flows": ["E2E-33"] },
+        { "entity_type": "fleet_plan", "trigger_event": "scheduled.annual", "e2e_flows": ["E2E-34"] },
+        { "entity_type": "tenant", "trigger_event": "tenant.signup", "e2e_flows": ["E2E-35"] }
+      ]
+    },
+
+    "human_gate_architecture": {
+      "description": "Every point where a human must make a decision is an explicit gate in the E2E flow. The AI prepares all information, presents a recommendation, and waits for the human.",
+      "gate_types": [
+        {
+          "type": "approval",
+          "description": "AI completed work, human approves or rejects",
+          "examples": ["BL review before issuance", "Credit limit approval", "Invoice above threshold", "Rate below floor price"],
+          "ui": "Approve/Reject buttons with AI recommendation shown"
+        },
+        {
+          "type": "decision",
+          "description": "Multiple options, human chooses",
+          "examples": ["Roll cargo to next vessel or find alternative", "Waive or enforce D&D charges", "Accept or counter customer rate offer"],
+          "ui": "Option cards with AI-calculated pros/cons for each"
+        },
+        {
+          "type": "input",
+          "description": "Human must provide information the system cannot",
+          "examples": ["Physical cargo inspection result", "Negotiation outcome", "Survey findings"],
+          "ui": "Structured input form with AI-suggested defaults"
+        },
+        {
+          "type": "exception",
+          "description": "AI encountered something it cannot handle",
+          "examples": ["Customs examination required", "Sanctions match needs investigation", "Port congestion requires routing change"],
+          "ui": "Alert with full context, AI analysis, and recommended actions"
+        }
+      ],
+      "sla_enforcement": {
+        "default_sla": "2 hours for approvals, 4 hours for decisions, 24 hours for input",
+        "warning_at": "50% of SLA elapsed",
+        "escalation_at": "100% of SLA elapsed",
+        "escalation_chain": "Direct manager → Department head → Operations director",
+        "auto_approve_rule": "If gate type=approval AND AI confidence>95% AND amount<threshold AND no flags → auto-approve after SLA expiry"
+      }
+    },
+
+    "db_schema_changes": {
+      "new_tables": [
+        {
+          "table": "pe_e2e_flow_instances",
+          "description": "Live E2E flow instances bound to business transactions",
+          "columns": "id, tenant_id, e2e_flow_id, entity_type, entity_id, trigger_event, status (active/paused_at_gate/completed/failed/cancelled), current_step_number, total_steps, started_at, completed_at, parent_flow_instance_id (for cascading), metadata jsonb"
+        },
+        {
+          "table": "pe_e2e_step_instances",
+          "description": "Individual step execution within an E2E flow instance",
+          "columns": "id, tenant_id, flow_instance_id FK, step_number, process_ref (PRC-xxx), step_name, executor_type (ai_agent/human/system/external), agent_id, status (pending/in_progress/waiting_gate/completed/failed/skipped), input_data jsonb, output_data jsonb, started_at, completed_at, duration_ms, blocked_by_step_id, parallel_group (for parallel steps)"
+        },
+        {
+          "table": "pe_human_gates",
+          "description": "Human decision points within E2E flows",
+          "columns": "id, tenant_id, step_instance_id FK, flow_instance_id FK, gate_type (approval/decision/input/exception), assigned_to_role, assigned_to_user_id, ai_recommendation jsonb, presented_info jsonb, sla_deadline, escalation_to_role, escalation_to_user_id, decision (approved/rejected/option_selected/input_provided), decision_data jsonb, decided_at, decided_by, auto_approved boolean"
+        },
+        {
+          "table": "pe_flow_events",
+          "description": "Immutable event log for E2E flow progression",
+          "columns": "id, tenant_id, flow_instance_id FK, step_instance_id, event_type (flow_started/step_started/step_completed/gate_reached/gate_passed/gate_escalated/flow_completed/flow_failed/child_flow_created), metadata jsonb, created_at, cascaded_flow_ids text[]"
+        },
+        {
+          "table": "pe_event_triggers",
+          "description": "Mapping of business events to E2E flow creation rules",
+          "columns": "id, tenant_id, event_type, e2e_flow_id, conditions jsonb (when to trigger), entity_type, is_active, priority, created_at"
+        }
+      ],
+      "enhanced_tables": [
+        {
+          "table": "pe_process_instances",
+          "add_columns": "e2e_flow_instance_id FK (link to parent E2E flow), e2e_step_number (which step in the flow)"
+        }
+      ]
+    },
+
+    "implementation_plan": {
+      "description": "Phased delivery — each phase is independently valuable. Replaces D-004's 23-feature plan.",
+      "phases": [
+        {
+          "phase": "Phase 1: Process & Flow Data Complete Rewrite (2-3 sessions)",
+          "description": "Rewrite operational-processes.ts (227→290 processes) and e2e-process-flows.ts (20→35 flows with 15-30 steps each). Every process mapped to at least one flow. New E2EProcessFlow type with PRC refs, executor types, gate definitions.",
+          "deliverables": [
+            "F-016: New process data — 63 new processes (PRC-228 to PRC-316)",
+            "F-017: New E2E flow data — 35 flows, 15-30 steps each, PRC-xxx refs, human gates",
+            "F-018: Updated types — E2EFlowStep with processRef, executorType, gateDefinition, triggerCondition"
+          ]
+        },
+        {
+          "phase": "Phase 2: Event-Driven Orchestrator Engine (3-4 sessions)",
+          "description": "DB migration for new tables. Event bus that listens for transaction events and auto-creates E2E flow instances. Step executor that drives AI agents and pauses at human gates.",
+          "deliverables": [
+            "F-019: DB migration — 5 new tables (pe_e2e_flow_instances, pe_e2e_step_instances, pe_human_gates, pe_flow_events, pe_event_triggers)",
+            "F-020: Event trigger engine — maps transaction events to E2E flow creation",
+            "F-021: Step executor — AI agent execution + human gate creation + step advancement",
+            "F-022: Human gate manager — notification, SLA tracking, escalation, auto-approve"
+          ]
+        },
+        {
+          "phase": "Phase 3: Live Monitoring & Human Gate UI (3-4 sessions)",
+          "description": "Real-time dashboard showing all active E2E flows. Human approval inbox. Flow detail view with step-by-step progress.",
+          "deliverables": [
+            "F-023: E2E Flow Monitor — live dashboard of all active flows with progress",
+            "F-024: Flow Detail View — step timeline, current position, history, sub-flows",
+            "F-025: Human Gate Inbox — pending decisions with AI recommendations, SLA countdown",
+            "F-026: Transaction Process View — for any booking/container/vessel, see all associated flows"
+          ]
+        },
+        {
+          "phase": "Phase 4: AI Agent Execution & Intelligence (2-3 sessions)",
+          "description": "Wire Claude API for AI agent steps. AI prepares gate information for humans. Proactive risk detection.",
+          "deliverables": [
+            "F-027: AI agent execution service — Claude API integration for process steps",
+            "F-028: AI gate preparation — AI analyzes and recommends before human gates",
+            "F-029: Proactive alerts — AI detects risks (feeder delay, SLA breach, customs hold) before they happen"
+          ]
+        },
+        {
+          "phase": "Phase 5: Analytics & Continuous Improvement (2 sessions)",
+          "description": "Process performance analytics, bottleneck detection, AI agent effectiveness tracking.",
+          "deliverables": [
+            "F-030: Process analytics dashboard — completion rates, SLA compliance, bottlenecks",
+            "F-031: AI performance tracking — approval rates, human override rates, cost per process"
+          ]
+        }
+      ],
+      "total_sessions": "12-16 sessions",
+      "total_feature_nodes": "F-016 through F-031 (16 features)"
+    },
+
+    "acceptance_criteria": [
+      "290 processes defined — zero orphans, every process belongs to at least one E2E flow",
+      "35 E2E flows with 15-30 steps each — every step references a PRC-xxx process",
+      "Every E2E flow step defines executor type (ai_agent/human/system) and trigger condition",
+      "Human gates have gate type, assigned role, SLA, escalation path, and AI recommendation",
+      "Transaction-flow binding: creating a booking automatically creates an E2E-01 flow instance",
+      "Event triggers: vessel arrival automatically creates E2E-12 port call flow instances",
+      "Conditional flow creation: DG cargo booking automatically adds E2E-06 DG flow",
+      "Cascading flows: E2E-01 creates child E2E-04 instances per container",
+      "Real-time monitoring: at any point, see where every transaction stands in its flow",
+      "Human gate inbox: pending decisions with AI recommendation, SLA countdown, escalation",
+      "Feeder operations fully covered: E2E-21 and E2E-22 with 11 new processes",
+      "All 24 missing business areas addressed with new processes and E2E flows",
+      "AI agents execute 70%+ of steps autonomously — humans handle ~30% (gates only)",
+      "Full audit trail: every step completion, gate decision, AI output logged immutably"
+    ],
+
+    "edge_cases": [
+      "Booking has both DG and reefer cargo — multiple conditional flows triggered simultaneously",
+      "Feeder delay causes missed mainline connection — E2E-22 must handle exception routing",
+      "Customer credit limit breached mid-flow — E2E-01 must pause at credit gate",
+      "AI agent fails (timeout, error) — step retries with backoff, then escalates to human",
+      "Human gate SLA expires with no response — auto-approve if low risk, else escalate",
+      "Same container in multiple flows (E2E-04 export at origin, E2E-03 import at destination) — flows must not conflict",
+      "Cancellation mid-flow — E2E flow must handle graceful termination, notify downstream steps",
+      "Roll-over scenario — E2E-01 must branch: cancel current vessel load step, create new E2E-04 on next vessel",
+      "Multi-transshipment (cargo goes through 2+ hubs) — nested E2E-07 instances per hub",
+      "Alliance cargo — booking on partner's vessel triggers different flow variant",
+      "L/C expiring before cargo arrival — E2E-26 must alert before expiry"
+    ],
+
+    "error_handling": [
+      "Event trigger fails to create flow — log to pe_flow_events with error, retry 3x with exponential backoff",
+      "AI agent step timeout (30s) — mark step failed, create human gate for manual completion",
+      "DB transaction failure during step advancement — rollback, retry, log",
+      "Human gate notification delivery failure — retry via alternate channel (email → in-app → SMS)",
+      "Circular flow dependency detected — prevent, log, alert system admin",
+      "Flow instance stuck (no progress for 24h) — auto-alert operations manager"
+    ],
+
+    "security_considerations": [
+      "Human gates enforce RBAC — only users with correct role can decide at a gate",
+      "AI agent outputs may contain sensitive data — PII masking in logs",
+      "Event triggers must validate tenant_id — never cross-tenant flow creation",
+      "Auto-approve rules must have financial limits per role (Delegation of Authority matrix)",
+      "Audit trail is immutable — no DELETE on pe_flow_events",
+      "Gate decisions require authentication — no anonymous approvals"
+    ],
+
+    "rationale": [
+      "AI-first is non-negotiable — the competitive advantage IS the AI operating the business 24/7",
+      "Event-driven > click-driven — shipping operations don't wait for office hours or human availability",
+      "Transaction binding makes processes real — a process without a transaction is just documentation",
+      "35 flows covering 290 processes ensures complete operational coverage — nothing falls through cracks",
+      "Human gates with AI recommendations make humans more effective — they see the analysis, not raw data",
+      "Phased delivery (5 phases, 12-16 sessions) ensures incremental value without context window overflow",
+      "Phase 1 (data rewrite) is foundational — everything else depends on having the correct process and flow definitions"
+    ]
+  }
+}

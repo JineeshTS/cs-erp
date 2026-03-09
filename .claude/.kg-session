@@ -1,7 +1,7 @@
 {
-  "node_id": "F-011",
-  "node_type": "feature",
-  "node_name": "Dashboard Vessel Schedule Timeline",
-  "created_at": "2026-03-09T11:45:00Z",
-  "session_purpose": "Created KG node F-011 — source code editing unlocked"
+  "node_id": "D-005",
+  "node_type": "decision",
+  "node_name": "AI-First Process Orchestration — Complete Process & E2E Flow Redesign",
+  "created_at": "2026-03-09T19:55:00Z",
+  "session_purpose": "Created KG node D-005 — source code editing unlocked"
 }
