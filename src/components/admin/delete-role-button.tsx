@@ -31,7 +31,6 @@ export function DeleteRoleButton({ roleId, roleName, hasUsers }: DeleteRoleButto
         return;
       }
       router.push("/admin/roles");
-      router.refresh();
     } catch {
       setError("Network error");
       setDeleting(false);

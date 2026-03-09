@@ -84,7 +84,6 @@ export function LrmForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

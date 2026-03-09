@@ -84,7 +84,6 @@ export function DgmForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

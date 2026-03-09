@@ -64,7 +64,6 @@ export function LprForm({ entityType, apiPath, fields, initialData, isEdit, retu
       const json = await res.json();
       if (!res.ok) { setError(json.error?.message || "Failed to save"); return; }
       router.push(returnPath);
-      router.refresh();
     } catch { setError("Network error"); } finally { setSubmitting(false); }
   }
 

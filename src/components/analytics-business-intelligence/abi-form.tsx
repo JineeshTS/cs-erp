@@ -84,7 +84,6 @@ export function AbiForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

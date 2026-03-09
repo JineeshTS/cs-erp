@@ -84,7 +84,6 @@ export function VpeForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

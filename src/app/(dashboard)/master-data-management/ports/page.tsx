@@ -33,17 +33,17 @@ export default async function PortsListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Ports & Terminals
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="mt-1 text-sm text-slate-500">
             Manage port and terminal master data
           </p>
         </div>
         {canCreate && (
           <Link
             href="/master-data-management/ports/new"
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
           >
             <Plus className="h-4 w-4" />
             Add Port
@@ -52,57 +52,62 @@ export default async function PortsListPage() {
       </div>
 
       {data.length === 0 ? (
-        <div className="rounded-lg border bg-white px-8 py-12 text-center">
-          <p className="text-gray-500">No ports found.</p>
+        <div className="rounded-xl border border-slate-200/60 bg-white px-8 py-16 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+            <Plus className="h-5 w-5 text-slate-400" />
+          </div>
+          <p className="mt-4 font-medium text-slate-900">No ports found</p>
+          <p className="mt-1 text-sm text-slate-500">Get started by adding your first port.</p>
           {canCreate && (
             <Link
               href="/master-data-management/ports/new"
-              className="mt-3 inline-block text-sm text-blue-600 hover:underline"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
             >
-              Add your first port
+              <Plus className="h-4 w-4" />
+              Add Port
             </Link>
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border bg-white">
+        <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
+              <tr className="border-b border-slate-100 bg-slate-50/50">
+                <th className="px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Name
                 </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
+                <th className="px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-wider text-slate-500">
                   UN/LOCODE
                 </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
+                <th className="px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Country
                 </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
+                <th className="px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Type
                 </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
+                <th className="px-5 py-3.5 text-start text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {data.map((port) => (
                 <tr
                   key={port.id}
-                  className="border-b last:border-0 hover:bg-gray-50"
+                  className="transition-colors hover:bg-slate-50/50"
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5">
                     <Link
                       href={`/master-data-management/ports/${port.id}`}
-                      className="font-medium text-gray-900 hover:underline"
+                      className="font-medium text-slate-900 hover:text-brand-600"
                     >
                       {port.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{port.unLocode}</td>
-                  <td className="px-4 py-3 text-gray-600">{port.country}</td>
-                  <td className="px-4 py-3 text-gray-600">{port.portType}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5 font-mono text-xs text-slate-600">{port.unLocode}</td>
+                  <td className="px-5 py-3.5 text-slate-600">{port.country}</td>
+                  <td className="px-5 py-3.5 text-slate-600">{port.portType}</td>
+                  <td className="px-5 py-3.5">
                     <Badge
                       variant={
                         port.status === "active" ? "success" : "secondary"

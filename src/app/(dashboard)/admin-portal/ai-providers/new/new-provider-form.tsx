@@ -48,7 +48,6 @@ export function NewProviderForm() {
       }
 
       router.push("/admin-portal/ai-providers");
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

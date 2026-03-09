@@ -61,7 +61,6 @@ export function MelsForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error. Please try again.");
     } finally {

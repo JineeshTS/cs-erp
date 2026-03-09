@@ -60,8 +60,7 @@ export default function LoginPage() {
       // Redirect to dashboard or callback URL
       const params = new URLSearchParams(window.location.search);
       const callbackUrl = params.get("callbackUrl") || "/";
-      router.push(callbackUrl);
-      router.refresh();
+      router.replace(callbackUrl);
     } catch {
       setError("Network error. Please try again.");
     } finally {

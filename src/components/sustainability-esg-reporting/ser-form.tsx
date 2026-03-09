@@ -84,7 +84,6 @@ export function SerForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

@@ -74,8 +74,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push(data.data?.redirect || "/onboarding");
-      router.refresh();
+      router.replace(data.data?.redirect || "/onboarding");
     } catch {
       setError("Network error. Please try again.");
     } finally {

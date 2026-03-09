@@ -102,10 +102,10 @@ export default async function MasterDataManagementPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           Master Data Management
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="mt-1 text-sm text-slate-500">
           Manage reference data used across the ERP system
         </p>
       </div>
@@ -118,20 +118,20 @@ export default async function MasterDataManagementPage() {
             <Link
               key={section.key}
               href={section.href}
-              className="group rounded-lg border bg-white p-5 transition-shadow hover:shadow-md"
+              className="group rounded-xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:border-brand-200 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
-                <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600 group-hover:bg-blue-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-100">
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold tracking-tight text-slate-900">
                   {count}
                 </span>
               </div>
-              <h3 className="mt-3 font-semibold text-gray-900">
+              <h3 className="mt-3 font-semibold text-slate-900">
                 {section.label}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-slate-500">
                 {section.description}
               </p>
             </Link>

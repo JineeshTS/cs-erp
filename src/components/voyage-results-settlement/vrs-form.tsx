@@ -84,7 +84,6 @@ export function VrsForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

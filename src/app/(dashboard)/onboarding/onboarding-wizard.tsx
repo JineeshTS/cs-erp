@@ -89,7 +89,6 @@ export function OnboardingWizard({
       // Also set onboarded_at via a separate call pattern
       // The PATCH handler already handles arbitrary settings update
       router.push("/");
-      router.refresh();
     } catch {
       router.push("/");
     }

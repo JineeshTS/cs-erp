@@ -84,7 +84,6 @@ export function IsfForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

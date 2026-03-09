@@ -128,7 +128,6 @@ export function RoleForm({ allPermissions, initialData, isEdit, apiPath, returnP
       const json = await res.json();
       if (!res.ok) { setError(json.error?.message || "Failed to save"); return; }
       router.push(returnPath);
-      router.refresh();
     } catch { setError("Network error"); } finally { setSubmitting(false); }
   }
 

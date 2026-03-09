@@ -29,11 +29,11 @@ export default async function DashboardLayout({
   const userName = session.email.split("@")[0];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
       <Sidebar tenantName={tenant?.name || "CS ERP"} permissions={permissions} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar userName={userName} userEmail={session.email} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-8 py-6">{children}</main>
       </div>
       <ChatPanel />
     </div>

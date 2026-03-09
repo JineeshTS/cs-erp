@@ -84,7 +84,6 @@ export function DdmForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {

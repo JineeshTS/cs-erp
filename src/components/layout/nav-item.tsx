@@ -22,15 +22,18 @@ export function NavItem({ href, label, icon: Icon, collapsed }: NavItemProps) {
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
         isActive
-          ? "bg-gray-100 text-gray-900"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+          ? "bg-sidebar-active text-white"
+          : "text-sidebar-text hover:bg-sidebar-hover hover:text-white",
         collapsed && "justify-center px-2"
       )}
       title={collapsed ? label : undefined}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {isActive && (
+        <div className="absolute inset-y-1 start-0 w-[3px] rounded-full bg-brand-500" />
+      )}
+      <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive && "text-brand-400")} />
       {!collapsed && <span>{label}</span>}
     </Link>
   );
@@ -47,11 +50,11 @@ export function NavGroup({ label, children, collapsed, defaultExpanded = true }:
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {!collapsed && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-center justify-between px-3 py-1 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
         >
           <span>{label}</span>
           {expanded ? (
@@ -61,7 +64,7 @@ export function NavGroup({ label, children, collapsed, defaultExpanded = true }:
           )}
         </button>
       )}
-      {collapsed && <div className="mx-auto my-2 h-px w-6 bg-gray-200" />}
+      {collapsed && <div className="mx-auto my-3 h-px w-6 bg-white/10" />}
       {(!collapsed && expanded || collapsed) && children}
     </div>
   );

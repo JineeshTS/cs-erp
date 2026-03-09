@@ -84,7 +84,6 @@ export function KmtForm({
       }
 
       router.push(returnPath);
-      router.refresh();
     } catch {
       setError("Network error");
     } finally {
