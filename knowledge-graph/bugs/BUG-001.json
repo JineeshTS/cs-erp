@@ -1,0 +1,69 @@
+{
+  "node_type": "bug",
+  "id": "BUG-001",
+  "name": "Dashboard shows hardcoded zeros and empty activity feed",
+  "created_at": "2026-03-08",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-001", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "reported_by": "user",
+    "severity": "high",
+    "steps_to_reproduce": [
+      "Log in to cs-erp.codilla.ai",
+      "Land on dashboard page (/)",
+      "Observe all 4 stats cards show value=0 with 'Coming soon'",
+      "Observe activity feed shows 'No recent activity' always",
+      "Quick action links go to correct hub pages but dashboard gives no operational overview"
+    ],
+    "expected_behavior": "Dashboard should show real-time counts from the database: active vessels from mdm_vessels, open bookings from csp_portal_bookings, containers in transit from csp_shipment_tracking, pending customs from ccr_import_clearances. Activity feed should show recent records created across these tables.",
+    "actual_behavior": "All 4 stats cards are hardcoded to value={0} with description='Coming soon'. No DB queries are executed. Activity feed component receives no items prop, always shows empty state.",
+    "root_cause_analysis": "Dashboard page (src/app/(dashboard)/page.tsx) was built as a placeholder shell. Stats cards pass literal value={0} instead of queried counts. ActivityFeed is rendered without items prop. No server-side DB queries exist in the page component.",
+    "fix_approach": "Add server-side DB count queries in the async page component using Drizzle ORM. Query 4 tables with tenant isolation (session.tenantId). Pass real counts to StatsCard components. Query recent records across tables for ActivityFeed items. Use Promise.all() for parallel fetching.",
+    "description": "The main dashboard page at / shows hardcoded zeros for all 4 stats cards and an always-empty activity feed. The page needs server-side Drizzle queries to count active vessels, open bookings, containers in transit, and pending customs clearances. It also needs to fetch recent activity items from these tables.",
+    "acceptance_criteria": [
+      "Active Vessels stat shows COUNT of mdm_vessels WHERE status='active' AND tenant_id=session.tenantId AND deleted_at IS NULL",
+      "Open Bookings stat shows COUNT of csp_portal_bookings WHERE status NOT IN ('cancelled','completed') AND tenant_id=session.tenantId AND deleted_at IS NULL",
+      "Containers in Transit stat shows COUNT of csp_shipment_tracking WHERE current_status='in_transit' AND tenant_id=session.tenantId AND deleted_at IS NULL",
+      "Pending Customs stat shows COUNT of ccr_import_clearances WHERE status IN ('draft','pending','filed') AND tenant_id=session.tenantId AND deleted_at IS NULL",
+      "Description text on each card shows contextual info (e.g. '+2 this week') or module name instead of 'Coming soon'",
+      "Activity feed shows up to 10 most recent records across the 4 tables, ordered by created_at DESC",
+      "Each activity item shows a human-readable message (e.g. 'Booking BK-2026-001 created') and relative timestamp",
+      "All queries use tenant isolation via session.tenantId",
+      "All queries use Promise.all() for parallel fetching",
+      "Dashboard loads within 2 seconds (no N+1 queries)",
+      "npx tsc --noEmit passes with 0 errors"
+    ],
+    "edge_cases": [
+      "New tenant with zero records in all tables — all stats show 0, activity feed shows empty state (existing behavior preserved)",
+      "Table has only soft-deleted records — stats show 0 (filtered by deleted_at IS NULL)",
+      "Very large table (10000+ rows) — COUNT queries use indexed status column, still fast",
+      "Session expired mid-render — redirect to /login (existing auth check handles this)",
+      "Activity feed items from different tables have different timestamp formats — normalize to relative time strings"
+    ],
+    "error_handling": [
+      "Any individual count query fails — show 0 for that stat, don't crash entire dashboard (use try/catch per query or fallback in Promise.allSettled)",
+      "Activity feed query fails — show empty state with 'No recent activity' (existing fallback)",
+      "DB connection pool exhausted — Next.js error boundary shows error page"
+    ],
+    "security_considerations": [
+      "All queries MUST filter by tenant_id — no cross-tenant data leakage",
+      "No raw SQL — use Drizzle ORM parameterized queries only",
+      "Auth check already exists on line 9-10 (getSession + redirect)"
+    ],
+    "implementation_notes": "Pattern: import db and schema tables, query in async page component after auth check, pass results to existing components. Drizzle exports: vessels (mdm_vessels), cspPortalBookings (csp_portal_bookings), cspShipmentTracking (csp_shipment_tracking), ccrImportClearances (ccr_import_clearances). All from '@/db/schema'. Use sql`count(*)` or db.select({ count: count() }).from(table).where(). For activity feed, UNION is complex — simpler to do 4 separate queries (limit 3 each) and merge+sort in JS.",
+    "affected_files": [
+      "src/app/(dashboard)/page.tsx"
+    ],
+    "testing_requirements": [
+      "Dashboard page renders without errors",
+      "Stats show real counts matching DB state",
+      "Activity feed shows recent items ordered by time",
+      "Page works correctly for tenant with no data (all zeros, empty feed)",
+      "npx tsc --noEmit passes with 0 errors"
+    ]
+  }
+}

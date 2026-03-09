@@ -5,6 +5,7 @@ import { scmOpportunities } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createOpportunitySchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,6 +60,21 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       ...parsed.data,
     }).returning();
+
+    eventBus.emit({
+      type: "OPPORTUNITY_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "opportunity",
+      timestamp: new Date(),
+      data: {
+        opportunityName: created.opportunityName,
+        customerId: created.customerId,
+        expectedRevenue: created.expectedRevenue ?? undefined,
+        tradeLane: created.tradeLane ?? undefined,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (err) {

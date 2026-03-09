@@ -1,0 +1,71 @@
+{
+  "node_type": "feature",
+  "id": "F-007",
+  "name": "Phase 3 — Container Event Tracking Webhook",
+  "created_at": "2026-03-09",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-003", "relationship_type": "implements" },
+    { "target_id": "F-005", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Real-Time IoT & Asset Tracking",
+    "priority": "should_have",
+    "complexity": "medium",
+    "description": "Webhook endpoint that receives container milestone events from terminals, EDI systems, or manual input. Maps event location to port coordinates when possible and creates iot_container_gps_trackings records with trackingType 'milestone_update'. Enables showing last-known-location of containers on the map without GPS hardware.",
+    "capabilities": [
+      "POST /api/v1/tracking/container-event — receives container milestone events",
+      "Accepts: containerNumber, eventType (gate_in, gate_out, vessel_load, vessel_discharge, customs_release, delivered), locationCode (UN/LOCODE), timestamp",
+      "Maps locationCode to port lat/lng from mdm_ports table",
+      "Creates iot_container_gps_trackings record with trackingType 'milestone_update'",
+      "Supports both authenticated (API key) and HMAC-signed webhook calls",
+      "Returns created tracking record ID in response"
+    ],
+    "acceptance_criteria": [
+      "POST with valid container event returns 201 with tracking record ID",
+      "Container appears on map at port location after event + refresh",
+      "If locationCode matches a port, lat/lng populated from port data",
+      "If locationCode not found, lat/lng left null (record still created with locationName)",
+      "Zod validation on request body — returns 422 on invalid payload",
+      "Auth: either Bearer token (iot:read) or X-Webhook-Signature HMAC-SHA256",
+      "Event types validated against allowed enum",
+      "npx tsc --noEmit passes"
+    ],
+    "edge_cases": [
+      "Unknown container number — still creates record (external containers)",
+      "Unknown UN/LOCODE — creates record with null lat/lng, sets locationName to the code",
+      "Duplicate event (same container + event + timestamp) — idempotent, returns existing record",
+      "Very old timestamp (>30 days ago) — still accepted, no time validation",
+      "Missing optional fields (containerType) — defaults applied"
+    ],
+    "error_handling": [
+      "Invalid JSON body — 400 with parse error",
+      "Missing required fields — 422 with Zod details",
+      "No auth and no webhook signature — 401",
+      "Invalid webhook signature — 401 with 'Invalid signature' message",
+      "DB error — 500 generic message"
+    ],
+    "affected_files": [
+      "src/app/api/v1/tracking/container-event/route.ts — POST webhook endpoint"
+    ],
+    "api_spec": {
+      "POST /api/v1/tracking/container-event": {
+        "auth": "Bearer token (iot:read) OR X-Webhook-Signature HMAC-SHA256",
+        "body": {
+          "containerNumber": "MSKU1234567",
+          "eventType": "vessel_load",
+          "locationCode": "QADOH",
+          "locationName": "Hamad Port, Doha",
+          "timestamp": "2026-03-09T14:30:00Z",
+          "containerType": "40HC",
+          "metadata": {}
+        },
+        "response_201": {
+          "data": { "id": "uuid", "containerNumber": "MSKU1234567", "trackingType": "milestone_update", "latitude": 25.2854, "longitude": 51.5310 }
+        }
+      }
+    }
+  }
+}

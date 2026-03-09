@@ -5,6 +5,7 @@ import { scmOpportunities } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateOpportunitySchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -42,10 +43,49 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
+    // Fetch existing to detect status transitions
+    const [existing] = await db.select().from(scmOpportunities)
+      .where(and(eq(scmOpportunities.id, id), eq(scmOpportunities.tenantId, user.tenantId), isNull(scmOpportunities.deletedAt))).limit(1);
+    if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Opportunity not found" } }, { status: 404 });
+
     const [updated] = await db.update(scmOpportunities).set(parsed.data)
       .where(and(eq(scmOpportunities.id, id), eq(scmOpportunities.tenantId, user.tenantId), isNull(scmOpportunities.deletedAt))).returning();
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Opportunity not found" } }, { status: 404 });
+
+    if (updated.status === "won" && existing.status !== "won") {
+      eventBus.emit({
+        type: "OPPORTUNITY_WON",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "opportunity",
+        timestamp: new Date(),
+        data: {
+          opportunityName: updated.opportunityName,
+          customerId: updated.customerId,
+          expectedRevenue: updated.expectedRevenue ?? undefined,
+        },
+      });
+    }
+
+    if (updated.status === "lost" && existing.status !== "lost") {
+      eventBus.emit({
+        type: "OPPORTUNITY_LOST",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "opportunity",
+        timestamp: new Date(),
+        data: {
+          opportunityName: updated.opportunityName,
+          customerId: updated.customerId,
+          lostReason: updated.lostReason ?? undefined,
+          competitorName: updated.competitorName ?? undefined,
+        },
+      });
+    }
+
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Opportunity update error:", err);

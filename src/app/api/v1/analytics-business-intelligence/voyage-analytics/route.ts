@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { createVoyageAnalyticsSchema } from "@/lib/analytics-business-intelligence/validation";
 import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,6 +48,23 @@ export async function POST(request: NextRequest) {
 
     const analyticsRef = `AVA-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(abiVoyageAnalytics).values({ ...parsed.data, analyticsRef, tenantId: user.tenantId }).returning();
+
+    // Voyage performance analytics typically created at voyage completion
+    if (parsed.data.analyticsType === "voyage_performance") {
+      eventBus.emit({
+        type: "VOYAGE_COMPLETED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "voyage",
+        timestamp: new Date(),
+        data: {
+          voyageId: parsed.data.voyageRef ?? "",
+          vesselId: parsed.data.vesselName ?? "",
+          actualDuration: parsed.data.avgTransitDays ? Number(parsed.data.avgTransitDays) * 24 : 0,
+        },
+      });
+    }
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

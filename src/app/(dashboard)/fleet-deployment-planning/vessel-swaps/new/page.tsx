@@ -6,6 +6,7 @@ import { hasPermission } from '@/lib/rbac';
 import { FdpForm } from '@/components/fleet-deployment-planning/fdp-form';
 import { Button } from '@/components/ui/button';
 import type { FieldConfig } from '@/components/fleet-deployment-planning/fdp-form';
+import { getVesselOptions } from '@/lib/lookups';
 
 export const metadata = {
   title: 'New Vessel Swap | Fleet Deployment Planning',
@@ -17,6 +18,8 @@ export default async function NewVesselSwapPage() {
 
   const canCreate = await hasPermission(session.id, session.tenantId, 'fdp:create');
   if (!canCreate) redirect('/');
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
 
   const formFields: FieldConfig[] = [
     {
@@ -42,16 +45,16 @@ export default async function NewVesselSwapPage() {
     {
       name: 'outgoingVessel',
       label: 'Outgoing Vessel',
-      type: 'text',
+      type: 'select',
       required: false,
-      placeholder: 'e.g., MSC Maya',
+      options: vesselOpts,
     },
     {
       name: 'incomingVessel',
       label: 'Incoming Vessel',
-      type: 'text',
+      type: 'select',
       required: false,
-      placeholder: 'e.g., MSC Gülsün',
+      options: vesselOpts,
     },
     {
       name: 'tradeLane',

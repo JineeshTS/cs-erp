@@ -5,6 +5,7 @@ import { odmBillsOfLading } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createBillOfLadingSchema } from "@/lib/operations-documentation/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +50,22 @@ export async function POST(request: NextRequest) {
     }
 
     const [created] = await db.insert(odmBillsOfLading).values({ tenantId: user.tenantId, ...parsed.data }).returning();
+
+    eventBus.emit({
+      type: "BL_ISSUED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "bill_of_lading",
+      timestamp: new Date(),
+      data: {
+        blNumber: created.blNumber,
+        bookingId: created.bookingReference ?? "",
+        shipperId: created.shipperId ?? "",
+        consigneeId: created.consigneeId ?? "",
+      },
+    });
+
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     console.error("Failed to create bill of lading:", error);

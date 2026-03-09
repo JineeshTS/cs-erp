@@ -4,32 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ThmForm, type FieldConfig } from "@/components/transshipment-hub-management/thm-form";
-
-const CARGO_TRACKING_FIELDS: FieldConfig[] = [
-  {
-    name: "trackingType",
-    label: "Tracking Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "discharge_tracking", label: "Discharge Tracking" },
-      { value: "yard_movement", label: "Yard Movement" },
-      { value: "load_tracking", label: "Load Tracking" },
-      { value: "gate_passage", label: "Gate Passage" },
-      { value: "milestone_update", label: "Milestone Update" },
-    ],
-  },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "bookingRef", label: "Booking Ref", type: "text" },
-  { name: "hubPort", label: "Hub Port", type: "text" },
-  { name: "currentLocation", label: "Current Location", type: "text" },
-  { name: "inboundVessel", label: "Inbound Vessel", type: "text" },
-  { name: "outboundVessel", label: "Outbound Vessel", type: "text" },
-  { name: "dischargeTime", label: "Discharge Time", type: "datetime-local" },
-  { name: "loadTime", label: "Load Time", type: "datetime-local" },
-  { name: "yardPosition", label: "Yard Position", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getVesselOptions } from "@/lib/lookups";
 
 export default async function NewCargoTrackingPage() {
   const session = await getSession();
@@ -38,6 +13,37 @@ export default async function NewCargoTrackingPage() {
     !(await hasPermission(session.id, session.tenantId, "thm:create"))
   )
     redirect("/transshipment-hub-management/cargo-trackings");
+
+  const [portOpts, vesselOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getVesselOptions(session.tenantId),
+  ]);
+
+  const CARGO_TRACKING_FIELDS: FieldConfig[] = [
+    {
+      name: "trackingType",
+      label: "Tracking Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "discharge_tracking", label: "Discharge Tracking" },
+        { value: "yard_movement", label: "Yard Movement" },
+        { value: "load_tracking", label: "Load Tracking" },
+        { value: "gate_passage", label: "Gate Passage" },
+        { value: "milestone_update", label: "Milestone Update" },
+      ],
+    },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "bookingRef", label: "Booking Ref", type: "text" },
+    { name: "hubPort", label: "Hub Port", type: "select", options: portOpts },
+    { name: "currentLocation", label: "Current Location", type: "text" },
+    { name: "inboundVessel", label: "Inbound Vessel", type: "select", options: vesselOpts },
+    { name: "outboundVessel", label: "Outbound Vessel", type: "select", options: vesselOpts },
+    { name: "dischargeTime", label: "Discharge Time", type: "datetime-local" },
+    { name: "loadTime", label: "Load Time", type: "datetime-local" },
+    { name: "yardPosition", label: "Yard Position", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

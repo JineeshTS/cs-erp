@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { ccmClaimRegistrations } from "@/db/schema";
 import { listClaimRegistrations } from "@/lib/cargo-claims-management/service";
 import { createClaimRegistrationSchema } from "@/lib/cargo-claims-management/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,15 +43,32 @@ export async function POST(request: NextRequest) {
         { status: 422 }
       );
     }
+    const claimRef = `CCR-${Date.now()}`;
     const [record] = await db
       .insert(ccmClaimRegistrations)
       .values({
         ...parsed.data,
-        claimRef: `CCR-${Date.now()}`,
+        claimRef,
         tenantId: user.tenantId,
         status: "draft",
       })
       .returning();
+
+    eventBus.emit({
+      type: "CARGO_CLAIM_FILED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: record.id,
+      entityType: "cargo_claim",
+      timestamp: new Date(),
+      data: {
+        claimId: record.id,
+        bookingId: parsed.data.blNumber ?? "",
+        claimType: parsed.data.claimType,
+        estimatedValue: Number(parsed.data.claimAmountUsd ?? 0),
+      },
+    });
+
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {
     console.error("Failed to create claim registration:", error);

@@ -13,6 +13,11 @@ import {
   KeyRound,
   ArrowUpDown,
   Bell,
+  Download,
+  Cloud,
+  Cpu,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
@@ -139,6 +144,51 @@ export default async function AdminPortalPage() {
       icon: Bell,
       color: "text-pink-600",
       bg: "bg-pink-50",
+    },
+    {
+      title: "Downloads",
+      description: "Download source code, docs, and config files",
+      count: 1,
+      href: "/admin-portal/downloads",
+      icon: Download,
+      color: "text-sky-600",
+      bg: "bg-sky-50",
+    },
+    {
+      title: "Deploy to AWS",
+      description: "One-click deployment to AWS infrastructure",
+      count: 1,
+      href: "/admin-portal/aws-deploy",
+      icon: Cloud,
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+    {
+      title: "AI Providers",
+      description: "Configure AI provider API keys and settings",
+      count: 1,
+      href: "/admin-portal/ai-providers",
+      icon: Cpu,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+    },
+    {
+      title: "AI Models",
+      description: "Manage available AI models and defaults",
+      count: 1,
+      href: "/admin-portal/ai-models",
+      icon: Sparkles,
+      color: "text-fuchsia-600",
+      bg: "bg-fuchsia-50",
+    },
+    {
+      title: "AI Usage",
+      description: "Monitor AI token usage and costs",
+      count: 1,
+      href: "/admin-portal/ai-usage",
+      icon: BarChart3,
+      color: "text-lime-600",
+      bg: "bg-lime-50",
     },
   ];
 

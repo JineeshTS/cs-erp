@@ -1,0 +1,106 @@
+{
+  "node_type": "feature",
+  "id": "F-004",
+  "name": "Remaining Master Data Lookup Wiring",
+  "created_at": "2026-03-08",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-002", "relationship_type": "implements" },
+    { "target_id": "F-003", "relationship_type": "extends" }
+  ],
+  "content": {
+    "category": "Forms & Data Integrity",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Wire the final 10 form pages (24 text fields + 2 currency upgrades) across 5 modules to use master data lookups from src/lib/lookups.ts instead of free-text inputs. These are the remaining gaps after F-003 was completed. No edit pages exist for these modules — only new/page.tsx files need wiring.",
+    "capabilities": [
+      "All port/location fields in equipment, transshipment, fleet, and ECR modules render as select dropdowns from mdm_ports via getPortOptions()",
+      "All vessel fields in transshipment-hub and fleet-deployment modules render as select dropdowns from mdm_vessels via getVesselOptions()",
+      "All customer/counterparty/lessor fields in equipment and fleet-deployment modules render as select dropdowns from mdm_customers via getCustomerOptions()",
+      "All container type fields in container-leasing and ECR modules render as select dropdowns from mdm_container_types via getContainerTypeOptions()",
+      "Depot/terminal fields in container-leasing render as select dropdowns from mdm_terminals via getTerminalOptions()",
+      "Hardcoded 5-currency selects in equipment on-hire and leased-containers upgraded to full 20-currency getCurrencyOptions()"
+    ],
+    "acceptance_criteria": [
+      "equipment-control-yard-managem/new/page.tsx: currentPort field uses getPortOptions() — type:'select' with DB-sourced options",
+      "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx: onHireLocation+offHireLocation use getPortOptions(), lessorName+lesseeName use getCustomerOptions(), currency uses getCurrencyOptions()",
+      "equipment-control-yard-managem/leased-containers/new/page.tsx: pickUpLocation+dropOffLocation use getPortOptions(), lessorName uses getCustomerOptions(), currency uses getCurrencyOptions()",
+      "container-leasing-management/onhire-offhires/new/page.tsx: eventLocation uses getPortOptions(), depotName uses getTerminalOptions(), containerType uses getContainerTypeOptions()",
+      "transshipment-hub-management/cargo-trackings/new/page.tsx: hubPort uses getPortOptions(), inboundVessel+outboundVessel use getVesselOptions()",
+      "transshipment-hub-management/feeder-coordinations/new/page.tsx: feederVessel+motherVessel use getVesselOptions(), hubPort uses getPortOptions()",
+      "fleet-deployment-planning/vessel-swaps/new/page.tsx: outgoingVessel+incomingVessel use getVesselOptions()",
+      "fleet-deployment-planning/deployment-contracts/new/page.tsx: vesselName uses getVesselOptions(), counterparty uses getCustomerOptions()",
+      "empty-container-repositioning-ai/demand-forecasts/new/page.tsx: containerType uses getContainerTypeOptions()",
+      "empty-container-repositioning-ai/leasing-decisions/new/page.tsx: containerType uses getContainerTypeOptions(), locationCode uses getPortOptions()",
+      "All 10 pages import session via getSession() and pass tenantId to lookup functions",
+      "npx tsc --noEmit passes with 0 errors after changes"
+    ],
+    "edge_cases": [
+      "Master data table empty for a tenant — dropdown shows only 'Select...' placeholder, form can still submit with empty value for optional fields",
+      "Existing records created with free-text values before wiring — not affected (only new/page.tsx exists, no edit pages)",
+      "Multiple tenants — each sees only their own master data via tenantId filter in lookup queries",
+      "Large master data sets — capped at 50 results per lookup function, ordered alphabetically",
+      "Currency upgrade from 5→20 options — existing hardcoded values (USD, QAR, AED, SAR, INR) are all in the full list, no data migration needed"
+    ],
+    "error_handling": [
+      "DB query failure in any lookup function — Next.js error boundary catches and shows error page (existing pattern from F-003)",
+      "Session not found — redirect to /login (already handled in each page)",
+      "Form submission with value not in current lookup list — API validation accepts loosely on reference fields (existing D-002 decision)"
+    ],
+    "security_considerations": [
+      "All lookup queries filter by tenantId — no cross-tenant data leakage",
+      "Server-side fetching only — lookup data never exposed via client API routes",
+      "Permission checks already exist on each page — no changes needed"
+    ],
+    "implementation_notes": "Pattern is identical to F-003: (1) import lookup functions from @/lib/lookups, (2) call them in the server component with session.tenantId, (3) replace type:'text' with type:'select' and options:lookupResult in the FieldConfig array. For currency upgrades, replace inline hardcoded options array with getCurrencyOptions(). No new lookup functions needed — all 8 already exist in lookups.ts.",
+    "affected_files": [
+      "src/app/(dashboard)/equipment-control-yard-managem/new/page.tsx",
+      "src/app/(dashboard)/equipment-control-yard-managem/on-hire-off-hire/new/page.tsx",
+      "src/app/(dashboard)/equipment-control-yard-managem/leased-containers/new/page.tsx",
+      "src/app/(dashboard)/container-leasing-management/onhire-offhires/new/page.tsx",
+      "src/app/(dashboard)/transshipment-hub-management/cargo-trackings/new/page.tsx",
+      "src/app/(dashboard)/transshipment-hub-management/feeder-coordinations/new/page.tsx",
+      "src/app/(dashboard)/fleet-deployment-planning/vessel-swaps/new/page.tsx",
+      "src/app/(dashboard)/fleet-deployment-planning/deployment-contracts/new/page.tsx",
+      "src/app/(dashboard)/empty-container-repositioning-ai/demand-forecasts/new/page.tsx",
+      "src/app/(dashboard)/empty-container-repositioning-ai/leasing-decisions/new/page.tsx"
+    ],
+    "field_mapping": [
+      { "file": "equipment-control-yard-managem/new/page.tsx", "field": "currentPort", "lookup": "getPortOptions()" },
+      { "file": "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx", "field": "onHireLocation", "lookup": "getPortOptions()" },
+      { "file": "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx", "field": "offHireLocation", "lookup": "getPortOptions()" },
+      { "file": "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx", "field": "lessorName", "lookup": "getCustomerOptions()" },
+      { "file": "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx", "field": "lesseeName", "lookup": "getCustomerOptions()" },
+      { "file": "equipment-control-yard-managem/on-hire-off-hire/new/page.tsx", "field": "currency", "lookup": "getCurrencyOptions() [upgrade from hardcoded 5]" },
+      { "file": "equipment-control-yard-managem/leased-containers/new/page.tsx", "field": "pickUpLocation", "lookup": "getPortOptions()" },
+      { "file": "equipment-control-yard-managem/leased-containers/new/page.tsx", "field": "dropOffLocation", "lookup": "getPortOptions()" },
+      { "file": "equipment-control-yard-managem/leased-containers/new/page.tsx", "field": "lessorName", "lookup": "getCustomerOptions()" },
+      { "file": "equipment-control-yard-managem/leased-containers/new/page.tsx", "field": "currency", "lookup": "getCurrencyOptions() [upgrade from hardcoded 5]" },
+      { "file": "container-leasing-management/onhire-offhires/new/page.tsx", "field": "eventLocation", "lookup": "getPortOptions()" },
+      { "file": "container-leasing-management/onhire-offhires/new/page.tsx", "field": "depotName", "lookup": "getTerminalOptions()" },
+      { "file": "container-leasing-management/onhire-offhires/new/page.tsx", "field": "containerType", "lookup": "getContainerTypeOptions()" },
+      { "file": "transshipment-hub-management/cargo-trackings/new/page.tsx", "field": "hubPort", "lookup": "getPortOptions()" },
+      { "file": "transshipment-hub-management/cargo-trackings/new/page.tsx", "field": "inboundVessel", "lookup": "getVesselOptions()" },
+      { "file": "transshipment-hub-management/cargo-trackings/new/page.tsx", "field": "outboundVessel", "lookup": "getVesselOptions()" },
+      { "file": "transshipment-hub-management/feeder-coordinations/new/page.tsx", "field": "feederVessel", "lookup": "getVesselOptions()" },
+      { "file": "transshipment-hub-management/feeder-coordinations/new/page.tsx", "field": "motherVessel", "lookup": "getVesselOptions()" },
+      { "file": "transshipment-hub-management/feeder-coordinations/new/page.tsx", "field": "hubPort", "lookup": "getPortOptions()" },
+      { "file": "fleet-deployment-planning/vessel-swaps/new/page.tsx", "field": "outgoingVessel", "lookup": "getVesselOptions()" },
+      { "file": "fleet-deployment-planning/vessel-swaps/new/page.tsx", "field": "incomingVessel", "lookup": "getVesselOptions()" },
+      { "file": "fleet-deployment-planning/deployment-contracts/new/page.tsx", "field": "vesselName", "lookup": "getVesselOptions()" },
+      { "file": "fleet-deployment-planning/deployment-contracts/new/page.tsx", "field": "counterparty", "lookup": "getCustomerOptions()" },
+      { "file": "empty-container-repositioning-ai/demand-forecasts/new/page.tsx", "field": "containerType", "lookup": "getContainerTypeOptions()" },
+      { "file": "empty-container-repositioning-ai/leasing-decisions/new/page.tsx", "field": "containerType", "lookup": "getContainerTypeOptions()" },
+      { "file": "empty-container-repositioning-ai/leasing-decisions/new/page.tsx", "field": "locationCode", "lookup": "getPortOptions()" }
+    ],
+    "testing_requirements": [
+      "Each of the 10 form pages loads without errors when navigated to",
+      "All select dropdowns render with options from the lookup functions",
+      "Selecting a value and submitting the form creates a record with the correct value",
+      "Forms with no master data for the tenant show empty select with placeholder",
+      "npx tsc --noEmit passes with 0 errors"
+    ]
+  }
+}

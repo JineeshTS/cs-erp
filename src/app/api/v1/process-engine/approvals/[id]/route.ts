@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { decideApproval, listPendingApprovals } from "@/lib/process-engine/service";
+import { decideApproval } from "@/lib/process-engine/service";
 import { decideApprovalSchema } from "@/lib/process-engine/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function PATCH(
   request: NextRequest,
@@ -39,6 +40,23 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    eventBus.emit({
+      type: "APPROVAL_DECIDED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: approval.id,
+      entityType: "approval",
+      timestamp: new Date(),
+      data: {
+        approvalType: "process_approval",
+        decidedById: user.id,
+        decision: parsed.data.decision,
+        referenceId: approval.processInstanceId,
+        referenceType: "process_instance",
+        comment: parsed.data.comment,
+      },
+    });
 
     return NextResponse.json({ data: approval });
   } catch (err) {

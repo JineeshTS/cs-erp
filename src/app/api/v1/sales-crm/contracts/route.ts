@@ -5,6 +5,7 @@ import { scmContracts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createContractSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,21 @@ export async function POST(request: NextRequest) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
     }).returning();
+
+    eventBus.emit({
+      type: "CONTRACT_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "contract",
+      timestamp: new Date(),
+      data: {
+        contractNumber: created.contractNumber,
+        contractName: created.contractName,
+        customerId: created.customerId,
+        contractType: created.contractType,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (err) {

@@ -5,6 +5,7 @@ import { odmBillsOfLading } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateBillOfLadingSchema } from "@/lib/operations-documentation/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -38,9 +39,29 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
+    // Fetch existing record to detect status transitions
+    const [existing] = await db.select().from(odmBillsOfLading).where(and(eq(odmBillsOfLading.id, id), eq(odmBillsOfLading.tenantId, user.tenantId), isNull(odmBillsOfLading.deletedAt))).limit(1);
+
     const [updated] = await db.update(odmBillsOfLading).set({ ...parsed.data }).where(and(eq(odmBillsOfLading.id, id), eq(odmBillsOfLading.tenantId, user.tenantId), isNull(odmBillsOfLading.deletedAt))).returning();
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Bill of lading not found" } }, { status: 404 });
+
+    // Emit BL_SURRENDERED when status changes to surrendered
+    if (existing && parsed.data.blStatus === "surrendered" && existing.blStatus !== "surrendered") {
+      eventBus.emit({
+        type: "BL_SURRENDERED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: id,
+        entityType: "bill_of_lading",
+        timestamp: new Date(),
+        data: {
+          blNumber: updated.blNumber,
+          bookingId: updated.bookingReference ?? "",
+        },
+      });
+    }
+
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update bill of lading:", error);

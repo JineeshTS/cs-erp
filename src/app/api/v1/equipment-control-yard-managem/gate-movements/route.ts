@@ -5,6 +5,7 @@ import { eqyGateMovements } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createGateMovementSchema } from "@/lib/equipment-control-yard-managem/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,6 +73,37 @@ export async function POST(request: NextRequest) {
         ...(movementTimestamp && { movementTimestamp: new Date(movementTimestamp) }),
       })
       .returning();
+
+    if (parsed.data.movementType === "gate_in") {
+      eventBus.emit({
+        type: "CONTAINER_GATE_IN",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "container",
+        timestamp: new Date(),
+        data: {
+          containerNumber: parsed.data.containerNumber,
+          terminalId: parsed.data.gateCode ?? "",
+          bookingId: undefined,
+          sealNumber: parsed.data.sealNumber,
+        },
+      });
+    } else {
+      eventBus.emit({
+        type: "CONTAINER_GATE_OUT",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "container",
+        timestamp: new Date(),
+        data: {
+          containerNumber: parsed.data.containerNumber,
+          terminalId: parsed.data.gateCode ?? "",
+          deliveryOrderId: undefined,
+        },
+      });
+    }
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

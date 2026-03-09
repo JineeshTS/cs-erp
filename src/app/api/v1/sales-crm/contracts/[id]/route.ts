@@ -5,6 +5,7 @@ import { scmContracts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateContractSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -42,6 +43,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
+    // Fetch existing to detect status transitions
+    const [existing] = await db.select().from(scmContracts)
+      .where(and(eq(scmContracts.id, id), eq(scmContracts.tenantId, user.tenantId), isNull(scmContracts.deletedAt))).limit(1);
+    if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Contract not found" } }, { status: 404 });
+
     const { startDate, endDate, ...rest } = parsed.data;
     const [updated] = await db.update(scmContracts).set({
       ...rest,
@@ -50,6 +56,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }).where(and(eq(scmContracts.id, id), eq(scmContracts.tenantId, user.tenantId), isNull(scmContracts.deletedAt))).returning();
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Contract not found" } }, { status: 404 });
+
+    if (updated.status === "active" && existing.status !== "active") {
+      eventBus.emit({
+        type: "CONTRACT_ACTIVATED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "contract",
+        timestamp: new Date(),
+        data: {
+          contractNumber: updated.contractNumber,
+          contractName: updated.contractName,
+          customerId: updated.customerId,
+          startDate: updated.startDate.toISOString(),
+          endDate: updated.endDate.toISOString(),
+        },
+      });
+    }
+
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Contract update error:", err);

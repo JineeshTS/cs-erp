@@ -13,6 +13,7 @@ import {
   peEventLog,
 } from "@/db/schema";
 import { eq, and, isNull, desc, gt, inArray, sql } from "drizzle-orm";
+import { eventBus } from "@/lib/events/event-bus";
 
 // ── Process Instance Operations ──
 
@@ -280,6 +281,23 @@ export async function createApproval(params: {
       )
     );
 
+  // Emit APPROVAL_REQUESTED event
+  eventBus.emit({
+    type: "APPROVAL_REQUESTED",
+    tenantId: params.tenantId,
+    userId: params.approverId,
+    entityId: approval.id,
+    entityType: "approval",
+    timestamp: new Date(),
+    data: {
+      approvalType: "process_step_approval",
+      requestedById: params.approverId,
+      assignedToId: params.approverId,
+      referenceId: params.processInstanceId,
+      referenceType: "process_instance",
+    },
+  });
+
   return approval;
 }
 
@@ -289,13 +307,15 @@ export async function decideApproval(
   decision: "approved" | "rejected",
   comment?: string
 ) {
+  // Only allow deciding approvals that haven't been decided yet
   const [updated] = await db
     .update(peApprovals)
     .set({ decision, comment, decidedAt: new Date() })
     .where(
       and(
         eq(peApprovals.id, approvalId),
-        eq(peApprovals.tenantId, tenantId)
+        eq(peApprovals.tenantId, tenantId),
+        isNull(peApprovals.decision)
       )
     )
     .returning();

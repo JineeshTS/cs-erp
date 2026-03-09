@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getBooking } from "@/lib/customer-portal/service";
 import { updateBookingSchema } from "@/lib/customer-portal/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -79,6 +80,38 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { error: { code: "NOT_FOUND", message: "Booking not found" } },
         { status: 404 }
       );
+    }
+
+    // Emit status-change events (existing is "draft" per guard above)
+    if (updated.status === "confirmed") {
+      eventBus.emit({
+        type: "BOOKING_CONFIRMED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: id,
+        entityType: "booking",
+        timestamp: new Date(),
+        data: {
+          bookingNumber: existing.bookingRef,
+          voyageId: "",
+          customerId: existing.customerId,
+        },
+      });
+    }
+
+    if (updated.status === "cancelled") {
+      eventBus.emit({
+        type: "BOOKING_CANCELLED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: id,
+        entityType: "booking",
+        timestamp: new Date(),
+        data: {
+          bookingNumber: existing.bookingRef,
+          reason: updated.cancellationReason ?? "Cancelled by user",
+        },
+      });
     }
 
     return NextResponse.json({ data: updated });

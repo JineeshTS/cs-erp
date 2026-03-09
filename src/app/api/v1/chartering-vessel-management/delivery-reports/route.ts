@@ -5,6 +5,7 @@ import { cvmDeliveryReports } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDeliveryReportSchema } from "@/lib/chartering-vessel-management/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,6 +71,22 @@ export async function POST(request: NextRequest) {
         reportDate: new Date(reportDate),
       })
       .returning();
+
+    // Delivery report = cargo released to charterer
+    eventBus.emit({
+      type: "CARGO_RELEASED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "delivery_order",
+      timestamp: new Date(),
+      data: {
+        deliveryOrderId: created.id,
+        bookingId: parsed.data.charterPartyId,
+        consigneeId: "",
+        containerNumbers: [],
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

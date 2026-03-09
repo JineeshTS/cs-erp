@@ -7,42 +7,49 @@ import {
   ClmForm,
   type FieldConfig,
 } from "@/components/container-leasing-management/clm-form";
-
-const ONHIRE_OFFHIRE_FIELDS: FieldConfig[] = [
-  {
-    name: "eventType",
-    label: "Event Type",
-    type: "select",
-    options: [
-      { value: "on_hire", label: "On Hire" },
-      { value: "off_hire", label: "Off Hire" },
-      { value: "interchange", label: "Interchange" },
-      { value: "redelivery", label: "Redelivery" },
-      { value: "pickup", label: "Pickup" },
-    ],
-  },
-  { name: "agreementId", label: "Agreement ID", type: "text" },
-  { name: "containerNumber", label: "Container Number", type: "text" },
-  { name: "containerType", label: "Container Type", type: "text" },
-  { name: "containerSize", label: "Container Size", type: "text" },
-  { name: "eventDate", label: "Event Date", type: "datetime-local" },
-  { name: "eventLocation", label: "Event Location", type: "text" },
-  { name: "depotName", label: "Depot Name", type: "text" },
-  { name: "conditionGrade", label: "Condition Grade", type: "text" },
-  { name: "surveyRequired", label: "Survey Required", type: "checkbox" },
-  { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
-  { name: "dailyRate", label: "Daily Rate", type: "text" },
-  { name: "daysOnHire", label: "Days On Hire", type: "number" },
-  { name: "totalCost", label: "Total Cost", type: "text" },
-  { name: "interchangeRef", label: "Interchange Ref", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getPortOptions, getTerminalOptions, getContainerTypeOptions } from "@/lib/lookups";
 
 export default async function NewOnhireOffhirePage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "clm:create")))
     redirect("/");
+
+  const [portOpts, terminalOpts, containerTypeOpts] = await Promise.all([
+    getPortOptions(session.tenantId),
+    getTerminalOptions(session.tenantId),
+    getContainerTypeOptions(session.tenantId),
+  ]);
+
+  const ONHIRE_OFFHIRE_FIELDS: FieldConfig[] = [
+    {
+      name: "eventType",
+      label: "Event Type",
+      type: "select",
+      options: [
+        { value: "on_hire", label: "On Hire" },
+        { value: "off_hire", label: "Off Hire" },
+        { value: "interchange", label: "Interchange" },
+        { value: "redelivery", label: "Redelivery" },
+        { value: "pickup", label: "Pickup" },
+      ],
+    },
+    { name: "agreementId", label: "Agreement ID", type: "text" },
+    { name: "containerNumber", label: "Container Number", type: "text" },
+    { name: "containerType", label: "Container Type", type: "select", options: containerTypeOpts },
+    { name: "containerSize", label: "Container Size", type: "text" },
+    { name: "eventDate", label: "Event Date", type: "datetime-local" },
+    { name: "eventLocation", label: "Event Location", type: "select", options: portOpts },
+    { name: "depotName", label: "Depot Name", type: "select", options: terminalOpts },
+    { name: "conditionGrade", label: "Condition Grade", type: "text" },
+    { name: "surveyRequired", label: "Survey Required", type: "checkbox" },
+    { name: "surveyDate", label: "Survey Date", type: "datetime-local" },
+    { name: "dailyRate", label: "Daily Rate", type: "text" },
+    { name: "daysOnHire", label: "Days On Hire", type: "number" },
+    { name: "totalCost", label: "Total Cost", type: "text" },
+    { name: "interchangeRef", label: "Interchange Ref", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

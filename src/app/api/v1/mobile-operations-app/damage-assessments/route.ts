@@ -6,6 +6,7 @@ import { createDamageAssessmentSchema } from "@/lib/mobile-operations-app/valida
 import { db } from "@/lib/db";
 import { mobDamageAssessments } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,15 +57,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const assessmentRef = `DMA-${nanoid(12)}`;
     const [record] = await db
       .insert(mobDamageAssessments)
       .values({
         tenantId: user.tenantId,
-        assessmentRef: `DMA-${nanoid(12)}`,
+        assessmentRef,
         ...parsed.data,
         status: "draft",
       })
       .returning();
+
+    eventBus.emit({
+      type: "CONTAINER_DAMAGED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: record.id,
+      entityType: "container",
+      timestamp: new Date(),
+      data: {
+        containerNumber: parsed.data.containerNumber ?? "",
+        damageType: parsed.data.damageCategory ?? parsed.data.aiDetectedType ?? "unspecified",
+        severity: (parsed.data.severityLevel === "severe" ? "severe" : parsed.data.severityLevel === "moderate" ? "moderate" : "minor") as "minor" | "moderate" | "severe",
+        estimatedRepairCost: parsed.data.estimatedRepairCost ? Number(parsed.data.estimatedRepairCost) : undefined,
+      },
+    });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

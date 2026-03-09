@@ -1,0 +1,48 @@
+{
+  "node_type": "decision",
+  "id": "D-003",
+  "name": "Live GPS & AIS Tracking Architecture",
+  "created_at": "2026-03-09",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [],
+  "content": {
+    "category": "Real-Time IoT & Asset Tracking",
+    "context": "CS ERP has 8 IoT schema tables (iot_container_gps_trackings, iot_vessel_positions, etc.) with CRUD but NO real-time tracking UI, NO AIS polling, NO GPS webhook endpoints, and NO map visualization. The ports table has lat/lng columns. Need to build end-to-end live tracking for vessels, containers, and ports on an interactive map.",
+    "decision": "4-phase implementation: (1) Map UI + port/vessel/container plotting from existing DB data, (2) AIS vessel polling from external API providers, (3) Container event tracking via webhook endpoints, (4) GPS device data ingestion via webhook endpoints.",
+    "rationale": [
+      "Phase 1 delivers immediate visual value using existing data — zero external dependencies",
+      "Phase 2 adds AIS (legally broadcast vessel positions) via configurable API provider (VesselFinder/Datalastic/MarineTraffic) — tenant-configurable API key",
+      "Phase 3 enables terminal/EDI milestone events to update container last-known-location — maps events to port coordinates",
+      "Phase 4 adds real GPS device data ingestion for reefer/high-value containers — direct lat/lng from hardware devices",
+      "Leaflet + OpenStreetMap chosen over Google Maps — no API key cost, OSS, works with CSP"
+    ],
+    "alternatives_rejected": [
+      "Google Maps — requires paid API key, complex billing, unnecessary for B2B shipping ERP",
+      "Mapbox — good but paid; OSM sufficient for port/vessel/container dots",
+      "react-leaflet — has React 19 compatibility issues; direct Leaflet with useRef is more reliable",
+      "WebSocket real-time push — over-engineering for Phase 1; polling + refresh button sufficient initially"
+    ],
+    "technical_details": {
+      "map_library": "leaflet (direct, not react-leaflet) — dynamic import with ssr:false",
+      "tile_provider": "OpenStreetMap via https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "csp_changes": "img-src and connect-src need *.tile.openstreetmap.org added",
+      "leaflet_css": "Loaded via CDN link tag in layout or imported in component",
+      "db_tables_used": ["mdm_ports (lat/lng)", "iot_vessel_positions (lat/lng/course/speed/imo/mmsi)", "iot_container_gps_trackings (lat/lng/speed/heading/deviceId/batteryLevel)"],
+      "api_endpoints": {
+        "map_data": "GET /api/v1/tracking/map-data — returns ports + vessels + containers with lat/lng",
+        "ais_poll": "POST /api/v1/tracking/ais-poll — polls AIS provider, writes to iot_vessel_positions",
+        "container_event": "POST /api/v1/tracking/container-event — webhook for terminal/EDI milestone events",
+        "gps_ingest": "POST /api/v1/tracking/gps-ingest — webhook for GPS device data"
+      },
+      "navigation": "Add 'Live Tracking' to sidebar under a new top-level category slug, or add to existing categories.ts"
+    },
+    "impact": [
+      "New sidebar item: Live Tracking",
+      "CSP header updated in next.config.ts",
+      "leaflet + @types/leaflet added to package.json",
+      "4 new API routes, 1 new page, 3 new components"
+    ]
+  }
+}

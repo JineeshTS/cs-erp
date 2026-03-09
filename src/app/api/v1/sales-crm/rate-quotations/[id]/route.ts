@@ -5,6 +5,7 @@ import { scmRateQuotations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateRateQuotationSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -42,6 +43,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
+    // Fetch existing to detect status transitions
+    const [existing] = await db.select().from(scmRateQuotations)
+      .where(and(eq(scmRateQuotations.id, id), eq(scmRateQuotations.tenantId, user.tenantId), isNull(scmRateQuotations.deletedAt))).limit(1);
+    if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Rate quotation not found" } }, { status: 404 });
+
     const { validFrom, validTo, ...rest } = parsed.data;
     const [updated] = await db.update(scmRateQuotations).set({
       ...rest,
@@ -50,6 +56,39 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }).where(and(eq(scmRateQuotations.id, id), eq(scmRateQuotations.tenantId, user.tenantId), isNull(scmRateQuotations.deletedAt))).returning();
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Rate quotation not found" } }, { status: 404 });
+
+    if (updated.status === "approved" && existing.status !== "approved") {
+      eventBus.emit({
+        type: "QUOTATION_APPROVED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "rate_quotation",
+        timestamp: new Date(),
+        data: {
+          quotationNumber: updated.quotationNumber,
+          customerId: updated.customerId,
+          approvedBy: updated.approvedBy ?? user.id,
+        },
+      });
+    }
+
+    if (updated.status === "accepted" && existing.status !== "accepted") {
+      eventBus.emit({
+        type: "QUOTATION_ACCEPTED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "rate_quotation",
+        timestamp: new Date(),
+        data: {
+          quotationNumber: updated.quotationNumber,
+          customerId: updated.customerId,
+          opportunityId: updated.opportunityId ?? undefined,
+        },
+      });
+    }
+
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Rate quotation update error:", err);

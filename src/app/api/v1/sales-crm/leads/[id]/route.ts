@@ -5,6 +5,7 @@ import { scmLeads } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateLeadSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -42,10 +43,48 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
     }
 
+    // Fetch existing to detect status transitions
+    const [existing] = await db.select().from(scmLeads)
+      .where(and(eq(scmLeads.id, id), eq(scmLeads.tenantId, user.tenantId), isNull(scmLeads.deletedAt))).limit(1);
+    if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lead not found" } }, { status: 404 });
+
     const [updated] = await db.update(scmLeads).set(parsed.data)
       .where(and(eq(scmLeads.id, id), eq(scmLeads.tenantId, user.tenantId), isNull(scmLeads.deletedAt))).returning();
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lead not found" } }, { status: 404 });
+
+    // Emit events on status transitions
+    if (updated.status === "qualified" && existing.status !== "qualified") {
+      eventBus.emit({
+        type: "LEAD_QUALIFIED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "lead",
+        timestamp: new Date(),
+        data: {
+          companyName: updated.companyName,
+          qualificationScore: updated.qualificationScore ?? 0,
+          assignedTo: updated.assignedTo ?? undefined,
+        },
+      });
+    }
+
+    if (updated.status === "converted" && existing.status !== "converted") {
+      eventBus.emit({
+        type: "LEAD_CONVERTED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: updated.id,
+        entityType: "lead",
+        timestamp: new Date(),
+        data: {
+          companyName: updated.companyName,
+          customerId: updated.convertedToCustomerId ?? "",
+        },
+      });
+    }
+
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Lead update error:", err);

@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { listFreightInvoices } from "@/lib/freight-invoice-revenue-management/service";
 import { createFreightInvoiceSchema } from "@/lib/freight-invoice-revenue-management/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,6 +62,23 @@ export async function POST(request: NextRequest) {
       paidAmount: 0,
       outstandingAmount: parsed.data.totalAmount,
     }).returning();
+
+    eventBus.emit({
+      type: "INVOICE_GENERATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "invoice",
+      timestamp: new Date(),
+      data: {
+        invoiceNumber,
+        customerId: parsed.data.customerCode ?? "",
+        amount: parsed.data.totalAmount,
+        currency: parsed.data.currency ?? "USD",
+        dueDate: (parsed.data.dueDate ?? created.dueDate)?.toISOString() ?? "",
+        bookingId: parsed.data.bookingRef,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

@@ -5,6 +5,7 @@ import { scmLeads } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createLeadSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,6 +60,22 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       ...parsed.data,
     }).returning();
+
+    eventBus.emit({
+      type: "LEAD_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "lead",
+      timestamp: new Date(),
+      data: {
+        companyName: created.companyName,
+        contactName: created.contactName,
+        source: created.source,
+        tradeLane: created.tradeLane ?? undefined,
+        estimatedTeu: created.estimatedTeu ?? undefined,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (err) {

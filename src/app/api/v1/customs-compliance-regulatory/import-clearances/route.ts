@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { createImportClearanceSchema } from "@/lib/customs-compliance-regulatory/validation";
 import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +94,38 @@ export async function POST(request: NextRequest) {
         tenantId: user.tenantId,
       })
       .returning();
+
+    // Emit CUSTOMS_HELD if inspection required or status indicates hold; otherwise CUSTOMS_CLEARED
+    if (created.inspectionRequired || created.status === "held" || created.status === "inspection") {
+      eventBus.emit({
+        type: "CUSTOMS_HELD",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "customs_filing",
+        timestamp: new Date(),
+        data: {
+          filingId: created.id,
+          bookingId: parsed.data.consignmentRef ?? "",
+          holdReason: created.inspectionRequired ? "Inspection required" : "Customs hold",
+        },
+      });
+    } else {
+      eventBus.emit({
+        type: "CUSTOMS_CLEARED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "customs_filing",
+        timestamp: new Date(),
+        data: {
+          filingId: created.id,
+          bookingId: parsed.data.consignmentRef ?? "",
+          customsAuthority: parsed.data.customsOffice ?? "",
+          clearanceNumber: clearanceRef,
+        },
+      });
+    }
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

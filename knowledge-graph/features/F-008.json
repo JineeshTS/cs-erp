@@ -1,0 +1,83 @@
+{
+  "node_type": "feature",
+  "id": "F-008",
+  "name": "Phase 4 — GPS Device Data Ingestion Webhook",
+  "created_at": "2026-03-09",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-003", "relationship_type": "implements" },
+    { "target_id": "F-005", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Real-Time IoT & Asset Tracking",
+    "priority": "should_have",
+    "complexity": "medium",
+    "description": "Webhook endpoint that receives raw GPS position data from IoT tracking devices attached to containers (reefers, high-value cargo). Writes directly to iot_container_gps_trackings with trackingType 'real_time'. Supports batch ingestion of multiple position reports in a single call.",
+    "capabilities": [
+      "POST /api/v1/tracking/gps-ingest — receives GPS device position reports",
+      "Accepts single position or batch array of positions",
+      "Each position: deviceId, containerNumber (optional), lat, lng, speed, heading, altitude, batteryLevel, signalStrength, timestamp",
+      "Creates iot_container_gps_trackings records with trackingType 'real_time'",
+      "Auto-generates trackingRef: GPS-{deviceId}-{timestamp}",
+      "Supports HMAC-SHA256 webhook signature authentication",
+      "Batch limit: max 100 positions per request"
+    ],
+    "acceptance_criteria": [
+      "Single position POST returns 201 with tracking record ID",
+      "Batch position POST returns 201 with array of tracking record IDs",
+      "Containers appear on map at GPS coordinates after ingest + refresh",
+      "Battery level and signal strength stored when provided",
+      "Zod validation on request body — 422 on invalid payload",
+      "Auth: Bearer token (iot:read) OR X-Webhook-Signature HMAC-SHA256",
+      "Batch of 100 inserts completes in <2s",
+      "Empty batch returns 400",
+      "npx tsc --noEmit passes"
+    ],
+    "edge_cases": [
+      "Device not linked to any container — creates record with null containerNumber",
+      "Batch with mix of valid and invalid positions — reject entire batch (atomic)",
+      "GPS coordinates outside valid range (lat >90 or lng >180) — Zod rejects",
+      "Very frequent reports (every 10s from same device) — all stored (no dedup on real_time)",
+      "Battery level 0% — accepted, could indicate device dying",
+      "Signal strength negative (dBm) — accepted as integer"
+    ],
+    "error_handling": [
+      "Invalid JSON — 400",
+      "Validation failure — 422 with Zod details",
+      "Batch >100 items — 400 'Batch size exceeds limit of 100'",
+      "No auth — 401",
+      "DB error — 500 generic message, log full error server-side"
+    ],
+    "affected_files": [
+      "src/app/api/v1/tracking/gps-ingest/route.ts — POST webhook endpoint"
+    ],
+    "api_spec": {
+      "POST /api/v1/tracking/gps-ingest": {
+        "auth": "Bearer token (iot:read) OR X-Webhook-Signature HMAC-SHA256",
+        "body_single": {
+          "deviceId": "DEV-001",
+          "containerNumber": "MSKU1234567",
+          "latitude": 25.2854,
+          "longitude": 51.5310,
+          "speed": 0.5,
+          "heading": 180.0,
+          "altitude": 2.5,
+          "batteryLevel": 87.5,
+          "signalStrength": -65,
+          "timestamp": "2026-03-09T14:30:00Z"
+        },
+        "body_batch": {
+          "positions": ["...array of above objects, max 100"]
+        },
+        "response_201_single": {
+          "data": { "id": "uuid", "trackingRef": "GPS-DEV-001-1741531800" }
+        },
+        "response_201_batch": {
+          "data": { "inserted": 25, "ids": ["uuid1", "uuid2", "..."] }
+        }
+      }
+    }
+  }
+}

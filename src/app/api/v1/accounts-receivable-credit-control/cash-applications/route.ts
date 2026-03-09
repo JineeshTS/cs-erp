@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { listCashApplications } from "@/lib/accounts-receivable-credit-control/service";
 import { createCashApplicationSchema } from "@/lib/accounts-receivable-credit-control/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,6 +61,22 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       unappliedAmount: parsed.data.paymentAmount,
     }).returning();
+
+    eventBus.emit({
+      type: "PAYMENT_RECEIVED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "payment",
+      timestamp: new Date(),
+      data: {
+        paymentId: created.id,
+        invoiceId: parsed.data.accountId ?? "",
+        customerId: parsed.data.customerName ?? "",
+        amount: parsed.data.paymentAmount,
+        currency: parsed.data.currency ?? "USD",
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

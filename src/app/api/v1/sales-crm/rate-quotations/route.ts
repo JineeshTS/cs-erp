@@ -5,6 +5,7 @@ import { scmRateQuotations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createRateQuotationSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,22 @@ export async function POST(request: NextRequest) {
       validFrom: new Date(validFrom),
       validTo: new Date(validTo),
     }).returning();
+
+    eventBus.emit({
+      type: "QUOTATION_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "rate_quotation",
+      timestamp: new Date(),
+      data: {
+        quotationNumber: created.quotationNumber,
+        customerId: created.customerId,
+        originPort: created.originPort,
+        destinationPort: created.destinationPort,
+        totalAmount: created.totalAmount ?? undefined,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (err) {

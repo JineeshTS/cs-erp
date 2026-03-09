@@ -4,6 +4,7 @@ import { hasPermission } from '@/lib/rbac';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { FdpForm, type FieldConfig } from '@/components/fleet-deployment-planning/fdp-form';
+import { getVesselOptions, getCustomerOptions } from '@/lib/lookups';
 
 const contractTypeOptions = [
   { value: 'coa', label: 'COA' },
@@ -13,76 +14,83 @@ const contractTypeOptions = [
   { value: 'bareboat', label: 'Bareboat' },
 ];
 
-const deploymentContractFields: FieldConfig[] = [
-  {
-    name: 'contractType',
-    label: 'Contract Type',
-    type: 'select',
-    required: true,
-    options: contractTypeOptions,
-  },
-  {
-    name: 'title',
-    label: 'Title',
-    type: 'text',
-  },
-  {
-    name: 'counterparty',
-    label: 'Counterparty',
-    type: 'text',
-  },
-  {
-    name: 'vesselName',
-    label: 'Vessel Name',
-    type: 'text',
-  },
-  {
-    name: 'tradeLane',
-    label: 'Trade Lane',
-    type: 'text',
-  },
-  {
-    name: 'startDate',
-    label: 'Start Date',
-    type: 'datetime-local',
-  },
-  {
-    name: 'endDate',
-    label: 'End Date',
-    type: 'datetime-local',
-  },
-  {
-    name: 'contractValue',
-    label: 'Contract Value',
-    type: 'number',
-  },
-  {
-    name: 'slotCapacity',
-    label: 'Slot Capacity',
-    type: 'number',
-  },
-  {
-    name: 'renewalDate',
-    label: 'Renewal Date',
-    type: 'datetime-local',
-  },
-  {
-    name: 'isAutoRenew',
-    label: 'Auto Renewal',
-    type: 'checkbox',
-  },
-  {
-    name: 'notes',
-    label: 'Notes',
-    type: 'textarea',
-  },
-];
-
 export default async function NewDeploymentContractPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
   if (!(await hasPermission(session.id, session.tenantId, 'fdp:create'))) redirect('/');
+
+  const [vesselOpts, customerOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getCustomerOptions(session.tenantId),
+  ]);
+
+  const deploymentContractFields: FieldConfig[] = [
+    {
+      name: 'contractType',
+      label: 'Contract Type',
+      type: 'select',
+      required: true,
+      options: contractTypeOptions,
+    },
+    {
+      name: 'title',
+      label: 'Title',
+      type: 'text',
+    },
+    {
+      name: 'counterparty',
+      label: 'Counterparty',
+      type: 'select',
+      options: customerOpts,
+    },
+    {
+      name: 'vesselName',
+      label: 'Vessel Name',
+      type: 'select',
+      options: vesselOpts,
+    },
+    {
+      name: 'tradeLane',
+      label: 'Trade Lane',
+      type: 'text',
+    },
+    {
+      name: 'startDate',
+      label: 'Start Date',
+      type: 'datetime-local',
+    },
+    {
+      name: 'endDate',
+      label: 'End Date',
+      type: 'datetime-local',
+    },
+    {
+      name: 'contractValue',
+      label: 'Contract Value',
+      type: 'number',
+    },
+    {
+      name: 'slotCapacity',
+      label: 'Slot Capacity',
+      type: 'number',
+    },
+    {
+      name: 'renewalDate',
+      label: 'Renewal Date',
+      type: 'datetime-local',
+    },
+    {
+      name: 'isAutoRenew',
+      label: 'Auto Renewal',
+      type: 'checkbox',
+    },
+    {
+      name: 'notes',
+      label: 'Notes',
+      type: 'textarea',
+    },
+  ];
 
   return (
     <div className="space-y-8">

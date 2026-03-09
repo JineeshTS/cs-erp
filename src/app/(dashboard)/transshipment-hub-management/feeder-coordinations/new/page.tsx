@@ -4,32 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { ThmForm, type FieldConfig } from "@/components/transshipment-hub-management/thm-form";
-
-const FEEDER_COORDINATION_FIELDS: FieldConfig[] = [
-  {
-    name: "coordinationType",
-    label: "Coordination Type",
-    type: "select",
-    required: true,
-    options: [
-      { value: "feeder_arrival", label: "Feeder Arrival" },
-      { value: "feeder_departure", label: "Feeder Departure" },
-      { value: "relay_connection", label: "Relay Connection" },
-      { value: "barge_transfer", label: "Barge Transfer" },
-      { value: "intermodal_link", label: "Intermodal Link" },
-    ],
-  },
-  { name: "feederVessel", label: "Feeder Vessel", type: "text" },
-  { name: "feederService", label: "Feeder Service", type: "text" },
-  { name: "motherVessel", label: "Mother Vessel", type: "text" },
-  { name: "hubPort", label: "Hub Port", type: "text" },
-  { name: "etaFeeder", label: "ETA Feeder", type: "datetime-local" },
-  { name: "etdFeeder", label: "ETD Feeder", type: "datetime-local" },
-  { name: "connectionWindowHours", label: "Connection Window (Hours)", type: "text" },
-  { name: "cargoUnits", label: "Cargo Units", type: "number" },
-  { name: "bufferHours", label: "Buffer Hours", type: "text" },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getVesselOptions, getPortOptions } from "@/lib/lookups";
 
 export default async function NewFeederCoordinationPage() {
   const session = await getSession();
@@ -38,6 +13,37 @@ export default async function NewFeederCoordinationPage() {
     !(await hasPermission(session.id, session.tenantId, "thm:create"))
   )
     redirect("/transshipment-hub-management/feeder-coordinations");
+
+  const [vesselOpts, portOpts] = await Promise.all([
+    getVesselOptions(session.tenantId),
+    getPortOptions(session.tenantId),
+  ]);
+
+  const FEEDER_COORDINATION_FIELDS: FieldConfig[] = [
+    {
+      name: "coordinationType",
+      label: "Coordination Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "feeder_arrival", label: "Feeder Arrival" },
+        { value: "feeder_departure", label: "Feeder Departure" },
+        { value: "relay_connection", label: "Relay Connection" },
+        { value: "barge_transfer", label: "Barge Transfer" },
+        { value: "intermodal_link", label: "Intermodal Link" },
+      ],
+    },
+    { name: "feederVessel", label: "Feeder Vessel", type: "select", options: vesselOpts },
+    { name: "feederService", label: "Feeder Service", type: "text" },
+    { name: "motherVessel", label: "Mother Vessel", type: "select", options: vesselOpts },
+    { name: "hubPort", label: "Hub Port", type: "select", options: portOpts },
+    { name: "etaFeeder", label: "ETA Feeder", type: "datetime-local" },
+    { name: "etdFeeder", label: "ETD Feeder", type: "datetime-local" },
+    { name: "connectionWindowHours", label: "Connection Window (Hours)", type: "text" },
+    { name: "cargoUnits", label: "Cargo Units", type: "number" },
+    { name: "bufferHours", label: "Buffer Hours", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

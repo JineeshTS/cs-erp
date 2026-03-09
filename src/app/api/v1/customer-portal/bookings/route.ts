@@ -5,6 +5,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { listBookings } from "@/lib/customer-portal/service";
 import { createBookingSchema } from "@/lib/customer-portal/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +53,22 @@ export async function POST(request: NextRequest) {
       bookingRef,
       ...parsed.data,
     }).returning();
+
+    eventBus.emit({
+      type: "BOOKING_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "booking",
+      timestamp: new Date(),
+      data: {
+        bookingNumber: bookingRef,
+        customerId: user.id,
+        tradeRoute: `${parsed.data.originPort}-${parsed.data.destinationPort}`,
+        cargoType: parsed.data.cargoType,
+        containerCount: parsed.data.containerCount ?? 1,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

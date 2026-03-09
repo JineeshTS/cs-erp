@@ -1,8 +1,9 @@
 /**
  * Imports all event handler modules to register them with the event bus.
- * Import this file once at app startup (e.g., in instrumentation.ts or layout.tsx).
+ * Import this file once at app startup (via instrumentation.ts).
  *
  * Each handler file self-registers by calling eventBus.on() at module scope.
+ * The process bridge creates pe_process_instances from domain events.
  */
 
 import "./handlers/booking-handlers";
@@ -11,5 +12,11 @@ import "./handlers/vessel-handlers";
 import "./handlers/financial-handlers";
 import "./handlers/compliance-handlers";
 import "./handlers/approval-handlers";
+import "./handlers/sales-handlers";
+
+import { registerProcessBridge } from "./process-bridge";
+
+// Register event → process instance bridge
+registerProcessBridge();
 
 export const EVENT_HANDLERS_REGISTERED = true;

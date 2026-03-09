@@ -7,58 +7,66 @@ import {
   EcrForm,
   type FieldConfig,
 } from "@/components/empty-container-repositioning-ai/ecr-form";
-
-const fields: FieldConfig[] = [
-  {
-    name: "decisionType",
-    label: "Decision Type",
-    type: "select",
-    options: [
-      { label: "Lease In", value: "lease_in" },
-      { label: "Lease Out", value: "lease_out" },
-      { label: "Reposition", value: "reposition" },
-      { label: "Buy", value: "buy" },
-      { label: "Sell", value: "sell" },
-    ],
-    required: true,
-  },
-  { name: "title", label: "Title", type: "text", required: true },
-  {
-    name: "locationCode",
-    label: "Location Code",
-    type: "text",
-    required: true,
-  },
-  {
-    name: "containerType",
-    label: "Container Type",
-    type: "text",
-    required: true,
-  },
-  { name: "quantity", label: "Quantity", type: "number", required: true },
-  { name: "repositionCost", label: "Reposition Cost", type: "text" },
-  { name: "leasingCost", label: "Leasing Cost", type: "text" },
-  { name: "breakEvenDays", label: "Break-Even Days", type: "number" },
-  {
-    name: "recommendedAction",
-    label: "Recommended Action",
-    type: "text",
-    required: true,
-  },
-  { name: "savingsAmount", label: "Savings Amount", type: "text" },
-  {
-    name: "aiRecommendation",
-    label: "AI Recommendation",
-    type: "textarea",
-  },
-  { name: "notes", label: "Notes", type: "textarea" },
-];
+import { getContainerTypeOptions, getPortOptions } from "@/lib/lookups";
 
 export default async function NewLeasingDecisionPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!(await hasPermission(session.id, session.tenantId, "ecr:create")))
     redirect("/");
+
+  const [containerTypeOpts, portOpts] = await Promise.all([
+    getContainerTypeOptions(session.tenantId),
+    getPortOptions(session.tenantId),
+  ]);
+
+  const fields: FieldConfig[] = [
+    {
+      name: "decisionType",
+      label: "Decision Type",
+      type: "select",
+      options: [
+        { label: "Lease In", value: "lease_in" },
+        { label: "Lease Out", value: "lease_out" },
+        { label: "Reposition", value: "reposition" },
+        { label: "Buy", value: "buy" },
+        { label: "Sell", value: "sell" },
+      ],
+      required: true,
+    },
+    { name: "title", label: "Title", type: "text", required: true },
+    {
+      name: "locationCode",
+      label: "Location Code",
+      type: "select",
+      required: true,
+      options: portOpts,
+    },
+    {
+      name: "containerType",
+      label: "Container Type",
+      type: "select",
+      required: true,
+      options: containerTypeOpts,
+    },
+    { name: "quantity", label: "Quantity", type: "number", required: true },
+    { name: "repositionCost", label: "Reposition Cost", type: "text" },
+    { name: "leasingCost", label: "Leasing Cost", type: "text" },
+    { name: "breakEvenDays", label: "Break-Even Days", type: "number" },
+    {
+      name: "recommendedAction",
+      label: "Recommended Action",
+      type: "text",
+      required: true,
+    },
+    { name: "savingsAmount", label: "Savings Amount", type: "text" },
+    {
+      name: "aiRecommendation",
+      label: "AI Recommendation",
+      type: "textarea",
+    },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
 
   return (
     <div className="space-y-6">

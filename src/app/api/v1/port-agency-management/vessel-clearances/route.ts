@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { createVesselClearanceSchema } from "@/lib/port-agency-management/validation";
 import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,6 +48,40 @@ export async function POST(request: NextRequest) {
 
     const clearanceRef = `PVC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(pamVesselClearances).values({ ...parsed.data, clearanceRef, tenantId: user.tenantId }).returning();
+
+    // Inward clearance = vessel arrived, outward = vessel departed
+    if (parsed.data.clearanceType === "inward") {
+      eventBus.emit({
+        type: "VESSEL_ARRIVED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "vessel",
+        timestamp: new Date(),
+        data: {
+          vesselId: parsed.data.imoNumber ?? created.id,
+          vesselName: parsed.data.vesselName,
+          portId: parsed.data.portName,
+          voyageId: parsed.data.portCallRef ?? "",
+        },
+      });
+    } else if (parsed.data.clearanceType === "outward") {
+      eventBus.emit({
+        type: "VESSEL_DEPARTED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: created.id,
+        entityType: "vessel",
+        timestamp: new Date(),
+        data: {
+          vesselId: parsed.data.imoNumber ?? created.id,
+          vesselName: parsed.data.vesselName,
+          portId: parsed.data.portName,
+          voyageId: parsed.data.portCallRef ?? "",
+          nextPortId: parsed.data.nextPort ?? "",
+        },
+      });
+    }
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

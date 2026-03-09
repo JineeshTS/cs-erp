@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Settings,
   Workflow,
+  MapPin,
 } from "lucide-react";
 
 export interface ModuleCard {
@@ -45,6 +46,14 @@ export const CATEGORIES: NavCategory[] = [
     icon: Workflow,
     href: "/processes",
     permissionPrefixes: [],
+    modules: [],
+  },
+  {
+    slug: "tracking",
+    label: "Live Tracking",
+    icon: MapPin,
+    href: "/tracking",
+    permissionPrefixes: ["iot:"],
     modules: [],
   },
   {

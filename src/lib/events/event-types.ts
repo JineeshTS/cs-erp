@@ -12,6 +12,8 @@ export interface BaseEvent {
   entityType: string;
   timestamp: Date;
   metadata?: Record<string, unknown>;
+  /** Event-specific payload — present on all concrete event types */
+  data?: Record<string, unknown>;
 }
 
 // ── Booking & Documentation Events ──
@@ -248,6 +250,137 @@ export interface ApprovalDecidedEvent extends BaseEvent {
   };
 }
 
+// ── Sales & CRM Events ──
+
+export interface LeadCreatedEvent extends BaseEvent {
+  type: "LEAD_CREATED";
+  entityType: "lead";
+  data: {
+    companyName: string;
+    contactName: string;
+    source: string;
+    tradeLane?: string;
+    estimatedTeu?: number;
+  };
+}
+
+export interface LeadQualifiedEvent extends BaseEvent {
+  type: "LEAD_QUALIFIED";
+  entityType: "lead";
+  data: {
+    companyName: string;
+    qualificationScore: number;
+    assignedTo?: string;
+  };
+}
+
+export interface LeadConvertedEvent extends BaseEvent {
+  type: "LEAD_CONVERTED";
+  entityType: "lead";
+  data: {
+    companyName: string;
+    customerId: string;
+  };
+}
+
+export interface OpportunityCreatedEvent extends BaseEvent {
+  type: "OPPORTUNITY_CREATED";
+  entityType: "opportunity";
+  data: {
+    opportunityName: string;
+    customerId: string;
+    expectedRevenue?: number;
+    tradeLane?: string;
+  };
+}
+
+export interface OpportunityWonEvent extends BaseEvent {
+  type: "OPPORTUNITY_WON";
+  entityType: "opportunity";
+  data: {
+    opportunityName: string;
+    customerId: string;
+    expectedRevenue?: number;
+  };
+}
+
+export interface OpportunityLostEvent extends BaseEvent {
+  type: "OPPORTUNITY_LOST";
+  entityType: "opportunity";
+  data: {
+    opportunityName: string;
+    customerId: string;
+    lostReason?: string;
+    competitorName?: string;
+  };
+}
+
+export interface QuotationCreatedEvent extends BaseEvent {
+  type: "QUOTATION_CREATED";
+  entityType: "rate_quotation";
+  data: {
+    quotationNumber: string;
+    customerId: string;
+    originPort: string;
+    destinationPort: string;
+    totalAmount?: number;
+  };
+}
+
+export interface QuotationApprovedEvent extends BaseEvent {
+  type: "QUOTATION_APPROVED";
+  entityType: "rate_quotation";
+  data: {
+    quotationNumber: string;
+    customerId: string;
+    approvedBy: string;
+  };
+}
+
+export interface QuotationAcceptedEvent extends BaseEvent {
+  type: "QUOTATION_ACCEPTED";
+  entityType: "rate_quotation";
+  data: {
+    quotationNumber: string;
+    customerId: string;
+    opportunityId?: string;
+  };
+}
+
+export interface ContractCreatedEvent extends BaseEvent {
+  type: "CONTRACT_CREATED";
+  entityType: "contract";
+  data: {
+    contractNumber: string;
+    contractName: string;
+    customerId: string;
+    contractType: string;
+  };
+}
+
+export interface ContractActivatedEvent extends BaseEvent {
+  type: "CONTRACT_ACTIVATED";
+  entityType: "contract";
+  data: {
+    contractNumber: string;
+    contractName: string;
+    customerId: string;
+    startDate: string;
+    endDate: string;
+  };
+}
+
+export interface CustomerCreatedEvent extends BaseEvent {
+  type: "CUSTOMER_CREATED";
+  entityType: "customer";
+  data: {
+    customerCode: string;
+    companyName: string;
+    customerType: string;
+    country: string;
+  };
+}
+
 // ── Union Type ──
 
 export type DomainEvent =
@@ -270,7 +403,19 @@ export type DomainEvent =
   | CargoReleasedEvent
   | CargoClaimFiledEvent
   | ApprovalRequestedEvent
-  | ApprovalDecidedEvent;
+  | ApprovalDecidedEvent
+  | LeadCreatedEvent
+  | LeadQualifiedEvent
+  | LeadConvertedEvent
+  | OpportunityCreatedEvent
+  | OpportunityWonEvent
+  | OpportunityLostEvent
+  | QuotationCreatedEvent
+  | QuotationApprovedEvent
+  | QuotationAcceptedEvent
+  | ContractCreatedEvent
+  | ContractActivatedEvent
+  | CustomerCreatedEvent;
 
 export type EventType = DomainEvent["type"];
 

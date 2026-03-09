@@ -5,6 +5,7 @@ import { scmCustomers } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createCustomerSchema } from "@/lib/sales-crm/validation";
+import { eventBus } from "@/lib/events/event-bus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +50,21 @@ export async function POST(request: NextRequest) {
     }
 
     const [created] = await db.insert(scmCustomers).values({ tenantId: user.tenantId, ...parsed.data }).returning();
+
+    eventBus.emit({
+      type: "CUSTOMER_CREATED",
+      tenantId: user.tenantId,
+      userId: user.id,
+      entityId: created.id,
+      entityType: "customer",
+      timestamp: new Date(),
+      data: {
+        customerCode: created.customerCode,
+        companyName: created.companyName,
+        customerType: created.customerType,
+        country: created.country,
+      },
+    });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

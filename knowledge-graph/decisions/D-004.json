@@ -1,0 +1,384 @@
+{
+  "node_type": "decision",
+  "id": "D-004",
+  "name": "CS ERP Business Process Orchestration, Execution, Monitoring & Analytics Platform",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-001", "relationship_type": "enhances" },
+    { "target_id": "D-003", "relationship_type": "enhances" },
+    { "target_id": "F-005", "relationship_type": "depends_on" },
+    { "target_id": "BUG-001", "relationship_type": "fixes" }
+  ],
+  "content": {
+    "category": "Business Process Management & Analytics",
+    "context": "CS ERP has 5 critical gaps: (1) Dashboard shows only 4 basic stat cards for a 71-module shipping ERP; (2) Process Hub is catalog-only — 227 processes and 20 E2E flows defined but not executable; (3) AI agents are schema-defined but not wired to any LLM; (4) No case management or traceability — every process instance, approval, and AI output should be traceable as a 'case' linked to the business entity it serves; (5) No reporting or analytics — the ABI module has 7 analytics tables (abi_executive_kpi_dashboards, abi_voyage_analytics, abi_trade_lane_analytics, abi_customer_revenue_analytics, abi_predictive_forecasts, abi_market_intelligence_reports, abi_operational_efficiencies, abi_bi_reports) but ZERO UI to view/query them, and the CSO module has case management tables (cso_inquiries, cso_complaints) with no UI either. The WNE module has SLA tracking, notifications, and routing rules — also no UI.",
+    "decision": "Six-track implementation plan with 23 feature nodes, designed for one-feature-per-session delivery. Leverages 100% existing DB schemas — no migrations needed.",
+
+    "track_1_command_center_dashboard": {
+      "goal": "Transform the dashboard from 4 stat cards into a comprehensive shipping operations command center",
+      "features": [
+        {
+          "id": "F-009",
+          "name": "Dashboard KPI Cards — 8 operational metrics",
+          "description": "Replace 4 basic cards with 8 KPIs: Active Vessels, Open Bookings, Containers in Transit, Pending Customs, Revenue MTD, Outstanding AR, Active Processes, Pending Approvals. Each card queries live DB data via server component. Add trend indicators (up/down arrows with % change vs last month). Click any card to navigate to relevant module page.",
+          "data_sources": ["vessels", "cspPortalBookings", "cspShipmentTracking", "ccrImportClearances", "firmInvoices", "arccCustomerAccounts", "peProcessInstances", "peApprovals"],
+          "complexity": "medium"
+        },
+        {
+          "id": "F-010",
+          "name": "Dashboard Booking Pipeline Funnel",
+          "description": "Visual funnel showing booking lifecycle: Quote Requested → Booking Created → Confirmed → In Transit → Delivered → Invoiced → Paid. Counts at each stage from cspPortalBookings status field. Clickable stages link to filtered booking list. Shows conversion rate between stages.",
+          "data_sources": ["cspPortalBookings grouped by status"],
+          "complexity": "medium"
+        },
+        {
+          "id": "F-011",
+          "name": "Dashboard Vessel Schedule Timeline",
+          "description": "Horizontal timeline showing next 7 days of vessel arrivals and departures from capVesselSchedules and capPortRotations. Each vessel is a bar showing port-to-port with ETA/ETD. Color-coded by on-time/delayed. Click opens vessel detail page.",
+          "data_sources": ["capVesselSchedules", "capPortRotations"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-012",
+          "name": "Dashboard Financial Summary",
+          "description": "Two-column section: Revenue (invoiced this month, collected, outstanding) and Costs (port disbursements, bunker costs). Data from firmInvoices, arccCustomerAccounts, pdaProformas, bfmBunkerOrders. Number display with mini sparkline trends.",
+          "data_sources": ["firmInvoices", "arccCustomerAccounts", "pdaProformas", "bfmBunkerOrders"],
+          "complexity": "medium"
+        },
+        {
+          "id": "F-013",
+          "name": "Dashboard Enhanced Activity Feed + Quick Actions",
+          "description": "Replace current simple activity feed with categorized feed (bookings, vessels, finance, compliance, processes). Show process execution events from pe_event_log. Add 8 quick actions: New Booking, Track Container, Vessel Schedule, Live Tracking, Process Hub, Customs Filing, Invoice, AI Agents. Each with icon and hub link.",
+          "data_sources": ["cspPortalBookings", "ccrImportClearances", "peProcessInstances", "peApprovals", "peEventLog"],
+          "complexity": "low"
+        }
+      ]
+    },
+
+    "track_2_process_execution": {
+      "goal": "Enable manual and event-driven execution of the 227 processes and 20 E2E flows with step-by-step monitoring, human approval gates, and full audit trail",
+      "features": [
+        {
+          "id": "F-014",
+          "name": "Process Execution — Run Now Button + Manual Trigger",
+          "description": "Add 'Run Now' button to each process in the Process Hub. Opens modal with optional input form (entity type + entity ID + context JSON). Calls POST /api/v1/process-engine/instances to create instance with steps from OPERATIONAL_PROCESSES definition. Shows confirmation and redirects to instance detail page. Also add 'Run Now' to E2E flows — creates parent instance.",
+          "api_used": "POST /api/v1/process-engine/instances",
+          "complexity": "medium"
+        },
+        {
+          "id": "F-015",
+          "name": "Process Instance Monitor — Live Dashboard",
+          "description": "New page at /processes/monitor showing all running process instances. Table with: Instance ID, Process Name, Status (color badge), Current Step / Total, Progress Bar, Trigger Type, Entity Link, SLA countdown (green/amber/red), Started, Duration. Filterable by status, process category, entity type, date range. Auto-refresh every 10s. Click row opens detail view. Summary stats at top: Running, Waiting Approval, Completed Today, Failed Today, SLA Breaches.",
+          "api_used": "GET /api/v1/process-engine/instances + GET /api/v1/process-engine/dashboard",
+          "complexity": "high"
+        },
+        {
+          "id": "F-016",
+          "name": "Process Instance Detail — Step Timeline View",
+          "description": "Page at /processes/instances/[id] showing full process timeline. Vertical step list: each step shows number, name, executor type icon (ai=sparkle, human=user, system=cog), status badge, duration, input JSON (collapsible), output JSON (collapsible). Active step highlighted with pulsing indicator. Failed steps show error in red. Completed steps show green check + output preview. Buttons: Advance Step (for human steps), Fail Process, Cancel Process. Tabs: Steps | Event Log | Related Cases. Shows parent E2E flow if part of one. Shows linked entity details in sidebar.",
+          "api_used": "GET /api/v1/process-engine/instances/[id] + PATCH advance/fail",
+          "complexity": "high"
+        },
+        {
+          "id": "F-017",
+          "name": "Human Approval Inbox",
+          "description": "Page at /processes/approvals showing pending approvals for current user. Cards with: Process name, Step name, Requested by, Due date (with countdown), SLA status (on_track/warning/critical/breached), context summary, entity link. Approve/Reject buttons with required comment on reject. Bulk approve for low-risk items. Sort by urgency (SLA deadline). Also accessible from dashboard 'Pending Approvals' KPI card. Badge count in sidebar.",
+          "api_used": "GET /api/v1/process-engine/approvals + PATCH /api/v1/process-engine/approvals/[id]",
+          "complexity": "medium"
+        },
+        {
+          "id": "F-018",
+          "name": "E2E Flow Execution — Chain Orchestrator",
+          "description": "Add 'Execute Flow' button to E2E flows in Process Hub. Creates a parent process instance that chains child process instances per flow steps. Each child process triggers when the previous completes (event-bridge auto-trigger or manual advance). E2E instance page shows visual chain: horizontal flow diagram with each child process as a node showing status. Click any child to see its step detail. Shows overall progress %, total duration, bottleneck identification (longest step highlighted). Handles partial failure — can retry failed child without restarting entire flow.",
+          "complexity": "high"
+        }
+      ]
+    },
+
+    "track_3_ai_agent_wiring": {
+      "goal": "Wire AI agents to actually call Claude API, produce output for process steps, and enable human review/edit/confirm workflow",
+      "features": [
+        {
+          "id": "F-021",
+          "name": "Agent Seed Data — Register Operational Agents",
+          "description": "Seed script that registers all unique agent names from OPERATIONAL_PROCESSES into aafAgents table. Maps agent names to agent codes (snake_case), sets modelProvider='anthropic', modelId='claude-sonnet-4-6'. Creates aaf_agent_runs records for tracking. Approximately 40 unique agents across 227 processes. Each agent gets a generic system prompt template based on its domain (finance, operations, compliance, etc.).",
+          "complexity": "low"
+        },
+        {
+          "id": "F-019",
+          "name": "AI Agent Execution Service — Claude API Integration",
+          "description": "Service at src/lib/ai-agent-framework/executor.ts that: (1) takes a process step with executorType='ai', (2) looks up the agent from aafAgents, (3) builds a prompt from step context + input data + entity details, (4) calls Claude API (claude-sonnet-4-6) with structured output, (5) stores output in step's outputJson, (6) creates aaf_agent_runs record with tokensUsed, durationMs, costEstimate, (7) advances the process to next step. Handles rate limits (429 retry), timeouts (30s), and API errors gracefully. Sets step to 'waiting_approval' if the process has reviewRequired=true.",
+          "complexity": "high"
+        },
+        {
+          "id": "F-020",
+          "name": "AI Output Review & Edit UI",
+          "description": "In Process Instance Detail page (F-016), AI-completed steps show output in an editable panel. User can: (1) View AI output as formatted markdown with syntax highlighting, (2) Click 'Edit' to modify in a textarea with preview, (3) Click 'Approve' to accept as-is and advance to next step, (4) Click 'Reject & Retry' to re-run with modified instructions/context, (5) View token usage and cost for the AI call, (6) See diff between original AI output and edited version. Approval triggers pe_event_log entry with who approved/modified what.",
+          "complexity": "high"
+        },
+        {
+          "id": "F-022",
+          "name": "Process Event Log & Audit Trail UI",
+          "description": "Page at /processes/events showing immutable event log. Table: timestamp, event type (color-coded), entity type/ID, process instance link, user, payload preview (expandable). Filterable by event type, entity type, entity ID, date range, user. Links back to process instance detail. Also shown as tab in process instance detail page. Export to CSV. Shows 30+ event types from process-bridge.ts mappings.",
+          "api_used": "GET /api/v1/process-engine/events",
+          "complexity": "medium"
+        },
+        {
+          "id": "F-023",
+          "name": "Process Notifications — SLA Alerts & Step Completion",
+          "description": "Wire wne_notifications and wne_sla_instances tables: (1) When process step completes → create in-app notification for relevant users, (2) When SLA deadline approaches (1h before) → send warning notification, (3) When SLA breaches → send critical alert, (4) When approval requested → notify approver with action link, (5) When AI step fails → notify process owner. Dashboard badge shows pending action count. Notification bell in header with dropdown. Uses wne_notification_templates for consistent messaging.",
+          "complexity": "medium"
+        }
+      ]
+    },
+
+    "track_4_case_management_traceability": {
+      "goal": "Make every process instance, E2E flow execution, approval decision, and AI output traceable as a 'case' linked to the business entity it serves. Enable full operational traceability across the shipping lifecycle.",
+      "features": [
+        {
+          "id": "F-024",
+          "name": "Case Registry — Unified Entity Process View",
+          "description": "New page at /cases showing all business entities (bookings, vessels, containers, invoices, customs declarations) with their associated process instances. Each entity is a 'case' — click to see all processes ever run for that entity. Top section: case count by entity type. Table: Entity Type, Entity ID/Name, Active Processes, Completed, Failed, Last Activity, SLA Status. Links to all pe_process_instances via entityType+entityId. Also integrates CSO inquiries/complaints linked to same entity. Search by entity ID, booking number, vessel name, container number.",
+          "data_sources": ["peProcessInstances (grouped by entityType+entityId)", "csoInquiries", "csoComplaints"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-025",
+          "name": "Case Timeline — Full Entity History",
+          "description": "Page at /cases/[entityType]/[entityId] showing complete chronological history for a business entity. Vertical timeline combining: (1) All process instances run for this entity with step outcomes, (2) All approvals requested and decisions made, (3) All AI agent outputs and human modifications, (4) All events from pe_event_log, (5) Related CSO inquiries/complaints, (6) SLA tracking status. Each timeline entry is expandable to show full detail. Filter by event category (process/approval/ai/complaint/sla). Print-friendly view for audit purposes.",
+          "data_sources": ["peProcessInstances", "peStepInstances", "peApprovals", "peEventLog", "csoInquiries", "csoComplaints", "wneSlaInstances"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-026",
+          "name": "Advanced Process Search",
+          "description": "Global search at /processes/search with full-text search across: process instance names, step names, AI output content (outputJson), approval comments, event payloads, entity IDs. Filters: status, date range, process category, executor type (ai/human/system), entity type, triggered by user, SLA status (on_track/warning/breached). Saved searches — user can save filter combinations for quick access. Results show process instance cards with key details and direct links.",
+          "complexity": "medium"
+        }
+      ]
+    },
+
+    "track_5_reporting_analytics": {
+      "goal": "Provide comprehensive reporting and visual analytics for process performance, AI agent effectiveness, SLA compliance, and operational efficiency. Leverage existing ABI tables.",
+      "dependency": "npm install recharts — required for chart components",
+      "features": [
+        {
+          "id": "F-027",
+          "name": "Process Performance Analytics Dashboard",
+          "description": "New page at /analytics/processes with recharts visualizations: (1) Process completion funnel — started vs in_progress vs completed vs failed (bar chart), (2) SLA compliance rate — % of processes completed within SLA by category (gauge + bar), (3) Average completion time by process type (horizontal bar), (4) Bottleneck analysis — steps with longest average duration highlighted (table + bar), (5) Process volume over time — daily/weekly/monthly line chart, (6) Failure rate by category (pie chart with drill-down). Date range picker. Export charts as PNG. All data from pe_process_instances + pe_step_instances aggregation queries.",
+          "data_sources": ["peProcessInstances", "peStepInstances", "wneSlaInstances"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-028",
+          "name": "AI Agent Performance Analytics",
+          "description": "New page at /analytics/ai-agents with: (1) Agent accuracy — % of AI outputs approved vs rejected vs edited (pie chart per agent), (2) Human override rate — how often humans modify AI output (bar chart by agent), (3) Average response time per agent (bar chart), (4) Token usage and cost tracking per agent and per process type (line chart over time), (5) Top rejection reasons (word cloud or bar), (6) Agent comparison table — all ~40 agents ranked by approval rate, avg tokens, avg cost. Data from aaf_agent_runs + pe_step_instances (executorType='ai'). Helps identify which agents need prompt improvement.",
+          "data_sources": ["aafAgentRuns", "peStepInstances", "aafAgents"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-029",
+          "name": "Operational Analytics Dashboard — Executive KPIs",
+          "description": "New page at /analytics/operations leveraging abi_executive_kpi_dashboards and abi_operational_efficiencies tables: (1) Revenue trend line (monthly), (2) TEU volume trend, (3) Vessel utilization %, (4) On-time performance %, (5) Booking conversion rate funnel, (6) Port turnaround time comparison (bar per port), (7) Container dwell time analysis, (8) Top 5 trade lanes by revenue (horizontal bar). All charts interactive with hover tooltips. Date range + granularity selector (daily/weekly/monthly). Comparison mode: current period vs previous period overlay.",
+          "data_sources": ["abiExecutiveKpiDashboards", "abiOperationalEfficiencies", "abiVoyageAnalytics", "abiTradeLaneAnalytics"],
+          "complexity": "high"
+        },
+        {
+          "id": "F-030",
+          "name": "Report Builder & Export",
+          "description": "New page at /analytics/reports for generating and scheduling reports: (1) Pre-built report templates: Process Performance Summary, SLA Compliance Report, AI Agent Effectiveness, Financial Summary, Operational KPIs, (2) Date range and filter selection per report, (3) Preview in browser (table + charts), (4) Export to PDF (using html-to-pdf or similar), CSV, or XLSX, (5) Schedule recurring reports (daily/weekly/monthly) with email delivery via wne_notifications, (6) Report history — all generated reports saved in abi_bi_reports with download links. Admin can create custom report templates.",
+          "data_sources": ["abiBiReports", "all analytics tables"],
+          "complexity": "high"
+        }
+      ]
+    },
+
+    "track_6_e2e_flow_expansion": {
+      "goal": "Expand E2E process flows from 20 to 30 to cover all remaining shipping operational domains",
+      "features": [
+        {
+          "id": "F-031",
+          "name": "E2E Flow Data Expansion — 10 Additional Flows",
+          "description": "Add 10 new E2E flows to src/data/e2e-process-flows.ts covering: E2E-21 Reefer Container Cold Chain (booking→PTI→loading→temp monitoring→discharge→delivery), E2E-22 Dangerous Goods Handling (DG declaration→IMDG check→segregation→stowage→manifest→customs DG filing), E2E-23 Transshipment Hub Operations (feeder arrival→discharge→yard→connection planning→mother vessel load), E2E-24 Empty Repositioning (imbalance detection→plan→cost optimization→execution→depot return), E2E-25 Crew Change Management (rotation→visa/travel→port agent→sign-on/off→payroll), E2E-26 Bunker Procurement (forecast→stem→delivery→quality→cost allocation), E2E-27 Charter Party Lifecycle (market→fixture→survey→on-hire→off-hire→settlement), E2E-28 Port Agency Operations (port call→pre-arrival→husbandry→DA proforma→final DA→settlement), E2E-29 Insurance & Claims (policy→incident→survey→claim→liability→settlement→subrogation), E2E-30 Regulatory Audit (schedule→prep→auditor access→findings→corrective actions→close-out). Each flow references existing PRC-xxx processes as steps where applicable.",
+          "complexity": "medium"
+        }
+      ]
+    },
+
+    "implementation_order": {
+      "description": "Ordered by dependency and value. Each is ONE SESSION. Total: 23 sessions across 6 phases.",
+      "phases": [
+        {
+          "phase": "Phase A — Command Center Dashboard (5 sessions)",
+          "sessions": [
+            "F-009: Dashboard KPI Cards (8 metrics)",
+            "F-010: Booking Pipeline Funnel",
+            "F-011: Vessel Schedule Timeline",
+            "F-012: Financial Summary",
+            "F-013: Enhanced Activity Feed + Quick Actions"
+          ]
+        },
+        {
+          "phase": "Phase B — Process Execution (5 sessions)",
+          "sessions": [
+            "F-014: Run Now Button + Manual Trigger",
+            "F-015: Process Instance Monitor",
+            "F-016: Process Instance Detail + Step Timeline",
+            "F-017: Human Approval Inbox",
+            "F-018: E2E Flow Chain Orchestrator"
+          ]
+        },
+        {
+          "phase": "Phase C — AI Agent Wiring (5 sessions)",
+          "sessions": [
+            "F-021: Agent Seed Data (register ~40 agents)",
+            "F-019: AI Agent Execution Service (Claude API)",
+            "F-020: AI Output Review & Edit UI",
+            "F-022: Event Log & Audit Trail UI",
+            "F-023: Process Notifications & SLA Alerts"
+          ]
+        },
+        {
+          "phase": "Phase D — Case Management & Traceability (3 sessions)",
+          "sessions": [
+            "F-024: Case Registry — Unified Entity Process View",
+            "F-025: Case Timeline — Full Entity History",
+            "F-026: Advanced Process Search"
+          ]
+        },
+        {
+          "phase": "Phase E — Reporting & Analytics (4 sessions)",
+          "sessions": [
+            "F-027: Process Performance Analytics Dashboard",
+            "F-028: AI Agent Performance Analytics",
+            "F-029: Operational Analytics Dashboard — Executive KPIs",
+            "F-030: Report Builder & Export"
+          ]
+        },
+        {
+          "phase": "Phase F — E2E Flow Expansion (1 session)",
+          "sessions": [
+            "F-031: E2E Flow Data Expansion (10 additional flows E2E-21 to E2E-30)"
+          ]
+        }
+      ]
+    },
+
+    "rationale": [
+      "Dashboard first — immediate visual impact, no backend changes, establishes 'command center' feel",
+      "Process execution second — 227 processes and 20 E2E flows already defined with steps, backend API exists, just needs execution UI",
+      "AI agents third — most complex, requires Claude API integration, prompt engineering per agent, review workflow",
+      "Case management fourth — depends on process execution being live to have cases to trace",
+      "Reporting & analytics fifth — needs accumulated process data to visualize; requires recharts installation",
+      "E2E expansion last — pure data task, independent of all UI work",
+      "One feature per session prevents context window overflow and allows incremental delivery",
+      "ALL features build on existing DB schema — pe_*, aaf_*, wne_*, abi_*, cso_* tables all exist with indexes"
+    ],
+
+    "alternatives_rejected": [
+      "Building AI agent execution first — too risky without process monitoring UI to debug with",
+      "Adding WebSocket real-time updates — over-engineering for initial version; polling + 10s refresh sufficient",
+      "Building a custom process designer — unnecessary when 227 processes are already defined in code",
+      "Implementing all ~40 agent prompts individually — start with generic prompt template that uses step name + context",
+      "Building analytics before process execution — no data to analyze yet",
+      "Custom charting library — recharts is battle-tested, React-native, SSR-compatible, and tree-shakeable"
+    ],
+
+    "existing_infrastructure_leveraged": {
+      "process_engine_tables": [
+        "pe_process_instances — process lifecycle (CRUD API exists, 6 indexes)",
+        "pe_step_instances — step execution (advance/fail API exists, 4 indexes)",
+        "pe_approvals — human gates (decide API exists, 5 indexes)",
+        "pe_event_log — immutable audit trail (log/list API exists, 5 indexes)"
+      ],
+      "ai_agent_tables": [
+        "aaf_agents — agent definitions (code, name, model, config)",
+        "aaf_agent_runs — execution records (tokens, cost, duration, input/output)",
+        "aaf_orchestration_tasks — multi-agent task tracking",
+        "aaf_document_processing_jobs — document AI jobs",
+        "aaf_workflow_definitions — AI workflow templates",
+        "aaf_workflow_instances — running AI workflows",
+        "aaf_escalations — human-in-loop escalation management"
+      ],
+      "workflow_notification_tables": [
+        "wne_workflows — approval workflow definitions",
+        "wne_workflow_steps — step definitions",
+        "wne_workflow_instances — running instances",
+        "wne_workflow_step_instances — step execution records",
+        "wne_sla_definitions — SLA rules (target/warning/critical hours)",
+        "wne_sla_instances — active SLA timers (status tracking)",
+        "wne_doa_matrix — delegation of authority",
+        "wne_routing_rules — auto-assignment rules",
+        "wne_notification_templates — email/SMS/WhatsApp/in-app templates",
+        "wne_notifications — delivery records",
+        "wne_notification_preferences — user channel preferences"
+      ],
+      "analytics_tables": [
+        "abi_executive_kpi_dashboards — KPI snapshots (TEU, revenue, margins, utilization)",
+        "abi_voyage_analytics — voyage performance metrics",
+        "abi_trade_lane_analytics — lane performance and market share",
+        "abi_customer_revenue_analytics — customer profitability",
+        "abi_predictive_forecasts — demand/rate/volume forecasts",
+        "abi_market_intelligence_reports — competitor analysis",
+        "abi_operational_efficiencies — turnaround, dwell, utilization metrics",
+        "abi_bi_reports — generated report records with output URLs"
+      ],
+      "case_management_tables": [
+        "cso_service_categories — inquiry/complaint categorization",
+        "cso_inquiries — customer inquiry cases",
+        "cso_complaints — complaint cases with RCA and corrective actions"
+      ],
+      "api_routes": [
+        "POST /api/v1/process-engine/instances — create process instance",
+        "GET /api/v1/process-engine/instances — list with cursor pagination",
+        "GET /api/v1/process-engine/instances/[id] — get instance with steps",
+        "PATCH /api/v1/process-engine/instances/[id] — advance step or fail",
+        "PATCH /api/v1/process-engine/approvals/[id] — approve/reject",
+        "GET /api/v1/process-engine/events — list event log",
+        "POST /api/v1/process-engine/events — log new event",
+        "GET /api/v1/process-engine/dashboard — aggregate stats"
+      ],
+      "data_files": [
+        "src/data/operational-processes.ts — 227 processes with steps, agents, SLAs",
+        "src/data/e2e-process-flows.ts — 20 E2E flows with step chains",
+        "src/data/process-explanations.ts — layman-friendly descriptions",
+        "src/lib/events/process-bridge.ts — 30+ event-to-process auto-mappings"
+      ],
+      "service_layer": [
+        "src/lib/process-engine/service.ts — createProcessInstance, advanceProcessStep, failProcessInstance, createApproval, decideApproval, getProcessDashboard, listProcessInstances, listEventLog, listPendingApprovals",
+        "src/lib/process-engine/validation.ts — Zod schemas for all PE operations"
+      ]
+    },
+
+    "e2e_flow_count_assessment": {
+      "current_count": 20,
+      "target_count": 30,
+      "new_flows": [
+        "E2E-21: Reefer Container Cold Chain",
+        "E2E-22: Dangerous Goods Handling",
+        "E2E-23: Transshipment Hub Operations",
+        "E2E-24: Empty Repositioning",
+        "E2E-25: Crew Change Management",
+        "E2E-26: Bunker Procurement",
+        "E2E-27: Charter Party Lifecycle",
+        "E2E-28: Port Agency Operations",
+        "E2E-29: Insurance & Claims",
+        "E2E-30: Regulatory Audit"
+      ]
+    },
+
+    "impact": [
+      "Dashboard: 4 stat cards → 8 KPI cards + booking funnel + vessel timeline + financial summary + enhanced feed + 8 quick actions",
+      "Process Hub: read-only catalog → full execution platform with Run Now, Monitor, Detail, Approval, E2E orchestration",
+      "AI Agents: schema-only → Claude API-powered execution with human review/edit/approve workflow",
+      "Traceability: zero → every process instance traceable as a case linked to business entity, full timeline history",
+      "Analytics: zero → 4 analytics dashboards (process performance, AI agent, operational KPIs, report builder)",
+      "E2E Flows: 20 → 30 covering all shipping domains",
+      "23 feature nodes across 6 phases, ~23 sessions total",
+      "No DB migrations needed — ALL tables already exist (pe_*, aaf_*, wne_*, abi_*, cso_*)"
+    ]
+  }
+}
