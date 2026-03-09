@@ -1,0 +1,73 @@
+{
+  "node_type": "feature",
+  "id": "F-015",
+  "name": "Process Instance Monitor — Live Dashboard",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-014", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Process Execution",
+    "priority": "must_have",
+    "complexity": "high",
+    "description": "New page at /processes/monitor showing all running process instances. Table with: Process Name, Status badge, Progress (current/total + bar), Trigger Type, Entity, Started, Duration. Filterable by status. Auto-refresh every 10s. Summary stats at top from /api/v1/process-engine/dashboard. Click row navigates to instance detail (future F-016).",
+
+    "acceptance_criteria": [
+      "Page exists at /processes/monitor and is accessible from sidebar or Process Hub",
+      "Summary stats row at top: Total, Pending, In Progress, Waiting Approval, Completed, Failed",
+      "Stats fetched from GET /api/v1/process-engine/dashboard",
+      "Table shows process instances fetched from GET /api/v1/process-engine/instances",
+      "Table columns: Process Name, Status (color badge), Progress (currentStep/totalSteps + bar), Trigger, Entity Type, Started (relative), Duration",
+      "Status badges: pending=slate, in_progress=blue, waiting_approval=amber, completed=emerald, failed=rose, cancelled=gray",
+      "Progress bar shows percentage (currentStep/totalSteps * 100)",
+      "Filter by status via select dropdown, triggers re-fetch",
+      "Auto-refresh every 10 seconds using setInterval",
+      "Loading skeleton shown while fetching",
+      "Empty state when no instances exist",
+      "Click row navigates to /processes/instances/[id] (page can be placeholder for now)",
+      "Dark mode support on all elements",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ],
+
+    "edge_cases": [
+      "Zero process instances — show empty state with link to Process Hub",
+      "Very long process names — truncate with ellipsis",
+      "Process with 0 totalSteps — show 0% progress",
+      "Fetch fails (401/500) — show error state with retry button",
+      "SLA deadline passed — could show red indicator (stretch goal)"
+    ],
+
+    "error_handling": [
+      "API 401 — redirect to login",
+      "API 500 — show error message with retry",
+      "Network error — show offline message"
+    ],
+
+    "security_considerations": [
+      "Auth required — API checks session",
+      "Tenant isolation enforced by API"
+    ],
+
+    "implementation_notes": "Create a client component page at src/app/(dashboard)/processes/monitor/page.tsx. Fetches from 2 endpoints: /api/v1/process-engine/dashboard (stats) and /api/v1/process-engine/instances (table data). Uses useState/useEffect with 10s polling interval. Status filter as query param. Add a link to /processes/monitor from the Process Hub page header.",
+
+    "affected_files": [
+      "src/app/(dashboard)/processes/monitor/page.tsx — NEW: process monitor page",
+      "src/app/(dashboard)/processes/page.tsx — add link to monitor page"
+    ],
+
+    "testing_requirements": [
+      "Page renders with stats and table",
+      "Status filter works correctly",
+      "Auto-refresh updates data",
+      "Empty state renders when no instances",
+      "Dark mode renders correctly",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ]
+  }
+}
