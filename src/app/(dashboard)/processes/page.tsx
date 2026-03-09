@@ -12,6 +12,8 @@ import {
 } from "@/types/processes";
 import type { ProcessDomain, ProcessCategory } from "@/types/processes";
 import { Badge } from "@/components/ui/badge";
+import { RunProcessButton } from "@/components/processes/run-process-button";
+import { RunE2EFlowButton } from "@/components/processes/run-e2e-flow-button";
 import Link from "next/link";
 import {
   Search,
@@ -257,6 +259,12 @@ export default async function ProcessHubPage({
                               </Badge>
                               <Badge variant="secondary" className="shrink-0 text-xs">{TRIGGER_LABELS[p.trigger]}</Badge>
                               <Badge variant="default" className="shrink-0 text-xs">{DOMAIN_LABELS[p.domain].split(" ")[0]}</Badge>
+                              <RunProcessButton
+                                processId={p.id}
+                                processName={p.name}
+                                aiProcessingSteps={p.aiProcessingSteps}
+                                humanTouchpoints={p.humanTouchpoints}
+                              />
                             </summary>
                             <div className="border-t px-4 py-4 space-y-4">
                               {/* Layman Explanation */}
@@ -366,7 +374,10 @@ export default async function ProcessHubPage({
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{flow.description}</p>
                 </div>
-                <Badge variant="outline">{flow.typicalTimeline}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{flow.typicalTimeline}</Badge>
+                  <RunE2EFlowButton flowId={flow.id} flowName={flow.name} steps={flow.steps} />
+                </div>
               </div>
 
               {/* Step Diagram */}
