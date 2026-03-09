@@ -13,6 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { BookingPipelineFunnel } from "@/components/dashboard/booking-pipeline";
+import { VesselScheduleTimeline } from "@/components/dashboard/vessel-schedule-timeline";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import {
@@ -25,8 +26,10 @@ import {
   arccCustomerAccounts,
   peProcessInstances,
   peApprovals,
+  capVesselSchedules,
+  capPortRotations,
 } from "@/db/schema";
-import { eq, and, isNull, notInArray, inArray, count, desc, sum, gte, sql } from "drizzle-orm";
+import { eq, and, or, isNull, notInArray, inArray, count, desc, sum, gte, lte, sql } from "drizzle-orm";
 
 /* ────────────────────── helpers ────────────────────── */
 
@@ -204,6 +207,34 @@ export default async function DashboardPage() {
     }).from(cspPortalBookings)
       .where(and(eq(cspPortalBookings.tenantId, tid), isNull(cspPortalBookings.deletedAt)))
       .groupBy(cspPortalBookings.status),
+
+    // 19: Vessel schedule timeline — port rotations in next 7 days (F-011)
+    db.select({
+      scheduleId: capVesselSchedules.id,
+      vesselName: capVesselSchedules.vesselName,
+      serviceName: capVesselSchedules.serviceName,
+      portName: capPortRotations.portName,
+      portCode: capPortRotations.portCode,
+      sequenceNumber: capPortRotations.sequenceNumber,
+      arrivalEta: capPortRotations.arrivalEta,
+      departureEtd: capPortRotations.departureEtd,
+      actualArrival: capPortRotations.actualArrival,
+      actualDeparture: capPortRotations.actualDeparture,
+      rotationStatus: capPortRotations.status,
+    }).from(capPortRotations)
+      .innerJoin(capVesselSchedules, eq(capPortRotations.vesselScheduleId, capVesselSchedules.id))
+      .where(and(
+        eq(capPortRotations.tenantId, tid),
+        isNull(capPortRotations.deletedAt),
+        eq(capVesselSchedules.tenantId, tid),
+        isNull(capVesselSchedules.deletedAt),
+        inArray(capVesselSchedules.status, ["active", "published"]),
+        or(
+          and(gte(capPortRotations.arrivalEta, now), lte(capPortRotations.arrivalEta, sql`${now} + interval '7 days'`)),
+          and(gte(capPortRotations.departureEtd, now), lte(capPortRotations.departureEtd, sql`${now} + interval '7 days'`))
+        )
+      ))
+      .orderBy(capPortRotations.arrivalEta),
   ]);
 
   // Extract values with fallback for failed queries
@@ -242,6 +273,41 @@ export default async function DashboardPage() {
     { label: "Completed", status: "completed", count: pipelineMap.get("completed") ?? 0, color: "emerald" },
   ];
   const cancelledCount = pipelineMap.get("cancelled") ?? 0;
+
+  // F-011: Vessel schedule timeline data
+  type RotationRow = {
+    scheduleId: string;
+    vesselName: string;
+    serviceName: string;
+    portName: string;
+    portCode: string;
+    sequenceNumber: number;
+    arrivalEta: Date | null;
+    departureEtd: Date | null;
+    actualArrival: Date | null;
+    actualDeparture: Date | null;
+    rotationStatus: string;
+  };
+  const vesselRotations = val<RotationRow[]>(19, []);
+  const vesselGroupMap = new Map<string, { vesselName: string; serviceName: string; scheduleId: string; portCalls: Array<{ portName: string; portCode: string; arrivalEta: string | null; departureEtd: string | null; actualArrival: string | null; actualDeparture: string | null; status: string; sequenceNumber: number }> }>();
+  for (const r of vesselRotations) {
+    if (!vesselGroupMap.has(r.scheduleId)) {
+      vesselGroupMap.set(r.scheduleId, { vesselName: r.vesselName, serviceName: r.serviceName, scheduleId: r.scheduleId, portCalls: [] });
+    }
+    vesselGroupMap.get(r.scheduleId)!.portCalls.push({
+      portName: r.portName,
+      portCode: r.portCode,
+      arrivalEta: r.arrivalEta?.toISOString() ?? null,
+      departureEtd: r.departureEtd?.toISOString() ?? null,
+      actualArrival: r.actualArrival?.toISOString() ?? null,
+      actualDeparture: r.actualDeparture?.toISOString() ?? null,
+      status: r.rotationStatus,
+      sequenceNumber: r.sequenceNumber,
+    });
+  }
+  const allVesselRows = Array.from(vesselGroupMap.values());
+  const vesselTimelineData = allVesselRows.slice(0, 8);
+  const vesselOverflowCount = Math.max(0, allVesselRows.length - 8);
 
   // Calculate trends
   const vesselTrend = calcTrend(vesselCount, vesselPrev);
@@ -375,6 +441,9 @@ export default async function DashboardPage() {
 
       {/* F-010: Booking Pipeline Funnel */}
       <BookingPipelineFunnel stages={pipelineStages} cancelledCount={cancelledCount} />
+
+      {/* F-011: Vessel Schedule Timeline */}
+      <VesselScheduleTimeline vessels={vesselTimelineData} overflowCount={vesselOverflowCount} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Activity Feed */}

@@ -1,7 +1,7 @@
 {
   "project": "cs-erp",
   "last_updated": "2026-03-09",
-  "total_nodes": 15,
+  "total_nodes": 16,
   "nodes": [
     { "id": "D-001", "node_type": "decision", "name": "Simplified Category Sidebar + Hub Pages", "file": "decisions/D-001.json", "status": "final" },
     { "id": "D-002", "node_type": "decision", "name": "Master Data Wiring Strategy for All Forms", "file": "decisions/D-002.json", "status": "final" },
@@ -17,6 +17,7 @@
     { "id": "BUG-001", "node_type": "bug", "name": "Dashboard shows hardcoded zeros and empty activity feed", "file": "bugs/BUG-001.json", "status": "final" },
     { "id": "D-004", "node_type": "decision", "name": "CS ERP Operational Dashboard & Process Execution Platform", "file": "decisions/D-004.json", "status": "draft" },
     { "id": "F-009", "node_type": "feature", "name": "Dashboard KPI Cards — 8 Operational Metrics with Trends", "file": "features/F-009.json", "status": "draft" },
-    { "id": "F-010", "node_type": "feature", "name": "Dashboard Booking Pipeline Funnel", "file": "features/F-010.json", "status": "draft" }
+    { "id": "F-010", "node_type": "feature", "name": "Dashboard Booking Pipeline Funnel", "file": "features/F-010.json", "status": "draft" },
+    { "id": "F-011", "node_type": "feature", "name": "Dashboard Vessel Schedule Timeline", "file": "features/F-011.json", "status": "draft" }
   ]
 }

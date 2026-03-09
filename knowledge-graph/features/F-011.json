@@ -1,0 +1,102 @@
+{
+  "node_type": "feature",
+  "id": "F-011",
+  "name": "Dashboard Vessel Schedule Timeline",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-009", "relationship_type": "depends_on" },
+    { "target_id": "F-010", "relationship_type": "depends_on" },
+    { "target_id": "D-003", "relationship_type": "enhances" }
+  ],
+  "content": {
+    "category": "Command Center Dashboard",
+    "priority": "must_have",
+    "complexity": "high",
+    "description": "Horizontal timeline on the dashboard showing the next 7 days of vessel arrivals and departures. Data comes from capVesselSchedules joined with capPortRotations. Each vessel schedule is rendered as a row with port rotation bars showing port-to-port segments. Color-coded by on-time (ETA vs actual arrival) status: green for on-time, amber for approaching, red for delayed. Click any vessel opens the vessel schedule detail. Positioned between the Booking Pipeline Funnel and the Activity Feed/Quick Actions grid.",
+
+    "data_sources": {
+      "primary_table": "capVesselSchedules — filtered by tenantId, status='active'|'published', validityFrom ≤ now+7d",
+      "joined_table": "capPortRotations — inner join on vesselScheduleId, filtered by arrivalEta or departureEtd within next 7 days",
+      "query_strategy": "Single query: SELECT schedule fields + port rotation fields FROM capPortRotations INNER JOIN capVesselSchedules ON vesselScheduleId, WHERE tenantId = tid AND schedule status in ('active','published') AND port rotation arrivalEta/departureEtd between now and now+7d, ORDER BY arrivalEta ASC. Group results client-side by vesselScheduleId."
+    },
+
+    "timeline_design": {
+      "layout": "Horizontal timeline spanning 7 days. X-axis = date (today through today+6). Y-axis = vessel rows (one per active schedule with upcoming rotations).",
+      "vessel_row": "Each row shows: vessel name (left label), service name, then horizontal bars for each port rotation within the 7-day window.",
+      "port_bar": "Each port rotation renders as a small card/pill on the timeline at the appropriate date position. Shows portName, arrivalEta time, and a status dot (green/amber/red).",
+      "status_colors": {
+        "on_time": "emerald — actualArrival is null (future) OR actualArrival <= arrivalEta",
+        "approaching": "amber — arrivalEta is within next 24 hours and no actualArrival yet",
+        "delayed": "rose — actualArrival > arrivalEta, or arrivalEta has passed with no actualArrival",
+        "departed": "blue — actualDeparture is set (vessel has left this port)"
+      },
+      "empty_state": "If no vessel schedules have port rotations in the next 7 days, show 'No vessel arrivals/departures in the next 7 days' with link to vessel schedules page.",
+      "max_vessels": "Show up to 8 vessels. If more, show '+N more' link to the vessels hub."
+    },
+
+    "acceptance_criteria": [
+      "Dashboard shows a 'Vessel Schedule' section below the Booking Pipeline Funnel",
+      "Timeline displays port rotations (arrivals/departures) for the next 7 days from capPortRotations joined with capVesselSchedules",
+      "Each vessel schedule is a row showing vessel name, service name, and port rotation entries positioned by date",
+      "Port rotations are color-coded: emerald (on-time/future), amber (arriving within 24h), rose (delayed/overdue), blue (departed)",
+      "Status is determined by comparing arrivalEta vs actualArrival, and checking if departureEtd has passed",
+      "Timeline shows 7 day columns (today through today+6) with date labels",
+      "Each port rotation entry shows: port name, ETA time, status indicator dot",
+      "Maximum 8 vessel rows displayed; if more, show '+N more vessels' link to /vessels-hub",
+      "Empty state: 'No upcoming vessel movements' message with link to /vessels-hub",
+      "Clicking a vessel name navigates to /vessels-hub (vessel detail page when available)",
+      "Query includes tenantId filter and deletedAt IS NULL on both tables",
+      "Dark mode support on all elements",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ],
+
+    "edge_cases": [
+      "Zero vessel schedules — show empty state with helpful link",
+      "Schedule has port rotations but none in next 7 days — vessel not shown",
+      "Port rotation has arrivalEta but null departureEtd — show arrival only",
+      "Port rotation has null arrivalEta but set departureEtd — show departure only",
+      "Multiple port rotations on same day for same vessel — stack vertically within the row",
+      "Very long vessel names — truncate with ellipsis at ~20 chars",
+      "More than 8 vessels with upcoming rotations — show first 8 + overflow link",
+      "All rotations are in the past (stale data) — same as empty state",
+      "actualArrival set but actualDeparture null — vessel is currently at port (highlight as 'In Port')",
+      "Port rotation dates span beyond the 7-day window — clip to visible range"
+    ],
+
+    "error_handling": [
+      "Query failure — show 'Unable to load vessel schedule' message in the section, don't crash the dashboard",
+      "Auth failure — handled by parent page redirect (getSession check)",
+      "Null/undefined arrivalEta and departureEtd — skip that rotation entry (don't render)",
+      "Invalid date values — gracefully fallback to 'TBD' display"
+    ],
+
+    "security_considerations": [
+      "tenantId filter mandatory on both capVesselSchedules and capPortRotations queries",
+      "Read-only — no mutations from this component",
+      "No user input — no XSS or injection risk"
+    ],
+
+    "implementation_notes": "Add query index 19 and 20 to the Promise.allSettled array in src/app/(dashboard)/page.tsx. Query: join capPortRotations with capVesselSchedules, filter by tenantId, schedule status in active/published, port rotation arrivalEta or departureEtd between now and now+7d. Import capVesselSchedules and capPortRotations from @/db/schema. Create a VesselScheduleTimeline client component at src/components/dashboard/vessel-schedule-timeline.tsx. Component receives an array of { vesselName, serviceName, portName, portCode, arrivalEta, departureEtd, actualArrival, actualDeparture, status } objects. Renders as a card matching the booking-pipeline.tsx style (rounded-xl border bg-white p-6 shadow-sm). Use a simplified list layout rather than a full Gantt chart — each vessel row shows its upcoming port calls as inline pills.",
+
+    "affected_files": [
+      "src/app/(dashboard)/page.tsx — import capVesselSchedules + capPortRotations, add join query, extract data, render VesselScheduleTimeline",
+      "src/components/dashboard/vessel-schedule-timeline.tsx — NEW: timeline visualization component"
+    ],
+
+    "testing_requirements": [
+      "Timeline renders with correct vessel names and port rotations",
+      "Status colors apply correctly based on ETA vs actual arrival logic",
+      "Empty state renders when no upcoming vessel movements exist",
+      "Dark mode renders correctly on all elements",
+      "Max 8 vessels displayed with overflow indicator",
+      "Port rotation entries show correct date/time formatting",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ]
+  }
+}
