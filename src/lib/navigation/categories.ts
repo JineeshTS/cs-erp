@@ -61,6 +61,13 @@ export const CATEGORIES: NavCategory[] = [
         icon: Workflow,
         permissionPrefix: "workflows:",
       },
+      {
+        title: "Gate Inbox",
+        description: "Pending human decisions and approvals",
+        href: "/e2e-flows/gates",
+        icon: Workflow,
+        permissionPrefix: "workflows:",
+      },
     ],
   },
   {
