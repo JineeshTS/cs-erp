@@ -65,6 +65,13 @@ export const resolveGateSchema = z.object({
   decisionData: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const aiAssistSchema = z.object({
+  action: z.enum(["generate", "accept", "reject"]),
+  stepNumber: z.number().int().min(1),
+  editedOutput: z.record(z.string(), z.unknown()).optional(),
+  gateDecision: z.enum(["approved", "rejected", "option_selected", "input_provided"]).optional(),
+});
+
 export const createFlowInstanceSchema = z.object({
   e2eFlowId: z.string().min(1).max(20),
   entityType: z.string().min(1).max(50),

@@ -49,6 +49,8 @@ export interface E2EFlowStep {
   processRef?: string;
   executorType?: ExecutorType;
   gateType?: GateType;
+  /** When true, this step can be executed by AI even if it's a human/manual step. Defaults to true for all steps. */
+  aiAssistable?: boolean;
 }
 
 export interface E2EProcessFlow {

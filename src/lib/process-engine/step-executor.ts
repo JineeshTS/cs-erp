@@ -14,12 +14,13 @@
  */
 
 import { db } from "@/lib/db";
-import { peE2eStepInstances, peE2eFlowInstances } from "@/db/schema";
-import { eq, and, lt } from "drizzle-orm";
+import { peE2eStepInstances, peE2eFlowInstances, peHumanGates } from "@/db/schema";
+import { eq, and, lt, isNull } from "drizzle-orm";
 import {
   advanceFlowStep,
   createHumanGate,
   getFlowInstance,
+  resolveHumanGate,
 } from "./e2e-flow-service";
 import { notifyGateCreated } from "./human-gate-manager";
 import { executeStepWithAi } from "./ai-step-executor";
@@ -332,4 +333,251 @@ export async function resumeAfterGate(
     status: result.status,
     stepsExecuted: result.stepsExecuted + 1,
   };
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI ASSIST — Run AI on ANY step (including human/manual)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Generate AI output for a specific step without advancing the flow.
+ * Works on any step type (AI, human, system) as long as it's the current step.
+ * Stores the AI result in the step's inputData for user review.
+ */
+export async function aiAssistStep(
+  flowInstanceId: string,
+  tenantId: string,
+  stepNumber: number
+): Promise<{ status: "generated" | "error"; result?: Record<string, unknown>; error?: string }> {
+  const instance = await getFlowInstance(flowInstanceId, tenantId);
+  if (!instance) {
+    return { status: "error", error: "Flow instance not found" };
+  }
+
+  if (instance.status === "completed" || instance.status === "failed" || instance.status === "cancelled") {
+    return { status: "error", error: `Flow is ${instance.status}, cannot AI assist` };
+  }
+
+  if (stepNumber !== instance.currentStepNumber) {
+    return { status: "error", error: `Step ${stepNumber} is not the current step (current: ${instance.currentStepNumber})` };
+  }
+
+  const stepDef = getStepDefinition(instance.e2eFlowId, stepNumber);
+  if (!stepDef) {
+    return { status: "error", error: `No step definition for step ${stepNumber}` };
+  }
+
+  // Check aiAssistable flag (defaults to true)
+  if (stepDef.aiAssistable === false) {
+    return { status: "error", error: "This step is not AI-assistable" };
+  }
+
+  // Get the step instance record
+  const [stepInstance] = await db
+    .select()
+    .from(peE2eStepInstances)
+    .where(
+      and(
+        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+        eq(peE2eStepInstances.stepNumber, stepNumber),
+        eq(peE2eStepInstances.tenantId, tenantId)
+      )
+    )
+    .limit(1);
+
+  if (!stepInstance) {
+    return { status: "error", error: "Step instance not found" };
+  }
+
+  // Execute AI on this step
+  const flowDef = getFlowDefinition(instance.e2eFlowId);
+  const previousOutputs = await getPreviousStepOutputs(flowInstanceId, tenantId, stepNumber);
+
+  const aiResult = await executeStepWithAi(stepDef, {
+    flowId: instance.e2eFlowId,
+    flowName: flowDef?.name ?? instance.e2eFlowId,
+    flowInstanceId,
+    stepNumber,
+    totalSteps: instance.totalSteps,
+    stepName: stepDef.step,
+    module: stepDef.module,
+    processRef: stepDef.processRef ?? null,
+    executorType: stepDef.executorType ?? stepDef.type,
+    entityType: instance.entityType,
+    entityId: instance.entityId,
+    previousStepOutputs: previousOutputs,
+  });
+
+  // Store AI result in inputData as a preview (does NOT advance the flow)
+  await db
+    .update(peE2eStepInstances)
+    .set({
+      inputData: {
+        ...(stepInstance.inputData as Record<string, unknown> | null ?? {}),
+        aiAssistResult: aiResult.result,
+        aiAssistModel: aiResult.aiModel,
+        aiAssistTokens: aiResult.tokensUsed,
+        aiAssistedAt: new Date().toISOString(),
+      },
+    })
+    .where(
+      and(
+        eq(peE2eStepInstances.id, stepInstance.id),
+        eq(peE2eStepInstances.tenantId, tenantId)
+      )
+    );
+
+  console.log(
+    `[StepExecutor] AI assist generated for flow ${flowInstanceId} step ${stepNumber} (${stepDef.step})`
+  );
+
+  return { status: "generated", result: aiResult.result as Record<string, unknown> };
+}
+
+/**
+ * Accept AI assist output for a step — completes the step and resumes flow.
+ * If the step has a pending gate, resolves it with the given decision.
+ * If editedOutput is provided, uses that instead of the stored AI result.
+ */
+export async function acceptAiAssist(
+  flowInstanceId: string,
+  tenantId: string,
+  stepNumber: number,
+  userId: string,
+  editedOutput?: Record<string, unknown>,
+  gateDecision?: string
+): Promise<{ status: string; stepsExecuted: number }> {
+  const instance = await getFlowInstance(flowInstanceId, tenantId);
+  if (!instance) {
+    return { status: "error", stepsExecuted: 0 };
+  }
+
+  if (stepNumber !== instance.currentStepNumber) {
+    return { status: "error", stepsExecuted: 0 };
+  }
+
+  // Get the step instance to read the stored AI result
+  const [stepInstance] = await db
+    .select()
+    .from(peE2eStepInstances)
+    .where(
+      and(
+        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+        eq(peE2eStepInstances.stepNumber, stepNumber),
+        eq(peE2eStepInstances.tenantId, tenantId)
+      )
+    )
+    .limit(1);
+
+  if (!stepInstance) {
+    return { status: "error", stepsExecuted: 0 };
+  }
+
+  const inputData = stepInstance.inputData as Record<string, unknown> | null;
+  const storedResult = inputData?.aiAssistResult as Record<string, unknown> | undefined;
+  const finalOutput = editedOutput ?? storedResult ?? {};
+
+  // If flow is paused at a gate, resolve the gate first
+  if (instance.status === "paused_at_gate") {
+    const [pendingGate] = await db
+      .select()
+      .from(peHumanGates)
+      .where(
+        and(
+          eq(peHumanGates.flowInstanceId, flowInstanceId),
+          eq(peHumanGates.stepInstanceId, stepInstance.id),
+          eq(peHumanGates.tenantId, tenantId),
+          isNull(peHumanGates.decision)
+        )
+      )
+      .limit(1);
+
+    if (pendingGate) {
+      const decision = gateDecision ?? "approved";
+      await resolveHumanGate(
+        pendingGate.id,
+        tenantId,
+        decision,
+        userId,
+        { aiAssisted: true, aiOutput: finalOutput }
+      );
+
+      // resumeAfterGate advances past the gate step and continues
+      return resumeAfterGate(flowInstanceId, tenantId, decision, {
+        aiAssisted: true,
+        aiOutput: finalOutput,
+        acceptedBy: userId,
+        acceptedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  // Regular step (not at gate) — advance with AI output
+  const advanced = await advanceFlowStep(flowInstanceId, tenantId, {
+    ...finalOutput,
+    aiAssisted: true,
+    acceptedBy: userId,
+    acceptedAt: new Date().toISOString(),
+  });
+
+  if (!advanced) {
+    return { status: "error", stepsExecuted: 0 };
+  }
+
+  if (advanced.status === "completed") {
+    return { status: "completed", stepsExecuted: 1 };
+  }
+
+  // Continue executing from the new current step (auto-chain AI/system steps)
+  const result = await executeCurrentStep(flowInstanceId, tenantId);
+  return {
+    status: result.status,
+    stepsExecuted: result.stepsExecuted + 1,
+  };
+}
+
+/**
+ * Reject AI assist — clear the stored AI result from the step.
+ */
+export async function rejectAiAssist(
+  flowInstanceId: string,
+  tenantId: string,
+  stepNumber: number
+): Promise<{ status: "cleared" | "error" }> {
+  const instance = await getFlowInstance(flowInstanceId, tenantId);
+  if (!instance) return { status: "error" };
+
+  const [stepInstance] = await db
+    .select()
+    .from(peE2eStepInstances)
+    .where(
+      and(
+        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+        eq(peE2eStepInstances.stepNumber, stepNumber),
+        eq(peE2eStepInstances.tenantId, tenantId)
+      )
+    )
+    .limit(1);
+
+  if (!stepInstance) return { status: "error" };
+
+  // Remove AI assist data from inputData
+  const inputData = stepInstance.inputData as Record<string, unknown> | null ?? {};
+  const { aiAssistResult: _r, aiAssistModel: _m, aiAssistTokens: _t, aiAssistedAt: _a, ...rest } = inputData;
+
+  await db
+    .update(peE2eStepInstances)
+    .set({ inputData: rest })
+    .where(
+      and(
+        eq(peE2eStepInstances.id, stepInstance.id),
+        eq(peE2eStepInstances.tenantId, tenantId)
+      )
+    );
+
+  console.log(
+    `[StepExecutor] AI assist rejected for flow ${flowInstanceId} step ${stepNumber}`
+  );
+
+  return { status: "cleared" };
 }

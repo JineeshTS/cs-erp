@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   Clock,
@@ -74,6 +75,7 @@ function formatRelative(dateStr: string): string {
 }
 
 export default function ProcessMonitorPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [instances, setInstances] = useState<ProcessInstance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -254,7 +256,7 @@ export default function ProcessMonitorPage() {
                   <tr
                     key={inst.id}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
-                    onClick={() => {/* Future: navigate to /processes/instances/[id] */}}
+                    onClick={() => router.push(`/processes/instances/${inst.id}`)}
                   >
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[200px]">{inst.processName}</div>
