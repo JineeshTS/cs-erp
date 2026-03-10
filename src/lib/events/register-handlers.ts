@@ -15,8 +15,12 @@ import "./handlers/approval-handlers";
 import "./handlers/sales-handlers";
 
 import { registerProcessBridge } from "./process-bridge";
+import { registerE2eFlowBridge } from "./e2e-flow-bridge";
 
-// Register event → process instance bridge
+// Register event → process instance bridge (PRC-level)
 registerProcessBridge();
+
+// Register event → E2E flow instance bridge (E2E-level)
+registerE2eFlowBridge();
 
 export const EVENT_HANDLERS_REGISTERED = true;

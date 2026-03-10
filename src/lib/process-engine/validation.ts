@@ -40,3 +40,36 @@ export const logEventSchema = z.object({
   processInstanceId: z.string().uuid().optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
 });
+
+// ── E2E Flow Schemas ──
+
+export const createEventTriggerSchema = z.object({
+  eventType: z.string().min(1).max(100),
+  e2eFlowId: z.string().min(1).max(20),
+  conditions: z.record(z.string(), z.unknown()).optional(),
+  entityType: z.string().min(1).max(50),
+  priority: z.number().int().min(0).max(100).optional(),
+});
+
+export const updateEventTriggerSchema = z.object({
+  eventType: z.string().min(1).max(100).optional(),
+  e2eFlowId: z.string().min(1).max(20).optional(),
+  conditions: z.record(z.string(), z.unknown()).optional(),
+  entityType: z.string().min(1).max(50).optional(),
+  isActive: z.boolean().optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+});
+
+export const resolveGateSchema = z.object({
+  decision: z.enum(["approved", "rejected", "option_selected", "input_provided"]),
+  decisionData: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const createFlowInstanceSchema = z.object({
+  e2eFlowId: z.string().min(1).max(20),
+  entityType: z.string().min(1).max(50),
+  entityId: z.string().min(1).max(100),
+  triggerEvent: z.string().min(1).max(100),
+  parentFlowInstanceId: z.string().uuid().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
