@@ -68,6 +68,13 @@ export const CATEGORIES: NavCategory[] = [
         icon: Workflow,
         permissionPrefix: "workflows:",
       },
+      {
+        title: "Process Analytics",
+        description: "Flow metrics, throughput, and AI performance",
+        href: "/e2e-flows/analytics",
+        icon: Workflow,
+        permissionPrefix: "workflows:",
+      },
     ],
   },
   {
