@@ -21,6 +21,7 @@ import {
   createHumanGate,
   getFlowInstance,
 } from "./e2e-flow-service";
+import { notifyGateCreated } from "./human-gate-manager";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import type { E2EFlowStep, GateType } from "@/types/processes";
 
@@ -198,12 +199,14 @@ export async function executeCurrentStep(
       const slaHours = SLA_HOURS[priority] ?? 4;
       const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000);
 
-      await createHumanGate({
+      const assignedToRole = GATE_ROLE_DEFAULTS[gateType] ?? "operations_manager";
+
+      const gate = await createHumanGate({
         tenantId,
         stepInstanceId: stepInstance.id,
         flowInstanceId,
         gateType,
-        assignedToRole: GATE_ROLE_DEFAULTS[gateType] ?? "operations_manager",
+        assignedToRole,
         slaDeadline,
         escalationToRole: ESCALATION_ROLES[priority],
         priority,
@@ -216,6 +219,20 @@ export async function executeCurrentStep(
           entityType: instance.entityType,
           entityId: instance.entityId,
         },
+      });
+
+      // Dispatch notification for the gate
+      await notifyGateCreated({
+        tenantId,
+        gateId: gate.id,
+        gateType,
+        assignedToRole,
+        flowInstanceId,
+        stepName: stepDef.step,
+        priority,
+        slaDeadline,
+        entityType: instance.entityType,
+        entityId: instance.entityId,
       });
 
       console.log(
