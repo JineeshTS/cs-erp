@@ -328,8 +328,10 @@ export default function E2EFlowMonitorPage() {
                         className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
                       >
                         <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[220px]">{flowName}</div>
-                          <div className="text-xs text-slate-400 font-mono">{inst.e2eFlowId}</div>
+                          <Link href={`/e2e-flows/${inst.id}`} className="block">
+                            <div className="font-medium text-blue-600 dark:text-blue-400 truncate max-w-[220px] hover:underline">{flowName}</div>
+                            <div className="text-xs text-slate-400 font-mono">{inst.e2eFlowId}</div>
+                          </Link>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.text}`}>
