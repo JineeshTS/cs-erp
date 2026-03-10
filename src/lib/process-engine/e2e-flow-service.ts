@@ -16,6 +16,9 @@ import {
 } from "@/db/schema";
 import { eq, and, isNull, desc, gt, sql } from "drizzle-orm";
 
+// Note: Step executor import is deferred to avoid circular deps.
+// Gate resolution triggers execution via the API layer or bridge.
+
 // ═══════════════════════════════════════════════════════════
 // E2E FLOW INSTANCES
 // ═══════════════════════════════════════════════════════════

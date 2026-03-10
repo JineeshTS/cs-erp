@@ -20,6 +20,7 @@ import {
   createFlowInstance,
   getActiveTriggersForEvent,
 } from "@/lib/process-engine/e2e-flow-service";
+import { executeCurrentStep } from "@/lib/process-engine/step-executor";
 import type { E2EProcessFlow, E2EFlowStep } from "@/types/processes";
 
 /**
@@ -118,8 +119,12 @@ async function handleDomainEvent(event: EventOfType<EventType>): Promise<void> {
         steps: flowStepsToParams(flow.steps),
       });
 
+      // Execute step 1 (and auto-chain through AI/system steps)
+      const execResult = await executeCurrentStep(instance.id, event.tenantId);
+
       console.log(
-        `[E2EFlowBridge] ${event.type} → spawned ${flow.id} (${flow.name}) instance ${instance.id} for entity ${event.entityId}`
+        `[E2EFlowBridge] ${event.type} → spawned ${flow.id} (${flow.name}) instance ${instance.id} for entity ${event.entityId} — ` +
+        `${execResult.stepsExecuted} steps auto-executed, status: ${execResult.status}`
       );
     } catch (err) {
       console.error(
@@ -172,8 +177,12 @@ async function handleDomainEvent(event: EventOfType<EventType>): Promise<void> {
           steps: flowStepsToParams(flowDef.steps),
         });
 
+        // Execute step 1 (and auto-chain)
+        const execResult = await executeCurrentStep(instance.id, event.tenantId);
+
         console.log(
-          `[E2EFlowBridge] Dynamic trigger → spawned ${trigger.e2eFlowId} (${flowDef.name}) instance ${instance.id}`
+          `[E2EFlowBridge] Dynamic trigger → spawned ${trigger.e2eFlowId} (${flowDef.name}) instance ${instance.id} — ` +
+          `${execResult.stepsExecuted} steps auto-executed, status: ${execResult.status}`
         );
       } catch (err) {
         console.error(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { resolveHumanGate } from "@/lib/process-engine/e2e-flow-service";
+import { resumeAfterGate } from "@/lib/process-engine/step-executor";
 import { resolveGateSchema } from "@/lib/process-engine/validation";
 
 export async function POST(
@@ -47,7 +48,20 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ data: gate });
+    // Resume flow execution after gate resolution
+    const execResult = await resumeAfterGate(
+      gate.flowInstanceId,
+      user.tenantId,
+      parsed.data.decision,
+      parsed.data.decisionData
+    );
+
+    return NextResponse.json({
+      data: {
+        gate,
+        execution: execResult,
+      },
+    });
   } catch (err) {
     console.error("[human-gates/[id]/resolve] POST error:", err);
     return NextResponse.json(
