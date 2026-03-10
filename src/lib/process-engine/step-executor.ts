@@ -2,7 +2,7 @@
  * E2E Flow Step Executor
  *
  * The execution engine that drives E2E flow progression:
- * - AI/system steps: auto-execute (simulated output, real AI in Phase 4)
+ * - AI/system steps: execute via Claude API (F-027) with contextual prompts
  * - Human gate steps: create pe_human_gates record, pause flow
  * - Auto-chains through consecutive AI/system steps
  * - Stops at human gates or flow completion
@@ -15,13 +15,14 @@
 
 import { db } from "@/lib/db";
 import { peE2eStepInstances, peE2eFlowInstances } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 import {
   advanceFlowStep,
   createHumanGate,
   getFlowInstance,
 } from "./e2e-flow-service";
 import { notifyGateCreated } from "./human-gate-manager";
+import { executeStepWithAi } from "./ai-step-executor";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import type { E2EFlowStep, GateType } from "@/types/processes";
 
@@ -87,26 +88,31 @@ function isAutoExecuteStep(stepDef: E2EFlowStep): boolean {
 }
 
 /**
- * Simulate AI/system step execution.
- * Returns a simulated output. Real AI execution is added in Phase 4 (F-027).
+ * Collect output data from completed prior steps for AI context.
  */
-function simulateStepExecution(
-  stepDef: E2EFlowStep,
-  stepNumber: number,
-  flowId: string
-): Record<string, unknown> {
-  return {
-    status: "completed",
-    executedBy: stepDef.executorType ?? stepDef.type,
-    processRef: stepDef.processRef ?? null,
-    stepName: stepDef.step,
-    module: stepDef.module,
-    result: "auto_executed",
-    simulatedAt: new Date().toISOString(),
-    note: "Simulated execution — real AI processing added in F-027",
-    flowId,
-    stepNumber,
-  };
+async function getPreviousStepOutputs(
+  flowInstanceId: string,
+  tenantId: string,
+  beforeStep: number
+): Promise<Record<string, unknown>[]> {
+  const steps = await db
+    .select({ outputData: peE2eStepInstances.outputData, stepName: peE2eStepInstances.stepName })
+    .from(peE2eStepInstances)
+    .where(
+      and(
+        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+        eq(peE2eStepInstances.tenantId, tenantId),
+        lt(peE2eStepInstances.stepNumber, beforeStep),
+        eq(peE2eStepInstances.status, "completed")
+      )
+    )
+    .orderBy(peE2eStepInstances.stepNumber)
+    .limit(5);
+
+  return steps.map((s) => ({
+    stepName: s.stepName,
+    ...(s.outputData as Record<string, unknown> | null ?? {}),
+  }));
 }
 
 /**
@@ -169,11 +175,27 @@ export async function executeCurrentStep(
       return { status: "error", stepsExecuted };
     }
 
-    // ── AI/System Step: Auto-Execute ──
+    // ── AI/System Step: Auto-Execute via Claude API ──
     if (isAutoExecuteStep(stepDef)) {
-      const output = simulateStepExecution(stepDef, currentStepNum, instance.e2eFlowId);
+      const flowDef = getFlowDefinition(instance.e2eFlowId);
+      const previousOutputs = await getPreviousStepOutputs(flowInstanceId, tenantId, currentStepNum);
 
-      const advanced = await advanceFlowStep(flowInstanceId, tenantId, output);
+      const output = await executeStepWithAi(stepDef, {
+        flowId: instance.e2eFlowId,
+        flowName: flowDef?.name ?? instance.e2eFlowId,
+        flowInstanceId,
+        stepNumber: currentStepNum,
+        totalSteps: instance.totalSteps,
+        stepName: stepDef.step,
+        module: stepDef.module,
+        processRef: stepDef.processRef ?? null,
+        executorType: stepDef.executorType ?? stepDef.type,
+        entityType: instance.entityType,
+        entityId: instance.entityId,
+        previousStepOutputs: previousOutputs,
+      });
+
+      const advanced = await advanceFlowStep(flowInstanceId, tenantId, { ...output });
       stepsExecuted++;
 
       if (!advanced) {
