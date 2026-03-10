@@ -23,6 +23,7 @@ import {
 } from "./e2e-flow-service";
 import { notifyGateCreated } from "./human-gate-manager";
 import { executeStepWithAi } from "./ai-step-executor";
+import { enrichGateWithAiRecommendation, collectPreviousStepSummaries } from "./ai-gate-preparer";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import type { E2EFlowStep, GateType } from "@/types/processes";
 
@@ -242,6 +243,26 @@ export async function executeCurrentStep(
           entityId: instance.entityId,
         },
       });
+
+      // Enrich gate with AI recommendation (fire-and-forget)
+      const flowDefForGate = getFlowDefinition(instance.e2eFlowId);
+      const stepSummaries = await collectPreviousStepSummaries(flowInstanceId, tenantId, currentStepNum);
+      enrichGateWithAiRecommendation(gate.id, tenantId, {
+        gateType,
+        priority,
+        assignedToRole,
+        flowName: flowDefForGate?.name ?? instance.e2eFlowId,
+        flowId: instance.e2eFlowId,
+        stepName: stepDef.step,
+        module: stepDef.module,
+        processRef: stepDef.processRef ?? null,
+        entityType: instance.entityType,
+        entityId: instance.entityId,
+        slaDeadlineHours: slaHours,
+        previousStepSummaries: stepSummaries,
+      }).catch((err) =>
+        console.error(`[StepExecutor] AI gate enrichment failed:`, err)
+      );
 
       // Dispatch notification for the gate
       await notifyGateCreated({
