@@ -470,6 +470,13 @@
       "when": 1772963784147,
       "tag": "0066_sparkling_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1773121207266,
+      "tag": "0067_aberrant_whiplash",
+      "breakpoints": true
     }
   ]
 }

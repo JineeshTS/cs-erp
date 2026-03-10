@@ -45,8 +45,23 @@ export const CATEGORIES: NavCategory[] = [
     label: "Processes",
     icon: Workflow,
     href: "/processes",
-    permissionPrefixes: [],
-    modules: [],
+    permissionPrefixes: ["workflows:"],
+    modules: [
+      {
+        title: "Process Monitor",
+        description: "Monitor running process instances",
+        href: "/processes/monitor",
+        icon: Workflow,
+        permissionPrefix: "workflows:",
+      },
+      {
+        title: "E2E Flows",
+        description: "End-to-end flow orchestration and human gates",
+        href: "/e2e-flows",
+        icon: Workflow,
+        permissionPrefix: "workflows:",
+      },
+    ],
   },
   {
     slug: "tracking",
