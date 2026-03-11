@@ -22,7 +22,12 @@ import {
   Bot,
   Monitor,
   ExternalLink,
+  Play,
+  Sparkles,
+  Check,
+  X,
 } from "lucide-react";
+import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 
 // ── Types ──
 
@@ -183,6 +188,9 @@ export default function FlowDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [executing, setExecuting] = useState(false);
+  const [aiAssisting, setAiAssisting] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -225,6 +233,79 @@ export default function FlowDetailPage() {
       else next.add(stepNumber);
       return next;
     });
+  };
+
+  // Look up flow definition for moduleUrl mapping
+  const flowDef = flow ? E2E_PROCESS_FLOWS.find((f) => f.id === flow.e2eFlowId) : null;
+  const getModuleUrl = (stepNumber: number): string | undefined => {
+    if (!flowDef) return undefined;
+    const stepDef = flowDef.steps[stepNumber - 1];
+    return stepDef?.moduleUrl;
+  };
+
+  // Execute current step (auto-chain AI/system steps)
+  const handleExecute = async () => {
+    if (!flow) return;
+    setExecuting(true);
+    try {
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(`Execution failed: ${err?.error?.message ?? res.statusText}`);
+      }
+      await fetchData();
+    } catch {
+      alert("Network error during execution");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  // AI Assist — generate recommendation without advancing
+  const handleAiAssist = async (action: "generate" | "accept" | "reject") => {
+    if (!flow) return;
+    setAiAssisting(true);
+    try {
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/ai-assist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(`AI assist failed: ${err?.error?.message ?? res.statusText}`);
+      }
+      await fetchData();
+    } catch {
+      alert("Network error during AI assist");
+    } finally {
+      setAiAssisting(false);
+    }
+  };
+
+  // Advance step manually (mark current step as complete)
+  const handleAdvanceStep = async () => {
+    if (!flow) return;
+    setAdvancing(true);
+    try {
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ output: { completedManually: true, completedAt: new Date().toISOString() } }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(`Advance failed: ${err?.error?.message ?? res.statusText}`);
+      }
+      await fetchData();
+    } catch {
+      alert("Network error during advance");
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   if (loading) {
@@ -275,6 +356,14 @@ export default function FlowDetailPage() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {flow.entityType} &middot; {flow.entityId} &middot; Triggered by {flow.triggerEvent}
+            {flowDef && (
+              <>
+                {" "}&middot;{" "}
+                <Link href={`/e2e-flows/definition/${flow.e2eFlowId}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                  View Flow Definition &amp; All Transactions
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -473,6 +562,118 @@ export default function FlowDetailPage() {
                           </pre>
                         </div>
                       )}
+
+                      {/* ── Execution Controls (only on current step) ── */}
+                      {isCurrentStep && (flow.status === "active" || flow.status === "paused_at_gate") && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50/80 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+                          <p className="text-xs font-semibold uppercase text-blue-700 dark:text-blue-300 mb-2">Execute This Step</p>
+                          <div className="flex flex-wrap gap-2">
+                            {/* Run AI Agent */}
+                            <button
+                              onClick={handleExecute}
+                              disabled={executing || flow.status === "paused_at_gate"}
+                              className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40 dark:bg-blue-500"
+                              title="Run AI agent to auto-execute this step"
+                            >
+                              {executing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
+                              Run AI Agent
+                            </button>
+
+                            {/* AI Assist */}
+                            {step.executorType !== "system" && (
+                              <>
+                                {!(step.inputData as Record<string, unknown> | null)?.["aiAssistResult"] ? (
+                                  <button
+                                    onClick={() => handleAiAssist("generate")}
+                                    disabled={aiAssisting}
+                                    className="flex items-center gap-1.5 rounded-md border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 disabled:opacity-40 dark:border-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                                    title="Get AI recommendation without advancing"
+                                  >
+                                    {aiAssisting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                    AI Assist
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleAiAssist("accept")}
+                                      disabled={aiAssisting}
+                                      className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+                                    >
+                                      {aiAssisting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                      Accept AI Result
+                                    </button>
+                                    <button
+                                      onClick={() => handleAiAssist("reject")}
+                                      disabled={aiAssisting}
+                                      className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:text-gray-300"
+                                    >
+                                      <X className="h-3 w-3" />
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              </>
+                            )}
+
+                            {/* Mark as Complete (manual) */}
+                            <button
+                              onClick={handleAdvanceStep}
+                              disabled={advancing || flow.status === "paused_at_gate"}
+                              className="flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                              title="Mark this step as completed manually"
+                            >
+                              {advancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                              Mark Complete
+                            </button>
+
+                            {/* Open in Module */}
+                            {(() => {
+                              const moduleUrl = getModuleUrl(step.stepNumber);
+                              if (!moduleUrl) return null;
+                              return (
+                                <Link
+                                  href={moduleUrl}
+                                  className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                  title="Open the module page to do this step manually"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Open in Module
+                                </Link>
+                              );
+                            })()}
+                          </div>
+
+                          {(() => {
+                            const inputData = step.inputData as Record<string, unknown> | null;
+                            if (!inputData?.aiAssistResult) return null;
+                            return (
+                              <div className="mt-2 rounded bg-purple-50 p-2 dark:bg-purple-900/20">
+                                <span className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-300">
+                                  <Sparkles className="h-3 w-3" /> AI Recommendation (review before accepting)
+                                </span>
+                                <pre className="mt-1 max-h-32 overflow-auto text-xs text-purple-600 dark:text-purple-400">
+                                  {JSON.stringify(inputData.aiAssistResult, null, 2)}
+                                </pre>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* ── Module Link for non-current steps ── */}
+                      {!isCurrentStep && (() => {
+                        const moduleUrl = getModuleUrl(step.stepNumber);
+                        if (!moduleUrl) return null;
+                        return (
+                          <Link
+                            href={moduleUrl}
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View in {flowDef?.steps[step.stepNumber - 1]?.module ?? "Module"}
+                          </Link>
+                        );
+                      })()}
 
                       {/* Human Gates for this step */}
                       {stepGates.map((gate) => (

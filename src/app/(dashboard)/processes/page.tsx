@@ -380,11 +380,20 @@ export default async function ProcessHubPage({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs text-gray-400">{flow.id}</span>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{flow.name}</h3>
+                    <Link href={`/e2e-flows/definition/${flow.id}`} className="text-lg font-bold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
+                      {flow.name}
+                    </Link>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{flow.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    href={`/e2e-flows/definition/${flow.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <Activity className="h-3.5 w-3.5" />
+                    View Flow &amp; Transactions
+                  </Link>
                   <Badge variant="outline">{flow.typicalTimeline}</Badge>
                   <RunE2EFlowButton flowId={flow.id} flowName={flow.name} steps={flow.steps} />
                 </div>

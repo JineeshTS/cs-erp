@@ -51,6 +51,12 @@ export interface E2EFlowStep {
   gateType?: GateType;
   /** When true, this step can be executed by AI even if it's a human/manual step. Defaults to true for all steps. */
   aiAssistable?: boolean;
+  /** URL path to the existing module page where this step's work is done. Enables "Open in Module" button. */
+  moduleUrl?: string;
+  /** Phase grouping within the flow (e.g., "Market Analysis", "Service Design") */
+  phase?: string;
+  /** Condition for this step to execute — if falsy, step can be skipped */
+  condition?: string;
 }
 
 export interface E2EProcessFlow {
