@@ -2,7 +2,8 @@
  * Executor Config Registry (D-006 Phase 2)
  *
  * Central registry that maps E2E flow IDs + step numbers to executor configs.
- * Currently supports E2E-01 (Lead-to-Quote). New flows are registered by
+ * Supports E2E-01 through E2E-04 (Lead-to-Quote, Quote-to-Contract,
+ * Customer Onboarding, Booking-to-Cash). New flows are registered by
  * adding their config modules here.
  *
  * Flows without registered configs fall back to the legacy AI step executor.
