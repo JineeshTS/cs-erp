@@ -360,3 +360,44 @@ export const acmAiRiskDetections = pgTable(
     index("acm_ai_risk_det_entity_idx").on(t.entityType, t.entityRef),
   ]
 );
+
+// ==========================================
+// Sanctions Screening
+// ==========================================
+export const acmSanctionsScreenings = pgTable(
+  "acm_sanctions_screenings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    screeningRef: varchar("screening_ref", { length: 50 }).notNull(),
+    entityName: varchar("entity_name", { length: 255 }).notNull(),
+    entityType: varchar("entity_type", { length: 30 }).notNull().default("individual"),
+    entityId: uuid("entity_id"),
+    entityTable: varchar("entity_table", { length: 100 }),
+    screeningType: varchar("screening_type", { length: 30 }).notNull().default("standard"),
+    listsChecked: jsonb("lists_checked").notNull().default(JSON.stringify(["OFAC_SDN", "EU_CONSOLIDATED", "UN_CONSOLIDATED"])),
+    matchStatus: varchar("match_status", { length: 20 }).notNull().default("pending"),
+    matchDetails: jsonb("match_details"),
+    riskScore: integer("risk_score"),
+    screenedBy: varchar("screened_by", { length: 255 }),
+    screenedAt: timestamp("screened_at", { withTimezone: true }),
+    reviewedBy: varchar("reviewed_by", { length: 255 }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    resolution: varchar("resolution", { length: 30 }),
+    resolutionNotes: text("resolution_notes"),
+    nextScreeningDate: timestamp("next_screening_date", { withTimezone: true }),
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    metadata: jsonb("metadata"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("acm_sanctions_screenings_tenant_idx").on(table.tenantId),
+    index("acm_sanctions_screenings_entity_idx").on(table.entityId),
+    index("acm_sanctions_screenings_match_status_idx").on(table.matchStatus),
+    index("acm_sanctions_screenings_status_idx").on(table.status),
+  ]
+);

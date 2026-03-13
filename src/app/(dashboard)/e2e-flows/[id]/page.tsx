@@ -26,8 +26,16 @@ import {
   Sparkles,
   Check,
   X,
+  Database,
+  Link2,
+  ListChecks,
+  ShieldCheck as ShieldCheckIcon,
+  FileOutput,
+  UserCheck,
 } from "lucide-react";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
+import { StepInputForm } from "@/components/processes/step-input-form";
+import { EntityBindingPanel } from "@/components/processes/entity-binding-panel";
 
 // ── Types ──
 
@@ -46,6 +54,11 @@ interface StepInstance {
   durationMs: number | null;
   parallelGroup: string | null;
   createdAt: string;
+  // D-006: Entity binding fields
+  entityTable?: string | null;
+  entityId?: string | null;
+  entityAction?: string | null;
+  executorMode?: string | null;
 }
 
 interface HumanGate {
@@ -237,10 +250,21 @@ export default function FlowDetailPage() {
 
   // Look up flow definition for moduleUrl mapping
   const flowDef = flow ? E2E_PROCESS_FLOWS.find((f) => f.id === flow.e2eFlowId) : null;
-  const getModuleUrl = (stepNumber: number): string | undefined => {
-    if (!flowDef) return undefined;
+  const getModuleUrl = (stepNumber: number, stepStatus?: string): string | undefined => {
+    if (!flowDef || !flow) return undefined;
     const stepDef = flowDef.steps[stepNumber - 1];
-    return stepDef?.moduleUrl;
+    if (!stepDef?.moduleUrl) return undefined;
+    const params = new URLSearchParams({
+      e2eFlowId: flow.e2eFlowId,
+      e2eTxId: flow.id,
+      e2eStep: String(stepNumber),
+      e2eStepName: stepDef.step,
+      e2eStepStatus: stepStatus ?? "pending",
+      e2eExecutor: stepDef.executorType ?? stepDef.type,
+      e2eFlowName: getFlowName(flow.metadata, flow.e2eFlowId),
+      e2eTotalSteps: String(flow.totalSteps),
+    });
+    return `${stepDef.moduleUrl}?${params.toString()}`;
   };
 
   // Execute current step (auto-chain AI/system steps)
@@ -531,7 +555,197 @@ export default function FlowDetailPage() {
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/50">
                     <div className="ml-11 space-y-3">
-                      {/* Step Metadata */}
+                      {/* Step Definition (from template) */}
+                      {(() => {
+                        const stepDef = flowDef?.steps[step.stepNumber - 1];
+                        if (!stepDef) return null;
+                        return (
+                          <>
+                            {/* Description + Role + SLA */}
+                            {(stepDef.description || stepDef.assignedRole) && (
+                              <div className="space-y-1">
+                                {stepDef.description && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{stepDef.description}</p>
+                                )}
+                                <div className="flex items-center gap-4 text-xs">
+                                  {stepDef.assignedRole && (
+                                    <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                                      <UserCheck className="h-3 w-3" /> {stepDef.assignedRole}
+                                    </span>
+                                  )}
+                                  {stepDef.slaHours != null && (
+                                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                      <Timer className="h-3 w-3" />
+                                      SLA: {stepDef.slaHours < 1 ? `${Math.round(stepDef.slaHours * 60)}m` : `${stepDef.slaHours}h`}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Input Data Requirements */}
+                            {stepDef.inputFields && stepDef.inputFields.length > 0 && (
+                              <div>
+                                <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1.5">
+                                  <Database className="h-3.5 w-3.5 text-blue-500" />
+                                  Required Data ({stepDef.inputFields.length})
+                                </h5>
+                                <div className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+                                  <table className="w-full text-xs">
+                                    <thead>
+                                      <tr className="bg-gray-100 dark:bg-gray-800">
+                                        <th className="px-2 py-1 text-left font-medium text-gray-600 dark:text-gray-400">Field</th>
+                                        <th className="px-2 py-1 text-left font-medium text-gray-600 dark:text-gray-400">Source</th>
+                                        <th className="px-2 py-1 text-left font-medium text-gray-600 dark:text-gray-400">From</th>
+                                        <th className="px-2 py-1 text-center font-medium text-gray-600 dark:text-gray-400">Req</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                      {stepDef.inputFields.map((f, fi) => {
+                                        // Check if the providing step is completed
+                                        const providerDone = f.providedBy?.startsWith("step:")
+                                          ? flow.steps.some((s) => s.stepNumber === Number(f.providedBy!.split(":")[1]) && s.status === "completed")
+                                          : undefined;
+                                        return (
+                                          <tr key={fi} className="bg-white dark:bg-gray-900">
+                                            <td className="px-2 py-1 font-medium text-gray-900 dark:text-white">{f.field}</td>
+                                            <td className="px-2 py-1 text-gray-500 dark:text-gray-400">{f.source}</td>
+                                            <td className="px-2 py-1">
+                                              {f.providedBy ? (
+                                                <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] ${
+                                                  providerDone === true
+                                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                                    : providerDone === false
+                                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                                    : "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                                }`}>
+                                                  {providerDone === true && <CheckCircle className="h-2.5 w-2.5" />}
+                                                  {providerDone === false && <Clock className="h-2.5 w-2.5" />}
+                                                  {f.providedBy}
+                                                </span>
+                                              ) : (
+                                                <span className="text-gray-400">—</span>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-1 text-center">
+                                              {f.required ? (
+                                                <span className="text-[10px] font-bold text-red-500">YES</span>
+                                              ) : (
+                                                <span className="text-gray-400">opt</span>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Dependencies with live status */}
+                            {stepDef.dependencies && stepDef.dependencies.length > 0 && (
+                              <div>
+                                <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1.5">
+                                  <Link2 className="h-3.5 w-3.5 text-orange-500" />
+                                  Dependencies ({stepDef.dependencies.length})
+                                </h5>
+                                <div className="space-y-1">
+                                  {stepDef.dependencies.map((d, di) => {
+                                    const depDone = d.ref.startsWith("step:")
+                                      ? flow.steps.some((s) => s.stepNumber === Number(d.ref.split(":")[1]) && s.status === "completed")
+                                      : undefined;
+                                    return (
+                                      <div key={di} className="flex items-center gap-2 rounded bg-white px-2 py-1 text-xs dark:bg-gray-900">
+                                        {depDone === true ? (
+                                          <CheckCircle className="h-3 w-3 shrink-0 text-emerald-500" />
+                                        ) : depDone === false ? (
+                                          <Clock className="h-3 w-3 shrink-0 text-amber-500" />
+                                        ) : (
+                                          <Link2 className="h-3 w-3 shrink-0 text-gray-400" />
+                                        )}
+                                        <span className={`rounded px-1 py-0.5 text-[10px] font-medium uppercase ${
+                                          d.type === "hard" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" :
+                                          d.type === "soft" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" :
+                                          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                        }`}>
+                                          {d.type}
+                                        </span>
+                                        <span className="font-mono text-gray-500 dark:text-gray-400">{d.ref}</span>
+                                        <span className="text-gray-600 dark:text-gray-400">{d.label}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Sub-Tasks */}
+                            {stepDef.subTasks && stepDef.subTasks.length > 0 && (
+                              <div>
+                                <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1.5">
+                                  <ListChecks className="h-3.5 w-3.5 text-purple-500" />
+                                  Sub-Tasks ({stepDef.subTasks.length})
+                                </h5>
+                                <div className="space-y-0.5">
+                                  {stepDef.subTasks.map((st, si) => {
+                                    const SubIcon = st.type === "ai" ? Bot : st.type === "human" ? User : Monitor;
+                                    return (
+                                      <div key={si} className="flex items-start gap-2 rounded bg-white px-2 py-1 text-xs dark:bg-gray-900">
+                                        <SubIcon className={`mt-0.5 h-3 w-3 shrink-0 ${
+                                          st.type === "ai" ? "text-blue-500" : st.type === "human" ? "text-green-500" : "text-gray-500"
+                                        }`} />
+                                        <span className="text-gray-900 dark:text-white">{st.task}</span>
+                                        {st.role && (
+                                          <span className="ml-auto shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                            {st.role}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Output Fields + Validations */}
+                            <div className="flex flex-wrap gap-4">
+                              {stepDef.outputFields && stepDef.outputFields.length > 0 && (
+                                <div className="min-w-0 flex-1">
+                                  <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1.5">
+                                    <FileOutput className="h-3.5 w-3.5 text-emerald-500" />
+                                    Outputs
+                                  </h5>
+                                  <div className="flex flex-wrap gap-1">
+                                    {stepDef.outputFields.map((o, oi) => (
+                                      <span key={oi} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                        {o}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {stepDef.validations && stepDef.validations.length > 0 && (
+                                <div className="min-w-0 flex-1">
+                                  <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1.5">
+                                    <ShieldCheckIcon className="h-3.5 w-3.5 text-teal-500" />
+                                    Validations
+                                  </h5>
+                                  <ul className="space-y-0.5">
+                                    {stepDef.validations.map((v, vi) => (
+                                      <li key={vi} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                                        <CheckCircle className="h-2.5 w-2.5 shrink-0 text-teal-500" /> {v}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+
+                      {/* Step Execution Metadata */}
                       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
                         <div>
                           <span className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Started</span>
@@ -563,8 +777,40 @@ export default function FlowDetailPage() {
                         </div>
                       )}
 
+                      {/* ── D-006: Entity Bindings (completed steps with real entities) ── */}
+                      {step.status === "completed" && step.entityTable && step.entityId && (
+                        <EntityBindingPanel
+                          bindings={[{
+                            bindingId: step.id,
+                            entityId: step.entityId,
+                            entityTable: step.entityTable,
+                            entityAction: step.entityAction ?? "create",
+                            entityData: step.outputData?.entityData as Record<string, unknown> ?? step.outputData as Record<string, unknown> ?? null,
+                            createdAt: step.completedAt ?? step.createdAt,
+                          }]}
+                        />
+                      )}
+
                       {/* ── Execution Controls (only on current step) ── */}
                       {isCurrentStep && (flow.status === "active" || flow.status === "paused_at_gate") && (
+                        <div className="space-y-3">
+                          {/* D-006: Inline Step Form for CRUD/human_form steps */}
+                          {(() => {
+                            const sd = flowDef?.steps[step.stepNumber - 1];
+                            if (!sd?.inputFields?.length || flow.status === "paused_at_gate") return null;
+                            return (
+                              <StepInputForm
+                                flowInstanceId={flow.id}
+                                stepNumber={step.stepNumber}
+                                stepName={sd.step}
+                                inputFields={sd.inputFields}
+                                entityTable={sd.entityTable}
+                                entityAction={sd.entityAction}
+                                onComplete={() => fetchData()}
+                              />
+                            );
+                          })()}
+
                         <div className="rounded-lg border border-blue-200 bg-blue-50/80 p-3 dark:border-blue-800 dark:bg-blue-950/30">
                           <p className="text-xs font-semibold uppercase text-blue-700 dark:text-blue-300 mb-2">Execute This Step</p>
                           <div className="flex flex-wrap gap-2">
@@ -628,13 +874,14 @@ export default function FlowDetailPage() {
 
                             {/* Open in Module */}
                             {(() => {
-                              const moduleUrl = getModuleUrl(step.stepNumber);
+                              const moduleUrl = getModuleUrl(step.stepNumber, step.status);
                               if (!moduleUrl) return null;
                               return (
                                 <Link
                                   href={moduleUrl}
+                                  target="_blank"
                                   className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                                  title="Open the module page to do this step manually"
+                                  title="Open the module page to do this step manually (new tab)"
                                 >
                                   <ExternalLink className="h-3 w-3" />
                                   Open in Module
@@ -658,15 +905,17 @@ export default function FlowDetailPage() {
                             );
                           })()}
                         </div>
+                        </div>
                       )}
 
                       {/* ── Module Link for non-current steps ── */}
                       {!isCurrentStep && (() => {
-                        const moduleUrl = getModuleUrl(step.stepNumber);
+                        const moduleUrl = getModuleUrl(step.stepNumber, step.status);
                         if (!moduleUrl) return null;
                         return (
                           <Link
                             href={moduleUrl}
+                            target="_blank"
                             className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
                           >
                             <ExternalLink className="h-3 w-3" />

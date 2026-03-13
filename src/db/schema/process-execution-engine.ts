@@ -176,7 +176,7 @@ export const peEventLog = pgTable(
 // ══════════════════════════════════════════════════════════════
 
 // ── E2E Flow Instances ──
-// Tracks a running E2E flow (e.g. E2E-01 Booking-to-Cash)
+// Tracks a running E2E flow (e.g. E2E-04 Booking-to-Cash)
 
 export const peE2eFlowInstances = pgTable(
   "pe_e2e_flow_instances",
@@ -247,6 +247,11 @@ export const peE2eStepInstances = pgTable(
     durationMs: integer("duration_ms"),
     blockedByStepId: uuid("blocked_by_step_id"), // self-ref: step that must complete first
     parallelGroup: varchar("parallel_group", { length: 50 }), // steps in same group run in parallel
+    // D-006: Entity binding fields
+    entityTable: varchar("entity_table", { length: 100 }), // e.g. "scm_leads", "scm_opportunities"
+    entityId: uuid("entity_id"), // FK to the real entity created/updated by this step
+    entityAction: varchar("entity_action", { length: 20 }), // create | update | read
+    executorMode: varchar("executor_mode", { length: 20 }), // crud | ai_with_tools | gate | human_form
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -358,7 +363,7 @@ export const peEventTriggers = pgTable(
       .references(() => tenants.id, { onDelete: "cascade" }),
     eventType: varchar("event_type", { length: 100 }).notNull(), // booking.confirmed, vessel.eta_24h, etc.
     e2eFlowId: varchar("e2e_flow_id", { length: 20 }).notNull(), // E2E-01, E2E-02, etc.
-    conditions: jsonb("conditions").default({}), // conditional trigger (e.g. { "has_reefer": true } → E2E-05)
+    conditions: jsonb("conditions").default({}), // conditional trigger (e.g. { "has_reefer": true } → E2E-11)
     entityType: varchar("entity_type", { length: 50 }).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     priority: integer("priority").notNull().default(0), // higher = evaluated first
@@ -375,5 +380,40 @@ export const peEventTriggers = pgTable(
     index("pe_event_trigger_event_idx").on(table.eventType),
     index("pe_event_trigger_active_idx").on(table.eventType, table.isActive),
     index("pe_event_trigger_flow_idx").on(table.e2eFlowId),
+  ]
+);
+
+// ══════════════════════════════════════════════════════════════
+// D-006: ENTITY BINDINGS
+// Tracks real entities (leads, opportunities, quotations, etc.)
+// created/updated by each E2E flow step
+// ══════════════════════════════════════════════════════════════
+
+export const peStepEntityBindings = pgTable(
+  "pe_step_entity_bindings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    stepInstanceId: uuid("step_instance_id")
+      .notNull()
+      .references(() => peE2eStepInstances.id, { onDelete: "cascade" }),
+    flowInstanceId: uuid("flow_instance_id")
+      .notNull()
+      .references(() => peE2eFlowInstances.id, { onDelete: "cascade" }),
+    entityTable: varchar("entity_table", { length: 100 }).notNull(), // e.g. "scm_leads"
+    entityId: uuid("entity_id").notNull(), // real entity PK
+    entityAction: varchar("entity_action", { length: 20 }).notNull(), // create | update | read
+    entityData: jsonb("entity_data"), // snapshot of entity at time of binding
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("pe_entity_bind_tenant_idx").on(table.tenantId),
+    index("pe_entity_bind_step_idx").on(table.stepInstanceId),
+    index("pe_entity_bind_flow_idx").on(table.flowInstanceId),
+    index("pe_entity_bind_entity_idx").on(table.entityTable, table.entityId),
   ]
 );

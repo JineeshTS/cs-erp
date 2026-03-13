@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { ChatPanel } from "@/components/ai-chat/chat-panel";
+import { FlowContextBanner } from "@/components/processes/flow-context-banner";
 
 export default async function DashboardLayout({
   children,
@@ -33,7 +34,10 @@ export default async function DashboardLayout({
       <Sidebar tenantName={tenant?.name || "CS ERP"} permissions={permissions} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar userName={userName} userEmail={session.email} />
-        <main className="flex-1 overflow-y-auto px-8 py-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-8 py-6">
+          <FlowContextBanner />
+          {children}
+        </main>
       </div>
       <ChatPanel />
     </div>

@@ -154,20 +154,20 @@ export async function executeStepWithAi(
       errorMsg
     );
 
-    // Return completed with error note — don't block the flow
+    // D-006: Return failed status so the flow doesn't silently advance
     return {
       ...baseResult,
-      status: "completed",
+      status: "failed",
       aiModel: MODEL,
       tokensUsed: 0,
       result: {
-        summary: `AI execution failed, auto-completed with fallback`,
+        summary: `AI execution failed: ${errorMsg}`,
         decisions: [],
         findings: [],
         risks: [`AI execution error: ${errorMsg}`],
-        followUp: ["Review this step manually"],
+        followUp: ["Review this step manually — AI execution did not complete"],
         data: {},
-        fallback: true,
+        failed: true,
       },
       error: errorMsg,
     };

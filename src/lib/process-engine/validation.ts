@@ -72,6 +72,20 @@ export const aiAssistSchema = z.object({
   gateDecision: z.enum(["approved", "rejected", "option_selected", "input_provided"]).optional(),
 });
 
+// ── D-006: Entity Binding Schemas ──
+
+export const stepCompleteSchema = z.object({
+  stepNumber: z.number().int().min(1),
+  entityId: z.string().uuid(),
+  entityTable: z.string().min(1).max(100),
+  entityAction: z.enum(["create", "update", "read"]).default("create"),
+  entityData: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const stepContextQuerySchema = z.object({
+  step: z.coerce.number().int().min(1),
+});
+
 export const createFlowInstanceSchema = z.object({
   e2eFlowId: z.string().min(1).max(20),
   entityType: z.string().min(1).max(50),

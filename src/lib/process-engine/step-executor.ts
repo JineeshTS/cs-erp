@@ -2,15 +2,18 @@
  * E2E Flow Step Executor
  *
  * The execution engine that drives E2E flow progression:
- * - AI/system steps: execute via Claude API (F-027) with contextual prompts
+ * - CRUD steps: create/update real entities via entity-step-executor (D-006)
+ * - AI-with-tools steps: Claude + function calling via ai-tool-executor (D-006)
  * - Human gate steps: create pe_human_gates record, pause flow
- * - Auto-chains through consecutive AI/system steps
- * - Stops at human gates or flow completion
+ * - Human form steps: mark waiting_human, don't auto-execute
+ * - Legacy AI/system steps: execute via Claude API (F-027) — fallback
+ * - Auto-chains through consecutive auto-execute steps
+ * - Stops at human gates/forms or flow completion
  *
  * Called after:
  * 1. Flow creation (to execute step 1)
  * 2. Gate resolution (to resume from next step)
- * 3. Manual step completion (via API)
+ * 3. Manual step completion (via API — step-complete route)
  */
 
 import { db } from "@/lib/db";
@@ -27,6 +30,11 @@ import { executeStepWithAi } from "./ai-step-executor";
 import { enrichGateWithAiRecommendation, collectPreviousStepSummaries } from "./ai-gate-preparer";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import type { E2EFlowStep, GateType } from "@/types/processes";
+// D-006 Phase 2: New executors
+import { executeCrudStep } from "./entity-step-executor";
+import { executeAiToolStep } from "./ai-tool-executor";
+import { getExecutorConfig } from "./executor-config-registry";
+import { resolveStepContext } from "./flow-context-service";
 
 // ── SLA defaults by priority (from D-005 Section 6) ──
 
@@ -177,7 +185,121 @@ export async function executeCurrentStep(
       return { status: "error", stepsExecuted };
     }
 
-    // ── AI/System Step: Auto-Execute via Claude API ──
+    // ── D-006: Check for executor config (CRUD / AI-with-tools) ──
+    const executorConfig = getExecutorConfig(instance.e2eFlowId, currentStepNum);
+
+    if (executorConfig?.mode === "crud") {
+      // CRUD step → create/update real entity via direct DB call
+      console.log(`[StepExecutor] CRUD step ${currentStepNum}: ${stepDef.step}`);
+
+      // Resolve context from prior steps for field pre-population
+      const context = await resolveStepContext(flowInstanceId, tenantId, currentStepNum);
+
+      const result = await executeCrudStep({
+        tenantId,
+        flowInstanceId,
+        stepInstanceId: stepInstance.id,
+        stepNumber: currentStepNum,
+        config: executorConfig,
+        inputData: {
+          ...context?.resolvedInputs ?? {},
+          ...(stepInstance.inputData as Record<string, unknown> ?? {}),
+        },
+        userId: (instance.metadata as Record<string, unknown>)?.triggeredBy as string ?? tenantId,
+      });
+
+      if (result.status === "failed") {
+        console.error(`[StepExecutor] CRUD step ${currentStepNum} failed: ${result.error}`);
+        // Mark step as failed but don't stop the flow — allow retry
+        await db
+          .update(peE2eStepInstances)
+          .set({ status: "failed", outputData: { error: result.error } })
+          .where(and(eq(peE2eStepInstances.id, stepInstance.id), eq(peE2eStepInstances.tenantId, tenantId)));
+        return { status: "error", stepsExecuted };
+      }
+
+      // Advance flow with entity binding info
+      const advanced = await advanceFlowStep(flowInstanceId, tenantId, {
+        executorMode: "crud",
+        entityTable: result.entityTable,
+        entityId: result.entityId,
+        entityAction: result.entityAction,
+        entityData: result.entityData,
+      });
+      stepsExecuted++;
+
+      if (!advanced) return { status: "error", stepsExecuted };
+      if (advanced.status === "completed") {
+        console.log(`[StepExecutor] Flow ${flowInstanceId} completed after ${stepsExecuted} steps`);
+        return { status: "completed", stepsExecuted };
+      }
+      continue;
+    }
+
+    if (executorConfig?.mode === "ai_with_tools") {
+      // AI-with-tools step → Claude with function calling, real DB operations
+      console.log(`[StepExecutor] AI-with-tools step ${currentStepNum}: ${stepDef.step}`);
+      const flowDef = getFlowDefinition(instance.e2eFlowId);
+
+      // Gather context from prior step bindings
+      const context = await resolveStepContext(flowInstanceId, tenantId, currentStepNum);
+
+      const result = await executeAiToolStep({
+        tenantId,
+        flowInstanceId,
+        stepInstanceId: stepInstance.id,
+        stepNumber: currentStepNum,
+        config: executorConfig,
+        priorContext: {
+          resolvedInputs: context?.resolvedInputs ?? {},
+          entitySnapshots: context?.entitySnapshots ?? {},
+          priorBindings: context?.priorBindings ?? {},
+        },
+        flowMeta: {
+          flowId: instance.e2eFlowId,
+          flowName: flowDef?.name ?? instance.e2eFlowId,
+          entityType: instance.entityType,
+          entityId: instance.entityId,
+          totalSteps: instance.totalSteps,
+        },
+        userId: (instance.metadata as Record<string, unknown>)?.triggeredBy as string ?? tenantId,
+      });
+
+      if (result.status === "failed") {
+        console.error(`[StepExecutor] AI-with-tools step ${currentStepNum} failed: ${result.error}`);
+        await db
+          .update(peE2eStepInstances)
+          .set({ status: "failed", outputData: { error: result.error, aiAnalysis: result.aiAnalysis } })
+          .where(and(eq(peE2eStepInstances.id, stepInstance.id), eq(peE2eStepInstances.tenantId, tenantId)));
+        return { status: "error", stepsExecuted };
+      }
+
+      const advanced = await advanceFlowStep(flowInstanceId, tenantId, {
+        executorMode: "ai_with_tools",
+        entityTable: result.entityTable,
+        entityId: result.entityId,
+        entityAction: result.entityAction,
+        aiAnalysis: result.aiAnalysis,
+        toolCallsExecuted: result.toolCallsExecuted,
+        tokensUsed: result.tokensUsed,
+      });
+      stepsExecuted++;
+
+      if (!advanced) return { status: "error", stepsExecuted };
+      if (advanced.status === "completed") {
+        console.log(`[StepExecutor] Flow ${flowInstanceId} completed after ${stepsExecuted} steps`);
+        return { status: "completed", stepsExecuted };
+      }
+      continue;
+    }
+
+    if (executorConfig?.mode === "human_form") {
+      // Human form step → don't auto-execute, wait for step-complete API
+      console.log(`[StepExecutor] Human form step ${currentStepNum}: ${stepDef.step} — waiting for input`);
+      return { status: "waiting_human", stepsExecuted };
+    }
+
+    // ── Legacy AI/System Step: Auto-Execute via Claude API (fallback) ──
     if (isAutoExecuteStep(stepDef)) {
       const flowDef = getFlowDefinition(instance.e2eFlowId);
       const previousOutputs = await getPreviousStepOutputs(flowInstanceId, tenantId, currentStepNum);
@@ -196,6 +318,16 @@ export async function executeCurrentStep(
         entityId: instance.entityId,
         previousStepOutputs: previousOutputs,
       });
+
+      // D-006: Don't advance if AI step failed
+      if (output.status === "failed") {
+        console.error(`[StepExecutor] AI step ${currentStepNum} failed: ${output.error}`);
+        await db
+          .update(peE2eStepInstances)
+          .set({ status: "failed", outputData: output.result })
+          .where(and(eq(peE2eStepInstances.id, stepInstance.id), eq(peE2eStepInstances.tenantId, tenantId)));
+        return { status: "error", stepsExecuted };
+      }
 
       const advanced = await advanceFlowStep(flowInstanceId, tenantId, { ...output });
       stepsExecuted++;

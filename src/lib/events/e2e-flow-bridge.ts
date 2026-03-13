@@ -9,7 +9,7 @@
  *
  * When a domain event fires:
  * - Look up matching E2E flows by triggerEvent
- * - Evaluate conditional triggers (e.g. reefer → E2E-05, DG → E2E-06)
+ * - Evaluate conditional triggers (e.g. reefer → E2E-11, DG → E2E-12)
  * - Create flow instances with step instances pre-populated
  */
 

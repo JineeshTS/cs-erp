@@ -26,6 +26,13 @@ import {
   Plus,
   List,
   LayoutGrid,
+  Database,
+  Link2,
+  ListChecks,
+  ShieldCheck,
+  FileOutput,
+  UserCheck,
+  Timer,
 } from "lucide-react";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import type { E2EFlowStep, E2EProcessFlow, FlowCategory } from "@/types/processes";
@@ -80,6 +87,12 @@ const GATE_COLORS: Record<string, string> = {
 };
 
 // ── Helpers ──
+
+function getCsrfToken(): string {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/csrf_token=([^;]+)/);
+  return match?.[1] ?? "csrf-placeholder";
+}
 
 function formatDuration(startStr: string | null, endStr: string | null): string {
   if (!startStr) return "\u2014";
@@ -138,6 +151,7 @@ export default function FlowDefinitionPage() {
   const [starting, setStarting] = useState(false);
   const [activeTab, setActiveTab] = useState<"steps" | "transactions">("steps");
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [expandedStepIdx, setExpandedStepIdx] = useState<Set<number>>(new Set());
 
   // Auto-expand all phases on mount
   useEffect(() => {
@@ -175,7 +189,7 @@ export default function FlowDefinitionPage() {
     try {
       const res = await fetch("/api/v1/process-engine/e2e-flows", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({
           e2eFlowId: flow.id,
           entityType: flow.entityType ?? "manual",
@@ -202,6 +216,15 @@ export default function FlowDefinitionPage() {
       const next = new Set(prev);
       if (next.has(phase)) next.delete(phase);
       else next.add(phase);
+      return next;
+    });
+  };
+
+  const toggleStepDetail = (idx: number) => {
+    setExpandedStepIdx((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
       return next;
     });
   };
@@ -375,57 +398,238 @@ export default function FlowDefinitionPage() {
                     {group.steps.map((step) => {
                       const style = STEP_TYPE_STYLE[step.type] ?? STEP_TYPE_STYLE.system;
                       const ExecutorIcon = EXECUTOR_ICONS[step.executorType ?? step.type] ?? Monitor;
+                      const hasRichData = !!(step.description || step.inputFields?.length || step.subTasks?.length);
+                      const isStepExpanded = expandedStepIdx.has(step.index);
 
                       return (
-                        <div key={step.index} className="flex items-center gap-3 px-4 py-3">
-                          {/* Step Number */}
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${style.bg} ${style.text} border ${style.border}`}>
-                            {step.index + 1}
+                        <div key={step.index}>
+                          <div
+                            className={`flex items-center gap-3 px-4 py-3 ${hasRichData ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50" : ""}`}
+                            onClick={() => hasRichData && toggleStepDetail(step.index)}
+                          >
+                            {/* Step Number */}
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${style.bg} ${style.text} border ${style.border}`}>
+                              {step.index + 1}
+                            </div>
+
+                            {/* Step Info */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">{step.step}</span>
+                                {step.processRef && (
+                                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                    {step.processRef}
+                                  </span>
+                                )}
+                                {step.gateType && (
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${GATE_COLORS[step.gateType] ?? ""}`}>
+                                    {step.gateType} gate
+                                  </span>
+                                )}
+                                {step.condition && (
+                                  <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                                    conditional
+                                  </span>
+                                )}
+                                {step.assignedRole && (
+                                  <span className="flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                    <UserCheck className="h-2.5 w-2.5" />
+                                    {step.assignedRole}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                <span className="flex items-center gap-1">
+                                  <ExecutorIcon className="h-3 w-3" />
+                                  {step.module}
+                                </span>
+                                {step.slaHours != null && (
+                                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                    <Timer className="h-3 w-3" />
+                                    SLA: {step.slaHours < 1 ? `${Math.round(step.slaHours * 60)}m` : `${step.slaHours}h`}
+                                  </span>
+                                )}
+                                {step.condition && (
+                                  <span className="italic text-purple-500 dark:text-purple-400">
+                                    if: {step.condition}
+                                  </span>
+                                )}
+                                {hasRichData && (
+                                  <span className="text-blue-500 dark:text-blue-400">
+                                    {step.inputFields?.length ?? 0} inputs &middot; {step.subTasks?.length ?? 0} sub-tasks
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Expand indicator for rich steps */}
+                            {hasRichData && (
+                              <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isStepExpanded ? "rotate-90" : ""}`} />
+                            )}
+
+                            {/* Module Link */}
+                            {step.moduleUrl && (
+                              <Link
+                                href={step.moduleUrl}
+                                target="_blank"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                                title={`Open ${step.module} (new tab)`}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Open Module
+                              </Link>
+                            )}
                           </div>
 
-                          {/* Step Info */}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">{step.step}</span>
-                              {step.processRef && (
-                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-mono text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                                  {step.processRef}
-                                </span>
-                              )}
-                              {step.gateType && (
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${GATE_COLORS[step.gateType] ?? ""}`}>
-                                  {step.gateType} gate
-                                </span>
-                              )}
-                              {step.condition && (
-                                <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
-                                  conditional
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                              <span className="flex items-center gap-1">
-                                <ExecutorIcon className="h-3 w-3" />
-                                {step.module}
-                              </span>
-                              {step.condition && (
-                                <span className="italic text-purple-500 dark:text-purple-400">
-                                  if: {step.condition}
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          {/* ── Rich Step Detail Panel ── */}
+                          {isStepExpanded && hasRichData && (
+                            <div className="border-t border-gray-100 bg-gray-50/70 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/40">
+                              <div className="ml-10 space-y-4">
+                                {/* Description */}
+                                {step.description && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                    {step.description}
+                                  </p>
+                                )}
 
-                          {/* Module Link */}
-                          {step.moduleUrl && (
-                            <Link
-                              href={step.moduleUrl}
-                              className="flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-                              title={`Open ${step.module}`}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Open Module
-                            </Link>
+                                {/* Input Data Requirements */}
+                                {step.inputFields && step.inputFields.length > 0 && (
+                                  <div>
+                                    <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">
+                                      <Database className="h-3.5 w-3.5 text-blue-500" />
+                                      Input Data Required ({step.inputFields.length})
+                                    </h5>
+                                    <div className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+                                      <table className="w-full text-xs">
+                                        <thead>
+                                          <tr className="bg-gray-100 dark:bg-gray-800">
+                                            <th className="px-3 py-1.5 text-left font-medium text-gray-600 dark:text-gray-400">Field</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-gray-600 dark:text-gray-400">Source</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-gray-600 dark:text-gray-400">Provided By</th>
+                                            <th className="px-3 py-1.5 text-center font-medium text-gray-600 dark:text-gray-400">Required</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                          {step.inputFields.map((f, fi) => (
+                                            <tr key={fi} className="bg-white dark:bg-gray-900">
+                                              <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-white">{f.field}</td>
+                                              <td className="px-3 py-1.5 text-gray-600 dark:text-gray-400">{f.source}</td>
+                                              <td className="px-3 py-1.5">
+                                                {f.providedBy ? (
+                                                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                    {f.providedBy}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-400">—</span>
+                                                )}
+                                              </td>
+                                              <td className="px-3 py-1.5 text-center">
+                                                {f.required ? (
+                                                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                                                    <span className="text-[8px] font-bold text-red-600 dark:text-red-400">!</span>
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-400">opt</span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Output Fields */}
+                                {step.outputFields && step.outputFields.length > 0 && (
+                                  <div>
+                                    <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">
+                                      <FileOutput className="h-3.5 w-3.5 text-emerald-500" />
+                                      Output Data ({step.outputFields.length})
+                                    </h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {step.outputFields.map((o, oi) => (
+                                        <span key={oi} className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                          {o}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Dependencies */}
+                                {step.dependencies && step.dependencies.length > 0 && (
+                                  <div>
+                                    <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">
+                                      <Link2 className="h-3.5 w-3.5 text-orange-500" />
+                                      Dependencies ({step.dependencies.length})
+                                    </h5>
+                                    <div className="space-y-1">
+                                      {step.dependencies.map((d, di) => (
+                                        <div key={di} className="flex items-center gap-2 rounded bg-white px-3 py-1.5 text-xs dark:bg-gray-900">
+                                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${
+                                            d.type === "hard" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" :
+                                            d.type === "soft" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" :
+                                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                          }`}>
+                                            {d.type}
+                                          </span>
+                                          <span className="font-mono text-gray-500 dark:text-gray-400">{d.ref}</span>
+                                          <span className="text-gray-600 dark:text-gray-400">{d.label}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Sub-Tasks */}
+                                {step.subTasks && step.subTasks.length > 0 && (
+                                  <div>
+                                    <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">
+                                      <ListChecks className="h-3.5 w-3.5 text-purple-500" />
+                                      Sub-Tasks ({step.subTasks.length})
+                                    </h5>
+                                    <div className="space-y-1">
+                                      {step.subTasks.map((st, si) => {
+                                        const SubIcon = st.type === "ai" ? Bot : st.type === "human" ? User : Monitor;
+                                        return (
+                                          <div key={si} className="flex items-start gap-2 rounded bg-white px-3 py-1.5 text-xs dark:bg-gray-900">
+                                            <SubIcon className={`mt-0.5 h-3 w-3 shrink-0 ${
+                                              st.type === "ai" ? "text-blue-500" : st.type === "human" ? "text-green-500" : "text-gray-500"
+                                            }`} />
+                                            <span className="text-gray-900 dark:text-white">{st.task}</span>
+                                            {st.role && (
+                                              <span className="ml-auto shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                                {st.role}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Validations */}
+                                {step.validations && step.validations.length > 0 && (
+                                  <div>
+                                    <h5 className="flex items-center gap-1.5 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">
+                                      <ShieldCheck className="h-3.5 w-3.5 text-teal-500" />
+                                      Validations ({step.validations.length})
+                                    </h5>
+                                    <ul className="space-y-0.5">
+                                      {step.validations.map((v, vi) => (
+                                        <li key={vi} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                          <CheckCircle className="h-3 w-3 shrink-0 text-teal-500" />
+                                          {v}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       );

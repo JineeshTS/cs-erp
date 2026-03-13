@@ -42,6 +42,40 @@ export type FlowCategory =
   | "commercial_strategy"
   | "platform";
 
+// ── Rich Step Metadata Types ──
+
+/** A single data field required by a step to execute */
+export interface StepDataField {
+  /** Field name, e.g., "Origin Port Code" */
+  field: string;
+  /** Where this data comes from, e.g., "Booking Request", "AR Module", "Step 2 output" */
+  source: string;
+  /** Is this field mandatory to proceed? */
+  required: boolean;
+  /** Which earlier step or external system provides this, e.g., "step:1", "CRM", "E2E-36" */
+  providedBy?: string;
+}
+
+/** A dependency that must be satisfied before the step can execute */
+export interface StepDependency {
+  /** Reference to the dependency, e.g., "step:2", "E2E-36:completed", "booking.confirmed" */
+  ref: string;
+  /** hard = must complete, soft = should complete, data = only need its output data */
+  type: "hard" | "soft" | "data";
+  /** Human-readable explanation */
+  label: string;
+}
+
+/** A granular sub-task within a step */
+export interface StepSubTask {
+  /** Sub-task description */
+  task: string;
+  /** Who does it */
+  type: "ai" | "human" | "system";
+  /** Role responsible, e.g., "Documentation Clerk", "Routing Engine AI" */
+  role?: string;
+}
+
 export interface E2EFlowStep {
   module: string;
   step: string;
@@ -57,6 +91,34 @@ export interface E2EFlowStep {
   phase?: string;
   /** Condition for this step to execute — if falsy, step can be skipped */
   condition?: string;
+
+  // ── D-006: Entity Binding Metadata ──
+
+  /** DB table this step creates/updates (e.g. "scm_leads", "scm_opportunities") */
+  entityTable?: string;
+  /** What this step does to the entity: create, update, or read */
+  entityAction?: "create" | "update" | "read";
+  /** Executor mode: crud (direct DB), ai_with_tools (Claude + function calling), gate, human_form */
+  executorMode?: "crud" | "ai_with_tools" | "gate" | "human_form";
+
+  // ── Rich Step Definition (optional — enriched flows have these) ──
+
+  /** Detailed description of what this step does and why */
+  description?: string;
+  /** Role/team responsible for executing this step */
+  assignedRole?: string;
+  /** Expected SLA in hours (e.g., 0.5 = 30 min, 24 = 1 day) */
+  slaHours?: number;
+  /** Data fields/documents required to execute this step */
+  inputFields?: StepDataField[];
+  /** Data/documents this step produces for downstream consumption */
+  outputFields?: string[];
+  /** Steps or events that must complete before this step */
+  dependencies?: StepDependency[];
+  /** Granular sub-tasks that make up this step */
+  subTasks?: StepSubTask[];
+  /** Validation checks that must pass before step can be marked complete */
+  validations?: string[];
 }
 
 export interface E2EProcessFlow {
