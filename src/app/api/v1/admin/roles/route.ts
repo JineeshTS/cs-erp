@@ -10,36 +10,49 @@ import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "roles:read"))) {
-    return forbiddenResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "roles:read"))) {
+      return forbiddenResponse();
+    }
+
+    // Get all roles visible to this tenant (system roles + own tenant roles)
+    const allRoles = await db
+      .select()
+      .from(roles)
+      .where(or(isNull(roles.tenantId), eq(roles.tenantId, user.tenantId)));
+
+    // Batch fetch all permissions for all roles (avoids N+1)
+    const roleIds = allRoles.map((r) => r.id);
+    const allPerms = roleIds.length > 0
+      ? await db
+          .select({ roleId: rolePermissions.roleId, name: permissions.name })
+          .from(rolePermissions)
+          .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      : [];
+
+    const permsByRole = new Map<string, string[]>();
+    for (const p of allPerms) {
+      const arr = permsByRole.get(p.roleId) ?? [];
+      arr.push(p.name);
+      permsByRole.set(p.roleId, arr);
+    }
+
+    const rolesWithPerms = allRoles.map((role) => ({
+      ...role,
+      assignedPermissions: permsByRole.get(role.id) ?? [],
+    }));
+
+    return NextResponse.json({ data: rolesWithPerms });
+  } catch (error) {
+    console.error("[admin/roles] GET error:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to list roles" } },
+      { status: 500 }
+    );
   }
-
-  // Get all roles visible to this tenant (system roles + own tenant roles)
-  const allRoles = await db
-    .select()
-    .from(roles)
-    .where(or(isNull(roles.tenantId), eq(roles.tenantId, user.tenantId)));
-
-  // For each role, get its permissions via role_permissions join
-  const rolesWithPerms = await Promise.all(
-    allRoles.map(async (role) => {
-      const perms = await db
-        .select({ name: permissions.name })
-        .from(rolePermissions)
-        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-        .where(eq(rolePermissions.roleId, role.id));
-
-      return {
-        ...role,
-        assignedPermissions: perms.map((p) => p.name),
-      };
-    })
-  );
-
-  return NextResponse.json({ data: rolesWithPerms });
 }
 
 const createRoleSchema = z.object({
@@ -51,8 +64,9 @@ const createRoleSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
   if (!(await hasPermission(user.id, user.tenantId, "roles:create"))) {
     return forbiddenResponse();
@@ -97,5 +111,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ data: role }, { status: 201 });
+    return NextResponse.json({ data: role }, { status: 201 });
+  } catch (error) {
+    console.error("[admin/roles] POST error:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to create role" } },
+      { status: 500 }
+    );
+  }
 }

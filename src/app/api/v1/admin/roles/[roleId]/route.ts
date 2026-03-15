@@ -19,106 +19,122 @@ const updateRoleSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "roles:edit"))) {
-    return forbiddenResponse();
-  }
+    if (!(await hasPermission(user.id, user.tenantId, "roles:edit"))) {
+      return forbiddenResponse();
+    }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
-  const { roleId } = await params;
-  const body = await request.json();
-  const parsed = updateRoleSchema.safeParse(body);
+    const { roleId } = await params;
+    const body = await request.json();
+    const parsed = updateRoleSchema.safeParse(body);
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
-      { status: 422 }
-    );
-  }
-
-  // Cannot edit system roles — also enforce tenant isolation
-  const [existing] = await db
-    .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
-    .from(roles)
-    .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
-    .limit(1);
-
-  if (!existing) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Role not found" } },
-      { status: 404 }
-    );
-  }
-
-  if (existing.isSystem) {
-    return NextResponse.json(
-      { error: { code: "FORBIDDEN", message: "Cannot edit system roles" } },
-      { status: 403 }
-    );
-  }
-
-  const { permissionIds, ...updates } = parsed.data;
-
-  if (Object.keys(updates).length > 0) {
-    await db.update(roles).set(updates).where(eq(roles.id, roleId));
-  }
-
-  if (permissionIds) {
-    // Replace all permissions
-    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-    if (permissionIds.length > 0) {
-      await db.insert(rolePermissions).values(
-        permissionIds.map((pid) => ({
-          roleId,
-          permissionId: pid,
-        }))
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
+        { status: 422 }
       );
     }
-  }
 
-  const [updated] = await db.select().from(roles).where(eq(roles.id, roleId)).limit(1);
-  return NextResponse.json({ data: updated });
+    // Cannot edit system roles — also enforce tenant isolation
+    const [existing] = await db
+      .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
+      .from(roles)
+      .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "Role not found" } },
+        { status: 404 }
+      );
+    }
+
+    if (existing.isSystem) {
+      return NextResponse.json(
+        { error: { code: "FORBIDDEN", message: "Cannot edit system roles" } },
+        { status: 403 }
+      );
+    }
+
+    const { permissionIds, ...updates } = parsed.data;
+
+    if (Object.keys(updates).length > 0) {
+      await db.update(roles).set(updates).where(eq(roles.id, roleId));
+    }
+
+    if (permissionIds) {
+      // Replace all permissions
+      await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+      if (permissionIds.length > 0) {
+        await db.insert(rolePermissions).values(
+          permissionIds.map((pid) => ({
+            roleId,
+            permissionId: pid,
+          }))
+        );
+      }
+    }
+
+    const [updated] = await db.select().from(roles).where(eq(roles.id, roleId)).limit(1);
+    return NextResponse.json({ data: updated });
+  } catch (error) {
+    console.error("[admin/roles/[roleId]] PATCH error:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to update role" } },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "roles:delete"))) {
-    return forbiddenResponse();
-  }
+    if (!(await hasPermission(user.id, user.tenantId, "roles:delete"))) {
+      return forbiddenResponse();
+    }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
-  const { roleId } = await params;
+    const { roleId } = await params;
 
-  const [existing] = await db
-    .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
-    .from(roles)
-    .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
-    .limit(1);
+    const [existing] = await db
+      .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
+      .from(roles)
+      .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
+      .limit(1);
 
-  if (!existing) {
+    if (!existing) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "Role not found" } },
+        { status: 404 }
+      );
+    }
+
+    if (existing.isSystem) {
+      return NextResponse.json(
+        { error: { code: "FORBIDDEN", message: "Cannot delete system roles" } },
+        { status: 403 }
+      );
+    }
+
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+    await db.delete(roles).where(eq(roles.id, roleId));
+
+    return NextResponse.json({ data: { id: roleId, deleted: true } });
+  } catch (error) {
+    console.error("[admin/roles/[roleId]] DELETE error:", error);
     return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Role not found" } },
-      { status: 404 }
+      { error: { code: "INTERNAL_ERROR", message: "Failed to delete role" } },
+      { status: 500 }
     );
   }
-
-  if (existing.isSystem) {
-    return NextResponse.json(
-      { error: { code: "FORBIDDEN", message: "Cannot delete system roles" } },
-      { status: 403 }
-    );
-  }
-
-  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-  await db.delete(roles).where(eq(roles.id, roleId));
-
-  return NextResponse.json({ data: { id: roleId, deleted: true } });
 }

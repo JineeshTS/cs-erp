@@ -13,42 +13,50 @@ import { logBusinessAudit } from "@/lib/business-audit";
 type RouteParams = { params: Promise<{ userId: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const currentUser = await getApiUser(request);
-  if (!currentUser) return unauthorizedResponse();
+  try {
+    const currentUser = await getApiUser(request);
+    if (!currentUser) return unauthorizedResponse();
 
-  if (!(await hasPermission(currentUser.id, currentUser.tenantId, "users:read"))) {
-    return forbiddenResponse();
-  }
+    if (!(await hasPermission(currentUser.id, currentUser.tenantId, "users:read"))) {
+      return forbiddenResponse();
+    }
 
-  const { userId } = await params;
+    const { userId } = await params;
 
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      displayName: users.displayName,
-      status: users.status,
-      roleId: users.roleId,
-      roleName: roles.name,
-      emailVerified: users.emailVerified,
-      lastLoginAt: users.lastLoginAt,
-      failedLoginAttempts: users.failedLoginAttempts,
-      lockedUntil: users.lockedUntil,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .leftJoin(roles, eq(users.roleId, roles.id))
-    .where(and(eq(users.id, userId), eq(users.tenantId, currentUser.tenantId)))
-    .limit(1);
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        status: users.status,
+        roleId: users.roleId,
+        roleName: roles.name,
+        emailVerified: users.emailVerified,
+        lastLoginAt: users.lastLoginAt,
+        failedLoginAttempts: users.failedLoginAttempts,
+        lockedUntil: users.lockedUntil,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .leftJoin(roles, eq(users.roleId, roles.id))
+      .where(and(eq(users.id, userId), eq(users.tenantId, currentUser.tenantId)))
+      .limit(1);
 
-  if (!user) {
+    if (!user) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "User not found" } },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ data: user });
+  } catch (error) {
+    console.error("[admin/users/[userId]] GET error:", error);
     return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "User not found" } },
-      { status: 404 }
+      { error: { code: "INTERNAL_ERROR", message: "Failed to get user" } },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({ data: user });
 }
 
 const updateUserSchema = z.object({
@@ -58,18 +66,19 @@ const updateUserSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const currentUser = await getApiUser(request);
-  if (!currentUser) return unauthorizedResponse();
+  try {
+    const currentUser = await getApiUser(request);
+    if (!currentUser) return unauthorizedResponse();
 
-  if (!(await hasPermission(currentUser.id, currentUser.tenantId, "users:edit"))) {
-    return forbiddenResponse();
-  }
+    if (!(await hasPermission(currentUser.id, currentUser.tenantId, "users:edit"))) {
+      return forbiddenResponse();
+    }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
-  const { userId } = await params;
-  const body = await request.json();
+    const { userId } = await params;
+    const body = await request.json();
   const parsed = updateUserSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -131,5 +140,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   }
 
-  return NextResponse.json({ data: updated });
+    return NextResponse.json({ data: updated });
+  } catch (error) {
+    console.error("[admin/users/[userId]] PATCH error:", error);
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to update user" } },
+      { status: 500 }
+    );
+  }
 }
