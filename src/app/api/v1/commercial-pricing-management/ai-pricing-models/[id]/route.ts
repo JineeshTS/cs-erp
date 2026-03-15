@@ -5,6 +5,8 @@ import { cpmAiPricingModels } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateAiPricingModelSchema } from "@/lib/commercial-pricing-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -31,14 +33,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "commercial:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateAiPricingModelSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(cpmAiPricingModels).set({ ...parsed.data }).where(and(eq(cpmAiPricingModels.id, id), eq(cpmAiPricingModels.tenantId, user.tenantId), isNull(cpmAiPricingModels.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ai-pricing-models", entityId: updated?.id, module: "commercial-pricing-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "AI pricing model not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -54,8 +61,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "commercial:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(cpmAiPricingModels).set({ deletedAt: new Date() }).where(and(eq(cpmAiPricingModels.id, id), eq(cpmAiPricingModels.tenantId, user.tenantId), isNull(cpmAiPricingModels.deletedAt))).returning({ id: cpmAiPricingModels.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ai-pricing-models", entityId: deleted?.id, module: "commercial-pricing-management", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "AI pricing model not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

@@ -6,6 +6,8 @@ import { createIncidentInvestigationSchema } from "@/lib/loss-prevention-risk-ma
 import { db } from "@/lib/db";
 import { lprIncidentInvestigations } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     const parsed = createIncidentInvestigationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "incident-investigations", entityId: record?.id, module: "loss-prevention-risk-management", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

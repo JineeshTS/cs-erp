@@ -5,6 +5,8 @@ import { melsComplianceRules } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateComplianceRuleSchema } from "@/lib/multi-entity-legal-structure/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,15 +37,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateComplianceRuleSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(melsComplianceRules).set(parsed.data)
       .where(and(eq(melsComplianceRules.id, id), eq(melsComplianceRules.tenantId, user.tenantId), isNull(melsComplianceRules.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "compliance-rules", entityId: updated?.id, module: "multi-entity-legal-structure", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Compliance rule not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -62,9 +69,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(melsComplianceRules).set({ deletedAt: new Date() })
       .where(and(eq(melsComplianceRules.id, id), eq(melsComplianceRules.tenantId, user.tenantId), isNull(melsComplianceRules.deletedAt))).returning({ id: melsComplianceRules.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "compliance-rules", entityId: deleted?.id, module: "multi-entity-legal-structure", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Compliance rule not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

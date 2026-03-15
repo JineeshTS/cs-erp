@@ -10,6 +10,8 @@ import {
 import { hasPermission } from "@/lib/rbac";
 import { getCapexOpexClassification } from "@/lib/fixed-assets-management/service";
 import { updateCapexOpexClassificationSchema } from "@/lib/fixed-assets-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -56,6 +58,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:edit")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateCapexOpexClassificationSchema.safeParse(body);
@@ -65,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           error: {
             code: "VALIDATION_ERROR",
             message: "Invalid input",
-            details: parsed.error,
+            details: formatZodErrors(parsed.error),
           },
         },
         { status: 422 }
@@ -81,6 +86,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "capex-opex-classifications", entityId: record?.id, module: "fixed-assets-management", previousData: null, newData: record as Record<string, unknown>, request });
 
     if (!record)
       return NextResponse.json(
@@ -115,6 +122,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:delete")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [record] = await db
       .update(famCapexOpexClassifications)
@@ -126,6 +136,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "capex-opex-classifications", entityId: record?.id, module: "fixed-assets-management", previousData: null, request });
 
     if (!record)
       return NextResponse.json(

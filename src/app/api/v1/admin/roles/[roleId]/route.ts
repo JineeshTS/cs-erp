@@ -6,6 +6,7 @@ import { roles } from "@/db/schema";
 import { rolePermissions, permissions } from "@/db/schema/permissions";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
 
 type RouteParams = { params: Promise<{ roleId: string }> };
 
@@ -25,22 +26,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   const { roleId } = await params;
   const body = await request.json();
   const parsed = updateRoleSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
 
-  // Cannot edit system roles
+  // Cannot edit system roles — also enforce tenant isolation
   const [existing] = await db
-    .select({ isSystem: roles.isSystem })
+    .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
     .from(roles)
-    .where(eq(roles.id, roleId))
+    .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
     .limit(1);
 
   if (!existing) {
@@ -88,12 +92,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   const { roleId } = await params;
 
   const [existing] = await db
-    .select({ isSystem: roles.isSystem })
+    .select({ isSystem: roles.isSystem, tenantId: roles.tenantId })
     .from(roles)
-    .where(eq(roles.id, roleId))
+    .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)))
     .limit(1);
 
   if (!existing) {

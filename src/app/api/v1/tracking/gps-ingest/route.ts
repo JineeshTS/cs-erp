@@ -8,6 +8,8 @@ import {
 } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import crypto from "crypto";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 const positionSchema = z.object({
   deviceId: z.string().min(1).max(100),
@@ -48,6 +50,9 @@ export async function POST(request: NextRequest) {
 
       if (!signature || !webhookTenantId) return unauthorizedResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
       const body = await request.text();
       const secret = process.env.TRACKING_WEBHOOK_SECRET;
       if (!secret) {
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
       const parsed = singleOrBatchSchema.safeParse(JSON.parse(body));
       if (!parsed.success) {
         return NextResponse.json(
-          { error: { code: "VALIDATION_ERROR", message: "Invalid payload", details: parsed.error } },
+          { error: { code: "VALIDATION_ERROR", message: "Invalid payload", details: formatZodErrors(parsed.error) } },
           { status: 422 }
         );
       }
@@ -96,7 +101,7 @@ export async function POST(request: NextRequest) {
     const parsed = singleOrBatchSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid payload", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid payload", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

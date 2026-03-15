@@ -29,7 +29,7 @@ function isStaticAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
-    pathname.includes(".")
+    /\.(ico|png|jpg|jpeg|gif|svg|webp|css|js|woff2?|ttf|eot|map)$/.test(pathname)
   );
 }
 

@@ -6,6 +6,8 @@ import { roles } from "@/db/schema";
 import { permissions, rolePermissions } from "@/db/schema/permissions";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   const user = await getApiUser(request);
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
   const parsed = createRoleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
@@ -82,6 +84,8 @@ export async function POST(request: NextRequest) {
       permissions: [],
     })
     .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "roles", entityId: role?.id, module: "admin", newData: role as Record<string, unknown>, request });
 
   // Assign permissions
   if (permissionIds.length > 0) {

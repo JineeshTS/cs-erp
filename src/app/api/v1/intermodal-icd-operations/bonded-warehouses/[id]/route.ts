@@ -5,6 +5,8 @@ import { icdBondedWarehouses } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateBondedWarehouseSchema } from "@/lib/intermodal-icd-operations/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -50,12 +52,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateBondedWarehouseSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -74,6 +79,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "bonded-warehouses", entityId: updated?.id, module: "intermodal-icd-operations", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(
@@ -98,6 +105,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db
       .update(icdBondedWarehouses)
@@ -113,6 +123,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning({ id: icdBondedWarehouses.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "bonded-warehouses", entityId: deleted?.id, module: "intermodal-icd-operations", previousData: null, request });
 
     if (!deleted) {
       return NextResponse.json(

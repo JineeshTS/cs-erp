@@ -5,6 +5,8 @@ import { cvmVoyageEstimates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateVoyageEstimateSchema } from "@/lib/chartering-vessel-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -49,12 +51,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "chartering:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateVoyageEstimateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -75,6 +80,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "voyage-estimates", entityId: updated?.id, module: "chartering-vessel-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(
@@ -98,6 +105,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "chartering:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db
       .update(cvmVoyageEstimates)
@@ -110,6 +120,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning({ id: cvmVoyageEstimates.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "voyage-estimates", entityId: deleted?.id, module: "chartering-vessel-management", previousData: null, request });
 
     if (!deleted) {
       return NextResponse.json(

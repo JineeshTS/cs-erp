@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { logEvent, listEventLog } from "@/lib/process-engine/service";
 import { logEventSchema } from "@/lib/process-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const parsed = logEventSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

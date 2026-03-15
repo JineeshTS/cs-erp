@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { updateOpportunitySchema } from "@/lib/sales-crm/validation";
 import { eventBus } from "@/lib/events/event-bus";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -36,11 +38,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "sales:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateOpportunitySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     // Fetch existing to detect status transitions
@@ -50,6 +55,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const [updated] = await db.update(scmOpportunities).set(parsed.data)
       .where(and(eq(scmOpportunities.id, id), eq(scmOpportunities.tenantId, user.tenantId), isNull(scmOpportunities.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "opportunities", entityId: existing?.id, module: "sales-crm", previousData: null, newData: existing as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Opportunity not found" } }, { status: 404 });
 
@@ -102,9 +109,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "sales:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(scmOpportunities).set({ deletedAt: new Date() })
       .where(and(eq(scmOpportunities.id, id), eq(scmOpportunities.tenantId, user.tenantId), isNull(scmOpportunities.deletedAt))).returning({ id: scmOpportunities.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "opportunities", entityId: deleted?.id, module: "sales-crm", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Opportunity not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

@@ -5,6 +5,8 @@ import { eqyReeferContainers } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateReeferContainerSchema } from "@/lib/equipment-control-yard-managem/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -28,10 +30,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:edit"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const body = await request.json();
     const parsed = updateReeferContainerSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
 
     const { lastPtiDate, nextPtiDue, setTemperature, minTemperature, maxTemperature, humidity, currentTemperature, ...rest } = parsed.data;
     const [updated] = await db.update(eqyReeferContainers).set({
@@ -44,6 +49,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...(humidity !== undefined && { humidity: humidity !== null ? humidity.toString() : null }),
       ...(currentTemperature !== undefined && { currentTemperature: currentTemperature !== null ? currentTemperature.toString() : null }),
     }).where(and(eq(eqyReeferContainers.id, id), eq(eqyReeferContainers.tenantId, user.tenantId), isNull(eqyReeferContainers.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "reefer-containers", entityId: updated?.id, module: "equipment-control-yard-managem", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Reefer container not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -57,8 +64,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:delete"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const [deleted] = await db.update(eqyReeferContainers).set({ deletedAt: new Date() }).where(and(eq(eqyReeferContainers.id, id), eq(eqyReeferContainers.tenantId, user.tenantId), isNull(eqyReeferContainers.deletedAt))).returning({ id: eqyReeferContainers.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "reefer-containers", entityId: deleted?.id, module: "equipment-control-yard-managem", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Reefer container not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {

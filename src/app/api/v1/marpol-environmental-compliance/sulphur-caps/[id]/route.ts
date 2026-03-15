@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getSulphurCap } from "@/lib/marpol-environmental-compliance/service";
 import { updateSulphurCapSchema } from "@/lib/marpol-environmental-compliance/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -36,10 +38,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
     const parsed = updateSulphurCapSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
 
     const [updated] = await db.update(mecSulphurCaps).set(parsed.data)
       .where(and(eq(mecSulphurCaps.id, id), eq(mecSulphurCaps.tenantId, user.tenantId), isNull(mecSulphurCaps.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "sulphur-caps", entityId: updated?.id, module: "marpol-environmental-compliance", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Sulphur cap not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -60,6 +64,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const [deleted] = await db.update(mecSulphurCaps).set({ deletedAt: new Date() })
       .where(and(eq(mecSulphurCaps.id, id), eq(mecSulphurCaps.tenantId, user.tenantId), isNull(mecSulphurCaps.deletedAt))).returning({ id: mecSulphurCaps.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "sulphur-caps", entityId: deleted?.id, module: "marpol-environmental-compliance", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Sulphur cap not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

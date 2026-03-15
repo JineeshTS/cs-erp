@@ -216,7 +216,7 @@ export async function advanceFlowStep(
       status: "completed",
       completedAt: now,
       outputData: output ?? {},
-      durationMs: sql<number>`EXTRACT(EPOCH FROM (${now}::timestamptz - "started_at")) * 1000`,
+      durationMs: sql<number>`EXTRACT(EPOCH FROM (${now.toISOString()}::timestamptz - "started_at")) * 1000`,
     })
     .where(
       and(

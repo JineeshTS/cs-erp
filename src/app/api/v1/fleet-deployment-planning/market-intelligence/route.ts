@@ -6,6 +6,8 @@ import { createMarketIntelligenceSchema } from "@/lib/fleet-deployment-planning/
 import { db } from "@/lib/db";
 import { fdpMarketIntelligence } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     const parsed = createMarketIntelligenceSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -59,6 +61,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "market-intelligence", entityId: record?.id, module: "fleet-deployment-planning", newData: record as Record<string, unknown>, request });
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {
     console.error("Failed to create market intelligence:", error);

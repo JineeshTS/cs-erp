@@ -6,6 +6,8 @@ import { updateCargoPlanSchema } from "@/lib/transshipment-hub-management/valida
 import { db } from "@/lib/db";
 import { thmCargoPlans } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -61,7 +63,7 @@ export async function PATCH(
     const parsed = updateCargoPlanSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -70,6 +72,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(thmCargoPlans.id, id), eq(thmCargoPlans.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cargo-plans", entityId: updated?.id, module: "transshipment-hub-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -107,6 +111,8 @@ export async function DELETE(
       .set({ deletedAt: new Date() })
       .where(and(eq(thmCargoPlans.id, id), eq(thmCargoPlans.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cargo-plans", entityId: deleted?.id, module: "transshipment-hub-management", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

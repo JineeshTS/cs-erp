@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getImdgCompliance } from "@/lib/dangerous-goods-management/service";
 import { updateImdgComplianceSchema } from "@/lib/dangerous-goods-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -41,12 +43,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "dangerous_goods:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateImdgComplianceSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -61,6 +66,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         isNull(dgmImdgCompliance.deletedAt)
       )
     ).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "imdg-compliance", entityId: updated?.id, module: "dangerous-goods-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(
@@ -85,6 +92,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "dangerous_goods:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(dgmImdgCompliance).set({
       deletedAt: new Date(),
@@ -96,6 +106,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         isNull(dgmImdgCompliance.deletedAt)
       )
     ).returning({ id: dgmImdgCompliance.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "imdg-compliance", entityId: deleted?.id, module: "dangerous-goods-management", previousData: null, request });
 
     if (!deleted) {
       return NextResponse.json(

@@ -5,6 +5,7 @@ import { isfServiceAccounts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import crypto from "crypto";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function POST(
   request: NextRequest,
@@ -15,6 +16,9 @@ export async function POST(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "infra:edit")))
       return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
     const { id } = await params;
 
@@ -55,6 +59,8 @@ export async function POST(
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: existing?.id, module: "infrastructure-security", newData: existing as Record<string, unknown>, request });
 
     // Exclude credentialHash from response
     const { credentialHash: _excluded, ...safeRecord } = updated;

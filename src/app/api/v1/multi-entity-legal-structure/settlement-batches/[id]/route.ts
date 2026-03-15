@@ -5,6 +5,8 @@ import { melsSettlementBatches } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateSettlementBatchSchema } from "@/lib/multi-entity-legal-structure/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,11 +37,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateSettlementBatchSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const { settlementDate, ...rest } = parsed.data;
@@ -50,6 +55,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const [updated] = await db.update(melsSettlementBatches).set(updateData)
       .where(and(eq(melsSettlementBatches.id, id), eq(melsSettlementBatches.tenantId, user.tenantId), isNull(melsSettlementBatches.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "settlement-batches", entityId: updated?.id, module: "multi-entity-legal-structure", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Settlement batch not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -68,9 +75,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(melsSettlementBatches).set({ deletedAt: new Date() })
       .where(and(eq(melsSettlementBatches.id, id), eq(melsSettlementBatches.tenantId, user.tenantId), isNull(melsSettlementBatches.deletedAt))).returning({ id: melsSettlementBatches.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "settlement-batches", entityId: deleted?.id, module: "multi-entity-legal-structure", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Settlement batch not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

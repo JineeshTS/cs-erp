@@ -5,6 +5,8 @@ import { eqyRepositioningPlans } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateRepositioningPlanSchema } from "@/lib/equipment-control-yard-managem/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -28,10 +30,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:edit"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const body = await request.json();
     const parsed = updateRepositioningPlanSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
 
     const { scheduledDate, completedDate, ...rest } = parsed.data;
     const [updated] = await db.update(eqyRepositioningPlans).set({
@@ -39,6 +44,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...(scheduledDate !== undefined && { scheduledDate: scheduledDate ? new Date(scheduledDate) : null }),
       ...(completedDate !== undefined && { completedDate: completedDate ? new Date(completedDate) : null }),
     }).where(and(eq(eqyRepositioningPlans.id, id), eq(eqyRepositioningPlans.tenantId, user.tenantId), isNull(eqyRepositioningPlans.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "repositioning-plans", entityId: updated?.id, module: "equipment-control-yard-managem", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Repositioning plan not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -52,8 +59,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:delete"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const [deleted] = await db.update(eqyRepositioningPlans).set({ deletedAt: new Date() }).where(and(eq(eqyRepositioningPlans.id, id), eq(eqyRepositioningPlans.tenantId, user.tenantId), isNull(eqyRepositioningPlans.deletedAt))).returning({ id: eqyRepositioningPlans.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "repositioning-plans", entityId: deleted?.id, module: "equipment-control-yard-managem", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Repositioning plan not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {

@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { listEventTriggers, createEventTrigger } from "@/lib/process-engine/e2e-flow-service";
 import { createEventTriggerSchema } from "@/lib/process-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     const parsed = createEventTriggerSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

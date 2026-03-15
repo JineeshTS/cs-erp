@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getFlowInstanceWithSteps, advanceFlowStep } from "@/lib/process-engine/e2e-flow-service";
 import { advanceStepSchema } from "@/lib/process-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(
   request: NextRequest,
@@ -56,7 +57,7 @@ export async function PATCH(
     const parsed = advanceStepSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

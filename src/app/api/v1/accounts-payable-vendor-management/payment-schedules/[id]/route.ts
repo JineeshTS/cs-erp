@@ -5,6 +5,8 @@ import { apvmPaymentSchedules } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updatePaymentScheduleSchema } from "@/lib/accounts-payable-vendor-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -32,13 +34,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "payable:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updatePaymentScheduleSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
 
     const [updated] = await db.update(apvmPaymentSchedules).set(parsed.data)
       .where(and(eq(apvmPaymentSchedules.id, id), eq(apvmPaymentSchedules.tenantId, user.tenantId), isNull(apvmPaymentSchedules.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "payment-schedules", entityId: updated?.id, module: "accounts-payable-vendor-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Payment schedule not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -54,9 +61,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "payable:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(apvmPaymentSchedules).set({ deletedAt: new Date() })
       .where(and(eq(apvmPaymentSchedules.id, id), eq(apvmPaymentSchedules.tenantId, user.tenantId), isNull(apvmPaymentSchedules.deletedAt))).returning({ id: apvmPaymentSchedules.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "payment-schedules", entityId: deleted?.id, module: "accounts-payable-vendor-management", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Payment schedule not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

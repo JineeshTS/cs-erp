@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { saveAwsCredentialsSchema } from "@/lib/admin-portal/validation";
 import { saveCredentials, getCredentialStatus } from "@/lib/admin-portal/aws-deploy-service";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const parsed = saveAwsCredentialsSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

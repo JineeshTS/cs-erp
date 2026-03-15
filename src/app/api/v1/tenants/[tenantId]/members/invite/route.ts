@@ -9,6 +9,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { logAuditEvent } from "@/lib/audit";
 import { getClientIp, getUserAgent } from "@/lib/request";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 const inviteSchema = z.object({
   email: z.email(),
@@ -27,13 +29,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!(await hasPermission(user.id, user.tenantId, "users:create"))) {
     return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
   }
 
   const body = await request.json();
   const parsed = inviteSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
@@ -84,6 +89,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       mustChangePassword: true,
     })
     .returning({ id: users.id, email: users.email });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "invite", entityId: role?.id, module: "tenants", newData: role as Record<string, unknown>, request });
 
   console.log(`[email-stub] Invite for ${email}, temp password: ${tempPassword}`);
 

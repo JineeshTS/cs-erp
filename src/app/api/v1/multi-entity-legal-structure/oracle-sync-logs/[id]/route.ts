@@ -5,6 +5,8 @@ import { melsOracleSyncLogs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateOracleSyncLogSchema } from "@/lib/multi-entity-legal-structure/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,11 +37,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateOracleSyncLogSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const { startedAt, completedAt, ...rest } = parsed.data;
@@ -50,6 +55,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...(completedAt !== undefined ? { completedAt: completedAt ? new Date(completedAt) : null } : {}),
     })
       .where(and(eq(melsOracleSyncLogs.id, id), eq(melsOracleSyncLogs.tenantId, user.tenantId), isNull(melsOracleSyncLogs.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "oracle-sync-logs", entityId: updated?.id, module: "multi-entity-legal-structure", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Oracle sync log not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -68,9 +75,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(melsOracleSyncLogs).set({ deletedAt: new Date() })
       .where(and(eq(melsOracleSyncLogs.id, id), eq(melsOracleSyncLogs.tenantId, user.tenantId), isNull(melsOracleSyncLogs.deletedAt))).returning({ id: melsOracleSyncLogs.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "oracle-sync-logs", entityId: deleted?.id, module: "multi-entity-legal-structure", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Oracle sync log not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

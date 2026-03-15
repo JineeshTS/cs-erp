@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getDunningAction } from "@/lib/freight-invoice-revenue-management/service";
 import { updateDunningActionSchema } from "@/lib/freight-invoice-revenue-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,15 +37,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "invoice:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateDunningActionSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(firmDunningActions).set(parsed.data)
       .where(and(eq(firmDunningActions.id, id), eq(firmDunningActions.tenantId, user.tenantId), isNull(firmDunningActions.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "dunning-actions", entityId: updated?.id, module: "freight-invoice-revenue-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Dunning action not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -62,9 +69,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "invoice:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(firmDunningActions).set({ deletedAt: new Date() })
       .where(and(eq(firmDunningActions.id, id), eq(firmDunningActions.tenantId, user.tenantId), isNull(firmDunningActions.deletedAt))).returning({ id: firmDunningActions.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "dunning-actions", entityId: deleted?.id, module: "freight-invoice-revenue-management", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Dunning action not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { aiModels } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ modelId: string }> };
 
@@ -42,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const parsed = updateModelSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -72,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .set(parsed.data)
       .where(eq(aiModels.id, modelId))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ai-models", entityId: existing?.id, module: "admin", previousData: null, newData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -128,6 +132,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .set({ deletedAt: new Date() })
       .where(eq(aiModels.id, modelId))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ai-models", entityId: existing?.id, module: "admin", previousData: null, request });
 
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {

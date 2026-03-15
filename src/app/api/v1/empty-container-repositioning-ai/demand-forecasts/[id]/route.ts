@@ -6,6 +6,8 @@ import { updateDemandForecastSchema } from "@/lib/empty-container-repositioning-
 import { db } from "@/lib/db";
 import { ecrDemandForecasts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -34,8 +36,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Not found" } }, { status: 404 });
     const body = await request.json();
     const parsed = updateDemandForecastSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(ecrDemandForecasts).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(ecrDemandForecasts.id, id), eq(ecrDemandForecasts.tenantId, user.tenantId))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "demand-forecasts", entityId: updated?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update demand forecast:", error);
@@ -54,6 +58,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const existing = await getDemandForecast(id, user.tenantId);
     if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Not found" } }, { status: 404 });
     const [deleted] = await db.update(ecrDemandForecasts).set({ deletedAt: new Date() }).where(and(eq(ecrDemandForecasts.id, id), eq(ecrDemandForecasts.tenantId, user.tenantId))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "demand-forecasts", entityId: deleted?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });
   } catch (error) {
     console.error("Failed to delete demand forecast:", error);

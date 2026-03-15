@@ -6,6 +6,8 @@ import { createCostTrackingSchema } from "@/lib/empty-container-repositioning-ai
 import { db } from "@/lib/db";
 import { ecrCostTrackings } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,8 +38,10 @@ export async function POST(request: NextRequest) {
     if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const body = await request.json();
     const parsed = createCostTrackingSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [record] = await db.insert(ecrCostTrackings).values({ tenantId: user.tenantId, costRef: `CT-${nanoid(12)}`, ...parsed.data, status: "draft" }).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "cost-trackings", entityId: record?.id, module: "empty-container-repositioning-ai", newData: record as Record<string, unknown>, request });
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {
     console.error("Failed to create cost tracking:", error);

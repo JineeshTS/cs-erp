@@ -6,6 +6,8 @@ import { createDeploymentPlanSchema } from "@/lib/schedule-voyage-planning/valid
 import { db } from "@/lib/db";
 import { svpDeploymentPlans } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     const parsed = createDeploymentPlanSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       status: "draft",
     }).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "deployment-plans", entityId: record?.id, module: "schedule-voyage-planning", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

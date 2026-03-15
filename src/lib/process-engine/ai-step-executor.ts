@@ -215,7 +215,8 @@ function parseAiOutput(text: string): Record<string, unknown> {
     // Strip markdown code fences if present
     const jsonStr = trimmed
       .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
+      .replace(/\s*```$/, "")
+      .replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
     const parsed = JSON.parse(jsonStr);
     if (typeof parsed === "object" && parsed !== null) return parsed;
   } catch {

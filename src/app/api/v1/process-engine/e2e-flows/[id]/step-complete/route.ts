@@ -20,6 +20,7 @@ import { createEntityBinding } from "@/lib/process-engine/entity-binding-service
 import { db } from "@/lib/db";
 import { peE2eStepInstances } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function POST(
   request: NextRequest,
@@ -44,7 +45,7 @@ export async function POST(
     const parsed = stepCompleteSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

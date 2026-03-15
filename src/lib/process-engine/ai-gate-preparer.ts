@@ -228,7 +228,8 @@ function parseGateRecommendation(
     const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return fallback;
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    const sanitized = jsonMatch[0].replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+    const parsed = JSON.parse(sanitized);
 
     return {
       recommendation:

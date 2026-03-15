@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { tenants } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ tenantId: string }> };
 
@@ -53,13 +55,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if (!(await hasPermission(user.id, user.tenantId, "tenants:edit"))) {
     return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
   }
 
   const body = await request.json();
   const parsed = updateTenantSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
@@ -79,6 +84,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     .set(updateData)
     .where(eq(tenants.id, tenantId))
     .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "tenants", entityId: updated?.id, module: "tenants", previousData: null, newData: updated as Record<string, unknown>, request });
 
   return NextResponse.json({ data: updated });
 }

@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { ccmPortfolioAnalytics } from "@/db/schema";
 import { listPortfolioAnalytics } from "@/lib/cargo-claims-management/service";
 import { createPortfolioAnalyticSchema } from "@/lib/cargo-claims-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,11 +37,14 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ccm:create"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const body = await request.json();
     const parsed = createPortfolioAnalyticSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -53,6 +58,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "portfolio-analytics", entityId: record?.id, module: "cargo-claims-management", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

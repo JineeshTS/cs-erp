@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { createWorkflowInstanceSchema } from "@/lib/workflow-notification-engine/validation";
 import { startWorkflowInstance } from "@/lib/workflow-notification-engine/service";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const body = await request.json();
     const parsed = createWorkflowInstanceSchema.safeParse(body);
     if (!parsed.success) {
@@ -79,7 +83,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: "VALIDATION_ERROR",
             message: "Invalid input",
-            details: parsed.error,
+            details: formatZodErrors(parsed.error),
           },
         },
         { status: 422 }

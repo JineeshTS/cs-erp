@@ -91,7 +91,7 @@ export function RunProcessButton({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-csrf-token": "1",
+          "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1",
         },
         body: JSON.stringify({
           processId,

@@ -249,7 +249,8 @@ Execute this step now. Use the tools provided to perform real operations, then s
 
 function parseAiAnalysis(text: string): Record<string, unknown> {
   try {
-    const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
+      .replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
     const parsed = JSON.parse(trimmed);
     if (typeof parsed === "object" && parsed !== null) return parsed;
   } catch {

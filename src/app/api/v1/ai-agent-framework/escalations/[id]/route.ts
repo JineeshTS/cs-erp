@@ -5,6 +5,8 @@ import { aafEscalations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { resolveEscalationSchema } from "@/lib/ai-agent-framework/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,11 +37,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ai:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = resolveEscalationSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(aafEscalations).set({
@@ -51,6 +56,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       feedbackToAgent: parsed.data.feedbackToAgent,
       notes: parsed.data.notes,
     }).where(and(eq(aafEscalations.id, id), eq(aafEscalations.tenantId, user.tenantId), isNull(aafEscalations.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "escalations", entityId: updated?.id, module: "ai-agent-framework", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Escalation not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -66,9 +73,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ai:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(aafEscalations).set({ deletedAt: new Date() })
       .where(and(eq(aafEscalations.id, id), eq(aafEscalations.tenantId, user.tenantId), isNull(aafEscalations.deletedAt))).returning({ id: aafEscalations.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "escalations", entityId: deleted?.id, module: "ai-agent-framework", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Escalation not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

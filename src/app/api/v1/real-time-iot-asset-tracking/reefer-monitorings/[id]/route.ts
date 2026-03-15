@@ -6,6 +6,8 @@ import { updateReeferMonitoringSchema } from "@/lib/real-time-iot-asset-tracking
 import { db } from "@/lib/db";
 import { iotReeferMonitorings } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -64,7 +66,7 @@ export async function PATCH(
     const parsed = updateReeferMonitoringSchema.safeParse(body);
     if (!parsed.success)
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
 
@@ -73,6 +75,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "reefer-monitorings", entityId: updated?.id, module: "real-time-iot-asset-tracking", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -114,6 +118,8 @@ export async function DELETE(
       .set({ deletedAt: new Date() })
       .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "reefer-monitorings", entityId: deleted?.id, module: "real-time-iot-asset-tracking", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

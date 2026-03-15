@@ -5,6 +5,8 @@ import { pscGoodsReceiptInspections } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateGoodsReceiptInspectionSchema } from "@/lib/procurement-supply-chain/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -28,11 +30,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "procurement:edit"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const body = await request.json();
     const parsed = updateGoodsReceiptInspectionSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(pscGoodsReceiptInspections).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(pscGoodsReceiptInspections.id, id), eq(pscGoodsReceiptInspections.tenantId, user.tenantId), isNull(pscGoodsReceiptInspections.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "goods-receipt-inspections", entityId: updated?.id, module: "procurement-supply-chain", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Goods receipt inspection not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -46,8 +53,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "procurement:delete"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const [deleted] = await db.update(pscGoodsReceiptInspections).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(eq(pscGoodsReceiptInspections.id, id), eq(pscGoodsReceiptInspections.tenantId, user.tenantId), isNull(pscGoodsReceiptInspections.deletedAt))).returning({ id: pscGoodsReceiptInspections.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "goods-receipt-inspections", entityId: deleted?.id, module: "procurement-supply-chain", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Goods receipt inspection not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {

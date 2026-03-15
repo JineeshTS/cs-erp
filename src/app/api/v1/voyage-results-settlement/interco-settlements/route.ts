@@ -6,6 +6,8 @@ import { createIntercoSettlementSchema } from "@/lib/voyage-results-settlement/v
 import { db } from "@/lib/db";
 import { vrsIntercoSettlements } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     const parsed = createIntercoSettlementSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       status: "draft",
     }).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "interco-settlements", entityId: record?.id, module: "voyage-results-settlement", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

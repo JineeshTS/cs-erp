@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getVoyagePerformance } from "@/lib/vessel-performance-efficiency/service";
 import { updateVoyagePerformanceSchema } from "@/lib/vessel-performance-efficiency/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,15 +37,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "vpe:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateVoyagePerformanceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(vpeVoyagePerformances).set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(vpeVoyagePerformances.id, id), eq(vpeVoyagePerformances.tenantId, user.tenantId), isNull(vpeVoyagePerformances.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "voyage-performances", entityId: updated?.id, module: "vessel-performance-efficiency", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Voyage performance not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -62,9 +69,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "vpe:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(vpeVoyagePerformances).set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(vpeVoyagePerformances.id, id), eq(vpeVoyagePerformances.tenantId, user.tenantId), isNull(vpeVoyagePerformances.deletedAt))).returning({ id: vpeVoyagePerformances.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "voyage-performances", entityId: deleted?.id, module: "vessel-performance-efficiency", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Voyage performance not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

@@ -43,6 +43,9 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "ai:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const archived = await archiveSession(id, user.tenantId);
 

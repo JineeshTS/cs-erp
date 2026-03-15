@@ -7,6 +7,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission, invalidatePermissionCache } from "@/lib/rbac";
 import { logAuditEvent } from "@/lib/audit";
 import { getClientIp, getUserAgent } from "@/lib/request";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ userId: string }> };
 
@@ -63,13 +65,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   const { userId } = await params;
   const body = await request.json();
   const parsed = updateUserSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
@@ -92,6 +97,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       status: users.status,
       roleId: users.roleId,
     });
+
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "users", entityId: updated?.id, module: "admin", previousData: currentUser as unknown as Record<string, unknown>, newData: updated as unknown as Record<string, unknown>, request });
 
   if (!updated) {
     return NextResponse.json(

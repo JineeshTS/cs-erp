@@ -5,6 +5,8 @@ import { wneWorkflowStepInstances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { actionWorkflowStepSchema } from "@/lib/workflow-notification-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -69,6 +71,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "workflows:approve")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = actionWorkflowStepSchema.safeParse(body);
@@ -78,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           error: {
             code: "VALIDATION_ERROR",
             message: "Invalid input",
-            details: parsed.error,
+            details: formatZodErrors(parsed.error),
           },
         },
         { status: 422 }
@@ -104,6 +109,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "workflow-step-instances", entityId: updated?.id, module: "workflow-notification-engine", newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(

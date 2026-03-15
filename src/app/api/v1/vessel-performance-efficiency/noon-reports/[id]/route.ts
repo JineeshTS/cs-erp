@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getNoonReport } from "@/lib/vessel-performance-efficiency/service";
 import { updateNoonReportSchema } from "@/lib/vessel-performance-efficiency/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,15 +37,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "vpe:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateNoonReportSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(vpeNoonReports).set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(vpeNoonReports.id, id), eq(vpeNoonReports.tenantId, user.tenantId), isNull(vpeNoonReports.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "noon-reports", entityId: updated?.id, module: "vessel-performance-efficiency", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Noon report not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -62,9 +69,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "vpe:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(vpeNoonReports).set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(vpeNoonReports.id, id), eq(vpeNoonReports.tenantId, user.tenantId), isNull(vpeNoonReports.deletedAt))).returning({ id: vpeNoonReports.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "noon-reports", entityId: deleted?.id, module: "vessel-performance-efficiency", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Noon report not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

@@ -6,6 +6,7 @@ import { generateSecureToken, hashToken } from "@/lib/tokens";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { forgotPasswordSchema, formatZodErrors } from "@/lib/validation";
 import { getClientIp } from "@/lib/request";
+import { sendPasswordResetEmail } from "@/lib/email";
 import { createHash } from "crypto";
 
 const GENERIC_RESPONSE = {
@@ -59,10 +60,7 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(users.id, user.id));
 
-      // Stub: log token to console (email service placeholder)
-      console.log(
-        `[email-stub] Password reset for ${email}: token=${token}`
-      );
+      await sendPasswordResetEmail(email, token);
     }
 
     return NextResponse.json(GENERIC_RESPONSE);

@@ -6,6 +6,8 @@ import { aiAgentModelAssignments, aiModels } from "@/db/schema";
 import { aafAgents } from "@/db/schema/ai-agent-framework";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
     const parsed = upsertAssignmentSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -129,6 +131,8 @@ export async function POST(request: NextRequest) {
         systemPrompt: systemPrompt ?? null,
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "ai-agent-configs", entityId: assignment?.id, module: "admin", newData: assignment as Record<string, unknown>, request });
 
     return NextResponse.json({ data: assignment }, { status: 201 });
   } catch (error) {

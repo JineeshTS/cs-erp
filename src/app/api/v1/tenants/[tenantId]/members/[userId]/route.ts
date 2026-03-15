@@ -8,6 +8,8 @@ import { hasPermission } from "@/lib/rbac";
 import { invalidatePermissionCache } from "@/lib/rbac";
 import { logAuditEvent } from "@/lib/audit";
 import { getClientIp, getUserAgent } from "@/lib/request";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ tenantId: string; userId: string }> };
 
@@ -25,13 +27,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if (!(await hasPermission(currentUser.id, currentUser.tenantId, "users:edit"))) {
     return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
   }
 
   const body = await request.json();
   const parsed = updateMemberSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
       { status: 422 }
     );
   }
@@ -49,6 +54,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     .set(parsed.data)
     .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
     .returning({ id: users.id, email: users.email, status: users.status, roleId: users.roleId });
+
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "members", entityId: updated?.id, module: "tenants", previousData: currentUser as unknown as Record<string, unknown>, newData: updated as unknown as Record<string, unknown>, request });
 
   if (!updated) {
     return NextResponse.json(
@@ -95,6 +102,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   if (userId === currentUser.id) {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "Cannot remove yourself" } },
@@ -108,6 +118,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     .set({ status: "inactive" })
     .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
     .returning({ id: users.id });
+
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "delete", entityType: "members", entityId: removed?.id, module: "tenants", previousData: currentUser as unknown as Record<string, unknown>, request });
 
   if (!removed) {
     return NextResponse.json(

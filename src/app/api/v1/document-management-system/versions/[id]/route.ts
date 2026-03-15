@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { dmsDocumentVersions } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -34,9 +35,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(dmsDocumentVersions).set({ deletedAt: new Date() })
       .where(and(eq(dmsDocumentVersions.id, id), eq(dmsDocumentVersions.tenantId, user.tenantId), isNull(dmsDocumentVersions.deletedAt))).returning({ id: dmsDocumentVersions.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "versions", entityId: deleted?.id, module: "document-management-system", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Document version not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

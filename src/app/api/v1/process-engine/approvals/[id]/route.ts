@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { decideApproval } from "@/lib/process-engine/service";
 import { decideApprovalSchema } from "@/lib/process-engine/validation";
 import { eventBus } from "@/lib/events/event-bus";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -28,7 +29,7 @@ export async function PATCH(
     const parsed = decideApprovalSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

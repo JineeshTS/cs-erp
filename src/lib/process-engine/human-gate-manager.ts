@@ -436,7 +436,7 @@ export async function getGateStatistics(tenantId: string) {
       approved: sql<number>`count(*) filter (where ${peHumanGates.decision} = 'approved')::int`,
       rejected: sql<number>`count(*) filter (where ${peHumanGates.decision} = 'rejected')::int`,
       autoApproved: sql<number>`count(*) filter (where ${peHumanGates.autoApproved} = true)::int`,
-      breached: sql<number>`count(*) filter (where ${peHumanGates.decision} is null and ${peHumanGates.slaDeadline} < ${now})::int`,
+      breached: sql<number>`count(*) filter (where ${peHumanGates.decision} is null and ${peHumanGates.slaDeadline} < ${now.toISOString()}::timestamptz)::int`,
       avgResponseMinutes: sql<number>`
         coalesce(
           avg(extract(epoch from (${peHumanGates.decidedAt} - ${peHumanGates.createdAt})) / 60)

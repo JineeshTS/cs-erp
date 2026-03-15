@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getFuelReconciliation } from "@/lib/bunker-fuel-management/service";
 import { updateFuelReconciliationSchema } from "@/lib/bunker-fuel-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,15 +37,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "bunker:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateFuelReconciliationSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
     const [updated] = await db.update(bfmFuelReconciliations).set(parsed.data)
       .where(and(eq(bfmFuelReconciliations.id, id), eq(bfmFuelReconciliations.tenantId, user.tenantId), isNull(bfmFuelReconciliations.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "reconciliations", entityId: updated?.id, module: "bunker-fuel-management", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Fuel reconciliation not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -62,9 +69,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "bunker:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(bfmFuelReconciliations).set({ deletedAt: new Date() })
       .where(and(eq(bfmFuelReconciliations.id, id), eq(bfmFuelReconciliations.tenantId, user.tenantId), isNull(bfmFuelReconciliations.deletedAt))).returning({ id: bfmFuelReconciliations.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "reconciliations", entityId: deleted?.id, module: "bunker-fuel-management", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Fuel reconciliation not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

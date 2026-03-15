@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { listFlowInstances, createFlowInstance, getFlowDashboard } from "@/lib/process-engine/e2e-flow-service";
 import { createFlowInstanceSchema } from "@/lib/process-engine/validation";
 import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     const parsed = createFlowInstanceSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

@@ -38,7 +38,7 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
     try {
       const res = await fetch("/api/v1/process-engine/instances", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-csrf-token": "1" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1" },
         body: JSON.stringify({
           processId: flowId,
           processName: flowName,

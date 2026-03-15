@@ -7,6 +7,8 @@ import { hasPermission } from "@/lib/rbac";
 import { createImportClearanceSchema } from "@/lib/customs-compliance-regulatory/validation";
 import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,11 +77,14 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "customs:create"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const body = await request.json();
     const parsed = createImportClearanceSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -94,6 +99,8 @@ export async function POST(request: NextRequest) {
         tenantId: user.tenantId,
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "import-clearances", entityId: created?.id, module: "customs-compliance-regulatory", newData: created as Record<string, unknown>, request });
 
     // Emit CUSTOMS_HELD if inspection required or status indicates hold; otherwise CUSTOMS_CLEARED
     if (created.inspectionRequired || created.status === "held" || created.status === "inspection") {

@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { aiProviders } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
     const parsed = createProviderSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -92,6 +94,8 @@ export async function POST(request: NextRequest) {
         isDefault: isDefault ?? false,
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "ai-providers", entityId: provider?.id, module: "admin", newData: provider as Record<string, unknown>, request });
 
     return NextResponse.json({ data: provider }, { status: 201 });
   } catch (error) {

@@ -6,6 +6,8 @@ import { updateHsseRecordSchema } from "@/lib/loss-prevention-risk-management/va
 import { db } from "@/lib/db";
 import { lprHsseRecords } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -65,7 +67,7 @@ export async function PATCH(
     const parsed = updateHsseRecordSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -75,6 +77,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(lprHsseRecords.id, id), eq(lprHsseRecords.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "hsse-records", entityId: updated?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -117,6 +121,8 @@ export async function DELETE(
       .set({ deletedAt: new Date() })
       .where(and(eq(lprHsseRecords.id, id), eq(lprHsseRecords.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "hsse-records", entityId: deleted?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

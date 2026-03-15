@@ -6,6 +6,8 @@ import { updateDataMigrationSchema } from "@/lib/implementation-change-managemen
 import { db } from "@/lib/db";
 import { icmDataMigrations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -61,7 +63,7 @@ export async function PATCH(
     const parsed = updateDataMigrationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -70,6 +72,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(icmDataMigrations.id, id), eq(icmDataMigrations.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "data-migrations", entityId: updated?.id, module: "implementation-change-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -107,6 +111,8 @@ export async function DELETE(
       .set({ deletedAt: new Date() })
       .where(and(eq(icmDataMigrations.id, id), eq(icmDataMigrations.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "data-migrations", entityId: deleted?.id, module: "implementation-change-management", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

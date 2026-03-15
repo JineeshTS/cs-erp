@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { updateEventTrigger, deleteEventTrigger } from "@/lib/process-engine/e2e-flow-service";
 import { updateEventTriggerSchema } from "@/lib/process-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function PATCH(
     const parsed = updateEventTriggerSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

@@ -6,6 +6,8 @@ import { ccmClaimRegistrations } from "@/db/schema";
 import { getClaimRegistration } from "@/lib/cargo-claims-management/service";
 import { updateClaimRegistrationSchema } from "@/lib/cargo-claims-management/validation";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -43,12 +45,15 @@ export async function PATCH(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ccm:edit")))
       return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const body = await request.json();
     const parsed = updateClaimRegistrationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -62,6 +67,8 @@ export async function PATCH(
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "claim-registrations", entityId: record?.id, module: "cargo-claims-management", previousData: null, newData: record as Record<string, unknown>, request });
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Claim registration not found" } },
@@ -87,6 +94,9 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ccm:delete")))
       return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const { id } = await params;
     const [record] = await db
       .update(ccmClaimRegistrations)
@@ -98,6 +108,8 @@ export async function DELETE(
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "claim-registrations", entityId: record?.id, module: "cargo-claims-management", previousData: null, request });
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Claim registration not found" } },

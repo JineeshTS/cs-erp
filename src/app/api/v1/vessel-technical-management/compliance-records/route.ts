@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { listComplianceRecords } from "@/lib/vessel-technical-management/service";
 import { createComplianceRecordSchema } from "@/lib/vessel-technical-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,13 +32,18 @@ export async function POST(request: NextRequest) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "technical:create"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
     const body = await request.json();
     const parsed = createComplianceRecordSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+      return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
     const recordRef = `ISM-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(vtmComplianceRecords).values({ tenantId: user.tenantId, recordRef, ...parsed.data }).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "compliance-records", entityId: created?.id, module: "vessel-technical-management", newData: created as Record<string, unknown>, request });
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     console.error("Failed to create compliance record:", error);

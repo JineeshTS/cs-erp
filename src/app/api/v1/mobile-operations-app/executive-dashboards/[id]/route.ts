@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getExecutiveDashboard } from "@/lib/mobile-operations-app/service";
 import { updateExecutiveDashboardSchema } from "@/lib/mobile-operations-app/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -53,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const parsed = updateExecutiveDashboardSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -69,6 +71,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "executive-dashboards", entityId: updated?.id, module: "mobile-operations-app", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated)
       return NextResponse.json(
@@ -112,6 +116,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning({ id: mobExecutiveDashboards.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "executive-dashboards", entityId: deleted?.id, module: "mobile-operations-app", previousData: null, request });
 
     if (!deleted)
       return NextResponse.json(

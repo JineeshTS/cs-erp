@@ -6,6 +6,8 @@ import { hasPermission } from "@/lib/rbac";
 import { createRouteOptimizationSchema } from "@/lib/intermodal-icd-operations/validation";
 import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
 import crypto from "crypto";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,11 +78,14 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const body = await request.json();
     const parsed = createRouteOptimizationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -95,6 +100,8 @@ export async function POST(request: NextRequest) {
         tenantId: user.tenantId,
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "route-optimizations", entityId: record?.id, module: "intermodal-icd-operations", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

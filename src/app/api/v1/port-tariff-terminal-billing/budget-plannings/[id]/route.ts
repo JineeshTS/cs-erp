@@ -6,6 +6,8 @@ import { pttBudgetPlannings } from "@/db/schema";
 import { getBudgetPlanning } from "@/lib/port-tariff-terminal-billing/service";
 import { updateBudgetPlanningSchema } from "@/lib/port-tariff-terminal-billing/validation";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -44,12 +46,15 @@ export async function PATCH(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ptt:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateBudgetPlanningSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -59,6 +64,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(pttBudgetPlannings.id, id), eq(pttBudgetPlannings.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "budget-plannings", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, newData: record as Record<string, unknown>, request });
 
     if (!record) {
       return NextResponse.json(
@@ -86,12 +93,17 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ptt:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [record] = await db
       .update(pttBudgetPlannings)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(pttBudgetPlannings.id, id), eq(pttBudgetPlannings.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "budget-plannings", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, request });
 
     if (!record) {
       return NextResponse.json(

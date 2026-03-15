@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { wneNotifications } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -49,6 +50,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "notifications:manage"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
 
@@ -79,6 +83,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "notifications", entityId: updated?.id, module: "workflow-notification-engine", previousData: null, newData: updated as Record<string, unknown>, request });
+
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Notification not found" } },
@@ -102,6 +108,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "notifications:manage"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db
       .update(wneNotifications)
@@ -114,6 +123,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         )
       )
       .returning({ id: wneNotifications.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "notifications", entityId: deleted?.id, module: "workflow-notification-engine", previousData: null, request });
 
     if (!deleted) {
       return NextResponse.json(

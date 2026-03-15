@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { resolveHumanGate } from "@/lib/process-engine/e2e-flow-service";
 import { resumeAfterGate } from "@/lib/process-engine/step-executor";
 import { resolveGateSchema } from "@/lib/process-engine/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function POST(
   request: NextRequest,
@@ -28,7 +29,7 @@ export async function POST(
     const parsed = resolveGateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }

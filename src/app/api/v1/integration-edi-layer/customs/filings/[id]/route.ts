@@ -6,6 +6,8 @@ import { hasPermission } from "@/lib/rbac";
 import { eq, and, isNull } from "drizzle-orm";
 import { getCustomsFiling } from "@/lib/integration-edi-layer/service";
 import { updateCustomsFilingSchema } from "@/lib/integration-edi-layer/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -41,12 +43,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "integration:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = updateCustomsFilingSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -75,6 +80,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         isNull(ielCustomsFilings.deletedAt)
       ))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "filings", entityId: updated?.id, module: "integration-edi-layer", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(

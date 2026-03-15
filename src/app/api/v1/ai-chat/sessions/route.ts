@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "ai:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const session = await createSession(user.tenantId, user.id);
 
     return NextResponse.json({ data: session }, { status: 201 });

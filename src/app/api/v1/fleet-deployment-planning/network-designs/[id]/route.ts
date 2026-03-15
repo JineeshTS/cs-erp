@@ -6,6 +6,8 @@ import { updateNetworkDesignSchema } from "@/lib/fleet-deployment-planning/valid
 import { db } from "@/lib/db";
 import { fdpNetworkDesigns } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -60,7 +62,7 @@ export async function PATCH(
     const parsed = updateNetworkDesignSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -69,6 +71,8 @@ export async function PATCH(
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(fdpNetworkDesigns.id, id), eq(fdpNetworkDesigns.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "network-designs", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update network design:", error);
@@ -108,6 +112,8 @@ export async function DELETE(
       .set({ deletedAt: new Date() })
       .where(and(eq(fdpNetworkDesigns.id, id), eq(fdpNetworkDesigns.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "network-designs", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });
   } catch (error) {
     console.error("Failed to delete network design:", error);

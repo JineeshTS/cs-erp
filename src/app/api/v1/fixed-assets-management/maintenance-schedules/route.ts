@@ -9,6 +9,8 @@ import {
 import { hasPermission } from "@/lib/rbac";
 import { listMaintenanceSchedules } from "@/lib/fixed-assets-management/service";
 import { createMaintenanceScheduleSchema } from "@/lib/fixed-assets-management/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,6 +55,9 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const body = await request.json();
     const parsed = createMaintenanceScheduleSchema.safeParse(body);
     if (!parsed.success)
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: "VALIDATION_ERROR",
             message: "Invalid input",
-            details: parsed.error,
+            details: formatZodErrors(parsed.error),
           },
         },
         { status: 422 }
@@ -76,6 +81,8 @@ export async function POST(request: NextRequest) {
         status: "scheduled",
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "maintenance-schedules", entityId: record?.id, module: "fixed-assets-management", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

@@ -6,6 +6,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getIamPolicy } from "@/lib/infrastructure-security/service";
 import { createIamPolicySchema } from "@/lib/infrastructure-security/validation";
+import { formatZodErrors } from "@/lib/validation";
 
 export async function GET(
   request: NextRequest,
@@ -51,7 +52,7 @@ export async function PUT(
     const parsed = createIamPolicySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -97,6 +98,9 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "infra:delete")))
       return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
     const { id } = await params;
     const existing = await getIamPolicy(id, user.tenantId);

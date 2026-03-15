@@ -5,6 +5,8 @@ import { dmsOcrResults } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { updateOcrResultSchema } from "@/lib/document-management-system/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -44,13 +46,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!user) return unauthorizedResponse();
   if (!(await hasPermission(user.id, user.tenantId, "documents:edit"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
   try {
     const { id } = await params;
     const body = await request.json();
     const parsed = updateOcrResultSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -69,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         eq(dmsOcrResults.tenantId, user.tenantId),
         isNull(dmsOcrResults.deletedAt)
       )).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ocr-results", entityId: updated?.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(

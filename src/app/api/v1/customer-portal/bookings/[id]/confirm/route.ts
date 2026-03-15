@@ -5,6 +5,7 @@ import { cspPortalBookings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getBooking } from "@/lib/customer-portal/service";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "portal:edit"))) return forbiddenResponse();
+
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
     const { id } = await params;
 
@@ -39,6 +43,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       eq(cspPortalBookings.tenantId, user.tenantId),
       isNull(cspPortalBookings.deletedAt)
     )).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "confirm", entityId: updated?.id, module: "customer-portal", newData: updated as Record<string, unknown>, request });
 
     if (!updated) {
       return NextResponse.json(

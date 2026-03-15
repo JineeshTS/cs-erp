@@ -6,6 +6,8 @@ import { createExecutiveDashboardSchema } from "@/lib/mobile-operations-app/vali
 import { db } from "@/lib/db";
 import { mobExecutiveDashboards } from "@/db/schema";
 import { nanoid } from "nanoid";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     const parsed = createExecutiveDashboardSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -65,6 +67,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
       })
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "executive-dashboards", entityId: record?.id, module: "mobile-operations-app", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

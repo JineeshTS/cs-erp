@@ -8,7 +8,9 @@ import {
   wneSlaDefinitions,
   wneSlaInstances,
   wneNotifications,
+  users,
 } from "@/db/schema";
+import { sendNotificationEmail } from "@/lib/email";
 
 // Start a workflow instance for a given entity
 export async function startWorkflowInstance(
@@ -99,6 +101,57 @@ export async function startSlaInstance(
     .returning();
 
   return instance;
+}
+
+// Dispatch pending email notifications
+export async function dispatchEmailNotifications(tenantId: string) {
+  const pending = await db
+    .select({
+      id: wneNotifications.id,
+      userId: wneNotifications.userId,
+      title: wneNotifications.title,
+      body: wneNotifications.body,
+    })
+    .from(wneNotifications)
+    .where(
+      and(
+        eq(wneNotifications.tenantId, tenantId),
+        eq(wneNotifications.channel, "email"),
+        eq(wneNotifications.status, "pending"),
+        isNull(wneNotifications.deletedAt)
+      )
+    )
+    .limit(50);
+
+  for (const notif of pending) {
+    const [user] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, notif.userId))
+      .limit(1);
+
+    if (!user?.email) {
+      await db
+        .update(wneNotifications)
+        .set({ status: "failed", failedAt: new Date(), failureReason: "No user email" })
+        .where(eq(wneNotifications.id, notif.id));
+      continue;
+    }
+
+    const sent = await sendNotificationEmail(
+      user.email,
+      `CS-ERP — ${notif.title}`,
+      `<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;"><h3>${notif.title}</h3><p>${notif.body}</p></div>`
+    );
+
+    await db
+      .update(wneNotifications)
+      .set(sent
+        ? { status: "sent", sentAt: new Date() }
+        : { status: "failed", failedAt: new Date(), failureReason: "SMTP delivery failed" }
+      )
+      .where(eq(wneNotifications.id, notif.id));
+  }
 }
 
 // Get workflow overview counts for a tenant

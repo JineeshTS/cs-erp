@@ -6,6 +6,8 @@ import { updateOfflineSyncSchema } from "@/lib/mobile-operations-app/validation"
 import { db } from "@/lib/db";
 import { mobOfflineSyncs } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(
   request: NextRequest,
@@ -64,7 +66,7 @@ export async function PATCH(
     const parsed = updateOfflineSyncSchema.safeParse(body);
     if (!parsed.success)
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
 
@@ -78,6 +80,8 @@ export async function PATCH(
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "offline-syncs", entityId: updated?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -124,6 +128,8 @@ export async function DELETE(
         )
       )
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "offline-syncs", entityId: deleted?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

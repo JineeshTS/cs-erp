@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getEncryptionKey } from "@/lib/infrastructure-security/service";
 import { rotateKeySchema } from "@/lib/infrastructure-security/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -16,13 +18,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "infra:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
 
     const body = await request.json();
     const parsed = rotateKeySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -40,6 +45,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .set({ version: currentKey.version + 1, lastRotatedAt: new Date() })
       .where(and(eq(isfEncryptionKeys.id, id), eq(isfEncryptionKeys.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: updatedKey?.id, module: "infrastructure-security", newData: updatedKey as Record<string, unknown>, request });
 
     // Insert rotation log entry
     await db.insert(isfKeyRotationLog).values({

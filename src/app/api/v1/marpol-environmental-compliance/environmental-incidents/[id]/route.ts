@@ -6,6 +6,8 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getEnvironmentalIncident } from "@/lib/marpol-environmental-compliance/service";
 import { updateEnvironmentalIncidentSchema } from "@/lib/marpol-environmental-compliance/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -36,10 +38,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
     const parsed = updateEnvironmentalIncidentSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } }, { status: 422 });
+    if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
 
     const [updated] = await db.update(mecEnvironmentalIncidents).set(parsed.data)
       .where(and(eq(mecEnvironmentalIncidents.id, id), eq(mecEnvironmentalIncidents.tenantId, user.tenantId), isNull(mecEnvironmentalIncidents.deletedAt))).returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "environmental-incidents", entityId: updated?.id, module: "marpol-environmental-compliance", previousData: null, newData: updated as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Environmental incident not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
@@ -60,6 +64,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const [deleted] = await db.update(mecEnvironmentalIncidents).set({ deletedAt: new Date() })
       .where(and(eq(mecEnvironmentalIncidents.id, id), eq(mecEnvironmentalIncidents.tenantId, user.tenantId), isNull(mecEnvironmentalIncidents.deletedAt))).returning({ id: mecEnvironmentalIncidents.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "environmental-incidents", entityId: deleted?.id, module: "marpol-environmental-compliance", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Environmental incident not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

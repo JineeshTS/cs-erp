@@ -6,6 +6,8 @@ import { updateVesselSwapSchema } from "@/lib/fleet-deployment-planning/validati
 import { db } from "@/lib/db";
 import { fdpVesselSwaps } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const parsed = updateVesselSwapSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -63,6 +65,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vessel-swaps", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update vessel swap:", error);
@@ -98,6 +102,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       .set({ deletedAt: new Date() })
       .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId)))
       .returning();
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vessel-swaps", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });
   } catch (error) {
     console.error("Failed to delete vessel swap:", error);

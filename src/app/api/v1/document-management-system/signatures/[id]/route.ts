@@ -5,6 +5,8 @@ import { dmsDocumentSignatures } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { actionSignatureSchema } from "@/lib/document-management-system/validation";
+import { formatZodErrors } from "@/lib/validation";
+import { logBusinessAudit } from "@/lib/business-audit";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,12 +37,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:sign"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const parsed = actionSignatureSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: parsed.error } },
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -65,6 +70,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(dmsDocumentSignatures).set(updateData)
       .where(and(eq(dmsDocumentSignatures.id, id), eq(dmsDocumentSignatures.tenantId, user.tenantId), isNull(dmsDocumentSignatures.deletedAt))).returning();
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "signatures", entityId: updated?.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
+
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Document signature not found" } }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -82,9 +89,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:delete"))) return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
     const [deleted] = await db.update(dmsDocumentSignatures).set({ deletedAt: new Date() })
       .where(and(eq(dmsDocumentSignatures.id, id), eq(dmsDocumentSignatures.tenantId, user.tenantId), isNull(dmsDocumentSignatures.deletedAt))).returning({ id: dmsDocumentSignatures.id });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "signatures", entityId: deleted?.id, module: "document-management-system", previousData: null, request });
 
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Document signature not found" } }, { status: 404 });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });

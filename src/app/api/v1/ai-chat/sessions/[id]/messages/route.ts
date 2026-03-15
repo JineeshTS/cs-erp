@@ -3,6 +3,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getMessages, getSession, chat } from "@/lib/ai-chat/service";
 import { z } from "zod";
+import { formatZodErrors } from "@/lib/validation";
 
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(10000),
@@ -64,6 +65,9 @@ export async function POST(
     if (!(await hasPermission(user.id, user.tenantId, "ai:create")))
       return forbiddenResponse();
 
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+
     const { id } = await params;
 
     const session = await getSession(id, user.tenantId);
@@ -82,7 +86,7 @@ export async function POST(
           error: {
             code: "VALIDATION_ERROR",
             message: "Invalid input",
-            details: parsed.error,
+            details: formatZodErrors(parsed.error),
           },
         },
         { status: 422 }
