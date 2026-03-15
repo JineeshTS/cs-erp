@@ -61,13 +61,13 @@ export function OnboardingWizard({
     }
     setSaving(true);
     try {
+      // Invite without roleId — the API will assign the default tenant role
       await fetch(`/api/v1/tenants/${tenantId}/members/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: inviteEmail,
           displayName: inviteEmail.split("@")[0],
-          roleId: "", // This would need a valid role ID — simplified for now
         }),
       });
     } catch {

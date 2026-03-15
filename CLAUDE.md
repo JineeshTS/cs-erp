@@ -41,7 +41,8 @@ This is an AI-First Container Shipping ERP for Qatar, UAE, KSA, and India.
 - Run `npm audit --audit-level=high` before any deploy — 0 high/critical vulnerabilities
 
 ### Consistency — Follow these EXACTLY
-- File structure: src/app/(modules)/{module-slug}/
+- File structure: src/app/(dashboard)/{module-slug}/
+- Auth routes: src/app/api/auth/{action}/route.ts (login, register, logout, refresh, me)
 - API routes: src/app/api/v1/{module-slug}/route.ts
 - DB schema: src/db/schema/{module-slug}.ts
 - Server actions: src/app/(modules)/{module-slug}/actions.ts

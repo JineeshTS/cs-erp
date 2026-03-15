@@ -41,6 +41,7 @@ export function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -57,6 +58,7 @@ export function ChatPanel() {
 
   const loadMessages = useCallback(async (sid: string) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(
         `/api/v1/ai-chat/sessions/${sid}/messages?limit=50`
@@ -64,9 +66,11 @@ export function ChatPanel() {
       if (res.ok) {
         const json = await res.json();
         setMessages(json.data ?? []);
+      } else {
+        setError("Failed to load messages. Try refreshing.");
       }
     } catch {
-      // Silently fail
+      setError("Connection error. Check your network.");
     } finally {
       setLoading(false);
     }
@@ -82,8 +86,9 @@ export function ChatPanel() {
         const json = await res.json();
         return json.data?.id ?? null;
       }
+      setError("Failed to create chat session.");
     } catch {
-      // Silently fail
+      setError("Connection error. Check your network.");
     }
     return null;
   }
@@ -100,8 +105,9 @@ export function ChatPanel() {
         const json = await res.json();
         return json.data;
       }
+      setError(`Failed to upload ${file.name}.`);
     } catch {
-      // Silently fail
+      setError(`Upload error for ${file.name}.`);
     }
     return null;
   }
@@ -227,6 +233,14 @@ export function ChatPanel() {
           onNewSession={handleNewSession}
         />
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="mx-3 mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+          <button type="button" onClick={() => setError(null)} className="ms-2 font-medium underline">Dismiss</button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3">

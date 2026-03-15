@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch user
+    // SECURITY: unique(tenant_id, email) enforced via DB migration
     const [user] = await db
       .select({
         id: users.id,
@@ -166,6 +167,13 @@ export async function POST(request: NextRequest) {
 
     if (user.status === "inactive") {
       return NextResponse.json({ error: AUTH_ERROR_MSG }, { status: 401 });
+    }
+
+    if (user.status === "pending_verification") {
+      return NextResponse.json(
+        { error: "Please verify your email before logging in." },
+        { status: 401 }
+      );
     }
 
     // Get role name

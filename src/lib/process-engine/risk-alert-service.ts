@@ -19,7 +19,7 @@ import {
   peFlowEvents,
   wneNotifications,
 } from "@/db/schema";
-import { eq, and, isNull, lt, gt, sql, count } from "drizzle-orm";
+import { eq, and, isNull, lt, gt, sql, count, inArray } from "drizzle-orm";
 
 // ── Types ──
 
@@ -157,18 +157,28 @@ async function detectBottlenecks(tenantId?: string): Promise<[RiskAlert[], numbe
     .from(peE2eFlowInstances)
     .where(and(...conditions));
 
+  if (activeFlows.length === 0) return [alerts, 0];
+
+  // Batch-fetch all current step instances in ONE query (avoids N+1)
+  const flowIds = activeFlows.map((f) => f.id);
+  const allStepInstances = await db
+    .select()
+    .from(peE2eStepInstances)
+    .where(inArray(peE2eStepInstances.flowInstanceId, flowIds));
+
+  // Map: flowInstanceId → step instances for that flow
+  const stepsByFlow = new Map<string, typeof allStepInstances>();
+  for (const step of allStepInstances) {
+    const existing = stepsByFlow.get(step.flowInstanceId) ?? [];
+    existing.push(step);
+    stepsByFlow.set(step.flowInstanceId, existing);
+  }
+
   for (const flow of activeFlows) {
-    // Get the current step instance
-    const [currentStep] = await db
-      .select()
-      .from(peE2eStepInstances)
-      .where(
-        and(
-          eq(peE2eStepInstances.flowInstanceId, flow.id),
-          eq(peE2eStepInstances.stepNumber, flow.currentStepNumber)
-        )
-      )
-      .limit(1);
+    const flowSteps = stepsByFlow.get(flow.id) ?? [];
+    const currentStep = flowSteps.find(
+      (s) => s.stepNumber === flow.currentStepNumber
+    );
 
     if (!currentStep) continue;
 

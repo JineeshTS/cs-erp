@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { users, roles } from "@/db/schema";
@@ -15,7 +15,7 @@ import { logBusinessAudit } from "@/lib/business-audit";
 const inviteSchema = z.object({
   email: z.email(),
   displayName: z.string().min(1).max(255),
-  roleId: z.string().uuid(),
+  roleId: z.string().uuid().optional(),
 });
 
 type RouteParams = { params: Promise<{ tenantId: string }> };
@@ -29,12 +29,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!(await hasPermission(user.id, user.tenantId, "users:create"))) {
     return forbiddenResponse();
-
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
   }
 
-  const body = await request.json();
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) {
+    return NextResponse.json(
+      { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
+      { status: 403 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
+      { status: 400 }
+    );
+  }
+
   const parsed = inviteSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -43,20 +57,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const { email, displayName, roleId } = parsed.data;
+  const { email, displayName } = parsed.data;
+  let { roleId } = parsed.data;
 
-  // Verify role exists
-  const [role] = await db
-    .select({ id: roles.id })
-    .from(roles)
-    .where(eq(roles.id, roleId))
-    .limit(1);
+  // If no roleId provided, use the first non-system role for the tenant
+  if (!roleId) {
+    const [defaultRole] = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(and(eq(roles.tenantId, tenantId), eq(roles.isSystem, false), isNull(roles.deletedAt)))
+      .limit(1);
+    roleId = defaultRole?.id;
+  }
 
-  if (!role) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Role not found" } },
-      { status: 404 }
-    );
+  // Verify role exists (if provided or found)
+  if (roleId) {
+    const [role] = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.id, roleId))
+      .limit(1);
+
+    if (!role) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "Role not found" } },
+        { status: 404 }
+      );
+    }
   }
 
   // Check if email already in this tenant
@@ -84,13 +111,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       email,
       displayName,
       passwordHash,
-      roleId,
+      roleId: roleId ?? null,
       status: "pending_verification",
       mustChangePassword: true,
     })
     .returning({ id: users.id, email: users.email });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "invite", entityId: role?.id, module: "tenants", newData: role as Record<string, unknown>, request });
+  void logBusinessAudit({
+    tenantId: user.tenantId,
+    userId: user.id,
+    userEmail: user.email,
+    action: "create",
+    entityType: "invite",
+    entityId: newUser.id,
+    module: "tenants",
+    newData: { email, roleId } as Record<string, unknown>,
+    request,
+  });
 
   console.log(`[email-stub] Invite for ${email}, temp password: ${tempPassword}`);
 

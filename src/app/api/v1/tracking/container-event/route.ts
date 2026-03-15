@@ -54,9 +54,7 @@ export async function POST(request: NextRequest) {
 
       if (!signature || !webhookTenantId) return unauthorizedResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
-
+      // Webhooks use HMAC signature auth, not CSRF tokens
       const body = await request.text();
       const secret = process.env.TRACKING_WEBHOOK_SECRET;
       if (!secret) {

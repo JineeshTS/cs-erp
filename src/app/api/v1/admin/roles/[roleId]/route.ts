@@ -127,7 +127,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-    await db.delete(roles).where(eq(roles.id, roleId));
+    await db.update(roles)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(roles.id, roleId), eq(roles.tenantId, user.tenantId)));
 
     return NextResponse.json({ data: { id: roleId, deleted: true } });
   } catch (error) {

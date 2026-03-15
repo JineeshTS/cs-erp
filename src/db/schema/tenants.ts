@@ -43,6 +43,7 @@ export const tenants = pgTable("tenants", {
   country: varchar("country", { length: 2 }).notNull().default("QA"),
   logoUrl: text("logo_url"),
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -25,11 +25,13 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+const STATIC_EXT = /\.(ico|png|jpg|jpeg|gif|svg|webp|css|js|woff2?|ttf|eot|map)$/;
+
 function isStaticAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
-    /\.(ico|png|jpg|jpeg|gif|svg|webp|css|js|woff2?|ttf|eot|map)$/.test(pathname)
+    STATIC_EXT.test(pathname)
   );
 }
 
@@ -64,6 +66,11 @@ export async function middleware(request: NextRequest) {
       issuer: "cs-erp",
       audience: "cs-erp",
     });
+
+    // Validate required claims exist
+    if (!payload.sub || !payload.tid || !payload.email || !payload.role) {
+      throw new Error("Missing required JWT claims");
+    }
 
     // Set user info on request headers for downstream use
     const requestHeaders = new Headers(request.headers);

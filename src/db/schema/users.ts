@@ -7,6 +7,8 @@ import {
   timestamp,
   inet,
   pgEnum,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { roles } from "./roles";
@@ -44,6 +46,7 @@ export const users = pgTable("users", {
     withTimezone: true,
   }),
   mustChangePassword: boolean("must_change_password").notNull().default(false),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -51,4 +54,8 @@ export const users = pgTable("users", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("users_tenant_id_idx").on(table.tenantId),
+  index("users_role_id_idx").on(table.roleId),
+  uniqueIndex("users_tenant_email_idx").on(table.tenantId, table.email),
+]);

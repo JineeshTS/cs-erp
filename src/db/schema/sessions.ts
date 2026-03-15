@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   inet,
+  index,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -26,4 +27,7 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  index("sessions_user_id_idx").on(table.userId),
+  index("sessions_tenant_id_idx").on(table.tenantId),
+]);

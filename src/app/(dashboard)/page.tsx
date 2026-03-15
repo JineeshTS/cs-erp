@@ -119,9 +119,9 @@ export default async function DashboardPage() {
     db.select({ count: count() }).from(vessels)
       .where(and(eq(vessels.tenantId, tid), eq(vessels.status, "active"), isNull(vessels.deletedAt)))
       .then((r) => r[0]?.count ?? 0),
-    // 1: Active Vessels — previous (vessels created before last month same day)
+    // 1: Active Vessels — previous (active vessels that existed before last month)
     db.select({ count: count() }).from(vessels)
-      .where(and(eq(vessels.tenantId, tid), eq(vessels.status, "active"), isNull(vessels.deletedAt)))
+      .where(and(eq(vessels.tenantId, tid), eq(vessels.status, "active"), isNull(vessels.deletedAt), lte(vessels.createdAt, lastMonthSameDay)))
       .then((r) => r[0]?.count ?? 0),
 
     // 2: Open Bookings — current
@@ -137,18 +137,18 @@ export default async function DashboardPage() {
     db.select({ count: count() }).from(cspShipmentTracking)
       .where(and(eq(cspShipmentTracking.tenantId, tid), eq(cspShipmentTracking.currentStatus, "in_transit"), isNull(cspShipmentTracking.deletedAt)))
       .then((r) => r[0]?.count ?? 0),
-    // 5: Containers in Transit — previous (no historical snapshot, reuse current as baseline)
+    // 5: Containers in Transit — previous (shipments created before last month same day)
     db.select({ count: count() }).from(cspShipmentTracking)
-      .where(and(eq(cspShipmentTracking.tenantId, tid), eq(cspShipmentTracking.currentStatus, "in_transit"), isNull(cspShipmentTracking.deletedAt)))
+      .where(and(eq(cspShipmentTracking.tenantId, tid), eq(cspShipmentTracking.currentStatus, "in_transit"), isNull(cspShipmentTracking.deletedAt), lte(cspShipmentTracking.createdAt, lastMonthSameDay)))
       .then((r) => r[0]?.count ?? 0),
 
     // 6: Pending Customs — current
     db.select({ count: count() }).from(ccrImportClearances)
       .where(and(eq(ccrImportClearances.tenantId, tid), notInArray(ccrImportClearances.status, ["cleared", "released"]), isNull(ccrImportClearances.deletedAt)))
       .then((r) => r[0]?.count ?? 0),
-    // 7: Pending Customs — previous (same as current — no historical snapshot)
+    // 7: Pending Customs — previous (clearances created before last month same day)
     db.select({ count: count() }).from(ccrImportClearances)
-      .where(and(eq(ccrImportClearances.tenantId, tid), notInArray(ccrImportClearances.status, ["cleared", "released"]), isNull(ccrImportClearances.deletedAt)))
+      .where(and(eq(ccrImportClearances.tenantId, tid), notInArray(ccrImportClearances.status, ["cleared", "released"]), isNull(ccrImportClearances.deletedAt), lte(ccrImportClearances.createdAt, lastMonthSameDay)))
       .then((r) => r[0]?.count ?? 0),
 
     // 8: Revenue MTD — current month
@@ -430,7 +430,7 @@ export default async function DashboardPage() {
       icon: FileArchive,
       description: "Customs Compliance",
       trend: customsTrend,
-      href: "/customs-hub",
+      href: "/customs-compliance-regulatory",
     },
     {
       title: "Revenue MTD",
@@ -438,7 +438,7 @@ export default async function DashboardPage() {
       icon: DollarSign,
       description: "Month-to-Date",
       trend: revenueTrend,
-      href: "/invoicing-hub",
+      href: "/freight-invoice-revenue-management",
     },
     {
       title: "Outstanding AR",
@@ -446,7 +446,7 @@ export default async function DashboardPage() {
       icon: CreditCard,
       description: overdueAr > 0 ? `${formatCompactCurrency(overdueAr, currency)} overdue` : "Accounts Receivable",
       trend: arTrend,
-      href: "/receivables-hub",
+      href: "/accounts-receivable-credit-control",
     },
     {
       title: "Active Processes",
@@ -462,7 +462,7 @@ export default async function DashboardPage() {
       icon: ClipboardCheck,
       description: pendingApprovals === 0 ? "All caught up" : "Awaiting decision",
       trend: approvalTrend,
-      href: "/processes/approvals",
+      href: "/processes/monitor",
     },
   ];
 
