@@ -1,6 +1,6 @@
 # CS ERP — Complete Issue Registry
 # Generated: 2026-03-15 by full codebase audit (154K lines, 4,487 files)
-# Updated: 2026-03-16 — all 38 issues resolved across 3 commits
+# Updated: 2026-03-16 — 38 original issues + 11 deep audit fixes (batch 5)
 
 ---
 
@@ -49,10 +49,31 @@
 
 ---
 
+## BATCH 5 — DEEP AUDIT FIXES (1e80788)
+
+| # | Severity | Issue | File(s) | Status |
+|---|----------|-------|---------|--------|
+| C1 | CRITICAL | advanceFlowStep tx.execute returns untyped rows — flow advancement broken | e2e-flow-service.ts:207 | FIXED — typed select + .for("update") |
+| C2 | CRITICAL | Gate auto-approve reads recommendation.amount (undefined) — gates auto-approve when they shouldn't | human-gate-manager.ts:324 | FIXED — reads estimatedAmount, default 0 |
+| C3 | CRITICAL | checkGateSlas no tenant isolation — cross-tenant SLA leak | human-gate-manager.ts:229 | FIXED — requires tenantId param |
+| C5 | CRITICAL | 3 tenant routes missing try/catch — stack trace leakage | tenants/[id]/ + members/ | FIXED |
+| H5 | HIGH | SLA notifications fire repeatedly (no idempotency) | human-gate-manager.ts:234 | FIXED — tracks _warningNotifiedAt/_breachNotifiedAt |
+| H6 | HIGH | Gate auto-approve doesn't resume execution | human-gate-manager.ts:329 | FIXED — calls resumeAfterGate |
+| H8 | HIGH | CRM tools overwrite metadata instead of merging (5 functions) | crm-tools.ts | FIXED — spread existing metadata |
+| M1 | MEDIUM | detectBottlenecks uses createdAt instead of startedAt | risk-alert-service.ts:185 | FIXED |
+| M7 | MEDIUM | escalateGate lacks tenant isolation in update | human-gate-manager.ts:395 | FIXED |
+| M8 | MEDIUM | reserve_equipment UPDATE lacks tenant isolation | operations-tools.ts:263 | FIXED |
+| C4 | CRITICAL | check_credit queries wrong ID (accountId vs customerId) | operations-tools.ts:78 | DEFERRED — needs schema-level mapping table |
+
+---
+
 ## DEPLOYMENT LOG
 
 - **Commit ab937df** (batch 1): Issues 1-6, 8-9, 15 — critical crashes + security
 - **Commit 0847601** (batch 2): Issue 16 — try/catch on admin routes
 - **Commit e254cfb** (batch 3): Issues 7, 11-14, 17-38 — all remaining
+- **Commit dfc3238** (batch 4): 485 files — async rate limiter, auth hardening, pagination cursor fix
+- **Commit 1e80788** (batch 5): 9 files — critical process engine fixes from deep audit
 - **Migration 0073** applied: soft deletes, FK indexes, unique(tenant_id, email)
+- **Migration 0074** applied: partial unique index, role_assignments tenant_id
 - **Container 06-build-cs-erp-web-1**: healthy, verified 200 on /login and /api/health
