@@ -78,13 +78,16 @@ export async function executeAiToolStep(params: AiToolExecutionParams): Promise<
     const systemPrompt = buildSystemPrompt(params);
     const userPrompt = buildUserPrompt(params);
 
+    // M12: Add 90s timeout to prevent hanging AI calls (longer for tool use)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: systemPrompt,
       tools: config.tools ?? [],
       messages: [{ role: "user", content: userPrompt }],
-    });
+    }, { signal: controller.signal }).finally(() => clearTimeout(timeout));
 
     const tokensUsed = (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0);
     const toolCallsExecuted: string[] = [];
@@ -134,14 +137,16 @@ export async function executeAiToolStep(params: AiToolExecutionParams): Promise<
 
       messages.push({ role: "user", content: toolResults });
 
-      // Continue conversation to get final analysis
+      // Continue conversation to get final analysis (with timeout)
+      const loopController = new AbortController();
+      const loopTimeout = setTimeout(() => loopController.abort(), 90000);
       currentResponse = await anthropic.messages.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
         system: systemPrompt,
         tools: config.tools ?? [],
         messages,
-      });
+      }, { signal: loopController.signal }).finally(() => clearTimeout(loopTimeout));
     }
 
     // Extract final text analysis

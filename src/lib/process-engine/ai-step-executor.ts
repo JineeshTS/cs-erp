@@ -125,12 +125,15 @@ export async function executeStepWithAi(
     const systemPrompt = buildSystemPrompt(context);
     const userPrompt = buildUserPrompt(stepDef, context);
 
+    // M12: Add 60s timeout to prevent hanging AI calls
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
-    });
+    }, { signal: controller.signal }).finally(() => clearTimeout(timeout));
 
     const text =
       response.content[0]?.type === "text" ? response.content[0].text : "";

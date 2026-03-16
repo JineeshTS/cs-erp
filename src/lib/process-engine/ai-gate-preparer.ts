@@ -69,12 +69,15 @@ export async function prepareGateRecommendation(
     const systemPrompt = buildGateSystemPrompt(context);
     const userPrompt = buildGateUserPrompt(context);
 
+    // M12: Add 30s timeout (gate recommendations are fire-and-forget, should be fast)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
-    });
+    }, { signal: controller.signal }).finally(() => clearTimeout(timeout));
 
     const text =
       response.content[0]?.type === "text" ? response.content[0].text : "";
