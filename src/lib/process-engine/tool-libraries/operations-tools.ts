@@ -13,6 +13,8 @@
 import { db } from "@/lib/db";
 import {
   scmRateQuotations,
+  scmCustomers,
+  arccCustomerAccounts,
   arccCreditLimits,
   capSpaceControls,
   eqyContainerFleet,
@@ -71,12 +73,45 @@ export async function executeCheckCredit(
   const customerId = (input.customerId as string) ?? "";
   const requestedAmount = (input.requestedAmount as number) ?? 0;
 
-  // Look up existing credit limit
-  const [creditLimit] = await db
-    .select()
-    .from(arccCreditLimits)
-    .where(and(eq(arccCreditLimits.tenantId, tenantId), eq(arccCreditLimits.accountId, customerId)))
+  // C4 fix: scm_customers and arcc_customer_accounts are separate masters.
+  // Link them via customerCode: look up the customer, find matching account, then query credit limits.
+  let creditLimit: typeof arccCreditLimits.$inferSelect | undefined;
+
+  // Step 1: Get the customer's customerCode from scm_customers
+  const [customer] = await db
+    .select({ customerCode: scmCustomers.customerCode })
+    .from(scmCustomers)
+    .where(and(eq(scmCustomers.id, customerId), eq(scmCustomers.tenantId, tenantId)))
     .limit(1);
+
+  if (customer?.customerCode) {
+    // Step 2: Find matching arcc_customer_account by customerCode
+    const [account] = await db
+      .select({ id: arccCustomerAccounts.id })
+      .from(arccCustomerAccounts)
+      .where(and(eq(arccCustomerAccounts.customerCode, customer.customerCode), eq(arccCustomerAccounts.tenantId, tenantId)))
+      .limit(1);
+
+    if (account) {
+      // Step 3: Query credit limits by the real accountId
+      const [cl] = await db
+        .select()
+        .from(arccCreditLimits)
+        .where(and(eq(arccCreditLimits.tenantId, tenantId), eq(arccCreditLimits.accountId, account.id)))
+        .limit(1);
+      creditLimit = cl;
+    }
+  }
+
+  // Fallback: also try direct accountId lookup (for cases where customerId IS an accountId)
+  if (!creditLimit) {
+    const [cl] = await db
+      .select()
+      .from(arccCreditLimits)
+      .where(and(eq(arccCreditLimits.tenantId, tenantId), eq(arccCreditLimits.accountId, customerId)))
+      .limit(1);
+    creditLimit = cl;
+  }
 
   const limit = creditLimit?.creditLimit ?? 100000;
   const currentExposure = creditLimit?.currentExposure ?? 0;
