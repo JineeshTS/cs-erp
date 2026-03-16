@@ -153,40 +153,82 @@ export async function advanceProcessStep(
   tenantId: string,
   output?: Record<string, unknown>
 ) {
-  const instance = await getProcessInstance(processInstanceId, tenantId);
-  if (!instance || instance.status === "completed" || instance.status === "failed") {
-    return null;
-  }
+  // M3 fix: wrap in transaction with FOR UPDATE to prevent race conditions
+  return db.transaction(async (tx) => {
+    const lockedRows = await tx
+      .select()
+      .from(peProcessInstances)
+      .where(
+        and(
+          eq(peProcessInstances.id, processInstanceId),
+          eq(peProcessInstances.tenantId, tenantId),
+          isNull(peProcessInstances.deletedAt)
+        )
+      )
+      .for("update");
+    const instance = lockedRows[0];
 
-  // Complete current step
-  const currentStepNum = instance.currentStep;
-  if (currentStepNum > 0) {
-    await db
+    if (!instance || instance.status === "completed" || instance.status === "failed") {
+      return null;
+    }
+
+    const currentStepNum = instance.currentStep;
+    const now = new Date();
+
+    if (currentStepNum > 0) {
+      await tx
+        .update(peStepInstances)
+        .set({
+          status: "completed",
+          completedAt: now,
+          outputJson: output,
+        })
+        .where(
+          and(
+            eq(peStepInstances.processInstanceId, processInstanceId),
+            eq(peStepInstances.stepNumber, currentStepNum),
+            eq(peStepInstances.tenantId, tenantId)
+          )
+        );
+    }
+
+    const nextStep = currentStepNum + 1;
+
+    if (nextStep > instance.totalSteps) {
+      const [updated] = await tx
+        .update(peProcessInstances)
+        .set({
+          status: "completed",
+          currentStep: instance.totalSteps,
+          completedAt: now,
+        })
+        .where(
+          and(
+            eq(peProcessInstances.id, processInstanceId),
+            eq(peProcessInstances.tenantId, tenantId)
+          )
+        )
+        .returning();
+      return updated;
+    }
+
+    await tx
       .update(peStepInstances)
-      .set({
-        status: "completed",
-        completedAt: new Date(),
-        outputJson: output,
-      })
+      .set({ status: "in_progress", startedAt: now })
       .where(
         and(
           eq(peStepInstances.processInstanceId, processInstanceId),
-          eq(peStepInstances.stepNumber, currentStepNum),
+          eq(peStepInstances.stepNumber, nextStep),
           eq(peStepInstances.tenantId, tenantId)
         )
       );
-  }
 
-  const nextStep = currentStepNum + 1;
-
-  if (nextStep > instance.totalSteps) {
-    // Process complete
-    const [updated] = await db
+    const [updated] = await tx
       .update(peProcessInstances)
       .set({
-        status: "completed",
-        currentStep: instance.totalSteps,
-        completedAt: new Date(),
+        status: "in_progress",
+        currentStep: nextStep,
+        startedAt: instance.startedAt ?? now,
       })
       .where(
         and(
@@ -195,37 +237,9 @@ export async function advanceProcessStep(
         )
       )
       .returning();
+
     return updated;
-  }
-
-  // Start next step
-  await db
-    .update(peStepInstances)
-    .set({ status: "in_progress", startedAt: new Date() })
-    .where(
-      and(
-        eq(peStepInstances.processInstanceId, processInstanceId),
-        eq(peStepInstances.stepNumber, nextStep),
-        eq(peStepInstances.tenantId, tenantId)
-      )
-    );
-
-  const [updated] = await db
-    .update(peProcessInstances)
-    .set({
-      status: "in_progress",
-      currentStep: nextStep,
-      startedAt: instance.startedAt ?? new Date(),
-    })
-    .where(
-      and(
-        eq(peProcessInstances.id, processInstanceId),
-        eq(peProcessInstances.tenantId, tenantId)
-      )
-    )
-    .returning();
-
-  return updated;
+  });
 }
 
 export async function failProcessInstance(
@@ -257,6 +271,7 @@ export async function createApproval(params: {
   stepInstanceId: string;
   processInstanceId: string;
   approverId: string;
+  requestedById?: string;
   dueAt?: Date;
 }) {
   const [approval] = await db
@@ -291,7 +306,7 @@ export async function createApproval(params: {
     timestamp: new Date(),
     data: {
       approvalType: "process_step_approval",
-      requestedById: params.approverId,
+      requestedById: params.requestedById ?? "system",
       assignedToId: params.approverId,
       referenceId: params.processInstanceId,
       referenceType: "process_instance",

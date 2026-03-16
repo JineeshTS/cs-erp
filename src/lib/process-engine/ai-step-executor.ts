@@ -213,10 +213,10 @@ function parseAiOutput(text: string): Record<string, unknown> {
   try {
     const trimmed = text.trim();
     // Strip markdown code fences if present
+    // M6 fix: removed dangerous backslash-doubling regex that corrupted valid unicode
     const jsonStr = trimmed
       .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "")
-      .replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+      .replace(/\s*```$/, "");
     const parsed = JSON.parse(jsonStr);
     if (typeof parsed === "object" && parsed !== null) return parsed;
   } catch {

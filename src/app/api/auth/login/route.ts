@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       return NextResponse.json(
-        { error: "Invalid JSON body" },
+        { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
         { status: 400 }
       );
     }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatZodErrors(parsed.error) },
+        { error: { code: "VALIDATION_ERROR", message: "Validation failed", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
       return NextResponse.json(
         {
-          error: "Too many login attempts. Please try again later.",
+          error: { code: "RATE_LIMIT", message: "Too many login attempts. Please try again later." },
           retryAfter: retryAfterSeconds,
         },
         {
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      return NextResponse.json({ error: AUTH_ERROR_MSG }, { status: 401 });
+      return NextResponse.json({ error: { code: "UNAUTHORIZED", message: AUTH_ERROR_MSG } }, { status: 401 });
     }
 
     // Check account status
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(
           {
-            error: "Account is temporarily locked. Please try again later.",
+            error: { code: "ACCOUNT_LOCKED", message: "Account is temporarily locked. Please try again later." },
             retryAfter: retryAfterSeconds,
           },
           {
@@ -166,12 +166,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.status === "inactive") {
-      return NextResponse.json({ error: AUTH_ERROR_MSG }, { status: 401 });
+      return NextResponse.json({ error: { code: "UNAUTHORIZED", message: AUTH_ERROR_MSG } }, { status: 401 });
     }
 
     if (user.status === "pending_verification") {
       return NextResponse.json(
-        { error: "Please verify your email before logging in." },
+        { error: { code: "PENDING_VERIFICATION", message: "Please verify your email before logging in." } },
         { status: 401 }
       );
     }
@@ -243,6 +243,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("[login]", error);
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Login failed" } }, { status: 500 });
   }
 }

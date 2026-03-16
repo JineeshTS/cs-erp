@@ -360,14 +360,9 @@ function mapFieldsToColumns(
     else if (validColumns.has(key)) {
       result[key] = value;
     }
-    // Also accept camelCase column names that aren't in mapping (for flexibility)
-    // Block protected columns to prevent mass-assignment attacks
-    else if (/^[a-z][a-zA-Z0-9]*$/.test(key)) {
-      const protectedColumns = new Set(["id", "tenantId", "createdAt", "updatedAt", "deletedAt"]);
-      if (!protectedColumns.has(key)) {
-        result[key] = value;
-      }
-    }
+    // H4 fix: removed catch-all camelCase pass-through to prevent mass-assignment.
+    // Only mapped fields and known valid columns are accepted.
+    // If a field is not in the mapping, it is silently dropped.
   }
 
   return result;

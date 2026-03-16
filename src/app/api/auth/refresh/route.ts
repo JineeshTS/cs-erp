@@ -7,20 +7,32 @@ import { generateRefreshToken, hashToken } from "@/lib/tokens";
 import { logAuditEvent } from "@/lib/audit";
 import { setAuthCookies } from "@/lib/cookies";
 import { getClientIp, getUserAgent } from "@/lib/request";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createHash } from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
+    // M5: Rate limit refresh — 30 per 15 minutes per IP
+    const ip = getClientIp(request);
+    const rlKey = `refresh:${createHash("sha256").update(ip).digest("hex")}`;
+    const rl = await checkRateLimit(rlKey, 30, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMIT", message: "Too many refresh attempts" } },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000)) } }
+      );
+    }
+
     const refreshTokenCookie = request.cookies.get("cs_refresh_token")?.value;
 
     if (!refreshTokenCookie) {
       return NextResponse.json(
-        { error: "No refresh token provided" },
+        { error: { code: "UNAUTHORIZED", message: "No refresh token provided" } },
         { status: 401 }
       );
     }
 
     const tokenHash = hashToken(refreshTokenCookie);
-    const ip = getClientIp(request);
     const ua = getUserAgent(request);
 
     // Find the session by token hash
@@ -37,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (!session) {
       return NextResponse.json(
-        { error: "Invalid refresh token" },
+        { error: { code: "UNAUTHORIZED", message: "Invalid refresh token" } },
         { status: 401 }
       );
     }
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
         .set({ revokedAt: new Date(), revokedReason: "expired" })
         .where(eq(sessions.id, session.id));
       return NextResponse.json(
-        { error: "Refresh token expired" },
+        { error: { code: "TOKEN_EXPIRED", message: "Refresh token expired" } },
         { status: 401 }
       );
     }
@@ -75,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     if (!user || user.status === "inactive" || user.status === "locked") {
       return NextResponse.json(
-        { error: "Account is not active" },
+        { error: { code: "UNAUTHORIZED", message: "Account is not active" } },
         { status: 401 }
       );
     }
@@ -127,7 +139,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[refresh]", error);
     return NextResponse.json(
-      { error: "Token refresh failed" },
+      { error: { code: "INTERNAL_ERROR", message: "Token refresh failed" } },
       { status: 500 }
     );
   }

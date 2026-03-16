@@ -228,8 +228,8 @@ function parseGateRecommendation(
     const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return fallback;
 
-    const sanitized = jsonMatch[0].replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
-    const parsed = JSON.parse(sanitized);
+    // M6 fix: removed dangerous backslash-doubling regex that corrupted valid unicode
+    const parsed = JSON.parse(jsonMatch[0]);
 
     return {
       recommendation:
