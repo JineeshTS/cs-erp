@@ -29,21 +29,16 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
     setError(null);
     setLoading(true);
 
-    const processSteps = steps.map((s, i) => ({
-      stepNumber: i + 1,
-      stepName: `[${s.module}] ${s.step}`,
-      executorType: s.type,
-    }));
-
     try {
-      const res = await fetch("/api/v1/process-engine/instances", {
+      // Step 1: Create E2E flow instance (steps are resolved server-side from flow definition)
+      const res = await fetch("/api/v1/process-engine/e2e-flows", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1" },
         body: JSON.stringify({
-          processId: flowId,
-          processName: flowName,
-          triggerType: "manual",
-          steps: processSteps,
+          e2eFlowId: flowId,
+          entityType: "manual",
+          entityId: crypto.randomUUID(),
+          triggerEvent: "manual",
         }),
       });
 
@@ -54,7 +49,17 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
       }
 
       const body = await res.json();
-      setSuccess(body.data?.id ?? "started");
+      const instanceId = body.data?.id;
+
+      // Step 2: Auto-execute step 1 (creation doesn't auto-run)
+      if (instanceId) {
+        await fetch(`/api/v1/process-engine/e2e-flows/${instanceId}/execute`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1" },
+        }).catch(() => {}); // Fire-and-forget — flow still created even if execution fails
+      }
+
+      setSuccess(instanceId ?? "started");
     } catch {
       setError("Unable to connect. Please try again.");
     } finally {
