@@ -185,6 +185,29 @@ export async function executeCurrentStep(
       return { status: "error", stepsExecuted };
     }
 
+    // ── C6 fix: Evaluate step condition — skip step if condition is false ──
+    if (stepDef.condition) {
+      const conditionMet = await evaluateStepCondition(
+        stepDef.condition,
+        flowInstanceId,
+        tenantId,
+        currentStepNum
+      );
+      if (!conditionMet) {
+        console.log(
+          `[StepExecutor] Skipping step ${currentStepNum} (${stepDef.step}) — condition not met: "${stepDef.condition}"`
+        );
+        const advanced = await advanceFlowStep(flowInstanceId, tenantId, {
+          skipped: true,
+          skipReason: `Condition not met: ${stepDef.condition}`,
+        });
+        stepsExecuted++;
+        if (!advanced) return { status: "error", stepsExecuted };
+        if (advanced.status === "completed") return { status: "completed", stepsExecuted };
+        continue;
+      }
+    }
+
     // ── D-006: Check for executor config (CRUD / AI-with-tools) ──
     const executorConfig = getExecutorConfig(instance.e2eFlowId, currentStepNum);
 
@@ -712,4 +735,126 @@ export async function rejectAiAssist(
   );
 
   return { status: "cleared" };
+}
+
+// ═══════════════════════════════════════════════════════════
+// C6: CONDITION EVALUATION
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Evaluate a step condition against data from prior completed steps.
+ *
+ * Conditions reference variables from prior step outputs using simple
+ * JavaScript-like expressions. We evaluate them safely against a
+ * flat context built from all prior step outputs.
+ *
+ * Examples:
+ *   "leadScore >= 70" → auto-qualified leads skip the gate
+ *   "screeningResult !== 'CLEAR'" → only fire when sanctions hit
+ *   "hasDangerousGoods" → truthy check
+ *
+ * Security: uses a restricted evaluator — no eval(), no Function().
+ */
+async function evaluateStepCondition(
+  condition: string,
+  flowInstanceId: string,
+  tenantId: string,
+  beforeStep: number
+): Promise<boolean> {
+  // Build context from all prior completed step outputs
+  const priorOutputs = await getPreviousStepOutputs(flowInstanceId, tenantId, beforeStep);
+  const context: Record<string, unknown> = {};
+  for (const output of priorOutputs) {
+    for (const [key, value] of Object.entries(output)) {
+      if (key !== "stepName") {
+        context[key] = value;
+      }
+    }
+  }
+
+  try {
+    return evaluateSimpleCondition(condition, context);
+  } catch (err) {
+    console.warn(
+      `[StepExecutor] Condition evaluation failed for "${condition}":`,
+      err instanceof Error ? err.message : err
+    );
+    // On evaluation error, execute the step (safe default)
+    return true;
+  }
+}
+
+/**
+ * Simple condition evaluator — no eval/Function.
+ * Supports: ==, !=, !==, ===, >=, <=, >, <, &&, ||, truthy checks.
+ */
+function evaluateSimpleCondition(
+  condition: string,
+  context: Record<string, unknown>
+): boolean {
+  // Handle && (all parts must be true)
+  if (condition.includes("&&")) {
+    return condition.split("&&").every((part) =>
+      evaluateSimpleCondition(part.trim(), context)
+    );
+  }
+
+  // Handle || (any part must be true)
+  if (condition.includes("||")) {
+    return condition.split("||").some((part) =>
+      evaluateSimpleCondition(part.trim(), context)
+    );
+  }
+
+  // Comparison operators
+  const compMatch = condition.match(
+    /^(\w+)\s*(===|!==|==|!=|>=|<=|>|<)\s*(.+)$/
+  );
+  if (compMatch) {
+    const [, varName, operator, rawValue] = compMatch;
+    const lhs = context[varName];
+    const rhs = parseConditionValue(rawValue.trim());
+
+    switch (operator) {
+      case "===": return lhs === rhs;
+      case "!==": return lhs !== rhs;
+      case "==": return lhs == rhs;
+      case "!=": return lhs != rhs;
+      case ">=": return Number(lhs) >= Number(rhs);
+      case "<=": return Number(lhs) <= Number(rhs);
+      case ">": return Number(lhs) > Number(rhs);
+      case "<": return Number(lhs) < Number(rhs);
+      default: return true;
+    }
+  }
+
+  // Negation: "!varName"
+  if (condition.startsWith("!") && /^\!\w+$/.test(condition)) {
+    return !context[condition.slice(1)];
+  }
+
+  // Simple truthy: "hasDangerousGoods"
+  if (/^\w+$/.test(condition)) {
+    return !!context[condition];
+  }
+
+  // Cannot parse — default to executing the step
+  return true;
+}
+
+function parseConditionValue(raw: string): unknown {
+  // String literal: 'CLEAR' or "CLEAR"
+  if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"'))) {
+    return raw.slice(1, -1);
+  }
+  // Boolean
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  // Number
+  const num = Number(raw);
+  if (!isNaN(num)) return num;
+  // Null
+  if (raw === "null") return null;
+  // Return as string
+  return raw;
 }
