@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { csoSlaPolicies } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(csoSlaPolicies.tenantId, user.tenantId), isNull(csoSlaPolicies.deletedAt)];
     if (search) conditions.push(ilike(csoSlaPolicies.policyName, `%${search}%`));
-    if (cursor) conditions.push(gt(csoSlaPolicies.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(csoSlaPolicies.createdAt, new Date(cursor)));
 
     const results = await db.select().from(csoSlaPolicies).where(and(...conditions)).orderBy(desc(csoSlaPolicies.createdAt)).limit(limit + 1);
 

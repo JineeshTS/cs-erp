@@ -361,8 +361,12 @@ function mapFieldsToColumns(
       result[key] = value;
     }
     // Also accept camelCase column names that aren't in mapping (for flexibility)
+    // Block protected columns to prevent mass-assignment attacks
     else if (/^[a-z][a-zA-Z0-9]*$/.test(key)) {
-      result[key] = value;
+      const protectedColumns = new Set(["id", "tenantId", "createdAt", "updatedAt", "deletedAt"]);
+      if (!protectedColumns.has(key)) {
+        result[key] = value;
+      }
     }
   }
 

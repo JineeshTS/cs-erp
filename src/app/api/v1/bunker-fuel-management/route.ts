@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       pendingEmissions,
       runningOptimizations,
     ] = await Promise.all([
-      db.select({ id: bfmBunkerOrders.id }).from(bfmBunkerOrders)
+      db.select({ value: count() }).from(bfmBunkerOrders)
         .where(and(eq(bfmBunkerOrders.tenantId, user.tenantId), isNull(bfmBunkerOrders.deletedAt), eq(bfmBunkerOrders.status, "confirmed")))
-        .then((r) => r.length),
-      db.select({ id: bfmBunkerStems.id }).from(bfmBunkerStems)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(bfmBunkerStems)
         .where(and(eq(bfmBunkerStems.tenantId, user.tenantId), isNull(bfmBunkerStems.deletedAt), eq(bfmBunkerStems.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: bfmQualityClaims.id }).from(bfmQualityClaims)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(bfmQualityClaims)
         .where(and(eq(bfmQualityClaims.tenantId, user.tenantId), isNull(bfmQualityClaims.deletedAt), eq(bfmQualityClaims.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: bfmEmissionsRecords.id }).from(bfmEmissionsRecords)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(bfmEmissionsRecords)
         .where(and(eq(bfmEmissionsRecords.tenantId, user.tenantId), isNull(bfmEmissionsRecords.deletedAt), eq(bfmEmissionsRecords.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: bfmOptimizationRuns.id }).from(bfmOptimizationRuns)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(bfmOptimizationRuns)
         .where(and(eq(bfmOptimizationRuns.tenantId, user.tenantId), isNull(bfmOptimizationRuns.deletedAt), eq(bfmOptimizationRuns.status, "running")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

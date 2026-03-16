@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       detectedAnomalies,
       draftReports,
     ] = await Promise.all([
-      db.select({ id: cfmVoyageBudgets.id }).from(cfmVoyageBudgets)
+      db.select({ value: count() }).from(cfmVoyageBudgets)
         .where(and(eq(cfmVoyageBudgets.tenantId, user.tenantId), isNull(cfmVoyageBudgets.deletedAt), eq(cfmVoyageBudgets.status, "approved")))
-        .then((r) => r.length),
-      db.select({ id: cfmPortDisbursements.id }).from(cfmPortDisbursements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cfmPortDisbursements)
         .where(and(eq(cfmPortDisbursements.tenantId, user.tenantId), isNull(cfmPortDisbursements.deletedAt), eq(cfmPortDisbursements.status, "submitted")))
-        .then((r) => r.length),
-      db.select({ id: cfmAgencyCommissions.id }).from(cfmAgencyCommissions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cfmAgencyCommissions)
         .where(and(eq(cfmAgencyCommissions.tenantId, user.tenantId), isNull(cfmAgencyCommissions.deletedAt), eq(cfmAgencyCommissions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: cfmAnomalyDetections.id }).from(cfmAnomalyDetections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cfmAnomalyDetections)
         .where(and(eq(cfmAnomalyDetections.tenantId, user.tenantId), isNull(cfmAnomalyDetections.deletedAt), eq(cfmAnomalyDetections.status, "detected")))
-        .then((r) => r.length),
-      db.select({ id: cfmKpiReports.id }).from(cfmKpiReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cfmKpiReports)
         .where(and(eq(cfmKpiReports.tenantId, user.tenantId), isNull(cfmKpiReports.deletedAt), eq(cfmKpiReports.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

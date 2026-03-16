@@ -5,7 +5,7 @@ import { pamVesselClearances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createVesselClearanceSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamVesselClearances.tenantId, user.tenantId), isNull(pamVesselClearances.deletedAt)];
     if (search) conditions.push(or(ilike(pamVesselClearances.clearanceRef, `%${search}%`), ilike(pamVesselClearances.vesselName, `%${search}%`), ilike(pamVesselClearances.portName, `%${search}%`))!);
     if (status) conditions.push(eq(pamVesselClearances.status, status));
-    if (cursor) conditions.push(gt(pamVesselClearances.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamVesselClearances.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamVesselClearances).where(and(...conditions)).orderBy(desc(pamVesselClearances.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

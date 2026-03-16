@@ -5,7 +5,7 @@ import { getSpeedFuelAnalysis } from "@/lib/schedule-voyage-planning/service";
 import { updateSpeedFuelAnalysisSchema } from "@/lib/schedule-voyage-planning/validation";
 import { db } from "@/lib/db";
 import { svpSpeedFuelAnalyses } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(svpSpeedFuelAnalyses)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(svpSpeedFuelAnalyses.id, id), eq(svpSpeedFuelAnalyses.tenantId, user.tenantId)))
+      .where(and(eq(svpSpeedFuelAnalyses.id, id), eq(svpSpeedFuelAnalyses.tenantId, user.tenantId), isNull(svpSpeedFuelAnalyses.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "speed-fuel-analyses", entityId: updated?.id, module: "schedule-voyage-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(svpSpeedFuelAnalyses)
       .set({ deletedAt: new Date() })
-      .where(and(eq(svpSpeedFuelAnalyses.id, id), eq(svpSpeedFuelAnalyses.tenantId, user.tenantId)))
+      .where(and(eq(svpSpeedFuelAnalyses.id, id), eq(svpSpeedFuelAnalyses.tenantId, user.tenantId), isNull(svpSpeedFuelAnalyses.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "speed-fuel-analyses", entityId: deleted?.id, module: "schedule-voyage-planning", previousData: existing as Record<string, unknown>, request });

@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,21 +28,21 @@ export async function GET(request: NextRequest) {
       openDefects,
       lowStockParts,
     ] = await Promise.all([
-      db.select({ id: vtmPlannedMaintenanceTasks.id }).from(vtmPlannedMaintenanceTasks)
+      db.select({ value: count() }).from(vtmPlannedMaintenanceTasks)
         .where(and(eq(vtmPlannedMaintenanceTasks.tenantId, user.tenantId), isNull(vtmPlannedMaintenanceTasks.deletedAt), eq(vtmPlannedMaintenanceTasks.status, "overdue")))
-        .then((r) => r.length),
-      db.select({ id: vtmDryDockPlans.id }).from(vtmDryDockPlans)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vtmDryDockPlans)
         .where(and(eq(vtmDryDockPlans.tenantId, user.tenantId), isNull(vtmDryDockPlans.deletedAt), eq(vtmDryDockPlans.status, "in_progress")))
-        .then((r) => r.length),
-      db.select({ id: vtmSurveyTrackings.id }).from(vtmSurveyTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vtmSurveyTrackings)
         .where(and(eq(vtmSurveyTrackings.tenantId, user.tenantId), isNull(vtmSurveyTrackings.deletedAt), eq(vtmSurveyTrackings.status, "upcoming")))
-        .then((r) => r.length),
-      db.select({ id: vtmDefectRepairs.id }).from(vtmDefectRepairs)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vtmDefectRepairs)
         .where(and(eq(vtmDefectRepairs.tenantId, user.tenantId), isNull(vtmDefectRepairs.deletedAt), eq(vtmDefectRepairs.status, "reported")))
-        .then((r) => r.length),
-      db.select({ id: vtmSpareParts.id }).from(vtmSpareParts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vtmSpareParts)
         .where(and(eq(vtmSpareParts.tenantId, user.tenantId), isNull(vtmSpareParts.deletedAt), eq(vtmSpareParts.status, "low_stock")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

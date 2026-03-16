@@ -5,7 +5,7 @@ import { pscVendorSourcings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createVendorSourcingSchema } from "@/lib/procurement-supply-chain/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pscVendorSourcings.tenantId, user.tenantId), isNull(pscVendorSourcings.deletedAt)];
     if (search) conditions.push(or(ilike(pscVendorSourcings.sourcingRef, `%${search}%`), ilike(pscVendorSourcings.title, `%${search}%`))!);
     if (status) conditions.push(eq(pscVendorSourcings.status, status));
-    if (cursor) conditions.push(gt(pscVendorSourcings.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pscVendorSourcings.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pscVendorSourcings).where(and(...conditions)).orderBy(desc(pscVendorSourcings.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

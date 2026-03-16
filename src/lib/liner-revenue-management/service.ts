@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   lrmTeuMaximizations,
@@ -26,7 +26,7 @@ export async function listTeuMaximizations({ tenantId, search, status, cursor, l
   const conditions = [eq(lrmTeuMaximizations.tenantId, tenantId), isNull(lrmTeuMaximizations.deletedAt)];
   if (search) conditions.push(or(ilike(lrmTeuMaximizations.strategyRef, `%${search}%`), ilike(lrmTeuMaximizations.tradeLane, `%${search}%`))!);
   if (status) conditions.push(eq(lrmTeuMaximizations.status, status));
-  if (cursor) conditions.push(gt(lrmTeuMaximizations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmTeuMaximizations.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmTeuMaximizations).where(and(...conditions)).orderBy(desc(lrmTeuMaximizations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listCargoMixes({ tenantId, search, status, cursor, limit =
   const conditions = [eq(lrmCargoMixes.tenantId, tenantId), isNull(lrmCargoMixes.deletedAt)];
   if (search) conditions.push(or(ilike(lrmCargoMixes.mixRef, `%${search}%`), ilike(lrmCargoMixes.commodityGroup, `%${search}%`))!);
   if (status) conditions.push(eq(lrmCargoMixes.status, status));
-  if (cursor) conditions.push(gt(lrmCargoMixes.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmCargoMixes.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmCargoMixes).where(and(...conditions)).orderBy(desc(lrmCargoMixes.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listDemandForecasts({ tenantId, search, status, cursor, li
   const conditions = [eq(lrmDemandForecasts.tenantId, tenantId), isNull(lrmDemandForecasts.deletedAt)];
   if (search) conditions.push(or(ilike(lrmDemandForecasts.forecastRef, `%${search}%`), ilike(lrmDemandForecasts.tradeLane, `%${search}%`))!);
   if (status) conditions.push(eq(lrmDemandForecasts.status, status));
-  if (cursor) conditions.push(gt(lrmDemandForecasts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmDemandForecasts.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmDemandForecasts).where(and(...conditions)).orderBy(desc(lrmDemandForecasts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listFreightContracts({ tenantId, search, status, cursor, l
   const conditions = [eq(lrmFreightContracts.tenantId, tenantId), isNull(lrmFreightContracts.deletedAt)];
   if (search) conditions.push(or(ilike(lrmFreightContracts.contractRef, `%${search}%`), ilike(lrmFreightContracts.counterparty, `%${search}%`))!);
   if (status) conditions.push(eq(lrmFreightContracts.status, status));
-  if (cursor) conditions.push(gt(lrmFreightContracts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmFreightContracts.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmFreightContracts).where(and(...conditions)).orderBy(desc(lrmFreightContracts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listLeakageDetections({ tenantId, search, status, cursor, 
   const conditions = [eq(lrmLeakageDetections.tenantId, tenantId), isNull(lrmLeakageDetections.deletedAt)];
   if (search) conditions.push(or(ilike(lrmLeakageDetections.leakageRef, `%${search}%`), ilike(lrmLeakageDetections.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(lrmLeakageDetections.status, status));
-  if (cursor) conditions.push(gt(lrmLeakageDetections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmLeakageDetections.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmLeakageDetections).where(and(...conditions)).orderBy(desc(lrmLeakageDetections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listRateIntegrities({ tenantId, search, status, cursor, li
   const conditions = [eq(lrmRateIntegrities.tenantId, tenantId), isNull(lrmRateIntegrities.deletedAt)];
   if (search) conditions.push(or(ilike(lrmRateIntegrities.integrityRef, `%${search}%`), ilike(lrmRateIntegrities.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(lrmRateIntegrities.status, status));
-  if (cursor) conditions.push(gt(lrmRateIntegrities.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmRateIntegrities.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmRateIntegrities).where(and(...conditions)).orderBy(desc(lrmRateIntegrities.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listRevenueAccruals({ tenantId, search, status, cursor, li
   const conditions = [eq(lrmRevenueAccruals.tenantId, tenantId), isNull(lrmRevenueAccruals.deletedAt)];
   if (search) conditions.push(or(ilike(lrmRevenueAccruals.accrualRef, `%${search}%`), ilike(lrmRevenueAccruals.voyageRef, `%${search}%`))!);
   if (status) conditions.push(eq(lrmRevenueAccruals.status, status));
-  if (cursor) conditions.push(gt(lrmRevenueAccruals.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmRevenueAccruals.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmRevenueAccruals).where(and(...conditions)).orderBy(desc(lrmRevenueAccruals.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listMaximizationEngines({ tenantId, search, status, cursor
   const conditions = [eq(lrmMaximizationEngines.tenantId, tenantId), isNull(lrmMaximizationEngines.deletedAt)];
   if (search) conditions.push(or(ilike(lrmMaximizationEngines.engineRef, `%${search}%`), ilike(lrmMaximizationEngines.tradeLane, `%${search}%`))!);
   if (status) conditions.push(eq(lrmMaximizationEngines.status, status));
-  if (cursor) conditions.push(gt(lrmMaximizationEngines.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lrmMaximizationEngines.createdAt, new Date(cursor)));
   const results = await db.select().from(lrmMaximizationEngines).where(and(...conditions)).orderBy(desc(lrmMaximizationEngines.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

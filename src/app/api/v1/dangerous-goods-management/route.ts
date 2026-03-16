@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       draftManifests,
       openIncidents,
     ] = await Promise.all([
-      db.select({ id: dgmImdgCompliance.id }).from(dgmImdgCompliance)
+      db.select({ value: count() }).from(dgmImdgCompliance)
         .where(and(eq(dgmImdgCompliance.tenantId, user.tenantId), isNull(dgmImdgCompliance.deletedAt), eq(dgmImdgCompliance.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: dgmBookingScreenings.id }).from(dgmBookingScreenings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(dgmBookingScreenings)
         .where(and(eq(dgmBookingScreenings.tenantId, user.tenantId), isNull(dgmBookingScreenings.deletedAt), eq(dgmBookingScreenings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: dgmSegregationRules.id }).from(dgmSegregationRules)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(dgmSegregationRules)
         .where(and(eq(dgmSegregationRules.tenantId, user.tenantId), isNull(dgmSegregationRules.deletedAt), eq(dgmSegregationRules.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: dgmManifests.id }).from(dgmManifests)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(dgmManifests)
         .where(and(eq(dgmManifests.tenantId, user.tenantId), isNull(dgmManifests.deletedAt), eq(dgmManifests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: dgmIncidentReports.id }).from(dgmIncidentReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(dgmIncidentReports)
         .where(and(eq(dgmIncidentReports.tenantId, user.tenantId), isNull(dgmIncidentReports.deletedAt), eq(dgmIncidentReports.status, "reported")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -5,7 +5,7 @@ import { pamPortAuthorityCommunications } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPortAuthorityCommunicationSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamPortAuthorityCommunications.tenantId, user.tenantId), isNull(pamPortAuthorityCommunications.deletedAt)];
     if (search) conditions.push(or(ilike(pamPortAuthorityCommunications.commRef, `%${search}%`), ilike(pamPortAuthorityCommunications.authorityName, `%${search}%`), ilike(pamPortAuthorityCommunications.subject, `%${search}%`))!);
     if (status) conditions.push(eq(pamPortAuthorityCommunications.status, status));
-    if (cursor) conditions.push(gt(pamPortAuthorityCommunications.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamPortAuthorityCommunications.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamPortAuthorityCommunications).where(and(...conditions)).orderBy(desc(pamPortAuthorityCommunications.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

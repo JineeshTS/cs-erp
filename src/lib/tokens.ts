@@ -13,6 +13,8 @@ export function generateSecureToken(): string {
 }
 
 export function timingSafeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  // Hash both inputs to fixed-length to prevent length leakage via timing
+  const hashA = createHash("sha256").update(a).digest();
+  const hashB = createHash("sha256").update(b).digest();
+  return timingSafeEqual(hashA, hashB);
 }

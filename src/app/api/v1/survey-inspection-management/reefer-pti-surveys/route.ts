@@ -5,7 +5,7 @@ import { simReeferPtiSurveys } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createReeferPtiSurveySchema } from "@/lib/survey-inspection-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(simReeferPtiSurveys.tenantId, user.tenantId), isNull(simReeferPtiSurveys.deletedAt)];
     if (search) { conditions.push(or(ilike(simReeferPtiSurveys.surveyRef, `%${search}%`), ilike(simReeferPtiSurveys.containerNumber, `%${search}%`), ilike(simReeferPtiSurveys.depotName, `%${search}%`))!); }
     if (status) { conditions.push(eq(simReeferPtiSurveys.status, status)); }
-    if (cursor) { conditions.push(gt(simReeferPtiSurveys.createdAt, new Date(cursor))); }
+    if (cursor) { conditions.push(lt(simReeferPtiSurveys.createdAt, new Date(cursor))); }
 
     const results = await db.select().from(simReeferPtiSurveys).where(and(...conditions)).orderBy(desc(simReeferPtiSurveys.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

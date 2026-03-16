@@ -5,7 +5,7 @@ import { getFleetFinancial } from "@/lib/fleet-deployment-planning/service";
 import { updateFleetFinancialSchema } from "@/lib/fleet-deployment-planning/validation";
 import { db } from "@/lib/db";
 import { fdpFleetFinancials } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const [updated] = await db
       .update(fdpFleetFinancials)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(fdpFleetFinancials.id, id), eq(fdpFleetFinancials.tenantId, user.tenantId)))
+      .where(and(eq(fdpFleetFinancials.id, id), eq(fdpFleetFinancials.tenantId, user.tenantId), isNull(fdpFleetFinancials.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "fleet-financials", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const [deleted] = await db
       .update(fdpFleetFinancials)
       .set({ deletedAt: new Date() })
-      .where(and(eq(fdpFleetFinancials.id, id), eq(fdpFleetFinancials.tenantId, user.tenantId)))
+      .where(and(eq(fdpFleetFinancials.id, id), eq(fdpFleetFinancials.tenantId, user.tenantId), isNull(fdpFleetFinancials.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "fleet-financials", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq, and, isNull, ilike, gt, desc } from "drizzle-orm";
+import { eq, and, isNull, ilike, lt, desc } from "drizzle-orm";
 import {
   eqyContainerFleet,
   eqyRepositioningPlans,
@@ -42,7 +42,7 @@ export async function listContainerFleet({
     conditions.push(ilike(eqyContainerFleet.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyContainerFleet.status, status));
   if (cursor)
-    conditions.push(gt(eqyContainerFleet.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyContainerFleet.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -94,7 +94,7 @@ export async function listRepositioningPlans({
     conditions.push(ilike(eqyRepositioningPlans.planReference, `%${search}%`));
   if (status) conditions.push(eq(eqyRepositioningPlans.status, status));
   if (cursor)
-    conditions.push(gt(eqyRepositioningPlans.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyRepositioningPlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -146,7 +146,7 @@ export async function listReeferContainers({
     conditions.push(ilike(eqyReeferContainers.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyReeferContainers.status, status));
   if (cursor)
-    conditions.push(gt(eqyReeferContainers.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyReeferContainers.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -198,7 +198,7 @@ export async function listMaintenanceRepairs({
     conditions.push(ilike(eqyMaintenanceRepairs.mnrReference, `%${search}%`));
   if (status) conditions.push(eq(eqyMaintenanceRepairs.status, status));
   if (cursor)
-    conditions.push(gt(eqyMaintenanceRepairs.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyMaintenanceRepairs.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -250,7 +250,7 @@ export async function listYardSlots({
     conditions.push(ilike(eqyYardSlots.yardName, `%${search}%`));
   if (status) conditions.push(eq(eqyYardSlots.status, status));
   if (cursor)
-    conditions.push(gt(eqyYardSlots.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyYardSlots.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -302,7 +302,7 @@ export async function listGateMovements({
     conditions.push(ilike(eqyGateMovements.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyGateMovements.status, status));
   if (cursor)
-    conditions.push(gt(eqyGateMovements.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyGateMovements.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -356,7 +356,7 @@ export async function listEquipmentInterchanges({
     );
   if (status) conditions.push(eq(eqyEquipmentInterchanges.status, status));
   if (cursor)
-    conditions.push(gt(eqyEquipmentInterchanges.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyEquipmentInterchanges.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -408,7 +408,7 @@ export async function listOnHireOffHire({
     conditions.push(ilike(eqyOnHireOffHire.contractReference, `%${search}%`));
   if (status) conditions.push(eq(eqyOnHireOffHire.status, status));
   if (cursor)
-    conditions.push(gt(eqyOnHireOffHire.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyOnHireOffHire.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -460,7 +460,7 @@ export async function listContainerSurveys({
     conditions.push(ilike(eqyContainerSurveys.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyContainerSurveys.status, status));
   if (cursor)
-    conditions.push(gt(eqyContainerSurveys.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyContainerSurveys.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -512,7 +512,7 @@ export async function listLeasedContainers({
     conditions.push(ilike(eqyLeasedContainers.leaseReference, `%${search}%`));
   if (status) conditions.push(eq(eqyLeasedContainers.status, status));
   if (cursor)
-    conditions.push(gt(eqyLeasedContainers.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyLeasedContainers.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -564,7 +564,7 @@ export async function listAvailabilityPlans({
     conditions.push(ilike(eqyAvailabilityPlans.planReference, `%${search}%`));
   if (status) conditions.push(eq(eqyAvailabilityPlans.status, status));
   if (cursor)
-    conditions.push(gt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
+    conditions.push(lt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -620,7 +620,7 @@ export async function listRepositioningOptimizations({
     conditions.push(eq(eqyRepositioningOptimizations.status, status));
   if (cursor)
     conditions.push(
-      gt(eqyRepositioningOptimizations.createdAt, new Date(cursor))
+      lt(eqyRepositioningOptimizations.createdAt, new Date(cursor))
     );
 
   const results = await db

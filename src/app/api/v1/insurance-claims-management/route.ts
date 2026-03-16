@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       openClaims,
       openRecoveries,
     ] = await Promise.all([
-      db.select({ id: icmPiClubPolicies.id }).from(icmPiClubPolicies)
+      db.select({ value: count() }).from(icmPiClubPolicies)
         .where(and(eq(icmPiClubPolicies.tenantId, user.tenantId), isNull(icmPiClubPolicies.deletedAt), eq(icmPiClubPolicies.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmHullMachineryInsurances.id }).from(icmHullMachineryInsurances)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmHullMachineryInsurances)
         .where(and(eq(icmHullMachineryInsurances.tenantId, user.tenantId), isNull(icmHullMachineryInsurances.deletedAt), eq(icmHullMachineryInsurances.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmCargoInsurancePolicies.id }).from(icmCargoInsurancePolicies)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmCargoInsurancePolicies)
         .where(and(eq(icmCargoInsurancePolicies.tenantId, user.tenantId), isNull(icmCargoInsurancePolicies.deletedAt), eq(icmCargoInsurancePolicies.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmClaimsRegistrations.id }).from(icmClaimsRegistrations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmClaimsRegistrations)
         .where(and(eq(icmClaimsRegistrations.tenantId, user.tenantId), isNull(icmClaimsRegistrations.deletedAt), eq(icmClaimsRegistrations.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: icmClaimsRecoveries.id }).from(icmClaimsRecoveries)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmClaimsRecoveries)
         .where(and(eq(icmClaimsRecoveries.tenantId, user.tenantId), isNull(icmClaimsRecoveries.deletedAt), eq(icmClaimsRecoveries.status, "open")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

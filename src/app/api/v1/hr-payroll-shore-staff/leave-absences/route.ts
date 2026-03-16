@@ -5,7 +5,7 @@ import { hpsLeaveAbsences } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createLeaveAbsenceSchema } from "@/lib/hr-payroll-shore-staff/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (cursor) {
-      conditions.push(gt(hpsLeaveAbsences.createdAt, new Date(cursor)));
+      conditions.push(lt(hpsLeaveAbsences.createdAt, new Date(cursor)));
     }
 
     const results = await db

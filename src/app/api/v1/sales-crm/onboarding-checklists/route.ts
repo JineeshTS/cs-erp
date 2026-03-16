@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmOnboardingChecklists } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(scmOnboardingChecklists.taskName, `%${search}%`));
     if (status) conditions.push(eq(scmOnboardingChecklists.status, status));
     if (customerId) conditions.push(eq(scmOnboardingChecklists.customerId, customerId));
-    if (cursor) conditions.push(gt(scmOnboardingChecklists.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(scmOnboardingChecklists.createdAt, new Date(cursor)));
 
     const results = await db.select().from(scmOnboardingChecklists).where(and(...conditions))
       .orderBy(desc(scmOnboardingChecklists.createdAt)).limit(limit + 1);

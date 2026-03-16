@@ -5,7 +5,7 @@ import { getCostTracking } from "@/lib/empty-container-repositioning-ai/service"
 import { updateCostTrackingSchema } from "@/lib/empty-container-repositioning-ai/validation";
 import { db } from "@/lib/db";
 import { ecrCostTrackings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const parsed = updateCostTrackingSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
-    const [updated] = await db.update(ecrCostTrackings).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(ecrCostTrackings.id, id), eq(ecrCostTrackings.tenantId, user.tenantId))).returning();
+    const [updated] = await db.update(ecrCostTrackings).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(ecrCostTrackings.id, id), eq(ecrCostTrackings.tenantId, user.tenantId), isNull(ecrCostTrackings.deletedAt))).returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cost-trackings", entityId: updated?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     const existing = await getCostTracking(id, user.tenantId);
     if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Not found" } }, { status: 404 });
-    const [deleted] = await db.update(ecrCostTrackings).set({ deletedAt: new Date() }).where(and(eq(ecrCostTrackings.id, id), eq(ecrCostTrackings.tenantId, user.tenantId))).returning();
+    const [deleted] = await db.update(ecrCostTrackings).set({ deletedAt: new Date() }).where(and(eq(ecrCostTrackings.id, id), eq(ecrCostTrackings.tenantId, user.tenantId), isNull(ecrCostTrackings.deletedAt))).returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cost-trackings", entityId: deleted?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneNotificationTemplates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (isActive !== null && isActive !== undefined && isActive !== "") {
       conditions.push(eq(wneNotificationTemplates.isActive, isActive === "true"));
     }
-    if (cursor) conditions.push(gt(wneNotificationTemplates.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(wneNotificationTemplates.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

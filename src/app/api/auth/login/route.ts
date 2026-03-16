@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const rateLimitKey = `login:${createHash("sha256")
       .update(`${email}:${ip}`)
       .digest("hex")}`;
-    const rateCheck = checkRateLimit(rateLimitKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
+    const rateCheck = await checkRateLimit(rateLimitKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
 
     if (!rateCheck.allowed) {
       const retryAfterSeconds = Math.ceil(

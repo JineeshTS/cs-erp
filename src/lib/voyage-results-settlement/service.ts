@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   vrsVoyageCloses,
@@ -26,7 +26,7 @@ export async function listVoyageCloses({ tenantId, search, status, cursor, limit
   const conditions = [eq(vrsVoyageCloses.tenantId, tenantId), isNull(vrsVoyageCloses.deletedAt)];
   if (search) conditions.push(or(ilike(vrsVoyageCloses.closeRef, `%${search}%`), ilike(vrsVoyageCloses.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsVoyageCloses.status, status));
-  if (cursor) conditions.push(gt(vrsVoyageCloses.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsVoyageCloses.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsVoyageCloses).where(and(...conditions)).orderBy(desc(vrsVoyageCloses.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listTcSettlements({ tenantId, search, status, cursor, limi
   const conditions = [eq(vrsTcSettlements.tenantId, tenantId), isNull(vrsTcSettlements.deletedAt)];
   if (search) conditions.push(or(ilike(vrsTcSettlements.settlementRef, `%${search}%`), ilike(vrsTcSettlements.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsTcSettlements.status, status));
-  if (cursor) conditions.push(gt(vrsTcSettlements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsTcSettlements.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsTcSettlements).where(and(...conditions)).orderBy(desc(vrsTcSettlements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listVoyagePnls({ tenantId, search, status, cursor, limit =
   const conditions = [eq(vrsVoyagePnls.tenantId, tenantId), isNull(vrsVoyagePnls.deletedAt)];
   if (search) conditions.push(or(ilike(vrsVoyagePnls.pnlRef, `%${search}%`), ilike(vrsVoyagePnls.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsVoyagePnls.status, status));
-  if (cursor) conditions.push(gt(vrsVoyagePnls.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsVoyagePnls.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsVoyagePnls).where(and(...conditions)).orderBy(desc(vrsVoyagePnls.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listHireReconciliations({ tenantId, search, status, cursor
   const conditions = [eq(vrsHireReconciliations.tenantId, tenantId), isNull(vrsHireReconciliations.deletedAt)];
   if (search) conditions.push(or(ilike(vrsHireReconciliations.reconciliationRef, `%${search}%`), ilike(vrsHireReconciliations.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsHireReconciliations.status, status));
-  if (cursor) conditions.push(gt(vrsHireReconciliations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsHireReconciliations.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsHireReconciliations).where(and(...conditions)).orderBy(desc(vrsHireReconciliations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listResultWorkflows({ tenantId, search, status, cursor, li
   const conditions = [eq(vrsResultWorkflows.tenantId, tenantId), isNull(vrsResultWorkflows.deletedAt)];
   if (search) conditions.push(or(ilike(vrsResultWorkflows.workflowRef, `%${search}%`), ilike(vrsResultWorkflows.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsResultWorkflows.status, status));
-  if (cursor) conditions.push(gt(vrsResultWorkflows.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsResultWorkflows.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsResultWorkflows).where(and(...conditions)).orderBy(desc(vrsResultWorkflows.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listIntercoSettlements({ tenantId, search, status, cursor,
   const conditions = [eq(vrsIntercoSettlements.tenantId, tenantId), isNull(vrsIntercoSettlements.deletedAt)];
   if (search) conditions.push(or(ilike(vrsIntercoSettlements.intercoRef, `%${search}%`), ilike(vrsIntercoSettlements.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsIntercoSettlements.status, status));
-  if (cursor) conditions.push(gt(vrsIntercoSettlements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsIntercoSettlements.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsIntercoSettlements).where(and(...conditions)).orderBy(desc(vrsIntercoSettlements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listProfitBenchmarks({ tenantId, search, status, cursor, l
   const conditions = [eq(vrsProfitBenchmarks.tenantId, tenantId), isNull(vrsProfitBenchmarks.deletedAt)];
   if (search) conditions.push(or(ilike(vrsProfitBenchmarks.benchmarkRef, `%${search}%`), ilike(vrsProfitBenchmarks.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsProfitBenchmarks.status, status));
-  if (cursor) conditions.push(gt(vrsProfitBenchmarks.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsProfitBenchmarks.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsProfitBenchmarks).where(and(...conditions)).orderBy(desc(vrsProfitBenchmarks.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listVoyageAnalytics({ tenantId, search, status, cursor, li
   const conditions = [eq(vrsVoyageAnalytics.tenantId, tenantId), isNull(vrsVoyageAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(vrsVoyageAnalytics.analyticsRef, `%${search}%`), ilike(vrsVoyageAnalytics.title, `%${search}%`))!);
   if (status) conditions.push(eq(vrsVoyageAnalytics.status, status));
-  if (cursor) conditions.push(gt(vrsVoyageAnalytics.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vrsVoyageAnalytics.createdAt, new Date(cursor)));
   const results = await db.select().from(vrsVoyageAnalytics).where(and(...conditions)).orderBy(desc(vrsVoyageAnalytics.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

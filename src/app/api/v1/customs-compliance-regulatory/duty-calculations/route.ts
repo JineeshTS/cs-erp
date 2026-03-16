@@ -5,7 +5,7 @@ import { ccrDutyCalculations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDutyCalculationSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(ccrDutyCalculations.tenantId, user.tenantId), isNull(ccrDutyCalculations.deletedAt)];
     if (search) { conditions.push(or(ilike(ccrDutyCalculations.calculationRef, `%${search}%`), ilike(ccrDutyCalculations.hsCode, `%${search}%`), ilike(ccrDutyCalculations.clearanceRef, `%${search}%`))!); }
     if (status) { conditions.push(eq(ccrDutyCalculations.status, status)); }
-    if (cursor) { conditions.push(gt(ccrDutyCalculations.createdAt, new Date(cursor))); }
+    if (cursor) { conditions.push(lt(ccrDutyCalculations.createdAt, new Date(cursor))); }
 
     const results = await db.select().from(ccrDutyCalculations).where(and(...conditions)).orderBy(desc(ccrDutyCalculations.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

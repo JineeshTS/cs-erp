@@ -5,7 +5,7 @@ import { pscSpendAnalytics } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createSpendAnalyticSchema } from "@/lib/procurement-supply-chain/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pscSpendAnalytics.tenantId, user.tenantId), isNull(pscSpendAnalytics.deletedAt)];
     if (search) conditions.push(or(ilike(pscSpendAnalytics.analyticsRef, `%${search}%`), ilike(pscSpendAnalytics.title, `%${search}%`))!);
     if (status) conditions.push(eq(pscSpendAnalytics.status, status));
-    if (cursor) conditions.push(gt(pscSpendAnalytics.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pscSpendAnalytics.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pscSpendAnalytics).where(and(...conditions)).orderBy(desc(pscSpendAnalytics.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

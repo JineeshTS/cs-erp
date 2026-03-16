@@ -4,22 +4,11 @@ import type { SessionUser } from "./session";
 
 /**
  * Extract authenticated user from request.
- * Reads from middleware-set headers or falls back to JWT verification.
+ * Always verifies JWT — never trusts raw headers (they can be spoofed).
  */
 export async function getApiUser(
   request: NextRequest
 ): Promise<SessionUser | null> {
-  // Try middleware-set headers first
-  const userId = request.headers.get("x-user-id");
-  const tenantId = request.headers.get("x-tenant-id");
-  const email = request.headers.get("x-user-email");
-  const role = request.headers.get("x-user-role");
-
-  if (userId && tenantId && email && role) {
-    return { id: userId, tenantId, email, role };
-  }
-
-  // Fall back to direct JWT verification
   let token: string | undefined;
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {

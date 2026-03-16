@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftProfitBenchmarks,
       draftVoyageAnalytics,
     ] = await Promise.all([
-      db.select({ id: vrsVoyageCloses.id }).from(vrsVoyageCloses)
+      db.select({ value: count() }).from(vrsVoyageCloses)
         .where(and(eq(vrsVoyageCloses.tenantId, user.tenantId), isNull(vrsVoyageCloses.deletedAt), eq(vrsVoyageCloses.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsTcSettlements.id }).from(vrsTcSettlements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsTcSettlements)
         .where(and(eq(vrsTcSettlements.tenantId, user.tenantId), isNull(vrsTcSettlements.deletedAt), eq(vrsTcSettlements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsVoyagePnls.id }).from(vrsVoyagePnls)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsVoyagePnls)
         .where(and(eq(vrsVoyagePnls.tenantId, user.tenantId), isNull(vrsVoyagePnls.deletedAt), eq(vrsVoyagePnls.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsHireReconciliations.id }).from(vrsHireReconciliations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsHireReconciliations)
         .where(and(eq(vrsHireReconciliations.tenantId, user.tenantId), isNull(vrsHireReconciliations.deletedAt), eq(vrsHireReconciliations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsResultWorkflows.id }).from(vrsResultWorkflows)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsResultWorkflows)
         .where(and(eq(vrsResultWorkflows.tenantId, user.tenantId), isNull(vrsResultWorkflows.deletedAt), eq(vrsResultWorkflows.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsIntercoSettlements.id }).from(vrsIntercoSettlements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsIntercoSettlements)
         .where(and(eq(vrsIntercoSettlements.tenantId, user.tenantId), isNull(vrsIntercoSettlements.deletedAt), eq(vrsIntercoSettlements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsProfitBenchmarks.id }).from(vrsProfitBenchmarks)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsProfitBenchmarks)
         .where(and(eq(vrsProfitBenchmarks.tenantId, user.tenantId), isNull(vrsProfitBenchmarks.deletedAt), eq(vrsProfitBenchmarks.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsVoyageAnalytics.id }).from(vrsVoyageAnalytics)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(vrsVoyageAnalytics)
         .where(and(eq(vrsVoyageAnalytics.tenantId, user.tenantId), isNull(vrsVoyageAnalytics.deletedAt), eq(vrsVoyageAnalytics.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

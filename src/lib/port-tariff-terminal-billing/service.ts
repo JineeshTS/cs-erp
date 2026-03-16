@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   pttTerminalHandlingCharges,
@@ -26,7 +26,7 @@ export async function listTerminalHandlingCharges({ tenantId, search, status, cu
   const conditions = [eq(pttTerminalHandlingCharges.tenantId, tenantId), isNull(pttTerminalHandlingCharges.deletedAt)];
   if (search) conditions.push(or(ilike(pttTerminalHandlingCharges.chargeRef, `%${search}%`), ilike(pttTerminalHandlingCharges.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttTerminalHandlingCharges.status, status));
-  if (cursor) conditions.push(gt(pttTerminalHandlingCharges.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttTerminalHandlingCharges.createdAt, new Date(cursor)));
   const results = await db.select().from(pttTerminalHandlingCharges).where(and(...conditions)).orderBy(desc(pttTerminalHandlingCharges.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listPortDuesWharfages({ tenantId, search, status, cursor, 
   const conditions = [eq(pttPortDuesWharfages.tenantId, tenantId), isNull(pttPortDuesWharfages.deletedAt)];
   if (search) conditions.push(or(ilike(pttPortDuesWharfages.duesRef, `%${search}%`), ilike(pttPortDuesWharfages.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttPortDuesWharfages.status, status));
-  if (cursor) conditions.push(gt(pttPortDuesWharfages.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttPortDuesWharfages.createdAt, new Date(cursor)));
   const results = await db.select().from(pttPortDuesWharfages).where(and(...conditions)).orderBy(desc(pttPortDuesWharfages.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listPilotageTowageCharges({ tenantId, search, status, curs
   const conditions = [eq(pttPilotageTowageCharges.tenantId, tenantId), isNull(pttPilotageTowageCharges.deletedAt)];
   if (search) conditions.push(or(ilike(pttPilotageTowageCharges.chargeRef, `%${search}%`), ilike(pttPilotageTowageCharges.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttPilotageTowageCharges.status, status));
-  if (cursor) conditions.push(gt(pttPilotageTowageCharges.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttPilotageTowageCharges.createdAt, new Date(cursor)));
   const results = await db.select().from(pttPilotageTowageCharges).where(and(...conditions)).orderBy(desc(pttPilotageTowageCharges.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listStorageDemurrageTariffs({ tenantId, search, status, cu
   const conditions = [eq(pttStorageDemurrageTariffs.tenantId, tenantId), isNull(pttStorageDemurrageTariffs.deletedAt)];
   if (search) conditions.push(or(ilike(pttStorageDemurrageTariffs.tariffRef, `%${search}%`), ilike(pttStorageDemurrageTariffs.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttStorageDemurrageTariffs.status, status));
-  if (cursor) conditions.push(gt(pttStorageDemurrageTariffs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttStorageDemurrageTariffs.createdAt, new Date(cursor)));
   const results = await db.select().from(pttStorageDemurrageTariffs).where(and(...conditions)).orderBy(desc(pttStorageDemurrageTariffs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listTariffComparisons({ tenantId, search, status, cursor, 
   const conditions = [eq(pttTariffComparisons.tenantId, tenantId), isNull(pttTariffComparisons.deletedAt)];
   if (search) conditions.push(or(ilike(pttTariffComparisons.comparisonRef, `%${search}%`), ilike(pttTariffComparisons.basePortName, `%${search}%`))!);
   if (status) conditions.push(eq(pttTariffComparisons.status, status));
-  if (cursor) conditions.push(gt(pttTariffComparisons.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttTariffComparisons.createdAt, new Date(cursor)));
   const results = await db.select().from(pttTariffComparisons).where(and(...conditions)).orderBy(desc(pttTariffComparisons.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listInvoiceValidations({ tenantId, search, status, cursor,
   const conditions = [eq(pttInvoiceValidations.tenantId, tenantId), isNull(pttInvoiceValidations.deletedAt)];
   if (search) conditions.push(or(ilike(pttInvoiceValidations.validationRef, `%${search}%`), ilike(pttInvoiceValidations.terminalName, `%${search}%`))!);
   if (status) conditions.push(eq(pttInvoiceValidations.status, status));
-  if (cursor) conditions.push(gt(pttInvoiceValidations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttInvoiceValidations.createdAt, new Date(cursor)));
   const results = await db.select().from(pttInvoiceValidations).where(and(...conditions)).orderBy(desc(pttInvoiceValidations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listCostOptimizations({ tenantId, search, status, cursor, 
   const conditions = [eq(pttCostOptimizations.tenantId, tenantId), isNull(pttCostOptimizations.deletedAt)];
   if (search) conditions.push(or(ilike(pttCostOptimizations.optimizationRef, `%${search}%`), ilike(pttCostOptimizations.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttCostOptimizations.status, status));
-  if (cursor) conditions.push(gt(pttCostOptimizations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttCostOptimizations.createdAt, new Date(cursor)));
   const results = await db.select().from(pttCostOptimizations).where(and(...conditions)).orderBy(desc(pttCostOptimizations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listBudgetPlannings({ tenantId, search, status, cursor, li
   const conditions = [eq(pttBudgetPlannings.tenantId, tenantId), isNull(pttBudgetPlannings.deletedAt)];
   if (search) conditions.push(or(ilike(pttBudgetPlannings.budgetRef, `%${search}%`), ilike(pttBudgetPlannings.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pttBudgetPlannings.status, status));
-  if (cursor) conditions.push(gt(pttBudgetPlannings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pttBudgetPlannings.createdAt, new Date(cursor)));
   const results = await db.select().from(pttBudgetPlannings).where(and(...conditions)).orderBy(desc(pttBudgetPlannings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

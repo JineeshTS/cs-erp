@@ -5,7 +5,7 @@ import { abiOperationalEfficiencies } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createOperationalEfficiencySchema } from "@/lib/analytics-business-intelligence/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(abiOperationalEfficiencies.tenantId, user.tenantId), isNull(abiOperationalEfficiencies.deletedAt)];
     if (search) conditions.push(or(ilike(abiOperationalEfficiencies.analyticsRef, `%${search}%`), ilike(abiOperationalEfficiencies.entityName, `%${search}%`))!);
     if (status) conditions.push(eq(abiOperationalEfficiencies.status, status));
-    if (cursor) conditions.push(gt(abiOperationalEfficiencies.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(abiOperationalEfficiencies.createdAt, new Date(cursor)));
 
     const results = await db.select().from(abiOperationalEfficiencies).where(and(...conditions)).orderBy(desc(abiOperationalEfficiencies.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

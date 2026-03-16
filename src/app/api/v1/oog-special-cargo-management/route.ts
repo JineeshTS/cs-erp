@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       planningHeavyLifts,
       pendingApprovals,
     ] = await Promise.all([
-      db.select({ id: oogCargoAcceptances.id }).from(oogCargoAcceptances)
+      db.select({ value: count() }).from(oogCargoAcceptances)
         .where(and(eq(oogCargoAcceptances.tenantId, user.tenantId), isNull(oogCargoAcceptances.deletedAt), eq(oogCargoAcceptances.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: oogStowagePlans.id }).from(oogStowagePlans)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(oogStowagePlans)
         .where(and(eq(oogStowagePlans.tenantId, user.tenantId), isNull(oogStowagePlans.deletedAt), eq(oogStowagePlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: oogSpecialEquipment.id }).from(oogSpecialEquipment)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(oogSpecialEquipment)
         .where(and(eq(oogSpecialEquipment.tenantId, user.tenantId), isNull(oogSpecialEquipment.deletedAt), eq(oogSpecialEquipment.status, "available")))
-        .then((r) => r.length),
-      db.select({ id: oogHeavyLifts.id }).from(oogHeavyLifts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(oogHeavyLifts)
         .where(and(eq(oogHeavyLifts.tenantId, user.tenantId), isNull(oogHeavyLifts.deletedAt), eq(oogHeavyLifts.status, "planning")))
-        .then((r) => r.length),
-      db.select({ id: oogPortApprovals.id }).from(oogPortApprovals)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(oogPortApprovals)
         .where(and(eq(oogPortApprovals.tenantId, user.tenantId), isNull(oogPortApprovals.deletedAt), eq(oogPortApprovals.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

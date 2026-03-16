@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { pttCostOptimizations } from "@/db/schema";
 import { getCostOptimization } from "@/lib/port-tariff-terminal-billing/service";
 import { updateCostOptimizationSchema } from "@/lib/port-tariff-terminal-billing/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -62,7 +62,7 @@ export async function PATCH(
     const [record] = await db
       .update(pttCostOptimizations)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(pttCostOptimizations.id, id), eq(pttCostOptimizations.tenantId, user.tenantId)))
+      .where(and(eq(pttCostOptimizations.id, id), eq(pttCostOptimizations.tenantId, user.tenantId), isNull(pttCostOptimizations.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cost-optimizations", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, newData: record as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(
     const [record] = await db
       .update(pttCostOptimizations)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(pttCostOptimizations.id, id), eq(pttCostOptimizations.tenantId, user.tenantId)))
+      .where(and(eq(pttCostOptimizations.id, id), eq(pttCostOptimizations.tenantId, user.tenantId), isNull(pttCostOptimizations.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cost-optimizations", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, request });

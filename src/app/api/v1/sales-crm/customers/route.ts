@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmCustomers } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(scmCustomers.tenantId, user.tenantId), isNull(scmCustomers.deletedAt)];
     if (search) conditions.push(ilike(scmCustomers.companyName, `%${search}%`));
     if (status) conditions.push(eq(scmCustomers.status, status));
-    if (cursor) conditions.push(gt(scmCustomers.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
 
     const results = await db.select().from(scmCustomers).where(and(...conditions)).orderBy(desc(scmCustomers.createdAt)).limit(limit + 1);
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { costCentres } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (department) conditions.push(eq(costCentres.department, department));
     if (active === "true") conditions.push(eq(costCentres.isActive, true));
     if (active === "false") conditions.push(eq(costCentres.isActive, false));
-    if (cursor) conditions.push(gt(costCentres.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(costCentres.createdAt, new Date(cursor)));
 
     const results = await db.select().from(costCentres).where(and(...conditions))
       .orderBy(desc(costCentres.createdAt)).limit(limit + 1);

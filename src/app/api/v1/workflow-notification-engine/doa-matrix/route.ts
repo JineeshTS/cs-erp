@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneDoaMatrix } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (isActive !== null && isActive !== undefined && isActive !== "") {
       conditions.push(eq(wneDoaMatrix.isActive, isActive === "true"));
     }
-    if (cursor) conditions.push(gt(wneDoaMatrix.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(wneDoaMatrix.createdAt, new Date(cursor)));
 
     const results = await db.select().from(wneDoaMatrix).where(and(...conditions))
       .orderBy(desc(wneDoaMatrix.createdAt)).limit(limit + 1);

@@ -5,7 +5,7 @@ import { acmPolicyProcedures } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPolicyProcedureSchema } from "@/lib/audit-compliance-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(acmPolicyProcedures.tenantId, user.tenantId), isNull(acmPolicyProcedures.deletedAt)];
     if (search) conditions.push(or(ilike(acmPolicyProcedures.policyRef, `%${search}%`), ilike(acmPolicyProcedures.title, `%${search}%`))!);
     if (status) conditions.push(eq(acmPolicyProcedures.status, status));
-    if (cursor) conditions.push(gt(acmPolicyProcedures.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(acmPolicyProcedures.createdAt, new Date(cursor)));
     const results = await db.select().from(acmPolicyProcedures).where(and(...conditions)).orderBy(desc(acmPolicyProcedures.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;

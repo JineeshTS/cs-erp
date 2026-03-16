@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   vtmPlannedMaintenanceTasks,
@@ -27,7 +27,7 @@ export async function listPlannedMaintenanceTasks({ tenantId, search, status, cu
   const conditions = [eq(vtmPlannedMaintenanceTasks.tenantId, tenantId), isNull(vtmPlannedMaintenanceTasks.deletedAt)];
   if (search) conditions.push(or(ilike(vtmPlannedMaintenanceTasks.taskRef, `%${search}%`), ilike(vtmPlannedMaintenanceTasks.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmPlannedMaintenanceTasks.status, status));
-  if (cursor) conditions.push(gt(vtmPlannedMaintenanceTasks.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmPlannedMaintenanceTasks.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmPlannedMaintenanceTasks).where(and(...conditions)).orderBy(desc(vtmPlannedMaintenanceTasks.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listDryDockPlans({ tenantId, search, status, cursor, limit
   const conditions = [eq(vtmDryDockPlans.tenantId, tenantId), isNull(vtmDryDockPlans.deletedAt)];
   if (search) conditions.push(or(ilike(vtmDryDockPlans.planRef, `%${search}%`), ilike(vtmDryDockPlans.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmDryDockPlans.status, status));
-  if (cursor) conditions.push(gt(vtmDryDockPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmDryDockPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmDryDockPlans).where(and(...conditions)).orderBy(desc(vtmDryDockPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listSurveyTrackings({ tenantId, search, status, cursor, li
   const conditions = [eq(vtmSurveyTrackings.tenantId, tenantId), isNull(vtmSurveyTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(vtmSurveyTrackings.surveyRef, `%${search}%`), ilike(vtmSurveyTrackings.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmSurveyTrackings.status, status));
-  if (cursor) conditions.push(gt(vtmSurveyTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmSurveyTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmSurveyTrackings).where(and(...conditions)).orderBy(desc(vtmSurveyTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listDefectRepairs({ tenantId, search, status, cursor, limi
   const conditions = [eq(vtmDefectRepairs.tenantId, tenantId), isNull(vtmDefectRepairs.deletedAt)];
   if (search) conditions.push(or(ilike(vtmDefectRepairs.defectRef, `%${search}%`), ilike(vtmDefectRepairs.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmDefectRepairs.status, status));
-  if (cursor) conditions.push(gt(vtmDefectRepairs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmDefectRepairs.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmDefectRepairs).where(and(...conditions)).orderBy(desc(vtmDefectRepairs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listSpareParts({ tenantId, search, status, cursor, limit =
   const conditions = [eq(vtmSpareParts.tenantId, tenantId), isNull(vtmSpareParts.deletedAt)];
   if (search) conditions.push(or(ilike(vtmSpareParts.partRef, `%${search}%`), ilike(vtmSpareParts.partName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmSpareParts.status, status));
-  if (cursor) conditions.push(gt(vtmSpareParts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmSpareParts.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmSpareParts).where(and(...conditions)).orderBy(desc(vtmSpareParts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listTechnicalProcurements({ tenantId, search, status, curs
   const conditions = [eq(vtmTechnicalProcurements.tenantId, tenantId), isNull(vtmTechnicalProcurements.deletedAt)];
   if (search) conditions.push(or(ilike(vtmTechnicalProcurements.procurementRef, `%${search}%`), ilike(vtmTechnicalProcurements.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmTechnicalProcurements.status, status));
-  if (cursor) conditions.push(gt(vtmTechnicalProcurements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmTechnicalProcurements.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmTechnicalProcurements).where(and(...conditions)).orderBy(desc(vtmTechnicalProcurements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listComplianceRecords({ tenantId, search, status, cursor, 
   const conditions = [eq(vtmComplianceRecords.tenantId, tenantId), isNull(vtmComplianceRecords.deletedAt)];
   if (search) conditions.push(or(ilike(vtmComplianceRecords.recordRef, `%${search}%`), ilike(vtmComplianceRecords.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmComplianceRecords.status, status));
-  if (cursor) conditions.push(gt(vtmComplianceRecords.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmComplianceRecords.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmComplianceRecords).where(and(...conditions)).orderBy(desc(vtmComplianceRecords.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listPredictiveMaintenance({ tenantId, search, status, curs
   const conditions = [eq(vtmPredictiveMaintenance.tenantId, tenantId), isNull(vtmPredictiveMaintenance.deletedAt)];
   if (search) conditions.push(or(ilike(vtmPredictiveMaintenance.predictionRef, `%${search}%`), ilike(vtmPredictiveMaintenance.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(vtmPredictiveMaintenance.status, status));
-  if (cursor) conditions.push(gt(vtmPredictiveMaintenance.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(vtmPredictiveMaintenance.createdAt, new Date(cursor)));
   const results = await db.select().from(vtmPredictiveMaintenance).where(and(...conditions)).orderBy(desc(vtmPredictiveMaintenance.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

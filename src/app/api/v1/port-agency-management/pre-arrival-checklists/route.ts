@@ -5,7 +5,7 @@ import { pamPreArrivalChecklists } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPreArrivalChecklistSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamPreArrivalChecklists.tenantId, user.tenantId), isNull(pamPreArrivalChecklists.deletedAt)];
     if (search) conditions.push(or(ilike(pamPreArrivalChecklists.checklistRef, `%${search}%`), ilike(pamPreArrivalChecklists.vesselName, `%${search}%`), ilike(pamPreArrivalChecklists.portName, `%${search}%`))!);
     if (status) conditions.push(eq(pamPreArrivalChecklists.status, status));
-    if (cursor) conditions.push(gt(pamPreArrivalChecklists.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamPreArrivalChecklists.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamPreArrivalChecklists).where(and(...conditions)).orderBy(desc(pamPreArrivalChecklists.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

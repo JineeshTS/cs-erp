@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, desc, gt, lt } from "drizzle-orm";
+import { eq, and, ilike, desc, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, roles } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -32,15 +32,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       roleId: users.roleId,
       roleName: roles.name,
       lastLoginAt: users.lastLoginAt,
-      createdAt: users.createdAt,
-    })
+      createdAt: users.createdAt })
     .from(users)
     .leftJoin(roles, eq(users.roleId, roles.id))
     .where(
       and(
         eq(users.tenantId, tenantId),
         search ? ilike(users.email, `%${search}%`) : undefined,
-        cursor ? gt(users.createdAt, new Date(cursor)) : undefined
+        cursor ? lt(users.createdAt, new Date(cursor)) : undefined
       )
     )
     .orderBy(desc(users.createdAt))
@@ -55,7 +54,5 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     data,
     meta: {
       cursor: nextCursor,
-      hasMore,
-    },
-  });
+      hasMore } });
 }

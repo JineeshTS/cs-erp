@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsOracleIntegrationConfigs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (isActive !== null && isActive !== undefined && isActive !== "") {
       conditions.push(eq(melsOracleIntegrationConfigs.isActive, isActive === "true"));
     }
-    if (cursor) conditions.push(gt(melsOracleIntegrationConfigs.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsOracleIntegrationConfigs.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsOracleIntegrationConfigs).where(and(...conditions))
       .orderBy(desc(melsOracleIntegrationConfigs.createdAt)).limit(limit + 1);

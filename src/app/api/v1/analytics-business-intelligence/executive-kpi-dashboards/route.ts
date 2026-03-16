@@ -5,7 +5,7 @@ import { abiExecutiveKpiDashboards } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createExecutiveKpiDashboardSchema } from "@/lib/analytics-business-intelligence/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(abiExecutiveKpiDashboards.tenantId, user.tenantId), isNull(abiExecutiveKpiDashboards.deletedAt)];
     if (search) conditions.push(or(ilike(abiExecutiveKpiDashboards.dashboardRef, `%${search}%`), ilike(abiExecutiveKpiDashboards.dashboardType, `%${search}%`))!);
     if (status) conditions.push(eq(abiExecutiveKpiDashboards.status, status));
-    if (cursor) conditions.push(gt(abiExecutiveKpiDashboards.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(abiExecutiveKpiDashboards.createdAt, new Date(cursor)));
 
     const results = await db.select().from(abiExecutiveKpiDashboards).where(and(...conditions)).orderBy(desc(abiExecutiveKpiDashboards.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

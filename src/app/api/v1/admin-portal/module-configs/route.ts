@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { adminModuleConfigs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(adminModuleConfigs.tenantId, user.tenantId), isNull(adminModuleConfigs.deletedAt)];
     if (search) conditions.push(ilike(adminModuleConfigs.moduleName, `%${search}%`));
-    if (cursor) conditions.push(gt(adminModuleConfigs.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(adminModuleConfigs.createdAt, new Date(cursor)));
 
     const results = await db.select().from(adminModuleConfigs).where(and(...conditions))
       .orderBy(desc(adminModuleConfigs.createdAt)).limit(limit + 1);

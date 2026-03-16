@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   icmProjectPlans,
@@ -26,7 +26,7 @@ export async function listProjectPlans({ tenantId, search, status, cursor, limit
   const conditions = [eq(icmProjectPlans.tenantId, tenantId), isNull(icmProjectPlans.deletedAt)];
   if (search) conditions.push(or(ilike(icmProjectPlans.planRef, `%${search}%`), ilike(icmProjectPlans.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmProjectPlans.status, status));
-  if (cursor) conditions.push(gt(icmProjectPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmProjectPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(icmProjectPlans).where(and(...conditions)).orderBy(desc(icmProjectPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listDataMigrations({ tenantId, search, status, cursor, lim
   const conditions = [eq(icmDataMigrations.tenantId, tenantId), isNull(icmDataMigrations.deletedAt)];
   if (search) conditions.push(or(ilike(icmDataMigrations.migrationRef, `%${search}%`), ilike(icmDataMigrations.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmDataMigrations.status, status));
-  if (cursor) conditions.push(gt(icmDataMigrations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmDataMigrations.createdAt, new Date(cursor)));
   const results = await db.select().from(icmDataMigrations).where(and(...conditions)).orderBy(desc(icmDataMigrations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listUatManagements({ tenantId, search, status, cursor, lim
   const conditions = [eq(icmUatManagements.tenantId, tenantId), isNull(icmUatManagements.deletedAt)];
   if (search) conditions.push(or(ilike(icmUatManagements.uatRef, `%${search}%`), ilike(icmUatManagements.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmUatManagements.status, status));
-  if (cursor) conditions.push(gt(icmUatManagements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmUatManagements.createdAt, new Date(cursor)));
   const results = await db.select().from(icmUatManagements).where(and(...conditions)).orderBy(desc(icmUatManagements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listGoLiveChecklists({ tenantId, search, status, cursor, l
   const conditions = [eq(icmGoLiveChecklists.tenantId, tenantId), isNull(icmGoLiveChecklists.deletedAt)];
   if (search) conditions.push(or(ilike(icmGoLiveChecklists.checklistRef, `%${search}%`), ilike(icmGoLiveChecklists.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmGoLiveChecklists.status, status));
-  if (cursor) conditions.push(gt(icmGoLiveChecklists.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmGoLiveChecklists.createdAt, new Date(cursor)));
   const results = await db.select().from(icmGoLiveChecklists).where(and(...conditions)).orderBy(desc(icmGoLiveChecklists.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listChangeRequests({ tenantId, search, status, cursor, lim
   const conditions = [eq(icmChangeRequests.tenantId, tenantId), isNull(icmChangeRequests.deletedAt)];
   if (search) conditions.push(or(ilike(icmChangeRequests.changeRef, `%${search}%`), ilike(icmChangeRequests.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmChangeRequests.status, status));
-  if (cursor) conditions.push(gt(icmChangeRequests.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmChangeRequests.createdAt, new Date(cursor)));
   const results = await db.select().from(icmChangeRequests).where(and(...conditions)).orderBy(desc(icmChangeRequests.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listSystemConfigs({ tenantId, search, status, cursor, limi
   const conditions = [eq(icmSystemConfigs.tenantId, tenantId), isNull(icmSystemConfigs.deletedAt)];
   if (search) conditions.push(or(ilike(icmSystemConfigs.configRef, `%${search}%`), ilike(icmSystemConfigs.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmSystemConfigs.status, status));
-  if (cursor) conditions.push(gt(icmSystemConfigs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmSystemConfigs.createdAt, new Date(cursor)));
   const results = await db.select().from(icmSystemConfigs).where(and(...conditions)).orderBy(desc(icmSystemConfigs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listTrainingCompletions({ tenantId, search, status, cursor
   const conditions = [eq(icmTrainingCompletions.tenantId, tenantId), isNull(icmTrainingCompletions.deletedAt)];
   if (search) conditions.push(or(ilike(icmTrainingCompletions.completionRef, `%${search}%`), ilike(icmTrainingCompletions.employeeName, `%${search}%`))!);
   if (status) conditions.push(eq(icmTrainingCompletions.status, status));
-  if (cursor) conditions.push(gt(icmTrainingCompletions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmTrainingCompletions.createdAt, new Date(cursor)));
   const results = await db.select().from(icmTrainingCompletions).where(and(...conditions)).orderBy(desc(icmTrainingCompletions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listHypercareSupports({ tenantId, search, status, cursor, 
   const conditions = [eq(icmHypercareSupports.tenantId, tenantId), isNull(icmHypercareSupports.deletedAt)];
   if (search) conditions.push(or(ilike(icmHypercareSupports.supportRef, `%${search}%`), ilike(icmHypercareSupports.title, `%${search}%`))!);
   if (status) conditions.push(eq(icmHypercareSupports.status, status));
-  if (cursor) conditions.push(gt(icmHypercareSupports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmHypercareSupports.createdAt, new Date(cursor)));
   const results = await db.select().from(icmHypercareSupports).where(and(...conditions)).orderBy(desc(icmHypercareSupports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

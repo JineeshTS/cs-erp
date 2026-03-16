@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cvmUtilizationAnalyses } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(cvmUtilizationAnalyses.tenantId, user.tenantId), isNull(cvmUtilizationAnalyses.deletedAt)];
     if (search) conditions.push(ilike(cvmUtilizationAnalyses.vesselName, `%${search}%`));
     if (status) conditions.push(eq(cvmUtilizationAnalyses.status, status));
-    if (cursor) conditions.push(gt(cvmUtilizationAnalyses.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(cvmUtilizationAnalyses.createdAt, new Date(cursor)));
 
     const results = await db.select().from(cvmUtilizationAnalyses)
       .where(and(...conditions))

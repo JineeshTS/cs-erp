@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   ddmDemurrageCalculations,
@@ -27,7 +27,7 @@ export async function listDemurrageCalculations({ tenantId, search, status, curs
   const conditions = [eq(ddmDemurrageCalculations.tenantId, tenantId), isNull(ddmDemurrageCalculations.deletedAt)];
   if (search) conditions.push(or(ilike(ddmDemurrageCalculations.calculationRef, `%${search}%`), ilike(ddmDemurrageCalculations.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(ddmDemurrageCalculations.status, status));
-  if (cursor) conditions.push(gt(ddmDemurrageCalculations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmDemurrageCalculations.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmDemurrageCalculations).where(and(...conditions)).orderBy(desc(ddmDemurrageCalculations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listFreeTimeRules({ tenantId, search, status, cursor, limi
   const conditions = [eq(ddmFreeTimeRules.tenantId, tenantId), isNull(ddmFreeTimeRules.deletedAt)];
   if (search) conditions.push(or(ilike(ddmFreeTimeRules.ruleRef, `%${search}%`), ilike(ddmFreeTimeRules.ruleName, `%${search}%`))!);
   if (status) conditions.push(eq(ddmFreeTimeRules.status, status));
-  if (cursor) conditions.push(gt(ddmFreeTimeRules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmFreeTimeRules.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmFreeTimeRules).where(and(...conditions)).orderBy(desc(ddmFreeTimeRules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listDetentionTrackings({ tenantId, search, status, cursor,
   const conditions = [eq(ddmDetentionTrackings.tenantId, tenantId), isNull(ddmDetentionTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(ddmDetentionTrackings.trackingRef, `%${search}%`), ilike(ddmDetentionTrackings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(ddmDetentionTrackings.status, status));
-  if (cursor) conditions.push(gt(ddmDetentionTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmDetentionTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmDetentionTrackings).where(and(...conditions)).orderBy(desc(ddmDetentionTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listDdmInvoices({ tenantId, search, status, cursor, limit 
   const conditions = [eq(ddmInvoices.tenantId, tenantId), isNull(ddmInvoices.deletedAt)];
   if (search) conditions.push(or(ilike(ddmInvoices.invoiceRef, `%${search}%`), ilike(ddmInvoices.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(ddmInvoices.status, status));
-  if (cursor) conditions.push(gt(ddmInvoices.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmInvoices.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmInvoices).where(and(...conditions)).orderBy(desc(ddmInvoices.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listDdmDisputes({ tenantId, search, status, cursor, limit 
   const conditions = [eq(ddmDisputes.tenantId, tenantId), isNull(ddmDisputes.deletedAt)];
   if (search) conditions.push(or(ilike(ddmDisputes.disputeRef, `%${search}%`), ilike(ddmDisputes.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(ddmDisputes.status, status));
-  if (cursor) conditions.push(gt(ddmDisputes.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmDisputes.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmDisputes).where(and(...conditions)).orderBy(desc(ddmDisputes.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listDdmWaivers({ tenantId, search, status, cursor, limit =
   const conditions = [eq(ddmWaivers.tenantId, tenantId), isNull(ddmWaivers.deletedAt)];
   if (search) conditions.push(or(ilike(ddmWaivers.waiverRef, `%${search}%`), ilike(ddmWaivers.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(ddmWaivers.status, status));
-  if (cursor) conditions.push(gt(ddmWaivers.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmWaivers.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmWaivers).where(and(...conditions)).orderBy(desc(ddmWaivers.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listDdmPredictions({ tenantId, search, status, cursor, lim
   const conditions = [eq(ddmPredictions.tenantId, tenantId), isNull(ddmPredictions.deletedAt)];
   if (search) conditions.push(or(ilike(ddmPredictions.predictionRef, `%${search}%`), ilike(ddmPredictions.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(ddmPredictions.status, status));
-  if (cursor) conditions.push(gt(ddmPredictions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmPredictions.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmPredictions).where(and(...conditions)).orderBy(desc(ddmPredictions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listDdmNotifications({ tenantId, search, status, cursor, l
   const conditions = [eq(ddmNotifications.tenantId, tenantId), isNull(ddmNotifications.deletedAt)];
   if (search) conditions.push(or(ilike(ddmNotifications.notificationRef, `%${search}%`), ilike(ddmNotifications.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(ddmNotifications.status, status));
-  if (cursor) conditions.push(gt(ddmNotifications.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ddmNotifications.createdAt, new Date(cursor)));
   const results = await db.select().from(ddmNotifications).where(and(...conditions)).orderBy(desc(ddmNotifications.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

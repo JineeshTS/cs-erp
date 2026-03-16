@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { clmFleetOptimizers } from "@/db/schema";
 import { getFleetOptimizer } from "@/lib/container-leasing-management/service";
 import { updateFleetOptimizerSchema } from "@/lib/container-leasing-management/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -62,7 +62,7 @@ export async function PATCH(
     const [record] = await db
       .update(clmFleetOptimizers)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(clmFleetOptimizers.id, id), eq(clmFleetOptimizers.tenantId, user.tenantId)))
+      .where(and(eq(clmFleetOptimizers.id, id), eq(clmFleetOptimizers.tenantId, user.tenantId), isNull(clmFleetOptimizers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "fleet-optimizers", entityId: record?.id, module: "container-leasing-management", previousData: null, newData: record as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(
     const [record] = await db
       .update(clmFleetOptimizers)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(clmFleetOptimizers.id, id), eq(clmFleetOptimizers.tenantId, user.tenantId)))
+      .where(and(eq(clmFleetOptimizers.id, id), eq(clmFleetOptimizers.tenantId, user.tenantId), isNull(clmFleetOptimizers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "fleet-optimizers", entityId: record?.id, module: "container-leasing-management", previousData: null, request });

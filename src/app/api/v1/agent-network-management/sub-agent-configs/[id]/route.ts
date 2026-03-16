@@ -5,7 +5,7 @@ import { getSubAgentConfig } from "@/lib/agent-network-management/service";
 import { updateSubAgentConfigSchema } from "@/lib/agent-network-management/validation";
 import { db } from "@/lib/db";
 import { anmSubAgentConfigs } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(anmSubAgentConfigs)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(anmSubAgentConfigs.id, id), eq(anmSubAgentConfigs.tenantId, user.tenantId)))
+      .where(and(eq(anmSubAgentConfigs.id, id), eq(anmSubAgentConfigs.tenantId, user.tenantId), isNull(anmSubAgentConfigs.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "sub-agent-configs", entityId: updated?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(anmSubAgentConfigs)
       .set({ deletedAt: new Date() })
-      .where(and(eq(anmSubAgentConfigs.id, id), eq(anmSubAgentConfigs.tenantId, user.tenantId)))
+      .where(and(eq(anmSubAgentConfigs.id, id), eq(anmSubAgentConfigs.tenantId, user.tenantId), isNull(anmSubAgentConfigs.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "sub-agent-configs", entityId: deleted?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, request });

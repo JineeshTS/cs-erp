@@ -5,7 +5,7 @@ import { abiVoyageAnalytics } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createVoyageAnalyticsSchema } from "@/lib/analytics-business-intelligence/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(abiVoyageAnalytics.tenantId, user.tenantId), isNull(abiVoyageAnalytics.deletedAt)];
     if (search) conditions.push(or(ilike(abiVoyageAnalytics.analyticsRef, `%${search}%`), ilike(abiVoyageAnalytics.vesselName, `%${search}%`), ilike(abiVoyageAnalytics.serviceName, `%${search}%`))!);
     if (status) conditions.push(eq(abiVoyageAnalytics.status, status));
-    if (cursor) conditions.push(gt(abiVoyageAnalytics.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(abiVoyageAnalytics.createdAt, new Date(cursor)));
 
     const results = await db.select().from(abiVoyageAnalytics).where(and(...conditions)).orderBy(desc(abiVoyageAnalytics.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

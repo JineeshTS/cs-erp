@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { tcmBankReconciliations } from "@/db/schema";
 import { getBankReconciliation } from "@/lib/treasury-cash-management/service";
 import { updateBankReconciliationSchema } from "@/lib/treasury-cash-management/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -64,7 +64,7 @@ export async function PATCH(
     const [record] = await db
       .update(tcmBankReconciliations)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(tcmBankReconciliations.id, id), eq(tcmBankReconciliations.tenantId, user.tenantId)))
+      .where(and(eq(tcmBankReconciliations.id, id), eq(tcmBankReconciliations.tenantId, user.tenantId), isNull(tcmBankReconciliations.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "bank-reconciliations", entityId: record?.id, module: "treasury-cash-management", previousData: null, newData: record as Record<string, unknown>, request });
@@ -103,7 +103,7 @@ export async function DELETE(
     const [record] = await db
       .update(tcmBankReconciliations)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(tcmBankReconciliations.id, id), eq(tcmBankReconciliations.tenantId, user.tenantId)))
+      .where(and(eq(tcmBankReconciliations.id, id), eq(tcmBankReconciliations.tenantId, user.tenantId), isNull(tcmBankReconciliations.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "bank-reconciliations", entityId: record?.id, module: "treasury-cash-management", previousData: null, request });

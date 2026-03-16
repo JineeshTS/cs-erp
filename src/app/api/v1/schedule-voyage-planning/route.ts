@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftWeatherRoutings,
       draftDeploymentPlans,
     ] = await Promise.all([
-      db.select({ id: svpServiceSchedules.id }).from(svpServiceSchedules)
+      db.select({ value: count() }).from(svpServiceSchedules)
         .where(and(eq(svpServiceSchedules.tenantId, user.tenantId), isNull(svpServiceSchedules.deletedAt), eq(svpServiceSchedules.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpPortSequences.id }).from(svpPortSequences)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpPortSequences)
         .where(and(eq(svpPortSequences.tenantId, user.tenantId), isNull(svpPortSequences.deletedAt), eq(svpPortSequences.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpCanalTransits.id }).from(svpCanalTransits)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpCanalTransits)
         .where(and(eq(svpCanalTransits.tenantId, user.tenantId), isNull(svpCanalTransits.deletedAt), eq(svpCanalTransits.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpEtaManagements.id }).from(svpEtaManagements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpEtaManagements)
         .where(and(eq(svpEtaManagements.tenantId, user.tenantId), isNull(svpEtaManagements.deletedAt), eq(svpEtaManagements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpVoyageOptimizations.id }).from(svpVoyageOptimizations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpVoyageOptimizations)
         .where(and(eq(svpVoyageOptimizations.tenantId, user.tenantId), isNull(svpVoyageOptimizations.deletedAt), eq(svpVoyageOptimizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpSpeedFuelAnalyses.id }).from(svpSpeedFuelAnalyses)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpSpeedFuelAnalyses)
         .where(and(eq(svpSpeedFuelAnalyses.tenantId, user.tenantId), isNull(svpSpeedFuelAnalyses.deletedAt), eq(svpSpeedFuelAnalyses.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpWeatherRoutings.id }).from(svpWeatherRoutings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpWeatherRoutings)
         .where(and(eq(svpWeatherRoutings.tenantId, user.tenantId), isNull(svpWeatherRoutings.deletedAt), eq(svpWeatherRoutings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpDeploymentPlans.id }).from(svpDeploymentPlans)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(svpDeploymentPlans)
         .where(and(eq(svpDeploymentPlans.tenantId, user.tenantId), isNull(svpDeploymentPlans.deletedAt), eq(svpDeploymentPlans.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

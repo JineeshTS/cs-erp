@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       openStatements,
       pendingAllocations,
     ] = await Promise.all([
-      db.select({ id: pdaProformaEstimates.id }).from(pdaProformaEstimates)
+      db.select({ value: count() }).from(pdaProformaEstimates)
         .where(and(eq(pdaProformaEstimates.tenantId, user.tenantId), isNull(pdaProformaEstimates.deletedAt), eq(pdaProformaEstimates.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pdaFinalDas.id }).from(pdaFinalDas)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pdaFinalDas)
         .where(and(eq(pdaFinalDas.tenantId, user.tenantId), isNull(pdaFinalDas.deletedAt), eq(pdaFinalDas.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pdaPortCosts.id }).from(pdaPortCosts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pdaPortCosts)
         .where(and(eq(pdaPortCosts.tenantId, user.tenantId), isNull(pdaPortCosts.deletedAt), eq(pdaPortCosts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: pdaAgentStatements.id }).from(pdaAgentStatements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pdaAgentStatements)
         .where(and(eq(pdaAgentStatements.tenantId, user.tenantId), isNull(pdaAgentStatements.deletedAt), eq(pdaAgentStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pdaExpenseAllocations.id }).from(pdaExpenseAllocations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pdaExpenseAllocations)
         .where(and(eq(pdaExpenseAllocations.tenantId, user.tenantId), isNull(pdaExpenseAllocations.deletedAt), eq(pdaExpenseAllocations.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

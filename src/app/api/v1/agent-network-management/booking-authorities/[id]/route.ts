@@ -5,7 +5,7 @@ import { getBookingAuthority } from "@/lib/agent-network-management/service";
 import { updateBookingAuthoritySchema } from "@/lib/agent-network-management/validation";
 import { db } from "@/lib/db";
 import { anmBookingAuthorities } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(anmBookingAuthorities)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(anmBookingAuthorities.id, id), eq(anmBookingAuthorities.tenantId, user.tenantId)))
+      .where(and(eq(anmBookingAuthorities.id, id), eq(anmBookingAuthorities.tenantId, user.tenantId), isNull(anmBookingAuthorities.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "booking-authorities", entityId: updated?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(anmBookingAuthorities)
       .set({ deletedAt: new Date() })
-      .where(and(eq(anmBookingAuthorities.id, id), eq(anmBookingAuthorities.tenantId, user.tenantId)))
+      .where(and(eq(anmBookingAuthorities.id, id), eq(anmBookingAuthorities.tenantId, user.tenantId), isNull(anmBookingAuthorities.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "booking-authorities", entityId: deleted?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, request });

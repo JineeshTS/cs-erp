@@ -5,7 +5,7 @@ import { pamPortCallPlans } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPortCallPlanSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamPortCallPlans.tenantId, user.tenantId), isNull(pamPortCallPlans.deletedAt)];
     if (search) conditions.push(or(ilike(pamPortCallPlans.planRef, `%${search}%`), ilike(pamPortCallPlans.vesselName, `%${search}%`), ilike(pamPortCallPlans.portName, `%${search}%`))!);
     if (status) conditions.push(eq(pamPortCallPlans.status, status));
-    if (cursor) conditions.push(gt(pamPortCallPlans.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamPortCallPlans.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamPortCallPlans).where(and(...conditions)).orderBy(desc(pamPortCallPlans.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

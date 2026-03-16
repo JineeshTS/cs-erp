@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftEfficiencyAnalytics,
       scheduledBiReports,
     ] = await Promise.all([
-      db.select({ id: abiExecutiveKpiDashboards.id }).from(abiExecutiveKpiDashboards)
+      db.select({ value: count() }).from(abiExecutiveKpiDashboards)
         .where(and(eq(abiExecutiveKpiDashboards.tenantId, user.tenantId), isNull(abiExecutiveKpiDashboards.deletedAt), eq(abiExecutiveKpiDashboards.status, "published")))
-        .then((r) => r.length),
-      db.select({ id: abiVoyageAnalytics.id }).from(abiVoyageAnalytics)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiVoyageAnalytics)
         .where(and(eq(abiVoyageAnalytics.tenantId, user.tenantId), isNull(abiVoyageAnalytics.deletedAt), eq(abiVoyageAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiTradeLaneAnalytics.id }).from(abiTradeLaneAnalytics)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiTradeLaneAnalytics)
         .where(and(eq(abiTradeLaneAnalytics.tenantId, user.tenantId), isNull(abiTradeLaneAnalytics.deletedAt), eq(abiTradeLaneAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiCustomerRevenueAnalytics.id }).from(abiCustomerRevenueAnalytics)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiCustomerRevenueAnalytics)
         .where(and(eq(abiCustomerRevenueAnalytics.tenantId, user.tenantId), isNull(abiCustomerRevenueAnalytics.deletedAt), eq(abiCustomerRevenueAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiPredictiveForecasts.id }).from(abiPredictiveForecasts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiPredictiveForecasts)
         .where(and(eq(abiPredictiveForecasts.tenantId, user.tenantId), isNull(abiPredictiveForecasts.deletedAt), eq(abiPredictiveForecasts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: abiMarketIntelligenceReports.id }).from(abiMarketIntelligenceReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiMarketIntelligenceReports)
         .where(and(eq(abiMarketIntelligenceReports.tenantId, user.tenantId), isNull(abiMarketIntelligenceReports.deletedAt), eq(abiMarketIntelligenceReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiOperationalEfficiencies.id }).from(abiOperationalEfficiencies)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiOperationalEfficiencies)
         .where(and(eq(abiOperationalEfficiencies.tenantId, user.tenantId), isNull(abiOperationalEfficiencies.deletedAt), eq(abiOperationalEfficiencies.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiBiReports.id }).from(abiBiReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(abiBiReports)
         .where(and(eq(abiBiReports.tenantId, user.tenantId), isNull(abiBiReports.deletedAt), eq(abiBiReports.status, "scheduled")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -14,7 +14,7 @@ import {
   peFlowEvents,
   peEventTriggers,
 } from "@/db/schema";
-import { eq, and, isNull, desc, gt, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, lt, sql } from "drizzle-orm";
 
 // Note: Step executor import is deferred to avoid circular deps.
 // Gate resolution triggers execution via the API layer or bridge.
@@ -50,7 +50,7 @@ export async function listFlowInstances({
   if (e2eFlowId) conditions.push(eq(peE2eFlowInstances.e2eFlowId, e2eFlowId));
   if (entityType) conditions.push(eq(peE2eFlowInstances.entityType, entityType));
   if (entityId) conditions.push(eq(peE2eFlowInstances.entityId, entityId));
-  if (cursor) conditions.push(gt(peE2eFlowInstances.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(peE2eFlowInstances.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -201,51 +201,89 @@ export async function advanceFlowStep(
   tenantId: string,
   output?: Record<string, unknown>
 ) {
-  const instance = await getFlowInstance(flowInstanceId, tenantId);
-  if (!instance || instance.status === "completed" || instance.status === "failed") {
-    return null;
-  }
+  // Wrap in transaction to prevent race conditions (concurrent step advances)
+  return db.transaction(async (tx) => {
+    // Lock the flow instance row to prevent concurrent advances
+    const [instance] = await tx.execute(
+      sql`SELECT * FROM pe_e2e_flow_instances WHERE id = ${flowInstanceId} AND tenant_id = ${tenantId} FOR UPDATE`
+    ) as unknown as [typeof peE2eFlowInstances.$inferSelect | undefined];
 
-  const currentStepNum = instance.currentStepNumber;
-  const now = new Date();
+    if (!instance || instance.status === "completed" || instance.status === "failed") {
+      return null;
+    }
 
-  // Complete current step
-  const [completedStep] = await db
-    .update(peE2eStepInstances)
-    .set({
-      status: "completed",
-      completedAt: now,
-      outputData: output ?? {},
-      durationMs: sql<number>`EXTRACT(EPOCH FROM (${now.toISOString()}::timestamptz - "started_at")) * 1000`,
-    })
-    .where(
-      and(
-        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
-        eq(peE2eStepInstances.stepNumber, currentStepNum),
-        eq(peE2eStepInstances.tenantId, tenantId)
-      )
-    )
-    .returning();
+    const currentStepNum = instance.currentStepNumber;
+    const now = new Date();
 
-  await logFlowEvent({
-    tenantId,
-    flowInstanceId,
-    stepInstanceId: completedStep?.id,
-    eventType: "step_completed",
-    metadata: { stepNumber: currentStepNum, output },
-  });
-
-  const nextStep = currentStepNum + 1;
-
-  if (nextStep > instance.totalSteps) {
-    // Flow complete
-    const [updated] = await db
-      .update(peE2eFlowInstances)
+    // Complete current step
+    const [completedStep] = await tx
+      .update(peE2eStepInstances)
       .set({
         status: "completed",
-        currentStepNumber: instance.totalSteps,
         completedAt: now,
+        outputData: output ?? {},
+        durationMs: sql<number>`EXTRACT(EPOCH FROM (NOW() - "started_at")) * 1000`,
       })
+      .where(
+        and(
+          eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+          eq(peE2eStepInstances.stepNumber, currentStepNum),
+          eq(peE2eStepInstances.tenantId, tenantId)
+        )
+      )
+      .returning();
+
+    await logFlowEvent({
+      tenantId,
+      flowInstanceId,
+      stepInstanceId: completedStep?.id,
+      eventType: "step_completed",
+      metadata: { stepNumber: currentStepNum, output },
+    });
+
+    const nextStep = currentStepNum + 1;
+
+    if (nextStep > instance.totalSteps) {
+      // Flow complete
+      const [updated] = await tx
+        .update(peE2eFlowInstances)
+        .set({
+          status: "completed",
+          currentStepNumber: instance.totalSteps,
+          completedAt: now,
+        })
+        .where(
+          and(
+            eq(peE2eFlowInstances.id, flowInstanceId),
+            eq(peE2eFlowInstances.tenantId, tenantId)
+          )
+        )
+        .returning();
+
+      await logFlowEvent({
+        tenantId,
+        flowInstanceId,
+        eventType: "flow_completed",
+      });
+
+      return updated;
+    }
+
+    // Start next step
+    await tx
+      .update(peE2eStepInstances)
+      .set({ status: "in_progress", startedAt: now })
+      .where(
+        and(
+          eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+          eq(peE2eStepInstances.stepNumber, nextStep),
+          eq(peE2eStepInstances.tenantId, tenantId)
+        )
+      );
+
+    const [updated] = await tx
+      .update(peE2eFlowInstances)
+      .set({ currentStepNumber: nextStep })
       .where(
         and(
           eq(peE2eFlowInstances.id, flowInstanceId),
@@ -254,39 +292,8 @@ export async function advanceFlowStep(
       )
       .returning();
 
-    await logFlowEvent({
-      tenantId,
-      flowInstanceId,
-      eventType: "flow_completed",
-    });
-
     return updated;
-  }
-
-  // Start next step
-  await db
-    .update(peE2eStepInstances)
-    .set({ status: "in_progress", startedAt: now })
-    .where(
-      and(
-        eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
-        eq(peE2eStepInstances.stepNumber, nextStep),
-        eq(peE2eStepInstances.tenantId, tenantId)
-      )
-    );
-
-  const [updated] = await db
-    .update(peE2eFlowInstances)
-    .set({ currentStepNumber: nextStep })
-    .where(
-      and(
-        eq(peE2eFlowInstances.id, flowInstanceId),
-        eq(peE2eFlowInstances.tenantId, tenantId)
-      )
-    )
-    .returning();
-
-  return updated;
+  });
 }
 
 // ═══════════════════════════════════════════════════════════

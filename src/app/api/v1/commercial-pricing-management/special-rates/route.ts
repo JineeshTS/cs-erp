@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cpmSpecialRates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(cpmSpecialRates.tenantId, user.tenantId), isNull(cpmSpecialRates.deletedAt)];
     if (search) conditions.push(ilike(cpmSpecialRates.rateName, `%${search}%`));
     if (status) conditions.push(eq(cpmSpecialRates.status, status));
-    if (cursor) conditions.push(gt(cpmSpecialRates.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(cpmSpecialRates.createdAt, new Date(cursor)));
 
     const results = await db.select().from(cpmSpecialRates).where(and(...conditions)).orderBy(desc(cpmSpecialRates.createdAt)).limit(limit + 1);
 

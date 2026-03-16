@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { csoComplaints } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(csoComplaints.tenantId, user.tenantId), isNull(csoComplaints.deletedAt)];
     if (search) conditions.push(ilike(csoComplaints.subject, `%${search}%`));
     if (status) conditions.push(eq(csoComplaints.status, status));
-    if (cursor) conditions.push(gt(csoComplaints.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(csoComplaints.createdAt, new Date(cursor)));
 
     const results = await db.select().from(csoComplaints).where(and(...conditions)).orderBy(desc(csoComplaints.createdAt)).limit(limit + 1);
 

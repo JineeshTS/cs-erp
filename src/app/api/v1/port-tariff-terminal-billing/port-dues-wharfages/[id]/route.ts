@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { pttPortDuesWharfages } from "@/db/schema";
 import { getPortDuesWharfage } from "@/lib/port-tariff-terminal-billing/service";
 import { updatePortDuesWharfageSchema } from "@/lib/port-tariff-terminal-billing/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -62,7 +62,7 @@ export async function PATCH(
     const [record] = await db
       .update(pttPortDuesWharfages)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(pttPortDuesWharfages.id, id), eq(pttPortDuesWharfages.tenantId, user.tenantId)))
+      .where(and(eq(pttPortDuesWharfages.id, id), eq(pttPortDuesWharfages.tenantId, user.tenantId), isNull(pttPortDuesWharfages.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "port-dues-wharfages", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, newData: record as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(
     const [record] = await db
       .update(pttPortDuesWharfages)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(pttPortDuesWharfages.id, id), eq(pttPortDuesWharfages.tenantId, user.tenantId)))
+      .where(and(eq(pttPortDuesWharfages.id, id), eq(pttPortDuesWharfages.tenantId, user.tenantId), isNull(pttPortDuesWharfages.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "port-dues-wharfages", entityId: record?.id, module: "port-tariff-terminal-billing", previousData: null, request });

@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftCargoMixOptimizations,
       draftLoadFactorReports,
     ] = await Promise.all([
-      db.select({ id: locCargoCutoffs.id }).from(locCargoCutoffs)
+      db.select({ value: count() }).from(locCargoCutoffs)
         .where(and(eq(locCargoCutoffs.tenantId, user.tenantId), isNull(locCargoCutoffs.deletedAt), eq(locCargoCutoffs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locOverbookingRollovers.id }).from(locOverbookingRollovers)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locOverbookingRollovers)
         .where(and(eq(locOverbookingRollovers.tenantId, user.tenantId), isNull(locOverbookingRollovers.deletedAt), eq(locOverbookingRollovers.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locRollingUpgrades.id }).from(locRollingUpgrades)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locRollingUpgrades)
         .where(and(eq(locRollingUpgrades.tenantId, user.tenantId), isNull(locRollingUpgrades.deletedAt), eq(locRollingUpgrades.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locRevenueIntegrityAudits.id }).from(locRevenueIntegrityAudits)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locRevenueIntegrityAudits)
         .where(and(eq(locRevenueIntegrityAudits.tenantId, user.tenantId), isNull(locRevenueIntegrityAudits.deletedAt), eq(locRevenueIntegrityAudits.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locSlotSwapCoordinations.id }).from(locSlotSwapCoordinations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locSlotSwapCoordinations)
         .where(and(eq(locSlotSwapCoordinations.tenantId, user.tenantId), isNull(locSlotSwapCoordinations.deletedAt), eq(locSlotSwapCoordinations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locScheduleDeviations.id }).from(locScheduleDeviations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locScheduleDeviations)
         .where(and(eq(locScheduleDeviations.tenantId, user.tenantId), isNull(locScheduleDeviations.deletedAt), eq(locScheduleDeviations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locCargoMixOptimizations.id }).from(locCargoMixOptimizations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locCargoMixOptimizations)
         .where(and(eq(locCargoMixOptimizations.tenantId, user.tenantId), isNull(locCargoMixOptimizations.deletedAt), eq(locCargoMixOptimizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locLoadFactorReports.id }).from(locLoadFactorReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(locLoadFactorReports)
         .where(and(eq(locLoadFactorReports.tenantId, user.tenantId), isNull(locLoadFactorReports.deletedAt), eq(locLoadFactorReports.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

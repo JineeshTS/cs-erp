@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, lt } from "drizzle-orm";
 import { dmsSearchIndex } from "@/db/schema";
 import { createSearchIndexSchema } from "@/lib/document-management-system/validation";
 import { formatZodErrors } from "@/lib/validation";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsSearchIndex.tenantId, user.tenantId), isNull(dmsSearchIndex.deletedAt)];
     if (documentId) conditions.push(eq(dmsSearchIndex.documentId, documentId));
-    if (cursor) conditions.push(gt(dmsSearchIndex.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(dmsSearchIndex.createdAt, new Date(cursor)));
 
     const results = await db.select().from(dmsSearchIndex).where(and(...conditions))
       .orderBy(desc(dmsSearchIndex.createdAt)).limit(limit + 1);

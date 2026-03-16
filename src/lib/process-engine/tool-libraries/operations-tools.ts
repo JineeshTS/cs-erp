@@ -75,7 +75,7 @@ export async function executeCheckCredit(
   const [creditLimit] = await db
     .select()
     .from(arccCreditLimits)
-    .where(and(eq(arccCreditLimits.tenantId, tenantId)))
+    .where(and(eq(arccCreditLimits.tenantId, tenantId), eq(arccCreditLimits.accountId, customerId)))
     .limit(1);
 
   const limit = creditLimit?.creditLimit ?? 100000;

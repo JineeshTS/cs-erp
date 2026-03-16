@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, desc, gt } from "drizzle-orm";
+import { eq, and, ilike, desc, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, roles } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (cursor) {
       const cursorDate = new Date(cursor);
       if (!isNaN(cursorDate.getTime())) {
-        conditions.push(gt(users.createdAt, cursorDate));
+        conditions.push(lt(users.createdAt, cursorDate));
       }
     }
 

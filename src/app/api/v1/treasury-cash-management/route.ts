@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftBGs,
       activeLoans,
     ] = await Promise.all([
-      db.select({ id: tcmBankAccounts.id }).from(tcmBankAccounts)
+      db.select({ value: count() }).from(tcmBankAccounts)
         .where(and(eq(tcmBankAccounts.tenantId, user.tenantId), isNull(tcmBankAccounts.deletedAt), eq(tcmBankAccounts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmCashPositions.id }).from(tcmCashPositions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmCashPositions)
         .where(and(eq(tcmCashPositions.tenantId, user.tenantId), isNull(tcmCashPositions.deletedAt), eq(tcmCashPositions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmBankReconciliations.id }).from(tcmBankReconciliations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmBankReconciliations)
         .where(and(eq(tcmBankReconciliations.tenantId, user.tenantId), isNull(tcmBankReconciliations.deletedAt), eq(tcmBankReconciliations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmCashPoolingSweeps.id }).from(tcmCashPoolingSweeps)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmCashPoolingSweeps)
         .where(and(eq(tcmCashPoolingSweeps.tenantId, user.tenantId), isNull(tcmCashPoolingSweeps.deletedAt), eq(tcmCashPoolingSweeps.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmFxHedgingExposures.id }).from(tcmFxHedgingExposures)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmFxHedgingExposures)
         .where(and(eq(tcmFxHedgingExposures.tenantId, user.tenantId), isNull(tcmFxHedgingExposures.deletedAt), eq(tcmFxHedgingExposures.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmLettersOfCredit.id }).from(tcmLettersOfCredit)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmLettersOfCredit)
         .where(and(eq(tcmLettersOfCredit.tenantId, user.tenantId), isNull(tcmLettersOfCredit.deletedAt), eq(tcmLettersOfCredit.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmBankGuarantees.id }).from(tcmBankGuarantees)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmBankGuarantees)
         .where(and(eq(tcmBankGuarantees.tenantId, user.tenantId), isNull(tcmBankGuarantees.deletedAt), eq(tcmBankGuarantees.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmIntercompanyLoans.id }).from(tcmIntercompanyLoans)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(tcmIntercompanyLoans)
         .where(and(eq(tcmIntercompanyLoans.tenantId, user.tenantId), isNull(tcmIntercompanyLoans.deletedAt), eq(tcmIntercompanyLoans.status, "active")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       openCollections,
       overdueReports,
     ] = await Promise.all([
-      db.select({ id: arccCustomerAccounts.id }).from(arccCustomerAccounts)
+      db.select({ value: count() }).from(arccCustomerAccounts)
         .where(and(eq(arccCustomerAccounts.tenantId, user.tenantId), isNull(arccCustomerAccounts.deletedAt), eq(arccCustomerAccounts.accountStatus, "active")))
-        .then((r) => r.length),
-      db.select({ id: arccCreditLimits.id }).from(arccCreditLimits)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(arccCreditLimits)
         .where(and(eq(arccCreditLimits.tenantId, user.tenantId), isNull(arccCreditLimits.deletedAt), eq(arccCreditLimits.riskCategory, "high")))
-        .then((r) => r.length),
-      db.select({ id: arccCashApplications.id }).from(arccCashApplications)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(arccCashApplications)
         .where(and(eq(arccCashApplications.tenantId, user.tenantId), isNull(arccCashApplications.deletedAt), eq(arccCashApplications.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: arccCollectionWorkflows.id }).from(arccCollectionWorkflows)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(arccCollectionWorkflows)
         .where(and(eq(arccCollectionWorkflows.tenantId, user.tenantId), isNull(arccCollectionWorkflows.deletedAt), eq(arccCollectionWorkflows.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: arccAgingReports.id }).from(arccAgingReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(arccAgingReports)
         .where(and(eq(arccAgingReports.tenantId, user.tenantId), isNull(arccAgingReports.deletedAt), eq(arccAgingReports.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

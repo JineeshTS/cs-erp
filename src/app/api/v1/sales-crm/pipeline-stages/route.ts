@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmPipelineStages } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(scmPipelineStages.tenantId, user.tenantId), isNull(scmPipelineStages.deletedAt)];
     if (search) conditions.push(ilike(scmPipelineStages.stageName, `%${search}%`));
-    if (cursor) conditions.push(gt(scmPipelineStages.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(scmPipelineStages.createdAt, new Date(cursor)));
 
     const results = await db.select().from(scmPipelineStages).where(and(...conditions)).orderBy(desc(scmPipelineStages.createdAt)).limit(limit + 1);
 

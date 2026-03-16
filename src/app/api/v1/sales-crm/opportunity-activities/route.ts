@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmOpportunityActivities } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(scmOpportunityActivities.subject, `%${search}%`));
     if (status) conditions.push(eq(scmOpportunityActivities.status, status));
     if (opportunityId) conditions.push(eq(scmOpportunityActivities.opportunityId, opportunityId));
-    if (cursor) conditions.push(gt(scmOpportunityActivities.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(scmOpportunityActivities.createdAt, new Date(cursor)));
 
     const results = await db.select().from(scmOpportunityActivities).where(and(...conditions))
       .orderBy(desc(scmOpportunityActivities.createdAt)).limit(limit + 1);

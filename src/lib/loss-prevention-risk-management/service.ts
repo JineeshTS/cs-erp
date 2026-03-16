@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   lprRiskRegisters,
@@ -26,7 +26,7 @@ export async function listRiskRegisters({ tenantId, search, status, cursor, limi
   const conditions = [eq(lprRiskRegisters.tenantId, tenantId), isNull(lprRiskRegisters.deletedAt)];
   if (search) conditions.push(or(ilike(lprRiskRegisters.riskRef, `%${search}%`), ilike(lprRiskRegisters.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprRiskRegisters.status, status));
-  if (cursor) conditions.push(gt(lprRiskRegisters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprRiskRegisters.createdAt, new Date(cursor)));
   const results = await db.select().from(lprRiskRegisters).where(and(...conditions)).orderBy(desc(lprRiskRegisters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listHsseRecords({ tenantId, search, status, cursor, limit 
   const conditions = [eq(lprHsseRecords.tenantId, tenantId), isNull(lprHsseRecords.deletedAt)];
   if (search) conditions.push(or(ilike(lprHsseRecords.hsseRef, `%${search}%`), ilike(lprHsseRecords.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprHsseRecords.status, status));
-  if (cursor) conditions.push(gt(lprHsseRecords.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprHsseRecords.createdAt, new Date(cursor)));
   const results = await db.select().from(lprHsseRecords).where(and(...conditions)).orderBy(desc(lprHsseRecords.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listNearMissReports({ tenantId, search, status, cursor, li
   const conditions = [eq(lprNearMissReports.tenantId, tenantId), isNull(lprNearMissReports.deletedAt)];
   if (search) conditions.push(or(ilike(lprNearMissReports.nearMissRef, `%${search}%`), ilike(lprNearMissReports.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprNearMissReports.status, status));
-  if (cursor) conditions.push(gt(lprNearMissReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprNearMissReports.createdAt, new Date(cursor)));
   const results = await db.select().from(lprNearMissReports).where(and(...conditions)).orderBy(desc(lprNearMissReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listIncidentInvestigations({ tenantId, search, status, cur
   const conditions = [eq(lprIncidentInvestigations.tenantId, tenantId), isNull(lprIncidentInvestigations.deletedAt)];
   if (search) conditions.push(or(ilike(lprIncidentInvestigations.investigationRef, `%${search}%`), ilike(lprIncidentInvestigations.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprIncidentInvestigations.status, status));
-  if (cursor) conditions.push(gt(lprIncidentInvestigations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprIncidentInvestigations.createdAt, new Date(cursor)));
   const results = await db.select().from(lprIncidentInvestigations).where(and(...conditions)).orderBy(desc(lprIncidentInvestigations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listPiClubScorings({ tenantId, search, status, cursor, lim
   const conditions = [eq(lprPiClubScorings.tenantId, tenantId), isNull(lprPiClubScorings.deletedAt)];
   if (search) conditions.push(or(ilike(lprPiClubScorings.scoringRef, `%${search}%`), ilike(lprPiClubScorings.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprPiClubScorings.status, status));
-  if (cursor) conditions.push(gt(lprPiClubScorings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprPiClubScorings.createdAt, new Date(cursor)));
   const results = await db.select().from(lprPiClubScorings).where(and(...conditions)).orderBy(desc(lprPiClubScorings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listContinuityPlans({ tenantId, search, status, cursor, li
   const conditions = [eq(lprContinuityPlans.tenantId, tenantId), isNull(lprContinuityPlans.deletedAt)];
   if (search) conditions.push(or(ilike(lprContinuityPlans.planRef, `%${search}%`), ilike(lprContinuityPlans.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprContinuityPlans.status, status));
-  if (cursor) conditions.push(gt(lprContinuityPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprContinuityPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(lprContinuityPlans).where(and(...conditions)).orderBy(desc(lprContinuityPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listEmergencyProcedures({ tenantId, search, status, cursor
   const conditions = [eq(lprEmergencyProcedures.tenantId, tenantId), isNull(lprEmergencyProcedures.deletedAt)];
   if (search) conditions.push(or(ilike(lprEmergencyProcedures.procedureRef, `%${search}%`), ilike(lprEmergencyProcedures.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprEmergencyProcedures.status, status));
-  if (cursor) conditions.push(gt(lprEmergencyProcedures.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprEmergencyProcedures.createdAt, new Date(cursor)));
   const results = await db.select().from(lprEmergencyProcedures).where(and(...conditions)).orderBy(desc(lprEmergencyProcedures.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listRiskKpiDashboards({ tenantId, search, status, cursor, 
   const conditions = [eq(lprRiskKpiDashboards.tenantId, tenantId), isNull(lprRiskKpiDashboards.deletedAt)];
   if (search) conditions.push(or(ilike(lprRiskKpiDashboards.dashboardRef, `%${search}%`), ilike(lprRiskKpiDashboards.title, `%${search}%`))!);
   if (status) conditions.push(eq(lprRiskKpiDashboards.status, status));
-  if (cursor) conditions.push(gt(lprRiskKpiDashboards.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(lprRiskKpiDashboards.createdAt, new Date(cursor)));
   const results = await db.select().from(lprRiskKpiDashboards).where(and(...conditions)).orderBy(desc(lprRiskKpiDashboards.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

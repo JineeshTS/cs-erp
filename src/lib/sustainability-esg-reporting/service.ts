@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   serCarbonFootprints,
@@ -26,7 +26,7 @@ export async function listCarbonFootprints({ tenantId, search, status, cursor, l
   const conditions = [eq(serCarbonFootprints.tenantId, tenantId), isNull(serCarbonFootprints.deletedAt)];
   if (search) conditions.push(or(ilike(serCarbonFootprints.footprintRef, `%${search}%`), ilike(serCarbonFootprints.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(serCarbonFootprints.status, status));
-  if (cursor) conditions.push(gt(serCarbonFootprints.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serCarbonFootprints.createdAt, new Date(cursor)));
   const results = await db.select().from(serCarbonFootprints).where(and(...conditions)).orderBy(desc(serCarbonFootprints.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listGhgReports({ tenantId, search, status, cursor, limit =
   const conditions = [eq(serGhgReports.tenantId, tenantId), isNull(serGhgReports.deletedAt)];
   if (search) conditions.push(or(ilike(serGhgReports.reportRef, `%${search}%`), ilike(serGhgReports.verificationBody, `%${search}%`))!);
   if (status) conditions.push(eq(serGhgReports.status, status));
-  if (cursor) conditions.push(gt(serGhgReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serGhgReports.createdAt, new Date(cursor)));
   const results = await db.select().from(serGhgReports).where(and(...conditions)).orderBy(desc(serGhgReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listSeaCargoCharters({ tenantId, search, status, cursor, l
   const conditions = [eq(serSeaCargoCharters.tenantId, tenantId), isNull(serSeaCargoCharters.deletedAt)];
   if (search) conditions.push(or(ilike(serSeaCargoCharters.charterRef, `%${search}%`), ilike(serSeaCargoCharters.climateTarget, `%${search}%`))!);
   if (status) conditions.push(eq(serSeaCargoCharters.status, status));
-  if (cursor) conditions.push(gt(serSeaCargoCharters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serSeaCargoCharters.createdAt, new Date(cursor)));
   const results = await db.select().from(serSeaCargoCharters).where(and(...conditions)).orderBy(desc(serSeaCargoCharters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listPoseidonAlignments({ tenantId, search, status, cursor,
   const conditions = [eq(serPoseidonAlignments.tenantId, tenantId), isNull(serPoseidonAlignments.deletedAt)];
   if (search) conditions.push(or(ilike(serPoseidonAlignments.alignmentRef, `%${search}%`), ilike(serPoseidonAlignments.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(serPoseidonAlignments.status, status));
-  if (cursor) conditions.push(gt(serPoseidonAlignments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serPoseidonAlignments.createdAt, new Date(cursor)));
   const results = await db.select().from(serPoseidonAlignments).where(and(...conditions)).orderBy(desc(serPoseidonAlignments.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listDecarbRoadmaps({ tenantId, search, status, cursor, lim
   const conditions = [eq(serDecarbRoadmaps.tenantId, tenantId), isNull(serDecarbRoadmaps.deletedAt)];
   if (search) conditions.push(or(ilike(serDecarbRoadmaps.roadmapRef, `%${search}%`), ilike(serDecarbRoadmaps.milestoneName, `%${search}%`))!);
   if (status) conditions.push(eq(serDecarbRoadmaps.status, status));
-  if (cursor) conditions.push(gt(serDecarbRoadmaps.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serDecarbRoadmaps.createdAt, new Date(cursor)));
   const results = await db.select().from(serDecarbRoadmaps).where(and(...conditions)).orderBy(desc(serDecarbRoadmaps.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listAltFuelTrackings({ tenantId, search, status, cursor, l
   const conditions = [eq(serAltFuelTrackings.tenantId, tenantId), isNull(serAltFuelTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(serAltFuelTrackings.trackingRef, `%${search}%`), ilike(serAltFuelTrackings.fuelName, `%${search}%`))!);
   if (status) conditions.push(eq(serAltFuelTrackings.status, status));
-  if (cursor) conditions.push(gt(serAltFuelTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serAltFuelTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(serAltFuelTrackings).where(and(...conditions)).orderBy(desc(serAltFuelTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listEsgKpis({ tenantId, search, status, cursor, limit = 50
   const conditions = [eq(serEsgKpis.tenantId, tenantId), isNull(serEsgKpis.deletedAt)];
   if (search) conditions.push(or(ilike(serEsgKpis.kpiRef, `%${search}%`), ilike(serEsgKpis.kpiName, `%${search}%`))!);
   if (status) conditions.push(eq(serEsgKpis.status, status));
-  if (cursor) conditions.push(gt(serEsgKpis.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serEsgKpis.createdAt, new Date(cursor)));
   const results = await db.select().from(serEsgKpis).where(and(...conditions)).orderBy(desc(serEsgKpis.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listTcfdReports({ tenantId, search, status, cursor, limit 
   const conditions = [eq(serTcfdReports.tenantId, tenantId), isNull(serTcfdReports.deletedAt)];
   if (search) conditions.push(or(ilike(serTcfdReports.tcfdRef, `%${search}%`), ilike(serTcfdReports.disclosureTitle, `%${search}%`))!);
   if (status) conditions.push(eq(serTcfdReports.status, status));
-  if (cursor) conditions.push(gt(serTcfdReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(serTcfdReports.createdAt, new Date(cursor)));
   const results = await db.select().from(serTcfdReports).where(and(...conditions)).orderBy(desc(serTcfdReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

@@ -16,7 +16,7 @@ import {
   arccCashApplications,
   cfmRevenueRecognitions,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   createEntityBinding,
   resolveEntityInFlow,
@@ -161,7 +161,7 @@ export async function executeCalculateTax(
     GB: 20,
   };
   const ratePercent = vatRates[taxJurisdiction] ?? 5;
-  const taxAmount = Math.round(subtotal * ratePercent) / 100;
+  const taxAmount = Math.round(subtotal * ratePercent / 100 * 100) / 100;
   const totalWithTax = subtotal + taxAmount;
 
   // Update invoice if linked
@@ -172,7 +172,7 @@ export async function executeCalculateTax(
         taxAmount,
         totalAmount: totalWithTax,
         outstandingAmount: totalWithTax,
-        metadata: {
+        metadata: sql`COALESCE(metadata, '{}'::jsonb) || ${JSON.stringify({
           taxCalculation: {
             taxJurisdiction,
             taxType,
@@ -181,7 +181,7 @@ export async function executeCalculateTax(
             calculatedBy: "ai_tax_calculator",
             calculatedAt: new Date().toISOString(),
           },
-        },
+        })}::jsonb`,
         updatedAt: new Date(),
       })
       .where(

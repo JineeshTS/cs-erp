@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       pendingDeliveries,
       pendingOptimizations,
     ] = await Promise.all([
-      db.select({ id: icdDryPorts.id }).from(icdDryPorts)
+      db.select({ value: count() }).from(icdDryPorts)
         .where(and(eq(icdDryPorts.tenantId, user.tenantId), isNull(icdDryPorts.deletedAt), eq(icdDryPorts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icdRailPlans.id }).from(icdRailPlans)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icdRailPlans)
         .where(and(eq(icdRailPlans.tenantId, user.tenantId), isNull(icdRailPlans.deletedAt), eq(icdRailPlans.status, "planning")))
-        .then((r) => r.length),
-      db.select({ id: icdTruckBookings.id }).from(icdTruckBookings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icdTruckBookings)
         .where(and(eq(icdTruckBookings.tenantId, user.tenantId), isNull(icdTruckBookings.deletedAt), eq(icdTruckBookings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: icdLastMileDeliveries.id }).from(icdLastMileDeliveries)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icdLastMileDeliveries)
         .where(and(eq(icdLastMileDeliveries.tenantId, user.tenantId), isNull(icdLastMileDeliveries.deletedAt), eq(icdLastMileDeliveries.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: icdRouteOptimizations.id }).from(icdRouteOptimizations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icdRouteOptimizations)
         .where(and(eq(icdRouteOptimizations.tenantId, user.tenantId), isNull(icdRouteOptimizations.deletedAt), eq(icdRouteOptimizations.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

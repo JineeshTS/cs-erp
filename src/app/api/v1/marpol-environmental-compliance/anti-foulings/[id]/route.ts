@@ -5,7 +5,7 @@ import { getAntiFouling } from "@/lib/marpol-environmental-compliance/service";
 import { updateAntiFoulingSchema } from "@/lib/marpol-environmental-compliance/validation";
 import { db } from "@/lib/db";
 import { mecAntiFoulings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(mecAntiFoulings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(mecAntiFoulings.id, id), eq(mecAntiFoulings.tenantId, user.tenantId)))
+      .where(and(eq(mecAntiFoulings.id, id), eq(mecAntiFoulings.tenantId, user.tenantId), isNull(mecAntiFoulings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "anti-foulings", entityId: updated?.id, module: "marpol-environmental-compliance", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(mecAntiFoulings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(mecAntiFoulings.id, id), eq(mecAntiFoulings.tenantId, user.tenantId)))
+      .where(and(eq(mecAntiFoulings.id, id), eq(mecAntiFoulings.tenantId, user.tenantId), isNull(mecAntiFoulings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "anti-foulings", entityId: deleted?.id, module: "marpol-environmental-compliance", previousData: existing as Record<string, unknown>, request });

@@ -5,7 +5,7 @@ import { pscInventoryStockControls } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createInventoryStockControlSchema } from "@/lib/procurement-supply-chain/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pscInventoryStockControls.tenantId, user.tenantId), isNull(pscInventoryStockControls.deletedAt)];
     if (search) conditions.push(or(ilike(pscInventoryStockControls.inventoryRef, `%${search}%`), ilike(pscInventoryStockControls.itemName, `%${search}%`))!);
     if (status) conditions.push(eq(pscInventoryStockControls.status, status));
-    if (cursor) conditions.push(gt(pscInventoryStockControls.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pscInventoryStockControls.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pscInventoryStockControls).where(and(...conditions)).orderBy(desc(pscInventoryStockControls.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

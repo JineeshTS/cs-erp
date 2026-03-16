@@ -5,7 +5,7 @@ import { getCompetencyAssessment } from "@/lib/knowledge-management-training/ser
 import { updateCompetencyAssessmentSchema } from "@/lib/knowledge-management-training/validation";
 import { db } from "@/lib/db";
 import { kmtCompetencyAssessments } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(kmtCompetencyAssessments)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(kmtCompetencyAssessments.id, id), eq(kmtCompetencyAssessments.tenantId, user.tenantId)))
+      .where(and(eq(kmtCompetencyAssessments.id, id), eq(kmtCompetencyAssessments.tenantId, user.tenantId), isNull(kmtCompetencyAssessments.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "competency-assessments", entityId: updated?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(kmtCompetencyAssessments)
       .set({ deletedAt: new Date() })
-      .where(and(eq(kmtCompetencyAssessments.id, id), eq(kmtCompetencyAssessments.tenantId, user.tenantId)))
+      .where(and(eq(kmtCompetencyAssessments.id, id), eq(kmtCompetencyAssessments.tenantId, user.tenantId), isNull(kmtCompetencyAssessments.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "competency-assessments", entityId: deleted?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, request });

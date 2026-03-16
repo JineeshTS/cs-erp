@@ -5,7 +5,7 @@ import { getProfitBenchmark } from "@/lib/voyage-results-settlement/service";
 import { updateProfitBenchmarkSchema } from "@/lib/voyage-results-settlement/validation";
 import { db } from "@/lib/db";
 import { vrsProfitBenchmarks } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(vrsProfitBenchmarks)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(vrsProfitBenchmarks.id, id), eq(vrsProfitBenchmarks.tenantId, user.tenantId)))
+      .where(and(eq(vrsProfitBenchmarks.id, id), eq(vrsProfitBenchmarks.tenantId, user.tenantId), isNull(vrsProfitBenchmarks.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "profit-benchmarks", entityId: updated?.id, module: "voyage-results-settlement", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(vrsProfitBenchmarks)
       .set({ deletedAt: new Date() })
-      .where(and(eq(vrsProfitBenchmarks.id, id), eq(vrsProfitBenchmarks.tenantId, user.tenantId)))
+      .where(and(eq(vrsProfitBenchmarks.id, id), eq(vrsProfitBenchmarks.tenantId, user.tenantId), isNull(vrsProfitBenchmarks.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "profit-benchmarks", entityId: deleted?.id, module: "voyage-results-settlement", previousData: existing as Record<string, unknown>, request });

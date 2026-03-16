@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { odmShippingInstructions } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(odmShippingInstructions.tenantId, user.tenantId), isNull(odmShippingInstructions.deletedAt)];
     if (search) conditions.push(ilike(odmShippingInstructions.siReference, `%${search}%`));
     if (status) conditions.push(eq(odmShippingInstructions.status, status));
-    if (cursor) conditions.push(gt(odmShippingInstructions.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(odmShippingInstructions.createdAt, new Date(cursor)));
 
     const results = await db.select().from(odmShippingInstructions).where(and(...conditions)).orderBy(desc(odmShippingInstructions.createdAt)).limit(limit + 1);
 

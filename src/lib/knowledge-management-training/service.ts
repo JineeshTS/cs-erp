@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   kmtSopLibraries,
@@ -26,7 +26,7 @@ export async function listSopLibraries({ tenantId, search, status, cursor, limit
   const conditions = [eq(kmtSopLibraries.tenantId, tenantId), isNull(kmtSopLibraries.deletedAt)];
   if (search) conditions.push(or(ilike(kmtSopLibraries.sopRef, `%${search}%`), ilike(kmtSopLibraries.title, `%${search}%`))!);
   if (status) conditions.push(eq(kmtSopLibraries.status, status));
-  if (cursor) conditions.push(gt(kmtSopLibraries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtSopLibraries.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtSopLibraries).where(and(...conditions)).orderBy(desc(kmtSopLibraries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listTrainingModules({ tenantId, search, status, cursor, li
   const conditions = [eq(kmtTrainingModules.tenantId, tenantId), isNull(kmtTrainingModules.deletedAt)];
   if (search) conditions.push(or(ilike(kmtTrainingModules.moduleRef, `%${search}%`), ilike(kmtTrainingModules.title, `%${search}%`))!);
   if (status) conditions.push(eq(kmtTrainingModules.status, status));
-  if (cursor) conditions.push(gt(kmtTrainingModules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtTrainingModules.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtTrainingModules).where(and(...conditions)).orderBy(desc(kmtTrainingModules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listCompetencyAssessments({ tenantId, search, status, curs
   const conditions = [eq(kmtCompetencyAssessments.tenantId, tenantId), isNull(kmtCompetencyAssessments.deletedAt)];
   if (search) conditions.push(or(ilike(kmtCompetencyAssessments.assessmentRef, `%${search}%`), ilike(kmtCompetencyAssessments.employeeName, `%${search}%`))!);
   if (status) conditions.push(eq(kmtCompetencyAssessments.status, status));
-  if (cursor) conditions.push(gt(kmtCompetencyAssessments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtCompetencyAssessments.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtCompetencyAssessments).where(and(...conditions)).orderBy(desc(kmtCompetencyAssessments.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listOnboardingWorkflows({ tenantId, search, status, cursor
   const conditions = [eq(kmtOnboardingWorkflows.tenantId, tenantId), isNull(kmtOnboardingWorkflows.deletedAt)];
   if (search) conditions.push(or(ilike(kmtOnboardingWorkflows.workflowRef, `%${search}%`), ilike(kmtOnboardingWorkflows.employeeName, `%${search}%`))!);
   if (status) conditions.push(eq(kmtOnboardingWorkflows.status, status));
-  if (cursor) conditions.push(gt(kmtOnboardingWorkflows.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtOnboardingWorkflows.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtOnboardingWorkflows).where(and(...conditions)).orderBy(desc(kmtOnboardingWorkflows.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listKnowledgeAssistants({ tenantId, search, status, cursor
   const conditions = [eq(kmtKnowledgeAssistants.tenantId, tenantId), isNull(kmtKnowledgeAssistants.deletedAt)];
   if (search) conditions.push(or(ilike(kmtKnowledgeAssistants.assistantRef, `%${search}%`), ilike(kmtKnowledgeAssistants.query, `%${search}%`))!);
   if (status) conditions.push(eq(kmtKnowledgeAssistants.status, status));
-  if (cursor) conditions.push(gt(kmtKnowledgeAssistants.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtKnowledgeAssistants.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtKnowledgeAssistants).where(and(...conditions)).orderBy(desc(kmtKnowledgeAssistants.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listRegulatoryAlerts({ tenantId, search, status, cursor, l
   const conditions = [eq(kmtRegulatoryAlerts.tenantId, tenantId), isNull(kmtRegulatoryAlerts.deletedAt)];
   if (search) conditions.push(or(ilike(kmtRegulatoryAlerts.alertRef, `%${search}%`), ilike(kmtRegulatoryAlerts.title, `%${search}%`))!);
   if (status) conditions.push(eq(kmtRegulatoryAlerts.status, status));
-  if (cursor) conditions.push(gt(kmtRegulatoryAlerts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtRegulatoryAlerts.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtRegulatoryAlerts).where(and(...conditions)).orderBy(desc(kmtRegulatoryAlerts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listLessonsLearned({ tenantId, search, status, cursor, lim
   const conditions = [eq(kmtLessonsLearned.tenantId, tenantId), isNull(kmtLessonsLearned.deletedAt)];
   if (search) conditions.push(or(ilike(kmtLessonsLearned.lessonRef, `%${search}%`), ilike(kmtLessonsLearned.title, `%${search}%`))!);
   if (status) conditions.push(eq(kmtLessonsLearned.status, status));
-  if (cursor) conditions.push(gt(kmtLessonsLearned.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtLessonsLearned.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtLessonsLearned).where(and(...conditions)).orderBy(desc(kmtLessonsLearned.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listVideoLibraries({ tenantId, search, status, cursor, lim
   const conditions = [eq(kmtVideoLibraries.tenantId, tenantId), isNull(kmtVideoLibraries.deletedAt)];
   if (search) conditions.push(or(ilike(kmtVideoLibraries.videoRef, `%${search}%`), ilike(kmtVideoLibraries.title, `%${search}%`))!);
   if (status) conditions.push(eq(kmtVideoLibraries.status, status));
-  if (cursor) conditions.push(gt(kmtVideoLibraries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(kmtVideoLibraries.createdAt, new Date(cursor)));
   const results = await db.select().from(kmtVideoLibraries).where(and(...conditions)).orderBy(desc(kmtVideoLibraries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

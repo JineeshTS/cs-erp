@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   thmCargoPlans,
@@ -26,7 +26,7 @@ export async function listCargoPlans({ tenantId, search, status, cursor, limit =
   const conditions = [eq(thmCargoPlans.tenantId, tenantId), isNull(thmCargoPlans.deletedAt)];
   if (search) conditions.push(or(ilike(thmCargoPlans.planRef, `%${search}%`), ilike(thmCargoPlans.hubPort, `%${search}%`))!);
   if (status) conditions.push(eq(thmCargoPlans.status, status));
-  if (cursor) conditions.push(gt(thmCargoPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmCargoPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(thmCargoPlans).where(and(...conditions)).orderBy(desc(thmCargoPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listFeederCoordinations({ tenantId, search, status, cursor
   const conditions = [eq(thmFeederCoordinations.tenantId, tenantId), isNull(thmFeederCoordinations.deletedAt)];
   if (search) conditions.push(or(ilike(thmFeederCoordinations.coordinationRef, `%${search}%`), ilike(thmFeederCoordinations.feederVessel, `%${search}%`))!);
   if (status) conditions.push(eq(thmFeederCoordinations.status, status));
-  if (cursor) conditions.push(gt(thmFeederCoordinations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmFeederCoordinations.createdAt, new Date(cursor)));
   const results = await db.select().from(thmFeederCoordinations).where(and(...conditions)).orderBy(desc(thmFeederCoordinations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listCargoTrackings({ tenantId, search, status, cursor, lim
   const conditions = [eq(thmCargoTrackings.tenantId, tenantId), isNull(thmCargoTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(thmCargoTrackings.trackingRef, `%${search}%`), ilike(thmCargoTrackings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(thmCargoTrackings.status, status));
-  if (cursor) conditions.push(gt(thmCargoTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmCargoTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(thmCargoTrackings).where(and(...conditions)).orderBy(desc(thmCargoTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listMissedConnections({ tenantId, search, status, cursor, 
   const conditions = [eq(thmMissedConnections.tenantId, tenantId), isNull(thmMissedConnections.deletedAt)];
   if (search) conditions.push(or(ilike(thmMissedConnections.connectionRef, `%${search}%`), ilike(thmMissedConnections.hubPort, `%${search}%`))!);
   if (status) conditions.push(eq(thmMissedConnections.status, status));
-  if (cursor) conditions.push(gt(thmMissedConnections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmMissedConnections.createdAt, new Date(cursor)));
   const results = await db.select().from(thmMissedConnections).where(and(...conditions)).orderBy(desc(thmMissedConnections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listRevenueAttributions({ tenantId, search, status, cursor
   const conditions = [eq(thmRevenueAttributions.tenantId, tenantId), isNull(thmRevenueAttributions.deletedAt)];
   if (search) conditions.push(or(ilike(thmRevenueAttributions.attributionRef, `%${search}%`), ilike(thmRevenueAttributions.hubPort, `%${search}%`))!);
   if (status) conditions.push(eq(thmRevenueAttributions.status, status));
-  if (cursor) conditions.push(gt(thmRevenueAttributions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmRevenueAttributions.createdAt, new Date(cursor)));
   const results = await db.select().from(thmRevenueAttributions).where(and(...conditions)).orderBy(desc(thmRevenueAttributions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listHubEfficiencies({ tenantId, search, status, cursor, li
   const conditions = [eq(thmHubEfficiencies.tenantId, tenantId), isNull(thmHubEfficiencies.deletedAt)];
   if (search) conditions.push(or(ilike(thmHubEfficiencies.efficiencyRef, `%${search}%`), ilike(thmHubEfficiencies.hubPort, `%${search}%`))!);
   if (status) conditions.push(eq(thmHubEfficiencies.status, status));
-  if (cursor) conditions.push(gt(thmHubEfficiencies.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmHubEfficiencies.createdAt, new Date(cursor)));
   const results = await db.select().from(thmHubEfficiencies).where(and(...conditions)).orderBy(desc(thmHubEfficiencies.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listOptimizationEngines({ tenantId, search, status, cursor
   const conditions = [eq(thmOptimizationEngines.tenantId, tenantId), isNull(thmOptimizationEngines.deletedAt)];
   if (search) conditions.push(or(ilike(thmOptimizationEngines.engineRef, `%${search}%`), ilike(thmOptimizationEngines.scenarioName, `%${search}%`))!);
   if (status) conditions.push(eq(thmOptimizationEngines.status, status));
-  if (cursor) conditions.push(gt(thmOptimizationEngines.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmOptimizationEngines.createdAt, new Date(cursor)));
   const results = await db.select().from(thmOptimizationEngines).where(and(...conditions)).orderBy(desc(thmOptimizationEngines.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listPenaltyTrackings({ tenantId, search, status, cursor, l
   const conditions = [eq(thmPenaltyTrackings.tenantId, tenantId), isNull(thmPenaltyTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(thmPenaltyTrackings.penaltyRef, `%${search}%`), ilike(thmPenaltyTrackings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(thmPenaltyTrackings.status, status));
-  if (cursor) conditions.push(gt(thmPenaltyTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(thmPenaltyTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(thmPenaltyTrackings).where(and(...conditions)).orderBy(desc(thmPenaltyTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { glAccounts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (accountType) conditions.push(eq(glAccounts.accountType, accountType));
     if (active === "true") conditions.push(eq(glAccounts.isActive, true));
     if (active === "false") conditions.push(eq(glAccounts.isActive, false));
-    if (cursor) conditions.push(gt(glAccounts.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(glAccounts.createdAt, new Date(cursor)));
 
     const results = await db.select().from(glAccounts).where(and(...conditions))
       .orderBy(desc(glAccounts.createdAt)).limit(limit + 1);

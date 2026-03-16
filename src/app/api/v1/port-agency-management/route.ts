@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       pendingClearances,
       draftDisbursements,
     ] = await Promise.all([
-      db.select({ id: pamPortCallPlans.id }).from(pamPortCallPlans)
+      db.select({ value: count() }).from(pamPortCallPlans)
         .where(and(eq(pamPortCallPlans.tenantId, user.tenantId), isNull(pamPortCallPlans.deletedAt), eq(pamPortCallPlans.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: pamHusbandryServices.id }).from(pamHusbandryServices)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamHusbandryServices)
         .where(and(eq(pamHusbandryServices.tenantId, user.tenantId), isNull(pamHusbandryServices.deletedAt), eq(pamHusbandryServices.status, "requested")))
-        .then((r) => r.length),
-      db.select({ id: pamPreArrivalChecklists.id }).from(pamPreArrivalChecklists)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamPreArrivalChecklists)
         .where(and(eq(pamPreArrivalChecklists.tenantId, user.tenantId), isNull(pamPreArrivalChecklists.deletedAt), eq(pamPreArrivalChecklists.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pamPortAuthorityCommunications.id }).from(pamPortAuthorityCommunications)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamPortAuthorityCommunications)
         .where(and(eq(pamPortAuthorityCommunications.tenantId, user.tenantId), isNull(pamPortAuthorityCommunications.deletedAt), eq(pamPortAuthorityCommunications.status, "sent")))
-        .then((r) => r.length),
-      db.select({ id: pamCrewChangeCoordinations.id }).from(pamCrewChangeCoordinations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamCrewChangeCoordinations)
         .where(and(eq(pamCrewChangeCoordinations.tenantId, user.tenantId), isNull(pamCrewChangeCoordinations.deletedAt), eq(pamCrewChangeCoordinations.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: pamCashToMasters.id }).from(pamCashToMasters)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamCashToMasters)
         .where(and(eq(pamCashToMasters.tenantId, user.tenantId), isNull(pamCashToMasters.deletedAt), eq(pamCashToMasters.status, "requested")))
-        .then((r) => r.length),
-      db.select({ id: pamVesselClearances.id }).from(pamVesselClearances)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamVesselClearances)
         .where(and(eq(pamVesselClearances.tenantId, user.tenantId), isNull(pamVesselClearances.deletedAt), eq(pamVesselClearances.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pamDisbursementAccounts.id }).from(pamDisbursementAccounts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(pamDisbursementAccounts)
         .where(and(eq(pamDisbursementAccounts.tenantId, user.tenantId), isNull(pamDisbursementAccounts.deletedAt), eq(pamDisbursementAccounts.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -5,7 +5,7 @@ import { getContainerSurvey } from "@/lib/mobile-operations-app/service";
 import { updateContainerSurveySchema } from "@/lib/mobile-operations-app/validation";
 import { db } from "@/lib/db";
 import { mobContainerSurveys } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(mobContainerSurveys)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(mobContainerSurveys.id, id), eq(mobContainerSurveys.tenantId, user.tenantId)))
+      .where(and(eq(mobContainerSurveys.id, id), eq(mobContainerSurveys.tenantId, user.tenantId), isNull(mobContainerSurveys.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "container-surveys", entityId: updated?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(mobContainerSurveys)
       .set({ deletedAt: new Date() })
-      .where(and(eq(mobContainerSurveys.id, id), eq(mobContainerSurveys.tenantId, user.tenantId)))
+      .where(and(eq(mobContainerSurveys.id, id), eq(mobContainerSurveys.tenantId, user.tenantId), isNull(mobContainerSurveys.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "container-surveys", entityId: deleted?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, request });

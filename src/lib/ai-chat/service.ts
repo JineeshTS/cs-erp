@@ -231,7 +231,7 @@ export async function chat(
   const [session] = await db
     .select({ title: aiChatSessions.title })
     .from(aiChatSessions)
-    .where(eq(aiChatSessions.id, sessionId))
+    .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)))
     .limit(1);
 
   if (session?.title === "New Chat") {
@@ -239,7 +239,7 @@ export async function chat(
     await db
       .update(aiChatSessions)
       .set({ title })
-      .where(eq(aiChatSessions.id, sessionId));
+      .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)));
   }
 
   // Load recent messages for context
@@ -333,7 +333,7 @@ export async function chatStream(
   const [session] = await db
     .select({ title: aiChatSessions.title })
     .from(aiChatSessions)
-    .where(eq(aiChatSessions.id, sessionId))
+    .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)))
     .limit(1);
 
   if (session?.title === "New Chat") {
@@ -341,7 +341,7 @@ export async function chatStream(
     await db
       .update(aiChatSessions)
       .set({ title })
-      .where(eq(aiChatSessions.id, sessionId));
+      .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)));
   }
 
   // Load recent messages for context

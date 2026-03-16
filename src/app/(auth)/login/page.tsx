@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,16 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
+
+  // Countdown timer to re-enable the form after rate limiting
+  useEffect(() => {
+    if (retryAfter === null) return;
+    const timer = setTimeout(() => {
+      setRetryAfter(null);
+      setError(null);
+    }, retryAfter * 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,9 +67,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect to dashboard or callback URL
+      // Redirect to dashboard or callback URL (validate to prevent open redirect)
       const params = new URLSearchParams(window.location.search);
-      const callbackUrl = params.get("callbackUrl") || "/";
+      const raw = params.get("callbackUrl") || "/";
+      const callbackUrl = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
       router.replace(callbackUrl);
     } catch {
       setError("Network error. Please try again.");

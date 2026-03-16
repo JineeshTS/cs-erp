@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cpmVsaSlotRates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(cpmVsaSlotRates.tenantId, user.tenantId), isNull(cpmVsaSlotRates.deletedAt)];
     if (search) conditions.push(ilike(cpmVsaSlotRates.vsaPartner, `%${search}%`));
     if (status) conditions.push(eq(cpmVsaSlotRates.status, status));
-    if (cursor) conditions.push(gt(cpmVsaSlotRates.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(cpmVsaSlotRates.createdAt, new Date(cursor)));
 
     const results = await db.select().from(cpmVsaSlotRates).where(and(...conditions)).orderBy(desc(cpmVsaSlotRates.createdAt)).limit(limit + 1);
 

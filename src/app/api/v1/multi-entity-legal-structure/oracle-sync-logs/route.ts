@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsOracleSyncLogs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (integrationConfigId) conditions.push(eq(melsOracleSyncLogs.integrationConfigId, integrationConfigId));
     if (syncType) conditions.push(eq(melsOracleSyncLogs.syncType, syncType));
     if (status) conditions.push(eq(melsOracleSyncLogs.status, status));
-    if (cursor) conditions.push(gt(melsOracleSyncLogs.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsOracleSyncLogs.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsOracleSyncLogs).where(and(...conditions))
       .orderBy(desc(melsOracleSyncLogs.createdAt)).limit(limit + 1);

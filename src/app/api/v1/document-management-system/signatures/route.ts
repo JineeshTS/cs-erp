@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsDocumentSignatures } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsDocumentSignatures.tenantId, user.tenantId), isNull(dmsDocumentSignatures.deletedAt)];
     if (documentId) conditions.push(eq(dmsDocumentSignatures.documentId, documentId));
-    if (cursor) conditions.push(gt(dmsDocumentSignatures.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(dmsDocumentSignatures.createdAt, new Date(cursor)));
 
     const results = await db.select().from(dmsDocumentSignatures).where(and(...conditions))
       .orderBy(desc(dmsDocumentSignatures.createdAt)).limit(limit + 1);

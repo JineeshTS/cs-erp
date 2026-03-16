@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneSlaInstances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(wneSlaInstances.tenantId, user.tenantId), isNull(wneSlaInstances.deletedAt)];
     if (status) conditions.push(eq(wneSlaInstances.status, status));
     if (entityType) conditions.push(eq(wneSlaInstances.entityType, entityType));
-    if (cursor) conditions.push(gt(wneSlaInstances.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(wneSlaInstances.createdAt, new Date(cursor)));
 
     const results = await db.select().from(wneSlaInstances).where(and(...conditions))
       .orderBy(desc(wneSlaInstances.createdAt)).limit(limit + 1);

@@ -23,11 +23,15 @@ export async function setTenantContext(tenantId: string): Promise<void> {
 
 /**
  * Run a function with tenant context set on the DB connection.
+ * Wraps in a transaction so set_config is truly transaction-local
+ * and cannot leak across requests via PgBouncer connection reuse.
  */
 export async function withTenant<T>(
   tenantId: string,
   fn: () => Promise<T>
 ): Promise<T> {
-  await setTenantContext(tenantId);
-  return fn();
+  return db.transaction(async () => {
+    await db.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
+    return fn();
+  });
 }

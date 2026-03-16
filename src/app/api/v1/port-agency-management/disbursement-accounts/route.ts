@@ -5,7 +5,7 @@ import { pamDisbursementAccounts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDisbursementAccountSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamDisbursementAccounts.tenantId, user.tenantId), isNull(pamDisbursementAccounts.deletedAt)];
     if (search) conditions.push(or(ilike(pamDisbursementAccounts.accountRef, `%${search}%`), ilike(pamDisbursementAccounts.vesselName, `%${search}%`), ilike(pamDisbursementAccounts.principalName, `%${search}%`))!);
     if (status) conditions.push(eq(pamDisbursementAccounts.status, status));
-    if (cursor) conditions.push(gt(pamDisbursementAccounts.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamDisbursementAccounts.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamDisbursementAccounts).where(and(...conditions)).orderBy(desc(pamDisbursementAccounts.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

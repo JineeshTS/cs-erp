@@ -3,6 +3,7 @@ import { and, lt, gt, isNull, ne, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { firmFreightInvoices } from "@/db/schema";
 import { eventBus } from "@/lib/events/event-bus";
+import { timingSafeCompare } from "@/lib/tokens";
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
@@ -18,7 +19,7 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get("x-internal-api-key");
-    if (!INTERNAL_API_KEY || apiKey !== INTERNAL_API_KEY) {
+    if (!INTERNAL_API_KEY || !apiKey || !timingSafeCompare(apiKey, INTERNAL_API_KEY)) {
       return NextResponse.json(
         { error: { code: "UNAUTHORIZED", message: "Invalid internal API key" } },
         { status: 401 }

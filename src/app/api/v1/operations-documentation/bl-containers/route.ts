@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { odmBlContainers } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(odmBlContainers.tenantId, user.tenantId), isNull(odmBlContainers.deletedAt)];
     if (search) conditions.push(ilike(odmBlContainers.containerNumber, `%${search}%`));
-    if (cursor) conditions.push(gt(odmBlContainers.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(odmBlContainers.createdAt, new Date(cursor)));
 
     const results = await db.select().from(odmBlContainers).where(and(...conditions)).orderBy(desc(odmBlContainers.createdAt)).limit(limit + 1);
 

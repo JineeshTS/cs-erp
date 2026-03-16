@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       openBreakdowns,
       activeAlerts,
     ] = await Promise.all([
-      db.select({ id: rcmReeferBookings.id }).from(rcmReeferBookings)
+      db.select({ value: count() }).from(rcmReeferBookings)
         .where(and(eq(rcmReeferBookings.tenantId, user.tenantId), isNull(rcmReeferBookings.deletedAt), eq(rcmReeferBookings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: rcmTempMonitorings.id }).from(rcmTempMonitorings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(rcmTempMonitorings)
         .where(and(eq(rcmTempMonitorings.tenantId, user.tenantId), isNull(rcmTempMonitorings.deletedAt), eq(rcmTempMonitorings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: rcmPtiInspections.id }).from(rcmPtiInspections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(rcmPtiInspections)
         .where(and(eq(rcmPtiInspections.tenantId, user.tenantId), isNull(rcmPtiInspections.deletedAt), eq(rcmPtiInspections.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: rcmBreakdownResponses.id }).from(rcmBreakdownResponses)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(rcmBreakdownResponses)
         .where(and(eq(rcmBreakdownResponses.tenantId, user.tenantId), isNull(rcmBreakdownResponses.deletedAt), eq(rcmBreakdownResponses.status, "reported")))
-        .then((r) => r.length),
-      db.select({ id: rcmTempAlerts.id }).from(rcmTempAlerts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(rcmTempAlerts)
         .where(and(eq(rcmTempAlerts.tenantId, user.tenantId), isNull(rcmTempAlerts.deletedAt), eq(rcmTempAlerts.status, "active")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

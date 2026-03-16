@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const IS_PROD = process.env.NODE_ENV === "production";
-const COOKIE_DOMAIN = IS_PROD ? ".codilla.ai" : undefined;
+const COOKIE_DOMAIN = IS_PROD ? "cs-erp.codilla.ai" : undefined;
 
 interface CookieOptions {
   name: string;

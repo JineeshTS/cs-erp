@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       unmatchedItems,
       scheduledPayments,
     ] = await Promise.all([
-      db.select({ id: apvmVendorMasters.id }).from(apvmVendorMasters)
+      db.select({ value: count() }).from(apvmVendorMasters)
         .where(and(eq(apvmVendorMasters.tenantId, user.tenantId), isNull(apvmVendorMasters.deletedAt), eq(apvmVendorMasters.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: apvmPurchaseOrders.id }).from(apvmPurchaseOrders)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(apvmPurchaseOrders)
         .where(and(eq(apvmPurchaseOrders.tenantId, user.tenantId), isNull(apvmPurchaseOrders.deletedAt), eq(apvmPurchaseOrders.status, "approved")))
-        .then((r) => r.length),
-      db.select({ id: apvmVendorInvoices.id }).from(apvmVendorInvoices)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(apvmVendorInvoices)
         .where(and(eq(apvmVendorInvoices.tenantId, user.tenantId), isNull(apvmVendorInvoices.deletedAt), eq(apvmVendorInvoices.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: apvmThreeWayMatches.id }).from(apvmThreeWayMatches)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(apvmThreeWayMatches)
         .where(and(eq(apvmThreeWayMatches.tenantId, user.tenantId), isNull(apvmThreeWayMatches.deletedAt), eq(apvmThreeWayMatches.status, "exception")))
-        .then((r) => r.length),
-      db.select({ id: apvmPaymentSchedules.id }).from(apvmPaymentSchedules)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(apvmPaymentSchedules)
         .where(and(eq(apvmPaymentSchedules.tenantId, user.tenantId), isNull(apvmPaymentSchedules.deletedAt), eq(apvmPaymentSchedules.status, "scheduled")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftImpairments,
       activeLeases,
     ] = await Promise.all([
-      db.select({ id: famAssetRegistries.id }).from(famAssetRegistries)
+      db.select({ value: count() }).from(famAssetRegistries)
         .where(and(eq(famAssetRegistries.tenantId, user.tenantId), isNull(famAssetRegistries.deletedAt), eq(famAssetRegistries.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famDepreciationSchedules.id }).from(famDepreciationSchedules)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famDepreciationSchedules)
         .where(and(eq(famDepreciationSchedules.tenantId, user.tenantId), isNull(famDepreciationSchedules.deletedAt), eq(famDepreciationSchedules.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famAssetDisposals.id }).from(famAssetDisposals)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famAssetDisposals)
         .where(and(eq(famAssetDisposals.tenantId, user.tenantId), isNull(famAssetDisposals.deletedAt), eq(famAssetDisposals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famInsuranceValuations.id }).from(famInsuranceValuations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famInsuranceValuations)
         .where(and(eq(famInsuranceValuations.tenantId, user.tenantId), isNull(famInsuranceValuations.deletedAt), eq(famInsuranceValuations.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famMaintenanceSchedules.id }).from(famMaintenanceSchedules)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famMaintenanceSchedules)
         .where(and(eq(famMaintenanceSchedules.tenantId, user.tenantId), isNull(famMaintenanceSchedules.deletedAt), eq(famMaintenanceSchedules.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: famCapexOpexClassifications.id }).from(famCapexOpexClassifications)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famCapexOpexClassifications)
         .where(and(eq(famCapexOpexClassifications.tenantId, user.tenantId), isNull(famCapexOpexClassifications.deletedAt), eq(famCapexOpexClassifications.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famImpairmentTests.id }).from(famImpairmentTests)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famImpairmentTests)
         .where(and(eq(famImpairmentTests.tenantId, user.tenantId), isNull(famImpairmentTests.deletedAt), eq(famImpairmentTests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famLeaseAccounting.id }).from(famLeaseAccounting)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(famLeaseAccounting)
         .where(and(eq(famLeaseAccounting.tenantId, user.tenantId), isNull(famLeaseAccounting.deletedAt), eq(famLeaseAccounting.status, "active")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -5,7 +5,7 @@ import { ccrIspsCompliances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createIspsComplianceSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(ccrIspsCompliances.tenantId, user.tenantId), isNull(ccrIspsCompliances.deletedAt)];
     if (search) { conditions.push(or(ilike(ccrIspsCompliances.ispsRef, `%${search}%`), ilike(ccrIspsCompliances.facilityName, `%${search}%`), ilike(ccrIspsCompliances.imoNumber, `%${search}%`))!); }
     if (status) { conditions.push(eq(ccrIspsCompliances.status, status)); }
-    if (cursor) { conditions.push(gt(ccrIspsCompliances.createdAt, new Date(cursor))); }
+    if (cursor) { conditions.push(lt(ccrIspsCompliances.createdAt, new Date(cursor))); }
 
     const results = await db.select().from(ccrIspsCompliances).where(and(...conditions)).orderBy(desc(ccrIspsCompliances.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

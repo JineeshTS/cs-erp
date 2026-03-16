@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftBudgets,
       draftVarianceAnalyses,
     ] = await Promise.all([
-      db.select({ id: glfrChartOfAccounts.id }).from(glfrChartOfAccounts)
+      db.select({ value: count() }).from(glfrChartOfAccounts)
         .where(and(eq(glfrChartOfAccounts.tenantId, user.tenantId), isNull(glfrChartOfAccounts.deletedAt), eq(glfrChartOfAccounts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: glfrJournalEntries.id }).from(glfrJournalEntries)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrJournalEntries)
         .where(and(eq(glfrJournalEntries.tenantId, user.tenantId), isNull(glfrJournalEntries.deletedAt), eq(glfrJournalEntries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrPeriodClosures.id }).from(glfrPeriodClosures)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrPeriodClosures)
         .where(and(eq(glfrPeriodClosures.tenantId, user.tenantId), isNull(glfrPeriodClosures.deletedAt), eq(glfrPeriodClosures.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: glfrFinancialStatements.id }).from(glfrFinancialStatements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrFinancialStatements)
         .where(and(eq(glfrFinancialStatements.tenantId, user.tenantId), isNull(glfrFinancialStatements.deletedAt), eq(glfrFinancialStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrSegmentReports.id }).from(glfrSegmentReports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrSegmentReports)
         .where(and(eq(glfrSegmentReports.tenantId, user.tenantId), isNull(glfrSegmentReports.deletedAt), eq(glfrSegmentReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrConsolidatedStatements.id }).from(glfrConsolidatedStatements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrConsolidatedStatements)
         .where(and(eq(glfrConsolidatedStatements.tenantId, user.tenantId), isNull(glfrConsolidatedStatements.deletedAt), eq(glfrConsolidatedStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrBudgets.id }).from(glfrBudgets)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrBudgets)
         .where(and(eq(glfrBudgets.tenantId, user.tenantId), isNull(glfrBudgets.deletedAt), eq(glfrBudgets.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrVarianceAnalyses.id }).from(glfrVarianceAnalyses)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(glfrVarianceAnalyses)
         .where(and(eq(glfrVarianceAnalyses.tenantId, user.tenantId), isNull(glfrVarianceAnalyses.deletedAt), eq(glfrVarianceAnalyses.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -5,7 +5,7 @@ import { simHatchInspections } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createHatchInspectionSchema } from "@/lib/survey-inspection-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(simHatchInspections.tenantId, user.tenantId), isNull(simHatchInspections.deletedAt)];
     if (search) { conditions.push(or(ilike(simHatchInspections.inspectionRef, `%${search}%`), ilike(simHatchInspections.vesselName, `%${search}%`), ilike(simHatchInspections.holdNumber, `%${search}%`))!); }
     if (status) { conditions.push(eq(simHatchInspections.status, status)); }
-    if (cursor) { conditions.push(gt(simHatchInspections.createdAt, new Date(cursor))); }
+    if (cursor) { conditions.push(lt(simHatchInspections.createdAt, new Date(cursor))); }
 
     const results = await db.select().from(simHatchInspections).where(and(...conditions)).orderBy(desc(simHatchInspections.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

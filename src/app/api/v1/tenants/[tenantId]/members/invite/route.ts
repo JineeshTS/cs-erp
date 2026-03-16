@@ -129,7 +129,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     request,
   });
 
-  console.log(`[email-stub] Invite for ${email}, temp password: ${tempPassword}`);
+  // TODO: Send actual invite email with temp password instead of logging
+  console.log(`[email-stub] Invite sent for ${email}`);
 
   await logAuditEvent({
     tenantId,

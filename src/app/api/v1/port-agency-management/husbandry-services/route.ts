@@ -5,7 +5,7 @@ import { pamHusbandryServices } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createHusbandryServiceSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamHusbandryServices.tenantId, user.tenantId), isNull(pamHusbandryServices.deletedAt)];
     if (search) conditions.push(or(ilike(pamHusbandryServices.serviceRef, `%${search}%`), ilike(pamHusbandryServices.vesselName, `%${search}%`), ilike(pamHusbandryServices.supplierName, `%${search}%`))!);
     if (status) conditions.push(eq(pamHusbandryServices.status, status));
-    if (cursor) conditions.push(gt(pamHusbandryServices.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamHusbandryServices.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamHusbandryServices).where(and(...conditions)).orderBy(desc(pamHusbandryServices.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

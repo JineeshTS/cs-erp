@@ -7,39 +7,31 @@ export interface RateLimitResult {
 }
 
 /**
- * Redis-based rate limiter. Works correctly across replicas.
- * Falls back to in-memory if Redis is unavailable.
+ * Async Redis-first rate limiter. Falls back to in-memory if Redis is unavailable.
+ * Use this for all rate limiting — it works correctly across replicas.
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   maxAttempts: number,
   windowMs: number
-): RateLimitResult {
-  // Try Redis first; fall back to in-memory for dev/single-instance
+): Promise<RateLimitResult> {
   try {
     const redis = getRedis();
-    // Fire-and-forget: use sync wrapper returning optimistic result,
-    // then async increment. This keeps the existing sync API contract.
-    // For strict enforcement, callers should use checkRateLimitAsync.
-    const entry = memStore.get(key);
-    const now = Date.now();
+    const redisKey = `rl:${key}`;
+    const count = await redis.incr(redisKey);
 
-    if (!entry || entry.resetAt <= now) {
-      memStore.set(key, { count: 1, resetAt: now + windowMs });
-      // Async sync to Redis
-      redis.incr(`rl:${key}`).then(() => redis.expire(`rl:${key}`, Math.ceil(windowMs / 1000))).catch(() => {});
-      return { allowed: true, remaining: maxAttempts - 1, resetAt: new Date(now + windowMs) };
+    if (count === 1) {
+      await redis.expire(redisKey, Math.ceil(windowMs / 1000));
     }
 
-    entry.count++;
-    memStore.set(key, entry);
-    redis.incr(`rl:${key}`).catch(() => {});
+    const ttl = await redis.ttl(redisKey);
+    const resetAt = new Date(Date.now() + Math.max(ttl, 1) * 1000);
 
-    if (entry.count > maxAttempts) {
-      return { allowed: false, remaining: 0, resetAt: new Date(entry.resetAt) };
+    if (count > maxAttempts) {
+      return { allowed: false, remaining: 0, resetAt };
     }
 
-    return { allowed: true, remaining: maxAttempts - entry.count, resetAt: new Date(entry.resetAt) };
+    return { allowed: true, remaining: maxAttempts - count, resetAt };
   } catch {
     // Redis unavailable — pure in-memory fallback
     return checkRateLimitMemory(key, maxAttempts, windowMs);
@@ -82,9 +74,9 @@ function checkRateLimitMemory(key: string, maxAttempts: number, windowMs: number
   return { allowed: true, remaining: maxAttempts - entry.count, resetAt: new Date(entry.resetAt) };
 }
 
-export function resetRateLimit(key: string): void {
+export async function resetRateLimit(key: string): Promise<void> {
   memStore.delete(key);
   try {
-    getRedis().del(`rl:${key}`).catch(() => {});
+    await getRedis().del(`rl:${key}`);
   } catch { /* Redis unavailable */ }
 }

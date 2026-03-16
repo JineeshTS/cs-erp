@@ -5,7 +5,7 @@ import { pamCashToMasters } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createCashToMasterSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamCashToMasters.tenantId, user.tenantId), isNull(pamCashToMasters.deletedAt)];
     if (search) conditions.push(or(ilike(pamCashToMasters.transactionRef, `%${search}%`), ilike(pamCashToMasters.vesselName, `%${search}%`), ilike(pamCashToMasters.masterName, `%${search}%`))!);
     if (status) conditions.push(eq(pamCashToMasters.status, status));
-    if (cursor) conditions.push(gt(pamCashToMasters.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamCashToMasters.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamCashToMasters).where(and(...conditions)).orderBy(desc(pamCashToMasters.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

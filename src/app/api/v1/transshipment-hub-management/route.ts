@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftOptimizationEngines,
       draftPenaltyTrackings,
     ] = await Promise.all([
-      db.select({ id: thmCargoPlans.id }).from(thmCargoPlans)
+      db.select({ value: count() }).from(thmCargoPlans)
         .where(and(eq(thmCargoPlans.tenantId, user.tenantId), isNull(thmCargoPlans.deletedAt), eq(thmCargoPlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmFeederCoordinations.id }).from(thmFeederCoordinations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmFeederCoordinations)
         .where(and(eq(thmFeederCoordinations.tenantId, user.tenantId), isNull(thmFeederCoordinations.deletedAt), eq(thmFeederCoordinations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmCargoTrackings.id }).from(thmCargoTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmCargoTrackings)
         .where(and(eq(thmCargoTrackings.tenantId, user.tenantId), isNull(thmCargoTrackings.deletedAt), eq(thmCargoTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmMissedConnections.id }).from(thmMissedConnections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmMissedConnections)
         .where(and(eq(thmMissedConnections.tenantId, user.tenantId), isNull(thmMissedConnections.deletedAt), eq(thmMissedConnections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmRevenueAttributions.id }).from(thmRevenueAttributions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmRevenueAttributions)
         .where(and(eq(thmRevenueAttributions.tenantId, user.tenantId), isNull(thmRevenueAttributions.deletedAt), eq(thmRevenueAttributions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmHubEfficiencies.id }).from(thmHubEfficiencies)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmHubEfficiencies)
         .where(and(eq(thmHubEfficiencies.tenantId, user.tenantId), isNull(thmHubEfficiencies.deletedAt), eq(thmHubEfficiencies.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmOptimizationEngines.id }).from(thmOptimizationEngines)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmOptimizationEngines)
         .where(and(eq(thmOptimizationEngines.tenantId, user.tenantId), isNull(thmOptimizationEngines.deletedAt), eq(thmOptimizationEngines.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmPenaltyTrackings.id }).from(thmPenaltyTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(thmPenaltyTrackings)
         .where(and(eq(thmPenaltyTrackings.tenantId, user.tenantId), isNull(thmPenaltyTrackings.deletedAt), eq(thmPenaltyTrackings.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

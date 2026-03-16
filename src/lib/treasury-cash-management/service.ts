@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   tcmBankAccounts,
@@ -26,7 +26,7 @@ export async function listBankAccounts({ tenantId, search, status, cursor, limit
   const conditions = [eq(tcmBankAccounts.tenantId, tenantId), isNull(tcmBankAccounts.deletedAt)];
   if (search) conditions.push(or(ilike(tcmBankAccounts.accountRef, `%${search}%`), ilike(tcmBankAccounts.bankName, `%${search}%`))!);
   if (status) conditions.push(eq(tcmBankAccounts.status, status));
-  if (cursor) conditions.push(gt(tcmBankAccounts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmBankAccounts.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmBankAccounts).where(and(...conditions)).orderBy(desc(tcmBankAccounts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listCashPositions({ tenantId, search, status, cursor, limi
   const conditions = [eq(tcmCashPositions.tenantId, tenantId), isNull(tcmCashPositions.deletedAt)];
   if (search) conditions.push(ilike(tcmCashPositions.positionRef, `%${search}%`));
   if (status) conditions.push(eq(tcmCashPositions.status, status));
-  if (cursor) conditions.push(gt(tcmCashPositions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmCashPositions.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmCashPositions).where(and(...conditions)).orderBy(desc(tcmCashPositions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listBankReconciliations({ tenantId, search, status, cursor
   const conditions = [eq(tcmBankReconciliations.tenantId, tenantId), isNull(tcmBankReconciliations.deletedAt)];
   if (search) conditions.push(or(ilike(tcmBankReconciliations.reconciliationRef, `%${search}%`), ilike(tcmBankReconciliations.bankName, `%${search}%`))!);
   if (status) conditions.push(eq(tcmBankReconciliations.status, status));
-  if (cursor) conditions.push(gt(tcmBankReconciliations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmBankReconciliations.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmBankReconciliations).where(and(...conditions)).orderBy(desc(tcmBankReconciliations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listCashPoolingSweeps({ tenantId, search, status, cursor, 
   const conditions = [eq(tcmCashPoolingSweeps.tenantId, tenantId), isNull(tcmCashPoolingSweeps.deletedAt)];
   if (search) conditions.push(or(ilike(tcmCashPoolingSweeps.sweepRef, `%${search}%`), ilike(tcmCashPoolingSweeps.poolName, `%${search}%`))!);
   if (status) conditions.push(eq(tcmCashPoolingSweeps.status, status));
-  if (cursor) conditions.push(gt(tcmCashPoolingSweeps.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmCashPoolingSweeps.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmCashPoolingSweeps).where(and(...conditions)).orderBy(desc(tcmCashPoolingSweeps.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listFxHedgingExposures({ tenantId, search, status, cursor,
   const conditions = [eq(tcmFxHedgingExposures.tenantId, tenantId), isNull(tcmFxHedgingExposures.deletedAt)];
   if (search) conditions.push(or(ilike(tcmFxHedgingExposures.hedgeRef, `%${search}%`), ilike(tcmFxHedgingExposures.counterparty, `%${search}%`))!);
   if (status) conditions.push(eq(tcmFxHedgingExposures.status, status));
-  if (cursor) conditions.push(gt(tcmFxHedgingExposures.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmFxHedgingExposures.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmFxHedgingExposures).where(and(...conditions)).orderBy(desc(tcmFxHedgingExposures.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listLettersOfCredit({ tenantId, search, status, cursor, li
   const conditions = [eq(tcmLettersOfCredit.tenantId, tenantId), isNull(tcmLettersOfCredit.deletedAt)];
   if (search) conditions.push(or(ilike(tcmLettersOfCredit.lcRef, `%${search}%`), ilike(tcmLettersOfCredit.beneficiary, `%${search}%`))!);
   if (status) conditions.push(eq(tcmLettersOfCredit.status, status));
-  if (cursor) conditions.push(gt(tcmLettersOfCredit.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmLettersOfCredit.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmLettersOfCredit).where(and(...conditions)).orderBy(desc(tcmLettersOfCredit.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listBankGuarantees({ tenantId, search, status, cursor, lim
   const conditions = [eq(tcmBankGuarantees.tenantId, tenantId), isNull(tcmBankGuarantees.deletedAt)];
   if (search) conditions.push(or(ilike(tcmBankGuarantees.bgRef, `%${search}%`), ilike(tcmBankGuarantees.beneficiary, `%${search}%`))!);
   if (status) conditions.push(eq(tcmBankGuarantees.status, status));
-  if (cursor) conditions.push(gt(tcmBankGuarantees.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmBankGuarantees.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmBankGuarantees).where(and(...conditions)).orderBy(desc(tcmBankGuarantees.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listIntercompanyLoans({ tenantId, search, status, cursor, 
   const conditions = [eq(tcmIntercompanyLoans.tenantId, tenantId), isNull(tcmIntercompanyLoans.deletedAt)];
   if (search) conditions.push(or(ilike(tcmIntercompanyLoans.loanRef, `%${search}%`), ilike(tcmIntercompanyLoans.borrowerEntity, `%${search}%`))!);
   if (status) conditions.push(eq(tcmIntercompanyLoans.status, status));
-  if (cursor) conditions.push(gt(tcmIntercompanyLoans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(tcmIntercompanyLoans.createdAt, new Date(cursor)));
   const results = await db.select().from(tcmIntercompanyLoans).where(and(...conditions)).orderBy(desc(tcmIntercompanyLoans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

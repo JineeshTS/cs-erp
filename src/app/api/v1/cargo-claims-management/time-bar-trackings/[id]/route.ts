@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { ccmTimeBarTrackings } from "@/db/schema";
 import { getTimeBarTracking } from "@/lib/cargo-claims-management/service";
 import { updateTimeBarTrackingSchema } from "@/lib/cargo-claims-management/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -62,7 +62,7 @@ export async function PATCH(
     const [record] = await db
       .update(ccmTimeBarTrackings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(ccmTimeBarTrackings.id, id), eq(ccmTimeBarTrackings.tenantId, user.tenantId)))
+      .where(and(eq(ccmTimeBarTrackings.id, id), eq(ccmTimeBarTrackings.tenantId, user.tenantId), isNull(ccmTimeBarTrackings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "time-bar-trackings", entityId: record?.id, module: "cargo-claims-management", previousData: null, newData: record as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(
     const [record] = await db
       .update(ccmTimeBarTrackings)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(ccmTimeBarTrackings.id, id), eq(ccmTimeBarTrackings.tenantId, user.tenantId)))
+      .where(and(eq(ccmTimeBarTrackings.id, id), eq(ccmTimeBarTrackings.tenantId, user.tenantId), isNull(ccmTimeBarTrackings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "time-bar-trackings", entityId: record?.id, module: "cargo-claims-management", previousData: null, request });

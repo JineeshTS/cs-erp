@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsLegalEntities } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (isActive !== null && isActive !== undefined && isActive !== "") {
       conditions.push(eq(melsLegalEntities.isActive, isActive === "true"));
     }
-    if (cursor) conditions.push(gt(melsLegalEntities.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsLegalEntities.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsLegalEntities).where(and(...conditions))
       .orderBy(desc(melsLegalEntities.createdAt)).limit(limit + 1);

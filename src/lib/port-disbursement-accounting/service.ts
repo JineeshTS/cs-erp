@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   pdaProformaEstimates,
@@ -27,7 +27,7 @@ export async function listProformaEstimates({ tenantId, search, status, cursor, 
   const conditions = [eq(pdaProformaEstimates.tenantId, tenantId), isNull(pdaProformaEstimates.deletedAt)];
   if (search) conditions.push(or(ilike(pdaProformaEstimates.estimateRef, `%${search}%`), ilike(pdaProformaEstimates.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaProformaEstimates.status, status));
-  if (cursor) conditions.push(gt(pdaProformaEstimates.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaProformaEstimates.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaProformaEstimates).where(and(...conditions)).orderBy(desc(pdaProformaEstimates.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listFinalDas({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(pdaFinalDas.tenantId, tenantId), isNull(pdaFinalDas.deletedAt)];
   if (search) conditions.push(or(ilike(pdaFinalDas.fdaRef, `%${search}%`), ilike(pdaFinalDas.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaFinalDas.status, status));
-  if (cursor) conditions.push(gt(pdaFinalDas.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaFinalDas.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaFinalDas).where(and(...conditions)).orderBy(desc(pdaFinalDas.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listPortCosts({ tenantId, search, status, cursor, limit = 
   const conditions = [eq(pdaPortCosts.tenantId, tenantId), isNull(pdaPortCosts.deletedAt)];
   if (search) conditions.push(or(ilike(pdaPortCosts.costRef, `%${search}%`), ilike(pdaPortCosts.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaPortCosts.status, status));
-  if (cursor) conditions.push(gt(pdaPortCosts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaPortCosts.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaPortCosts).where(and(...conditions)).orderBy(desc(pdaPortCosts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listAgentStatements({ tenantId, search, status, cursor, li
   const conditions = [eq(pdaAgentStatements.tenantId, tenantId), isNull(pdaAgentStatements.deletedAt)];
   if (search) conditions.push(or(ilike(pdaAgentStatements.statementRef, `%${search}%`), ilike(pdaAgentStatements.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaAgentStatements.status, status));
-  if (cursor) conditions.push(gt(pdaAgentStatements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaAgentStatements.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaAgentStatements).where(and(...conditions)).orderBy(desc(pdaAgentStatements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listExpenseAllocations({ tenantId, search, status, cursor,
   const conditions = [eq(pdaExpenseAllocations.tenantId, tenantId), isNull(pdaExpenseAllocations.deletedAt)];
   if (search) conditions.push(or(ilike(pdaExpenseAllocations.allocationRef, `%${search}%`), ilike(pdaExpenseAllocations.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaExpenseAllocations.status, status));
-  if (cursor) conditions.push(gt(pdaExpenseAllocations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaExpenseAllocations.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaExpenseAllocations).where(and(...conditions)).orderBy(desc(pdaExpenseAllocations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listVarianceAnalyses({ tenantId, search, status, cursor, l
   const conditions = [eq(pdaVarianceAnalyses.tenantId, tenantId), isNull(pdaVarianceAnalyses.deletedAt)];
   if (search) conditions.push(or(ilike(pdaVarianceAnalyses.analysisRef, `%${search}%`), ilike(pdaVarianceAnalyses.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaVarianceAnalyses.status, status));
-  if (cursor) conditions.push(gt(pdaVarianceAnalyses.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaVarianceAnalyses.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaVarianceAnalyses).where(and(...conditions)).orderBy(desc(pdaVarianceAnalyses.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listCostBenchmarks({ tenantId, search, status, cursor, lim
   const conditions = [eq(pdaCostBenchmarks.tenantId, tenantId), isNull(pdaCostBenchmarks.deletedAt)];
   if (search) conditions.push(or(ilike(pdaCostBenchmarks.benchmarkRef, `%${search}%`), ilike(pdaCostBenchmarks.portName, `%${search}%`))!);
   if (status) conditions.push(eq(pdaCostBenchmarks.status, status));
-  if (cursor) conditions.push(gt(pdaCostBenchmarks.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaCostBenchmarks.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaCostBenchmarks).where(and(...conditions)).orderBy(desc(pdaCostBenchmarks.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listConsolidatedReports({ tenantId, search, status, cursor
   const conditions = [eq(pdaConsolidatedReports.tenantId, tenantId), isNull(pdaConsolidatedReports.deletedAt)];
   if (search) conditions.push(or(ilike(pdaConsolidatedReports.reportRef, `%${search}%`), ilike(pdaConsolidatedReports.reportType, `%${search}%`))!);
   if (status) conditions.push(eq(pdaConsolidatedReports.status, status));
-  if (cursor) conditions.push(gt(pdaConsolidatedReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pdaConsolidatedReports.createdAt, new Date(cursor)));
   const results = await db.select().from(pdaConsolidatedReports).where(and(...conditions)).orderBy(desc(pdaConsolidatedReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

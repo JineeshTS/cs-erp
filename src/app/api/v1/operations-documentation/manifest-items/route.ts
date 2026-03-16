@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { odmManifestItems } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(odmManifestItems.tenantId, user.tenantId), isNull(odmManifestItems.deletedAt)];
     if (search) conditions.push(ilike(odmManifestItems.blNumber, `%${search}%`));
-    if (cursor) conditions.push(gt(odmManifestItems.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(odmManifestItems.createdAt, new Date(cursor)));
 
     const results = await db.select().from(odmManifestItems).where(and(...conditions)).orderBy(desc(odmManifestItems.createdAt)).limit(limit + 1);
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, isNull, desc, gt, ilike } from "drizzle-orm";
+import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { capVesselSchedules } from "@/db/schema";
 import {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       conditions.push(ilike(capVesselSchedules.vesselName, `%${search}%`));
     if (status) conditions.push(eq(capVesselSchedules.status, status));
     if (cursor)
-      conditions.push(gt(capVesselSchedules.createdAt, new Date(cursor)));
+      conditions.push(lt(capVesselSchedules.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

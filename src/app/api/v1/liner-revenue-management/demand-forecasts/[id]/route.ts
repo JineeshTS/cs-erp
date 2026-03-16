@@ -5,7 +5,7 @@ import { getDemandForecast } from "@/lib/liner-revenue-management/service";
 import { updateDemandForecastSchema } from "@/lib/liner-revenue-management/validation";
 import { db } from "@/lib/db";
 import { lrmDemandForecasts } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(lrmDemandForecasts)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(lrmDemandForecasts.id, id), eq(lrmDemandForecasts.tenantId, user.tenantId)))
+      .where(and(eq(lrmDemandForecasts.id, id), eq(lrmDemandForecasts.tenantId, user.tenantId), isNull(lrmDemandForecasts.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "demand-forecasts", entityId: updated?.id, module: "liner-revenue-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(lrmDemandForecasts)
       .set({ deletedAt: new Date() })
-      .where(and(eq(lrmDemandForecasts.id, id), eq(lrmDemandForecasts.tenantId, user.tenantId)))
+      .where(and(eq(lrmDemandForecasts.id, id), eq(lrmDemandForecasts.tenantId, user.tenantId), isNull(lrmDemandForecasts.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "demand-forecasts", entityId: deleted?.id, module: "liner-revenue-management", previousData: existing as Record<string, unknown>, request });

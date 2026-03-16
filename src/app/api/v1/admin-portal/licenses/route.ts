@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { adminLicenses } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(adminLicenses.tenantId, user.tenantId), isNull(adminLicenses.deletedAt)];
-    if (cursor) conditions.push(gt(adminLicenses.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(adminLicenses.createdAt, new Date(cursor)));
 
     const results = await db.select().from(adminLicenses).where(and(...conditions))
       .orderBy(desc(adminLicenses.createdAt)).limit(limit + 1);

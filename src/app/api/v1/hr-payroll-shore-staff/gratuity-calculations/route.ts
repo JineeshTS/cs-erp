@@ -5,7 +5,7 @@ import { hpsGratuityCalculations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createGratuityCalculationSchema } from "@/lib/hr-payroll-shore-staff/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         )!
       );
     if (status) conditions.push(eq(hpsGratuityCalculations.status, status));
-    if (cursor) conditions.push(gt(hpsGratuityCalculations.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(hpsGratuityCalculations.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

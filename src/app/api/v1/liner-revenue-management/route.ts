@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftRevenueAccruals,
       draftMaximizationEngines,
     ] = await Promise.all([
-      db.select({ id: lrmTeuMaximizations.id }).from(lrmTeuMaximizations)
+      db.select({ value: count() }).from(lrmTeuMaximizations)
         .where(and(eq(lrmTeuMaximizations.tenantId, user.tenantId), isNull(lrmTeuMaximizations.deletedAt), eq(lrmTeuMaximizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmCargoMixes.id }).from(lrmCargoMixes)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmCargoMixes)
         .where(and(eq(lrmCargoMixes.tenantId, user.tenantId), isNull(lrmCargoMixes.deletedAt), eq(lrmCargoMixes.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmDemandForecasts.id }).from(lrmDemandForecasts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmDemandForecasts)
         .where(and(eq(lrmDemandForecasts.tenantId, user.tenantId), isNull(lrmDemandForecasts.deletedAt), eq(lrmDemandForecasts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmFreightContracts.id }).from(lrmFreightContracts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmFreightContracts)
         .where(and(eq(lrmFreightContracts.tenantId, user.tenantId), isNull(lrmFreightContracts.deletedAt), eq(lrmFreightContracts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmLeakageDetections.id }).from(lrmLeakageDetections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmLeakageDetections)
         .where(and(eq(lrmLeakageDetections.tenantId, user.tenantId), isNull(lrmLeakageDetections.deletedAt), eq(lrmLeakageDetections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmRateIntegrities.id }).from(lrmRateIntegrities)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmRateIntegrities)
         .where(and(eq(lrmRateIntegrities.tenantId, user.tenantId), isNull(lrmRateIntegrities.deletedAt), eq(lrmRateIntegrities.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmRevenueAccruals.id }).from(lrmRevenueAccruals)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmRevenueAccruals)
         .where(and(eq(lrmRevenueAccruals.tenantId, user.tenantId), isNull(lrmRevenueAccruals.deletedAt), eq(lrmRevenueAccruals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmMaximizationEngines.id }).from(lrmMaximizationEngines)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(lrmMaximizationEngines)
         .where(and(eq(lrmMaximizationEngines.tenantId, user.tenantId), isNull(lrmMaximizationEngines.deletedAt), eq(lrmMaximizationEngines.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

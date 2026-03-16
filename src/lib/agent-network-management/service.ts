@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   anmGaAgreements,
@@ -26,7 +26,7 @@ export async function listGaAgreements({ tenantId, search, status, cursor, limit
   const conditions = [eq(anmGaAgreements.tenantId, tenantId), isNull(anmGaAgreements.deletedAt)];
   if (search) conditions.push(or(ilike(anmGaAgreements.agreementRef, `%${search}%`), ilike(anmGaAgreements.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmGaAgreements.status, status));
-  if (cursor) conditions.push(gt(anmGaAgreements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmGaAgreements.createdAt, new Date(cursor)));
   const results = await db.select().from(anmGaAgreements).where(and(...conditions)).orderBy(desc(anmGaAgreements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listSubAgentConfigs({ tenantId, search, status, cursor, li
   const conditions = [eq(anmSubAgentConfigs.tenantId, tenantId), isNull(anmSubAgentConfigs.deletedAt)];
   if (search) conditions.push(or(ilike(anmSubAgentConfigs.configRef, `%${search}%`), ilike(anmSubAgentConfigs.subAgentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmSubAgentConfigs.status, status));
-  if (cursor) conditions.push(gt(anmSubAgentConfigs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmSubAgentConfigs.createdAt, new Date(cursor)));
   const results = await db.select().from(anmSubAgentConfigs).where(and(...conditions)).orderBy(desc(anmSubAgentConfigs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listAgentCommissions({ tenantId, search, status, cursor, l
   const conditions = [eq(anmAgentCommissions.tenantId, tenantId), isNull(anmAgentCommissions.deletedAt)];
   if (search) conditions.push(or(ilike(anmAgentCommissions.commissionRef, `%${search}%`), ilike(anmAgentCommissions.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmAgentCommissions.status, status));
-  if (cursor) conditions.push(gt(anmAgentCommissions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmAgentCommissions.createdAt, new Date(cursor)));
   const results = await db.select().from(anmAgentCommissions).where(and(...conditions)).orderBy(desc(anmAgentCommissions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listAgencyDocuments({ tenantId, search, status, cursor, li
   const conditions = [eq(anmAgencyDocuments.tenantId, tenantId), isNull(anmAgencyDocuments.deletedAt)];
   if (search) conditions.push(or(ilike(anmAgencyDocuments.documentRef, `%${search}%`), ilike(anmAgencyDocuments.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmAgencyDocuments.status, status));
-  if (cursor) conditions.push(gt(anmAgencyDocuments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmAgencyDocuments.createdAt, new Date(cursor)));
   const results = await db.select().from(anmAgencyDocuments).where(and(...conditions)).orderBy(desc(anmAgencyDocuments.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listPerformanceKpis({ tenantId, search, status, cursor, li
   const conditions = [eq(anmPerformanceKpis.tenantId, tenantId), isNull(anmPerformanceKpis.deletedAt)];
   if (search) conditions.push(or(ilike(anmPerformanceKpis.kpiRef, `%${search}%`), ilike(anmPerformanceKpis.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmPerformanceKpis.status, status));
-  if (cursor) conditions.push(gt(anmPerformanceKpis.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmPerformanceKpis.createdAt, new Date(cursor)));
   const results = await db.select().from(anmPerformanceKpis).where(and(...conditions)).orderBy(desc(anmPerformanceKpis.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listPortalConfigs({ tenantId, search, status, cursor, limi
   const conditions = [eq(anmPortalConfigs.tenantId, tenantId), isNull(anmPortalConfigs.deletedAt)];
   if (search) conditions.push(or(ilike(anmPortalConfigs.configRef, `%${search}%`), ilike(anmPortalConfigs.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmPortalConfigs.status, status));
-  if (cursor) conditions.push(gt(anmPortalConfigs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmPortalConfigs.createdAt, new Date(cursor)));
   const results = await db.select().from(anmPortalConfigs).where(and(...conditions)).orderBy(desc(anmPortalConfigs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listBookingAuthorities({ tenantId, search, status, cursor,
   const conditions = [eq(anmBookingAuthorities.tenantId, tenantId), isNull(anmBookingAuthorities.deletedAt)];
   if (search) conditions.push(or(ilike(anmBookingAuthorities.authorityRef, `%${search}%`), ilike(anmBookingAuthorities.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmBookingAuthorities.status, status));
-  if (cursor) conditions.push(gt(anmBookingAuthorities.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmBookingAuthorities.createdAt, new Date(cursor)));
   const results = await db.select().from(anmBookingAuthorities).where(and(...conditions)).orderBy(desc(anmBookingAuthorities.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listAgentIncentives({ tenantId, search, status, cursor, li
   const conditions = [eq(anmAgentIncentives.tenantId, tenantId), isNull(anmAgentIncentives.deletedAt)];
   if (search) conditions.push(or(ilike(anmAgentIncentives.incentiveRef, `%${search}%`), ilike(anmAgentIncentives.agentName, `%${search}%`))!);
   if (status) conditions.push(eq(anmAgentIncentives.status, status));
-  if (cursor) conditions.push(gt(anmAgentIncentives.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(anmAgentIncentives.createdAt, new Date(cursor)));
   const results = await db.select().from(anmAgentIncentives).where(and(...conditions)).orderBy(desc(anmAgentIncentives.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

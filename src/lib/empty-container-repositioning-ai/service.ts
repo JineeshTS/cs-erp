@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   ecrInventorySnapshots,
@@ -26,7 +26,7 @@ export async function listInventorySnapshots({ tenantId, search, status, cursor,
   const conditions = [eq(ecrInventorySnapshots.tenantId, tenantId), isNull(ecrInventorySnapshots.deletedAt)];
   if (search) conditions.push(or(ilike(ecrInventorySnapshots.snapshotRef, `%${search}%`), ilike(ecrInventorySnapshots.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrInventorySnapshots.status, status));
-  if (cursor) conditions.push(gt(ecrInventorySnapshots.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrInventorySnapshots.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrInventorySnapshots).where(and(...conditions)).orderBy(desc(ecrInventorySnapshots.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listRepositioningPlans({ tenantId, search, status, cursor,
   const conditions = [eq(ecrRepositioningPlans.tenantId, tenantId), isNull(ecrRepositioningPlans.deletedAt)];
   if (search) conditions.push(or(ilike(ecrRepositioningPlans.planRef, `%${search}%`), ilike(ecrRepositioningPlans.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrRepositioningPlans.status, status));
-  if (cursor) conditions.push(gt(ecrRepositioningPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrRepositioningPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrRepositioningPlans).where(and(...conditions)).orderBy(desc(ecrRepositioningPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listCostTrackings({ tenantId, search, status, cursor, limi
   const conditions = [eq(ecrCostTrackings.tenantId, tenantId), isNull(ecrCostTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(ecrCostTrackings.costRef, `%${search}%`), ilike(ecrCostTrackings.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrCostTrackings.status, status));
-  if (cursor) conditions.push(gt(ecrCostTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrCostTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrCostTrackings).where(and(...conditions)).orderBy(desc(ecrCostTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listRouteOptimizers({ tenantId, search, status, cursor, li
   const conditions = [eq(ecrRouteOptimizers.tenantId, tenantId), isNull(ecrRouteOptimizers.deletedAt)];
   if (search) conditions.push(or(ilike(ecrRouteOptimizers.optimizerRef, `%${search}%`), ilike(ecrRouteOptimizers.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrRouteOptimizers.status, status));
-  if (cursor) conditions.push(gt(ecrRouteOptimizers.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrRouteOptimizers.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrRouteOptimizers).where(and(...conditions)).orderBy(desc(ecrRouteOptimizers.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listDemandForecasts({ tenantId, search, status, cursor, li
   const conditions = [eq(ecrDemandForecasts.tenantId, tenantId), isNull(ecrDemandForecasts.deletedAt)];
   if (search) conditions.push(or(ilike(ecrDemandForecasts.forecastRef, `%${search}%`), ilike(ecrDemandForecasts.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrDemandForecasts.status, status));
-  if (cursor) conditions.push(gt(ecrDemandForecasts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrDemandForecasts.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrDemandForecasts).where(and(...conditions)).orderBy(desc(ecrDemandForecasts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listLeasingDecisions({ tenantId, search, status, cursor, l
   const conditions = [eq(ecrLeasingDecisions.tenantId, tenantId), isNull(ecrLeasingDecisions.deletedAt)];
   if (search) conditions.push(or(ilike(ecrLeasingDecisions.decisionRef, `%${search}%`), ilike(ecrLeasingDecisions.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrLeasingDecisions.status, status));
-  if (cursor) conditions.push(gt(ecrLeasingDecisions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrLeasingDecisions.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrLeasingDecisions).where(and(...conditions)).orderBy(desc(ecrLeasingDecisions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listReturnIncentives({ tenantId, search, status, cursor, l
   const conditions = [eq(ecrReturnIncentives.tenantId, tenantId), isNull(ecrReturnIncentives.deletedAt)];
   if (search) conditions.push(or(ilike(ecrReturnIncentives.incentiveRef, `%${search}%`), ilike(ecrReturnIncentives.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrReturnIncentives.status, status));
-  if (cursor) conditions.push(gt(ecrReturnIncentives.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrReturnIncentives.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrReturnIncentives).where(and(...conditions)).orderBy(desc(ecrReturnIncentives.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listPnlAttributions({ tenantId, search, status, cursor, li
   const conditions = [eq(ecrPnlAttributions.tenantId, tenantId), isNull(ecrPnlAttributions.deletedAt)];
   if (search) conditions.push(or(ilike(ecrPnlAttributions.attributionRef, `%${search}%`), ilike(ecrPnlAttributions.title, `%${search}%`))!);
   if (status) conditions.push(eq(ecrPnlAttributions.status, status));
-  if (cursor) conditions.push(gt(ecrPnlAttributions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ecrPnlAttributions.createdAt, new Date(cursor)));
   const results = await db.select().from(ecrPnlAttributions).where(and(...conditions)).orderBy(desc(ecrPnlAttributions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

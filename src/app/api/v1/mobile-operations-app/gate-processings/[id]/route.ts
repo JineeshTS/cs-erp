@@ -5,7 +5,7 @@ import { getGateProcessing } from "@/lib/mobile-operations-app/service";
 import { updateGateProcessingSchema } from "@/lib/mobile-operations-app/validation";
 import { db } from "@/lib/db";
 import { mobGateProcessings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(mobGateProcessings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(mobGateProcessings.id, id), eq(mobGateProcessings.tenantId, user.tenantId)))
+      .where(and(eq(mobGateProcessings.id, id), eq(mobGateProcessings.tenantId, user.tenantId), isNull(mobGateProcessings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "gate-processings", entityId: updated?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(mobGateProcessings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(mobGateProcessings.id, id), eq(mobGateProcessings.tenantId, user.tenantId)))
+      .where(and(eq(mobGateProcessings.id, id), eq(mobGateProcessings.tenantId, user.tenantId), isNull(mobGateProcessings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "gate-processings", entityId: deleted?.id, module: "mobile-operations-app", previousData: existing as Record<string, unknown>, request });

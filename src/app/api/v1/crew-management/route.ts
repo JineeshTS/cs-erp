@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       scheduledInspections,
       activeAgencies,
     ] = await Promise.all([
-      db.select({ id: crmCrewRotations.id }).from(crmCrewRotations)
+      db.select({ value: count() }).from(crmCrewRotations)
         .where(and(eq(crmCrewRotations.tenantId, user.tenantId), isNull(crmCrewRotations.deletedAt), eq(crmCrewRotations.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: crmCertificateTrackings.id }).from(crmCertificateTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(crmCertificateTrackings)
         .where(and(eq(crmCertificateTrackings.tenantId, user.tenantId), isNull(crmCertificateTrackings.deletedAt), eq(crmCertificateTrackings.status, "expiring_soon")))
-        .then((r) => r.length),
-      db.select({ id: crmPayrollAllotments.id }).from(crmPayrollAllotments)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(crmPayrollAllotments)
         .where(and(eq(crmPayrollAllotments.tenantId, user.tenantId), isNull(crmPayrollAllotments.deletedAt), eq(crmPayrollAllotments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: crmFlagStateCompliance.id }).from(crmFlagStateCompliance)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(crmFlagStateCompliance)
         .where(and(eq(crmFlagStateCompliance.tenantId, user.tenantId), isNull(crmFlagStateCompliance.deletedAt), eq(crmFlagStateCompliance.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: crmManningAgencies.id }).from(crmManningAgencies)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(crmManningAgencies)
         .where(and(eq(crmManningAgencies.tenantId, user.tenantId), isNull(crmManningAgencies.deletedAt), eq(crmManningAgencies.status, "active")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

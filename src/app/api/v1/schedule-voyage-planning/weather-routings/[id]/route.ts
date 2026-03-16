@@ -5,7 +5,7 @@ import { getWeatherRouting } from "@/lib/schedule-voyage-planning/service";
 import { updateWeatherRoutingSchema } from "@/lib/schedule-voyage-planning/validation";
 import { db } from "@/lib/db";
 import { svpWeatherRoutings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(svpWeatherRoutings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(svpWeatherRoutings.id, id), eq(svpWeatherRoutings.tenantId, user.tenantId)))
+      .where(and(eq(svpWeatherRoutings.id, id), eq(svpWeatherRoutings.tenantId, user.tenantId), isNull(svpWeatherRoutings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "weather-routings", entityId: updated?.id, module: "schedule-voyage-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(svpWeatherRoutings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(svpWeatherRoutings.id, id), eq(svpWeatherRoutings.tenantId, user.tenantId)))
+      .where(and(eq(svpWeatherRoutings.id, id), eq(svpWeatherRoutings.tenantId, user.tenantId), isNull(svpWeatherRoutings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "weather-routings", entityId: deleted?.id, module: "schedule-voyage-planning", previousData: existing as Record<string, unknown>, request });

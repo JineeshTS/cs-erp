@@ -6,7 +6,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "lpr:read"))) return forbiddenResponse();
 
     const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
-      db.select({ id: lprRiskRegisters.id }).from(lprRiskRegisters).where(and(eq(lprRiskRegisters.tenantId, user.tenantId), isNull(lprRiskRegisters.deletedAt), eq(lprRiskRegisters.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprHsseRecords.id }).from(lprHsseRecords).where(and(eq(lprHsseRecords.tenantId, user.tenantId), isNull(lprHsseRecords.deletedAt), eq(lprHsseRecords.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprNearMissReports.id }).from(lprNearMissReports).where(and(eq(lprNearMissReports.tenantId, user.tenantId), isNull(lprNearMissReports.deletedAt), eq(lprNearMissReports.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprIncidentInvestigations.id }).from(lprIncidentInvestigations).where(and(eq(lprIncidentInvestigations.tenantId, user.tenantId), isNull(lprIncidentInvestigations.deletedAt), eq(lprIncidentInvestigations.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprPiClubScorings.id }).from(lprPiClubScorings).where(and(eq(lprPiClubScorings.tenantId, user.tenantId), isNull(lprPiClubScorings.deletedAt), eq(lprPiClubScorings.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprContinuityPlans.id }).from(lprContinuityPlans).where(and(eq(lprContinuityPlans.tenantId, user.tenantId), isNull(lprContinuityPlans.deletedAt), eq(lprContinuityPlans.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprEmergencyProcedures.id }).from(lprEmergencyProcedures).where(and(eq(lprEmergencyProcedures.tenantId, user.tenantId), isNull(lprEmergencyProcedures.deletedAt), eq(lprEmergencyProcedures.status, "draft"))).then((r) => r.length),
-      db.select({ id: lprRiskKpiDashboards.id }).from(lprRiskKpiDashboards).where(and(eq(lprRiskKpiDashboards.tenantId, user.tenantId), isNull(lprRiskKpiDashboards.deletedAt), eq(lprRiskKpiDashboards.status, "draft"))).then((r) => r.length),
+      db.select({ value: count() }).from(lprRiskRegisters).where(and(eq(lprRiskRegisters.tenantId, user.tenantId), isNull(lprRiskRegisters.deletedAt), eq(lprRiskRegisters.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprHsseRecords).where(and(eq(lprHsseRecords.tenantId, user.tenantId), isNull(lprHsseRecords.deletedAt), eq(lprHsseRecords.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprNearMissReports).where(and(eq(lprNearMissReports.tenantId, user.tenantId), isNull(lprNearMissReports.deletedAt), eq(lprNearMissReports.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprIncidentInvestigations).where(and(eq(lprIncidentInvestigations.tenantId, user.tenantId), isNull(lprIncidentInvestigations.deletedAt), eq(lprIncidentInvestigations.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprPiClubScorings).where(and(eq(lprPiClubScorings.tenantId, user.tenantId), isNull(lprPiClubScorings.deletedAt), eq(lprPiClubScorings.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprContinuityPlans).where(and(eq(lprContinuityPlans.tenantId, user.tenantId), isNull(lprContinuityPlans.deletedAt), eq(lprContinuityPlans.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprEmergencyProcedures).where(and(eq(lprEmergencyProcedures.tenantId, user.tenantId), isNull(lprEmergencyProcedures.deletedAt), eq(lprEmergencyProcedures.status, "draft"))).then(([r]) => r.value),
+      db.select({ value: count() }).from(lprRiskKpiDashboards).where(and(eq(lprRiskKpiDashboards.tenantId, user.tenantId), isNull(lprRiskKpiDashboards.deletedAt), eq(lprRiskKpiDashboards.status, "draft"))).then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

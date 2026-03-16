@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       openDisputes,
       highRiskPredictions,
     ] = await Promise.all([
-      db.select({ id: ddmDemurrageCalculations.id }).from(ddmDemurrageCalculations)
+      db.select({ value: count() }).from(ddmDemurrageCalculations)
         .where(and(eq(ddmDemurrageCalculations.tenantId, user.tenantId), isNull(ddmDemurrageCalculations.deletedAt), eq(ddmDemurrageCalculations.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: ddmDetentionTrackings.id }).from(ddmDetentionTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ddmDetentionTrackings)
         .where(and(eq(ddmDetentionTrackings.tenantId, user.tenantId), isNull(ddmDetentionTrackings.deletedAt), eq(ddmDetentionTrackings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ddmInvoices.id }).from(ddmInvoices)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ddmInvoices)
         .where(and(eq(ddmInvoices.tenantId, user.tenantId), isNull(ddmInvoices.deletedAt), eq(ddmInvoices.status, "sent")))
-        .then((r) => r.length),
-      db.select({ id: ddmDisputes.id }).from(ddmDisputes)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ddmDisputes)
         .where(and(eq(ddmDisputes.tenantId, user.tenantId), isNull(ddmDisputes.deletedAt), eq(ddmDisputes.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: ddmPredictions.id }).from(ddmPredictions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ddmPredictions)
         .where(and(eq(ddmPredictions.tenantId, user.tenantId), isNull(ddmPredictions.deletedAt), eq(ddmPredictions.riskLevel, "high")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, or, isNull } from "drizzle-orm";
+import { eq, or, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { roles } from "@/db/schema";
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
           .select({ roleId: rolePermissions.roleId, name: permissions.name })
           .from(rolePermissions)
           .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+          .where(inArray(rolePermissions.roleId, roleIds))
       : [];
 
     const permsByRole = new Map<string, string[]>();

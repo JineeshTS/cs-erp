@@ -320,7 +320,7 @@ export async function notifyRiskAlerts(
   for (const alert of criticalAlerts) {
     await db.insert(wneNotifications).values({
       tenantId,
-      userId: null as unknown as string, // broadcast notification
+      userId: "system", // broadcast notification — no specific user target
       channel: "in_app",
       title: `[${alert.severity.toUpperCase()}] ${alert.title}`,
       body: alert.description,

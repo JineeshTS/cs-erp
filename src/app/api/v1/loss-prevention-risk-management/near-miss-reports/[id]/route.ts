@@ -5,7 +5,7 @@ import { getNearMissReport } from "@/lib/loss-prevention-risk-management/service
 import { updateNearMissReportSchema } from "@/lib/loss-prevention-risk-management/validation";
 import { db } from "@/lib/db";
 import { lprNearMissReports } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -75,7 +75,7 @@ export async function PATCH(
     const [updated] = await db
       .update(lprNearMissReports)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(lprNearMissReports.id, id), eq(lprNearMissReports.tenantId, user.tenantId)))
+      .where(and(eq(lprNearMissReports.id, id), eq(lprNearMissReports.tenantId, user.tenantId), isNull(lprNearMissReports.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "near-miss-reports", entityId: updated?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -119,7 +119,7 @@ export async function DELETE(
     const [deleted] = await db
       .update(lprNearMissReports)
       .set({ deletedAt: new Date() })
-      .where(and(eq(lprNearMissReports.id, id), eq(lprNearMissReports.tenantId, user.tenantId)))
+      .where(and(eq(lprNearMissReports.id, id), eq(lprNearMissReports.tenantId, user.tenantId), isNull(lprNearMissReports.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "near-miss-reports", entityId: deleted?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, request });

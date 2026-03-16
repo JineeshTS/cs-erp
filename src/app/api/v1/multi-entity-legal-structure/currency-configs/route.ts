@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsCurrencyConfigs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(melsCurrencyConfigs.currencyName, `%${search}%`));
     if (legalEntityId) conditions.push(eq(melsCurrencyConfigs.legalEntityId, legalEntityId));
     if (currencyCode) conditions.push(eq(melsCurrencyConfigs.currencyCode, currencyCode));
-    if (cursor) conditions.push(gt(melsCurrencyConfigs.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsCurrencyConfigs.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsCurrencyConfigs).where(and(...conditions))
       .orderBy(desc(melsCurrencyConfigs.createdAt)).limit(limit + 1);

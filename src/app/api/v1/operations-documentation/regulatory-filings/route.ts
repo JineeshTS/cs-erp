@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { odmRegulatoryFilings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(odmRegulatoryFilings.tenantId, user.tenantId), isNull(odmRegulatoryFilings.deletedAt)];
     if (search) conditions.push(ilike(odmRegulatoryFilings.filingReference, `%${search}%`));
     if (status) conditions.push(eq(odmRegulatoryFilings.status, status));
-    if (cursor) conditions.push(gt(odmRegulatoryFilings.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(odmRegulatoryFilings.createdAt, new Date(cursor)));
 
     const results = await db.select().from(odmRegulatoryFilings).where(and(...conditions)).orderBy(desc(odmRegulatoryFilings.createdAt)).limit(limit + 1);
 

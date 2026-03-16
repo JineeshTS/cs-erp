@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, gt, ilike } from "drizzle-orm";
+import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { dmsRetentionPolicies } from "@/db/schema";
 import { createRetentionPolicySchema } from "@/lib/document-management-system/validation";
 import { formatZodErrors } from "@/lib/validation";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsRetentionPolicies.tenantId, user.tenantId), isNull(dmsRetentionPolicies.deletedAt)];
     if (search) conditions.push(ilike(dmsRetentionPolicies.name, `%${search}%`));
-    if (cursor) conditions.push(gt(dmsRetentionPolicies.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(dmsRetentionPolicies.createdAt, new Date(cursor)));
 
     const results = await db.select().from(dmsRetentionPolicies).where(and(...conditions))
       .orderBy(desc(dmsRetentionPolicies.createdAt)).limit(limit + 1);

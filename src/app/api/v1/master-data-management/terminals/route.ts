@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { terminals } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (status) conditions.push(eq(terminals.status, status));
     if (portId) conditions.push(eq(terminals.portId, portId));
     if (terminalType) conditions.push(eq(terminals.terminalType, terminalType));
-    if (cursor) conditions.push(gt(terminals.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(terminals.createdAt, new Date(cursor)));
 
     const results = await db.select().from(terminals).where(and(...conditions))
       .orderBy(desc(terminals.createdAt)).limit(limit + 1);

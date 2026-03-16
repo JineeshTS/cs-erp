@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { eqyRepositioningPlans } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(eqyRepositioningPlans.tenantId, user.tenantId), isNull(eqyRepositioningPlans.deletedAt)];
     if (search) conditions.push(ilike(eqyRepositioningPlans.planReference, `%${search}%`));
     if (status) conditions.push(eq(eqyRepositioningPlans.status, status));
-    if (cursor) conditions.push(gt(eqyRepositioningPlans.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(eqyRepositioningPlans.createdAt, new Date(cursor)));
 
     const results = await db.select().from(eqyRepositioningPlans).where(and(...conditions)).orderBy(desc(eqyRepositioningPlans.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

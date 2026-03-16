@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneNotifications } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (status) conditions.push(eq(wneNotifications.status, status));
     if (entityType) conditions.push(eq(wneNotifications.entityType, entityType));
     if (unread === "true") conditions.push(isNull(wneNotifications.readAt));
-    if (cursor) conditions.push(gt(wneNotifications.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(wneNotifications.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

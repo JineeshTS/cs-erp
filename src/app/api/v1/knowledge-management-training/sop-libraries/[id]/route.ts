@@ -5,7 +5,7 @@ import { getSopLibrary } from "@/lib/knowledge-management-training/service";
 import { updateSopLibrarySchema } from "@/lib/knowledge-management-training/validation";
 import { db } from "@/lib/db";
 import { kmtSopLibraries } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(kmtSopLibraries)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(kmtSopLibraries.id, id), eq(kmtSopLibraries.tenantId, user.tenantId)))
+      .where(and(eq(kmtSopLibraries.id, id), eq(kmtSopLibraries.tenantId, user.tenantId), isNull(kmtSopLibraries.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "sop-libraries", entityId: updated?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(kmtSopLibraries)
       .set({ deletedAt: new Date() })
-      .where(and(eq(kmtSopLibraries.id, id), eq(kmtSopLibraries.tenantId, user.tenantId)))
+      .where(and(eq(kmtSopLibraries.id, id), eq(kmtSopLibraries.tenantId, user.tenantId), isNull(kmtSopLibraries.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "sop-libraries", entityId: deleted?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, request });

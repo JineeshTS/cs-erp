@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       unpaidInvoices,
       pendingPayments,
     ] = await Promise.all([
-      db.select({ id: cspPortalBookings.id }).from(cspPortalBookings)
+      db.select({ value: count() }).from(cspPortalBookings)
         .where(and(eq(cspPortalBookings.tenantId, user.tenantId), isNull(cspPortalBookings.deletedAt), eq(cspPortalBookings.status, "confirmed")))
-        .then((r) => r.length),
-      db.select({ id: cspShipmentTracking.id }).from(cspShipmentTracking)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cspShipmentTracking)
         .where(and(eq(cspShipmentTracking.tenantId, user.tenantId), isNull(cspShipmentTracking.deletedAt), eq(cspShipmentTracking.currentStatus, "in_transit")))
-        .then((r) => r.length),
-      db.select({ id: cspPortalDocuments.id }).from(cspPortalDocuments)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cspPortalDocuments)
         .where(and(eq(cspPortalDocuments.tenantId, user.tenantId), isNull(cspPortalDocuments.deletedAt), eq(cspPortalDocuments.status, "available")))
-        .then((r) => r.length),
-      db.select({ id: cspPortalInvoices.id }).from(cspPortalInvoices)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cspPortalInvoices)
         .where(and(eq(cspPortalInvoices.tenantId, user.tenantId), isNull(cspPortalInvoices.deletedAt), eq(cspPortalInvoices.status, "issued")))
-        .then((r) => r.length),
-      db.select({ id: cspPortalPayments.id }).from(cspPortalPayments)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(cspPortalPayments)
         .where(and(eq(cspPortalPayments.tenantId, user.tenantId), isNull(cspPortalPayments.deletedAt), eq(cspPortalPayments.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

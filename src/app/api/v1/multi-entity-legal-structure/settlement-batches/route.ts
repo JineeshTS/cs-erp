@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsSettlementBatches } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(melsSettlementBatches.batchNumber, `%${search}%`));
     if (status) conditions.push(eq(melsSettlementBatches.status, status));
     if (currency) conditions.push(eq(melsSettlementBatches.currency, currency));
-    if (cursor) conditions.push(gt(melsSettlementBatches.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsSettlementBatches.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsSettlementBatches).where(and(...conditions))
       .orderBy(desc(melsSettlementBatches.createdAt)).limit(limit + 1);

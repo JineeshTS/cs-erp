@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneWorkflowInstances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (workflowId)
       conditions.push(eq(wneWorkflowInstances.workflowId, workflowId));
     if (cursor)
-      conditions.push(gt(wneWorkflowInstances.createdAt, new Date(cursor)));
+      conditions.push(lt(wneWorkflowInstances.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   fdpDeploymentDecisions,
@@ -26,7 +26,7 @@ export async function listDeploymentDecisions({ tenantId, search, status, cursor
   const conditions = [eq(fdpDeploymentDecisions.tenantId, tenantId), isNull(fdpDeploymentDecisions.deletedAt)];
   if (search) conditions.push(or(ilike(fdpDeploymentDecisions.decisionRef, `%${search}%`), ilike(fdpDeploymentDecisions.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpDeploymentDecisions.status, status));
-  if (cursor) conditions.push(gt(fdpDeploymentDecisions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpDeploymentDecisions.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpDeploymentDecisions).where(and(...conditions)).orderBy(desc(fdpDeploymentDecisions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listFleetUtilizations({ tenantId, search, status, cursor, 
   const conditions = [eq(fdpFleetUtilizations.tenantId, tenantId), isNull(fdpFleetUtilizations.deletedAt)];
   if (search) conditions.push(or(ilike(fdpFleetUtilizations.utilizationRef, `%${search}%`), ilike(fdpFleetUtilizations.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpFleetUtilizations.status, status));
-  if (cursor) conditions.push(gt(fdpFleetUtilizations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpFleetUtilizations.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpFleetUtilizations).where(and(...conditions)).orderBy(desc(fdpFleetUtilizations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listNetworkDesigns({ tenantId, search, status, cursor, lim
   const conditions = [eq(fdpNetworkDesigns.tenantId, tenantId), isNull(fdpNetworkDesigns.deletedAt)];
   if (search) conditions.push(or(ilike(fdpNetworkDesigns.networkRef, `%${search}%`), ilike(fdpNetworkDesigns.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpNetworkDesigns.status, status));
-  if (cursor) conditions.push(gt(fdpNetworkDesigns.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpNetworkDesigns.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpNetworkDesigns).where(and(...conditions)).orderBy(desc(fdpNetworkDesigns.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listDeploymentOptimizers({ tenantId, search, status, curso
   const conditions = [eq(fdpDeploymentOptimizers.tenantId, tenantId), isNull(fdpDeploymentOptimizers.deletedAt)];
   if (search) conditions.push(or(ilike(fdpDeploymentOptimizers.optimizerRef, `%${search}%`), ilike(fdpDeploymentOptimizers.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpDeploymentOptimizers.status, status));
-  if (cursor) conditions.push(gt(fdpDeploymentOptimizers.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpDeploymentOptimizers.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpDeploymentOptimizers).where(and(...conditions)).orderBy(desc(fdpDeploymentOptimizers.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listFleetFinancials({ tenantId, search, status, cursor, li
   const conditions = [eq(fdpFleetFinancials.tenantId, tenantId), isNull(fdpFleetFinancials.deletedAt)];
   if (search) conditions.push(or(ilike(fdpFleetFinancials.financialRef, `%${search}%`), ilike(fdpFleetFinancials.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpFleetFinancials.status, status));
-  if (cursor) conditions.push(gt(fdpFleetFinancials.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpFleetFinancials.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpFleetFinancials).where(and(...conditions)).orderBy(desc(fdpFleetFinancials.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listVesselSwaps({ tenantId, search, status, cursor, limit 
   const conditions = [eq(fdpVesselSwaps.tenantId, tenantId), isNull(fdpVesselSwaps.deletedAt)];
   if (search) conditions.push(or(ilike(fdpVesselSwaps.swapRef, `%${search}%`), ilike(fdpVesselSwaps.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpVesselSwaps.status, status));
-  if (cursor) conditions.push(gt(fdpVesselSwaps.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpVesselSwaps.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpVesselSwaps).where(and(...conditions)).orderBy(desc(fdpVesselSwaps.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listDeploymentContracts({ tenantId, search, status, cursor
   const conditions = [eq(fdpDeploymentContracts.tenantId, tenantId), isNull(fdpDeploymentContracts.deletedAt)];
   if (search) conditions.push(or(ilike(fdpDeploymentContracts.contractRef, `%${search}%`), ilike(fdpDeploymentContracts.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpDeploymentContracts.status, status));
-  if (cursor) conditions.push(gt(fdpDeploymentContracts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpDeploymentContracts.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpDeploymentContracts).where(and(...conditions)).orderBy(desc(fdpDeploymentContracts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listMarketIntelligence({ tenantId, search, status, cursor,
   const conditions = [eq(fdpMarketIntelligence.tenantId, tenantId), isNull(fdpMarketIntelligence.deletedAt)];
   if (search) conditions.push(or(ilike(fdpMarketIntelligence.intelRef, `%${search}%`), ilike(fdpMarketIntelligence.title, `%${search}%`))!);
   if (status) conditions.push(eq(fdpMarketIntelligence.status, status));
-  if (cursor) conditions.push(gt(fdpMarketIntelligence.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(fdpMarketIntelligence.createdAt, new Date(cursor)));
   const results = await db.select().from(fdpMarketIntelligence).where(and(...conditions)).orderBy(desc(fdpMarketIntelligence.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

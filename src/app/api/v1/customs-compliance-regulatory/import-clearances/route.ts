@@ -5,7 +5,7 @@ import { ccrImportClearances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createImportClearanceSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (cursor) {
-      conditions.push(gt(ccrImportClearances.createdAt, new Date(cursor)));
+      conditions.push(lt(ccrImportClearances.createdAt, new Date(cursor)));
     }
 
     const results = await db

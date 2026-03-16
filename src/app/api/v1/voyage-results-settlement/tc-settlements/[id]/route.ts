@@ -5,7 +5,7 @@ import { getTcSettlement } from "@/lib/voyage-results-settlement/service";
 import { updateTcSettlementSchema } from "@/lib/voyage-results-settlement/validation";
 import { db } from "@/lib/db";
 import { vrsTcSettlements } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(vrsTcSettlements)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(vrsTcSettlements.id, id), eq(vrsTcSettlements.tenantId, user.tenantId)))
+      .where(and(eq(vrsTcSettlements.id, id), eq(vrsTcSettlements.tenantId, user.tenantId), isNull(vrsTcSettlements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "tc-settlements", entityId: updated?.id, module: "voyage-results-settlement", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(vrsTcSettlements)
       .set({ deletedAt: new Date() })
-      .where(and(eq(vrsTcSettlements.id, id), eq(vrsTcSettlements.tenantId, user.tenantId)))
+      .where(and(eq(vrsTcSettlements.id, id), eq(vrsTcSettlements.tenantId, user.tenantId), isNull(vrsTcSettlements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "tc-settlements", entityId: deleted?.id, module: "voyage-results-settlement", previousData: existing as Record<string, unknown>, request });

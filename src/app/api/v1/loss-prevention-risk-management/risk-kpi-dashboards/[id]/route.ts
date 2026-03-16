@@ -5,7 +5,7 @@ import { getRiskKpiDashboard } from "@/lib/loss-prevention-risk-management/servi
 import { updateRiskKpiDashboardSchema } from "@/lib/loss-prevention-risk-management/validation";
 import { db } from "@/lib/db";
 import { lprRiskKpiDashboards } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -75,7 +75,7 @@ export async function PATCH(
     const [updated] = await db
       .update(lprRiskKpiDashboards)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(lprRiskKpiDashboards.id, id), eq(lprRiskKpiDashboards.tenantId, user.tenantId)))
+      .where(and(eq(lprRiskKpiDashboards.id, id), eq(lprRiskKpiDashboards.tenantId, user.tenantId), isNull(lprRiskKpiDashboards.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "risk-kpi-dashboards", entityId: updated?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -119,7 +119,7 @@ export async function DELETE(
     const [deleted] = await db
       .update(lprRiskKpiDashboards)
       .set({ deletedAt: new Date() })
-      .where(and(eq(lprRiskKpiDashboards.id, id), eq(lprRiskKpiDashboards.tenantId, user.tenantId)))
+      .where(and(eq(lprRiskKpiDashboards.id, id), eq(lprRiskKpiDashboards.tenantId, user.tenantId), isNull(lprRiskKpiDashboards.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "risk-kpi-dashboards", entityId: deleted?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, request });

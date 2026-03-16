@@ -5,7 +5,7 @@ import { getDeploymentOptimizer } from "@/lib/fleet-deployment-planning/service"
 import { updateDeploymentOptimizerSchema } from "@/lib/fleet-deployment-planning/validation";
 import { db } from "@/lib/db";
 import { fdpDeploymentOptimizers } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -69,7 +69,7 @@ export async function PATCH(
     const [updated] = await db
       .update(fdpDeploymentOptimizers)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(fdpDeploymentOptimizers.id, id), eq(fdpDeploymentOptimizers.tenantId, user.tenantId)))
+      .where(and(eq(fdpDeploymentOptimizers.id, id), eq(fdpDeploymentOptimizers.tenantId, user.tenantId), isNull(fdpDeploymentOptimizers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "deployment-optimizers", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -110,7 +110,7 @@ export async function DELETE(
     const [deleted] = await db
       .update(fdpDeploymentOptimizers)
       .set({ deletedAt: new Date() })
-      .where(and(eq(fdpDeploymentOptimizers.id, id), eq(fdpDeploymentOptimizers.tenantId, user.tenantId)))
+      .where(and(eq(fdpDeploymentOptimizers.id, id), eq(fdpDeploymentOptimizers.tenantId, user.tenantId), isNull(fdpDeploymentOptimizers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "deployment-optimizers", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });

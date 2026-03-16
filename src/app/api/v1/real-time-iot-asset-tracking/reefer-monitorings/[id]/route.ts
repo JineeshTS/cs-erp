@@ -5,7 +5,7 @@ import { getReeferMonitoring } from "@/lib/real-time-iot-asset-tracking/service"
 import { updateReeferMonitoringSchema } from "@/lib/real-time-iot-asset-tracking/validation";
 import { db } from "@/lib/db";
 import { iotReeferMonitorings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -73,7 +73,7 @@ export async function PATCH(
     const [updated] = await db
       .update(iotReeferMonitorings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId)))
+      .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId), isNull(iotReeferMonitorings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "reefer-monitorings", entityId: updated?.id, module: "real-time-iot-asset-tracking", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -116,7 +116,7 @@ export async function DELETE(
     const [deleted] = await db
       .update(iotReeferMonitorings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId)))
+      .where(and(eq(iotReeferMonitorings.id, id), eq(iotReeferMonitorings.tenantId, user.tenantId), isNull(iotReeferMonitorings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "reefer-monitorings", entityId: deleted?.id, module: "real-time-iot-asset-tracking", previousData: existing as Record<string, unknown>, request });

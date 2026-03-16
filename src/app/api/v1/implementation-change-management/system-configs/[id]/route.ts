@@ -5,7 +5,7 @@ import { getSystemConfig } from "@/lib/implementation-change-management/service"
 import { updateSystemConfigSchema } from "@/lib/implementation-change-management/validation";
 import { db } from "@/lib/db";
 import { icmSystemConfigs } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 

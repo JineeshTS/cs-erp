@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   pscPurchaseRequisitions,
@@ -26,7 +26,7 @@ export async function listPurchaseRequisitions({ tenantId, search, status, curso
   const conditions = [eq(pscPurchaseRequisitions.tenantId, tenantId), isNull(pscPurchaseRequisitions.deletedAt)];
   if (search) conditions.push(or(ilike(pscPurchaseRequisitions.requisitionRef, `%${search}%`), ilike(pscPurchaseRequisitions.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscPurchaseRequisitions.status, status));
-  if (cursor) conditions.push(gt(pscPurchaseRequisitions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscPurchaseRequisitions.createdAt, new Date(cursor)));
   const results = await db.select().from(pscPurchaseRequisitions).where(and(...conditions)).orderBy(desc(pscPurchaseRequisitions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listVendorSourcings({ tenantId, search, status, cursor, li
   const conditions = [eq(pscVendorSourcings.tenantId, tenantId), isNull(pscVendorSourcings.deletedAt)];
   if (search) conditions.push(or(ilike(pscVendorSourcings.sourcingRef, `%${search}%`), ilike(pscVendorSourcings.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscVendorSourcings.status, status));
-  if (cursor) conditions.push(gt(pscVendorSourcings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscVendorSourcings.createdAt, new Date(cursor)));
   const results = await db.select().from(pscVendorSourcings).where(and(...conditions)).orderBy(desc(pscVendorSourcings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listPurchaseOrders({ tenantId, search, status, cursor, lim
   const conditions = [eq(pscPurchaseOrders.tenantId, tenantId), isNull(pscPurchaseOrders.deletedAt)];
   if (search) conditions.push(or(ilike(pscPurchaseOrders.poRef, `%${search}%`), ilike(pscPurchaseOrders.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscPurchaseOrders.status, status));
-  if (cursor) conditions.push(gt(pscPurchaseOrders.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscPurchaseOrders.createdAt, new Date(cursor)));
   const results = await db.select().from(pscPurchaseOrders).where(and(...conditions)).orderBy(desc(pscPurchaseOrders.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listProcurementContracts({ tenantId, search, status, curso
   const conditions = [eq(pscProcurementContracts.tenantId, tenantId), isNull(pscProcurementContracts.deletedAt)];
   if (search) conditions.push(or(ilike(pscProcurementContracts.contractRef, `%${search}%`), ilike(pscProcurementContracts.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscProcurementContracts.status, status));
-  if (cursor) conditions.push(gt(pscProcurementContracts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscProcurementContracts.createdAt, new Date(cursor)));
   const results = await db.select().from(pscProcurementContracts).where(and(...conditions)).orderBy(desc(pscProcurementContracts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listInventoryStockControls({ tenantId, search, status, cur
   const conditions = [eq(pscInventoryStockControls.tenantId, tenantId), isNull(pscInventoryStockControls.deletedAt)];
   if (search) conditions.push(or(ilike(pscInventoryStockControls.inventoryRef, `%${search}%`), ilike(pscInventoryStockControls.itemName, `%${search}%`))!);
   if (status) conditions.push(eq(pscInventoryStockControls.status, status));
-  if (cursor) conditions.push(gt(pscInventoryStockControls.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscInventoryStockControls.createdAt, new Date(cursor)));
   const results = await db.select().from(pscInventoryStockControls).where(and(...conditions)).orderBy(desc(pscInventoryStockControls.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listGoodsReceiptInspections({ tenantId, search, status, cu
   const conditions = [eq(pscGoodsReceiptInspections.tenantId, tenantId), isNull(pscGoodsReceiptInspections.deletedAt)];
   if (search) conditions.push(or(ilike(pscGoodsReceiptInspections.receiptRef, `%${search}%`), ilike(pscGoodsReceiptInspections.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscGoodsReceiptInspections.status, status));
-  if (cursor) conditions.push(gt(pscGoodsReceiptInspections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscGoodsReceiptInspections.createdAt, new Date(cursor)));
   const results = await db.select().from(pscGoodsReceiptInspections).where(and(...conditions)).orderBy(desc(pscGoodsReceiptInspections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listSpendAnalytics({ tenantId, search, status, cursor, lim
   const conditions = [eq(pscSpendAnalytics.tenantId, tenantId), isNull(pscSpendAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(pscSpendAnalytics.analyticsRef, `%${search}%`), ilike(pscSpendAnalytics.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscSpendAnalytics.status, status));
-  if (cursor) conditions.push(gt(pscSpendAnalytics.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscSpendAnalytics.createdAt, new Date(cursor)));
   const results = await db.select().from(pscSpendAnalytics).where(and(...conditions)).orderBy(desc(pscSpendAnalytics.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listSupplierScorecards({ tenantId, search, status, cursor,
   const conditions = [eq(pscSupplierScorecards.tenantId, tenantId), isNull(pscSupplierScorecards.deletedAt)];
   if (search) conditions.push(or(ilike(pscSupplierScorecards.scorecardRef, `%${search}%`), ilike(pscSupplierScorecards.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscSupplierScorecards.status, status));
-  if (cursor) conditions.push(gt(pscSupplierScorecards.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(pscSupplierScorecards.createdAt, new Date(cursor)));
   const results = await db.select().from(pscSupplierScorecards).where(and(...conditions)).orderBy(desc(pscSupplierScorecards.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

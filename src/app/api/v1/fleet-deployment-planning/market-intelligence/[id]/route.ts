@@ -5,7 +5,7 @@ import { getMarketIntelligence } from "@/lib/fleet-deployment-planning/service";
 import { updateMarketIntelligenceSchema } from "@/lib/fleet-deployment-planning/validation";
 import { db } from "@/lib/db";
 import { fdpMarketIntelligence } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const [updated] = await db
       .update(fdpMarketIntelligence)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(fdpMarketIntelligence.id, id), eq(fdpMarketIntelligence.tenantId, user.tenantId)))
+      .where(and(eq(fdpMarketIntelligence.id, id), eq(fdpMarketIntelligence.tenantId, user.tenantId), isNull(fdpMarketIntelligence.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "market-intelligence", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const [deleted] = await db
       .update(fdpMarketIntelligence)
       .set({ deletedAt: new Date() })
-      .where(and(eq(fdpMarketIntelligence.id, id), eq(fdpMarketIntelligence.tenantId, user.tenantId)))
+      .where(and(eq(fdpMarketIntelligence.id, id), eq(fdpMarketIntelligence.tenantId, user.tenantId), isNull(fdpMarketIntelligence.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "market-intelligence", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });

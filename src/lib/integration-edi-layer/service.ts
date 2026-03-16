@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   ielIntegrationConnections,
@@ -30,7 +30,7 @@ export async function listConnections({ tenantId, search, status, cursor, limit 
   if (search) conditions.push(or(ilike(ielIntegrationConnections.connectionName, `%${search}%`), ilike(ielIntegrationConnections.connectionCode, `%${search}%`))!);
   if (status) conditions.push(eq(ielIntegrationConnections.status, status));
   if (connectionType) conditions.push(eq(ielIntegrationConnections.connectionType, connectionType));
-  if (cursor) conditions.push(gt(ielIntegrationConnections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielIntegrationConnections.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielIntegrationConnections).where(and(...conditions)).orderBy(desc(ielIntegrationConnections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -51,7 +51,7 @@ export async function listEndpoints({ tenantId, search, cursor, limit = 50 }: Li
   const conditions = [eq(ielIntegrationEndpoints.tenantId, tenantId), isNull(ielIntegrationEndpoints.deletedAt)];
   if (connectionId) conditions.push(eq(ielIntegrationEndpoints.connectionId, connectionId));
   if (search) conditions.push(ilike(ielIntegrationEndpoints.endpointName, `%${search}%`));
-  if (cursor) conditions.push(gt(ielIntegrationEndpoints.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielIntegrationEndpoints.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielIntegrationEndpoints).where(and(...conditions)).orderBy(desc(ielIntegrationEndpoints.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -72,7 +72,7 @@ export async function listOracleSyncJobs({ tenantId, search, status, cursor, lim
   const conditions = [eq(ielOracleSyncJobs.tenantId, tenantId), isNull(ielOracleSyncJobs.deletedAt)];
   if (search) conditions.push(ilike(ielOracleSyncJobs.jobCode, `%${search}%`));
   if (status) conditions.push(eq(ielOracleSyncJobs.status, status));
-  if (cursor) conditions.push(gt(ielOracleSyncJobs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielOracleSyncJobs.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielOracleSyncJobs).where(and(...conditions)).orderBy(desc(ielOracleSyncJobs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -106,7 +106,7 @@ export async function listEdiMessages({ tenantId, search, status, cursor, limit 
   if (status) conditions.push(eq(ielEdiMessages.status, status));
   if (messageType) conditions.push(eq(ielEdiMessages.messageType, messageType));
   if (direction) conditions.push(eq(ielEdiMessages.direction, direction));
-  if (cursor) conditions.push(gt(ielEdiMessages.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielEdiMessages.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielEdiMessages).where(and(...conditions)).orderBy(desc(ielEdiMessages.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -148,7 +148,7 @@ export async function listPortConnectMessages({ tenantId, search, status, cursor
   if (status) conditions.push(eq(ielPortConnectMessages.status, status));
   if (messageType) conditions.push(eq(ielPortConnectMessages.messageType, messageType));
   if (direction) conditions.push(eq(ielPortConnectMessages.direction, direction));
-  if (cursor) conditions.push(gt(ielPortConnectMessages.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielPortConnectMessages.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielPortConnectMessages).where(and(...conditions)).orderBy(desc(ielPortConnectMessages.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -171,7 +171,7 @@ export async function listCustomsFilings({ tenantId, search, status, cursor, lim
   if (status) conditions.push(eq(ielCustomsFilings.status, status));
   if (filingType) conditions.push(eq(ielCustomsFilings.filingType, filingType));
   if (customsAuthority) conditions.push(eq(ielCustomsFilings.customsAuthority, customsAuthority));
-  if (cursor) conditions.push(gt(ielCustomsFilings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(ielCustomsFilings.createdAt, new Date(cursor)));
 
   const results = await db.select().from(ielCustomsFilings).where(and(...conditions)).orderBy(desc(ielCustomsFilings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;

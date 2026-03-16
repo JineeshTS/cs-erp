@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   dgmImdgCompliance,
@@ -27,7 +27,7 @@ export async function listImdgCompliance({ tenantId, search, status, cursor, lim
   const conditions = [eq(dgmImdgCompliance.tenantId, tenantId), isNull(dgmImdgCompliance.deletedAt)];
   if (search) conditions.push(or(ilike(dgmImdgCompliance.complianceRef, `%${search}%`), ilike(dgmImdgCompliance.unNumber, `%${search}%`), ilike(dgmImdgCompliance.properShippingName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmImdgCompliance.status, status));
-  if (cursor) conditions.push(gt(dgmImdgCompliance.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmImdgCompliance.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmImdgCompliance).where(and(...conditions)).orderBy(desc(dgmImdgCompliance.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listBookingScreenings({ tenantId, search, status, cursor, 
   const conditions = [eq(dgmBookingScreenings.tenantId, tenantId), isNull(dgmBookingScreenings.deletedAt)];
   if (search) conditions.push(or(ilike(dgmBookingScreenings.screeningRef, `%${search}%`), ilike(dgmBookingScreenings.bookingRef, `%${search}%`), ilike(dgmBookingScreenings.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmBookingScreenings.status, status));
-  if (cursor) conditions.push(gt(dgmBookingScreenings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmBookingScreenings.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmBookingScreenings).where(and(...conditions)).orderBy(desc(dgmBookingScreenings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listSegregationRules({ tenantId, search, status, cursor, l
   const conditions = [eq(dgmSegregationRules.tenantId, tenantId), isNull(dgmSegregationRules.deletedAt)];
   if (search) conditions.push(or(ilike(dgmSegregationRules.ruleRef, `%${search}%`), ilike(dgmSegregationRules.ruleName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmSegregationRules.status, status));
-  if (cursor) conditions.push(gt(dgmSegregationRules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmSegregationRules.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmSegregationRules).where(and(...conditions)).orderBy(desc(dgmSegregationRules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listPlacardRequirements({ tenantId, search, status, cursor
   const conditions = [eq(dgmPlacardRequirements.tenantId, tenantId), isNull(dgmPlacardRequirements.deletedAt)];
   if (search) conditions.push(or(ilike(dgmPlacardRequirements.placardRef, `%${search}%`), ilike(dgmPlacardRequirements.imdgClass, `%${search}%`))!);
   if (status) conditions.push(eq(dgmPlacardRequirements.status, status));
-  if (cursor) conditions.push(gt(dgmPlacardRequirements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmPlacardRequirements.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmPlacardRequirements).where(and(...conditions)).orderBy(desc(dgmPlacardRequirements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listDgmManifests({ tenantId, search, status, cursor, limit
   const conditions = [eq(dgmManifests.tenantId, tenantId), isNull(dgmManifests.deletedAt)];
   if (search) conditions.push(or(ilike(dgmManifests.manifestRef, `%${search}%`), ilike(dgmManifests.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmManifests.status, status));
-  if (cursor) conditions.push(gt(dgmManifests.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmManifests.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmManifests).where(and(...conditions)).orderBy(desc(dgmManifests.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listEmergencyProcedures({ tenantId, search, status, cursor
   const conditions = [eq(dgmEmergencyProcedures.tenantId, tenantId), isNull(dgmEmergencyProcedures.deletedAt)];
   if (search) conditions.push(or(ilike(dgmEmergencyProcedures.procedureRef, `%${search}%`), ilike(dgmEmergencyProcedures.procedureName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmEmergencyProcedures.status, status));
-  if (cursor) conditions.push(gt(dgmEmergencyProcedures.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmEmergencyProcedures.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmEmergencyProcedures).where(and(...conditions)).orderBy(desc(dgmEmergencyProcedures.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listChemicalSafetyData({ tenantId, search, status, cursor,
   const conditions = [eq(dgmChemicalSafetyData.tenantId, tenantId), isNull(dgmChemicalSafetyData.deletedAt)];
   if (search) conditions.push(or(ilike(dgmChemicalSafetyData.safetyDataRef, `%${search}%`), ilike(dgmChemicalSafetyData.chemicalName, `%${search}%`))!);
   if (status) conditions.push(eq(dgmChemicalSafetyData.status, status));
-  if (cursor) conditions.push(gt(dgmChemicalSafetyData.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmChemicalSafetyData.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmChemicalSafetyData).where(and(...conditions)).orderBy(desc(dgmChemicalSafetyData.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listIncidentReports({ tenantId, search, status, cursor, li
   const conditions = [eq(dgmIncidentReports.tenantId, tenantId), isNull(dgmIncidentReports.deletedAt)];
   if (search) conditions.push(or(ilike(dgmIncidentReports.incidentRef, `%${search}%`), ilike(dgmIncidentReports.locationDescription, `%${search}%`))!);
   if (status) conditions.push(eq(dgmIncidentReports.status, status));
-  if (cursor) conditions.push(gt(dgmIncidentReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(dgmIncidentReports.createdAt, new Date(cursor)));
   const results = await db.select().from(dgmIncidentReports).where(and(...conditions)).orderBy(desc(dgmIncidentReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

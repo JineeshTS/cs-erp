@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { commodities } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (status) conditions.push(eq(commodities.status, status));
     if (category) conditions.push(eq(commodities.category, category));
     if (hazardClass) conditions.push(eq(commodities.hazardClass, hazardClass));
-    if (cursor) conditions.push(gt(commodities.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(commodities.createdAt, new Date(cursor)));
 
     const results = await db.select().from(commodities).where(and(...conditions))
       .orderBy(desc(commodities.createdAt)).limit(limit + 1);

@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       activeAlliances,
       pendingOptimizations,
     ] = await Promise.all([
-      db.select({ id: ltrServiceLoops.id }).from(ltrServiceLoops)
+      db.select({ value: count() }).from(ltrServiceLoops)
         .where(and(eq(ltrServiceLoops.tenantId, user.tenantId), isNull(ltrServiceLoops.deletedAt), eq(ltrServiceLoops.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrPortPairTradeLanes.id }).from(ltrPortPairTradeLanes)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ltrPortPairTradeLanes)
         .where(and(eq(ltrPortPairTradeLanes.tenantId, user.tenantId), isNull(ltrPortPairTradeLanes.deletedAt), eq(ltrPortPairTradeLanes.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrSlotAgreements.id }).from(ltrSlotAgreements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ltrSlotAgreements)
         .where(and(eq(ltrSlotAgreements.tenantId, user.tenantId), isNull(ltrSlotAgreements.deletedAt), eq(ltrSlotAgreements.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrAllianceAgreements.id }).from(ltrAllianceAgreements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ltrAllianceAgreements)
         .where(and(eq(ltrAllianceAgreements.tenantId, user.tenantId), isNull(ltrAllianceAgreements.deletedAt), eq(ltrAllianceAgreements.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrRouteOptimizations.id }).from(ltrRouteOptimizations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ltrRouteOptimizations)
         .where(and(eq(ltrRouteOptimizations.tenantId, user.tenantId), isNull(ltrRouteOptimizations.deletedAt), eq(ltrRouteOptimizations.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

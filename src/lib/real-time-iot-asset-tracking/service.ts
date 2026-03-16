@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   iotContainerGpsTrackings,
@@ -26,7 +26,7 @@ export async function listContainerGpsTrackings({ tenantId, search, status, curs
   const conditions = [eq(iotContainerGpsTrackings.tenantId, tenantId), isNull(iotContainerGpsTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(iotContainerGpsTrackings.trackingRef, `%${search}%`), ilike(iotContainerGpsTrackings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(iotContainerGpsTrackings.status, status));
-  if (cursor) conditions.push(gt(iotContainerGpsTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotContainerGpsTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(iotContainerGpsTrackings).where(and(...conditions)).orderBy(desc(iotContainerGpsTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listReeferMonitorings({ tenantId, search, status, cursor, 
   const conditions = [eq(iotReeferMonitorings.tenantId, tenantId), isNull(iotReeferMonitorings.deletedAt)];
   if (search) conditions.push(or(ilike(iotReeferMonitorings.monitoringRef, `%${search}%`), ilike(iotReeferMonitorings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(iotReeferMonitorings.status, status));
-  if (cursor) conditions.push(gt(iotReeferMonitorings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotReeferMonitorings.createdAt, new Date(cursor)));
   const results = await db.select().from(iotReeferMonitorings).where(and(...conditions)).orderBy(desc(iotReeferMonitorings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listElectronicSeals({ tenantId, search, status, cursor, li
   const conditions = [eq(iotElectronicSeals.tenantId, tenantId), isNull(iotElectronicSeals.deletedAt)];
   if (search) conditions.push(or(ilike(iotElectronicSeals.sealRef, `%${search}%`), ilike(iotElectronicSeals.sealNumber, `%${search}%`))!);
   if (status) conditions.push(eq(iotElectronicSeals.status, status));
-  if (cursor) conditions.push(gt(iotElectronicSeals.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotElectronicSeals.createdAt, new Date(cursor)));
   const results = await db.select().from(iotElectronicSeals).where(and(...conditions)).orderBy(desc(iotElectronicSeals.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listShockDetections({ tenantId, search, status, cursor, li
   const conditions = [eq(iotShockDetections.tenantId, tenantId), isNull(iotShockDetections.deletedAt)];
   if (search) conditions.push(or(ilike(iotShockDetections.detectionRef, `%${search}%`), ilike(iotShockDetections.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(iotShockDetections.status, status));
-  if (cursor) conditions.push(gt(iotShockDetections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotShockDetections.createdAt, new Date(cursor)));
   const results = await db.select().from(iotShockDetections).where(and(...conditions)).orderBy(desc(iotShockDetections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listVesselPositions({ tenantId, search, status, cursor, li
   const conditions = [eq(iotVesselPositions.tenantId, tenantId), isNull(iotVesselPositions.deletedAt)];
   if (search) conditions.push(or(ilike(iotVesselPositions.positionRef, `%${search}%`), ilike(iotVesselPositions.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(iotVesselPositions.status, status));
-  if (cursor) conditions.push(gt(iotVesselPositions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotVesselPositions.createdAt, new Date(cursor)));
   const results = await db.select().from(iotVesselPositions).where(and(...conditions)).orderBy(desc(iotVesselPositions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listPortEquipments({ tenantId, search, status, cursor, lim
   const conditions = [eq(iotPortEquipments.tenantId, tenantId), isNull(iotPortEquipments.deletedAt)];
   if (search) conditions.push(or(ilike(iotPortEquipments.equipmentRef, `%${search}%`), ilike(iotPortEquipments.equipmentName, `%${search}%`))!);
   if (status) conditions.push(eq(iotPortEquipments.status, status));
-  if (cursor) conditions.push(gt(iotPortEquipments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotPortEquipments.createdAt, new Date(cursor)));
   const results = await db.select().from(iotPortEquipments).where(and(...conditions)).orderBy(desc(iotPortEquipments.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listPredictiveAlerts({ tenantId, search, status, cursor, l
   const conditions = [eq(iotPredictiveAlerts.tenantId, tenantId), isNull(iotPredictiveAlerts.deletedAt)];
   if (search) conditions.push(or(ilike(iotPredictiveAlerts.alertRef, `%${search}%`), ilike(iotPredictiveAlerts.assetIdentifier, `%${search}%`))!);
   if (status) conditions.push(eq(iotPredictiveAlerts.status, status));
-  if (cursor) conditions.push(gt(iotPredictiveAlerts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotPredictiveAlerts.createdAt, new Date(cursor)));
   const results = await db.select().from(iotPredictiveAlerts).where(and(...conditions)).orderBy(desc(iotPredictiveAlerts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listDataLakeAnalytics({ tenantId, search, status, cursor, 
   const conditions = [eq(iotDataLakeAnalytics.tenantId, tenantId), isNull(iotDataLakeAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(iotDataLakeAnalytics.analyticsRef, `%${search}%`), ilike(iotDataLakeAnalytics.reportName, `%${search}%`))!);
   if (status) conditions.push(eq(iotDataLakeAnalytics.status, status));
-  if (cursor) conditions.push(gt(iotDataLakeAnalytics.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(iotDataLakeAnalytics.createdAt, new Date(cursor)));
   const results = await db.select().from(iotDataLakeAnalytics).where(and(...conditions)).orderBy(desc(iotDataLakeAnalytics.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

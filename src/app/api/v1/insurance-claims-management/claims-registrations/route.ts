@@ -5,7 +5,7 @@ import { icmClaimsRegistrations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createClaimsRegistrationSchema } from "@/lib/insurance-claims-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (cursor) {
-      conditions.push(gt(icmClaimsRegistrations.createdAt, new Date(cursor)));
+      conditions.push(lt(icmClaimsRegistrations.createdAt, new Date(cursor)));
     }
 
     const results = await db

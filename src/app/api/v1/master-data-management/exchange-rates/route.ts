@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exchangeRates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (status) conditions.push(eq(exchangeRates.status, status));
     if (baseCurrency) conditions.push(eq(exchangeRates.baseCurrency, baseCurrency));
     if (targetCurrency) conditions.push(eq(exchangeRates.targetCurrency, targetCurrency));
-    if (cursor) conditions.push(gt(exchangeRates.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(exchangeRates.createdAt, new Date(cursor)));
 
     const results = await db.select().from(exchangeRates).where(and(...conditions))
       .orderBy(desc(exchangeRates.createdAt)).limit(limit + 1);

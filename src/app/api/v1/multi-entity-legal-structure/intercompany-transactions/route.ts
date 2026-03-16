@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsIntercompanyTransactions } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (targetEntityId) conditions.push(eq(melsIntercompanyTransactions.targetEntityId, targetEntityId));
     if (status) conditions.push(eq(melsIntercompanyTransactions.status, status));
     if (transactionType) conditions.push(eq(melsIntercompanyTransactions.transactionType, transactionType));
-    if (cursor) conditions.push(gt(melsIntercompanyTransactions.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(melsIntercompanyTransactions.createdAt, new Date(cursor)));
 
     const results = await db.select().from(melsIntercompanyTransactions).where(and(...conditions))
       .orderBy(desc(melsIntercompanyTransactions.createdAt)).limit(limit + 1);

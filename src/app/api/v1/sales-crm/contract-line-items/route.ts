@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmContractLineItems } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(scmContractLineItems.tenantId, user.tenantId), isNull(scmContractLineItems.deletedAt)];
     if (search) conditions.push(ilike(scmContractLineItems.chargeName, `%${search}%`));
     if (contractId) conditions.push(eq(scmContractLineItems.contractId, contractId));
-    if (cursor) conditions.push(gt(scmContractLineItems.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(scmContractLineItems.createdAt, new Date(cursor)));
 
     const results = await db.select().from(scmContractLineItems).where(and(...conditions))
       .orderBy(desc(scmContractLineItems.createdAt)).limit(limit + 1);

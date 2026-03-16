@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 
-const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "12", 10);
+const BCRYPT_ROUNDS = Math.min(Math.max(parseInt(process.env.BCRYPT_ROUNDS || "12", 10), 10), 14);
 
 // Pre-computed dummy hash for timing attack prevention.
 // Used when a user is not found so the response time is the same.

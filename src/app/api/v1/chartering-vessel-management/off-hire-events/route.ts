@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cvmOffHireEvents } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(cvmOffHireEvents.reason, `%${search}%`));
     if (eventType) conditions.push(eq(cvmOffHireEvents.eventType, eventType));
     if (claimStatus) conditions.push(eq(cvmOffHireEvents.claimStatus, claimStatus));
-    if (cursor) conditions.push(gt(cvmOffHireEvents.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(cvmOffHireEvents.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

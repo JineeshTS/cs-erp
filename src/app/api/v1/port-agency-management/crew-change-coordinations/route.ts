@@ -5,7 +5,7 @@ import { pamCrewChangeCoordinations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createCrewChangeCoordinationSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(pamCrewChangeCoordinations.tenantId, user.tenantId), isNull(pamCrewChangeCoordinations.deletedAt)];
     if (search) conditions.push(or(ilike(pamCrewChangeCoordinations.coordinationRef, `%${search}%`), ilike(pamCrewChangeCoordinations.vesselName, `%${search}%`), ilike(pamCrewChangeCoordinations.crewMemberName, `%${search}%`))!);
     if (status) conditions.push(eq(pamCrewChangeCoordinations.status, status));
-    if (cursor) conditions.push(gt(pamCrewChangeCoordinations.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(pamCrewChangeCoordinations.createdAt, new Date(cursor)));
 
     const results = await db.select().from(pamCrewChangeCoordinations).where(and(...conditions)).orderBy(desc(pamCrewChangeCoordinations.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

@@ -5,7 +5,7 @@ import { getPiClubScoring } from "@/lib/loss-prevention-risk-management/service"
 import { updatePiClubScoringSchema } from "@/lib/loss-prevention-risk-management/validation";
 import { db } from "@/lib/db";
 import { lprPiClubScorings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -75,7 +75,7 @@ export async function PATCH(
     const [updated] = await db
       .update(lprPiClubScorings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(lprPiClubScorings.id, id), eq(lprPiClubScorings.tenantId, user.tenantId)))
+      .where(and(eq(lprPiClubScorings.id, id), eq(lprPiClubScorings.tenantId, user.tenantId), isNull(lprPiClubScorings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "pi-club-scorings", entityId: updated?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -119,7 +119,7 @@ export async function DELETE(
     const [deleted] = await db
       .update(lprPiClubScorings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(lprPiClubScorings.id, id), eq(lprPiClubScorings.tenantId, user.tenantId)))
+      .where(and(eq(lprPiClubScorings.id, id), eq(lprPiClubScorings.tenantId, user.tenantId), isNull(lprPiClubScorings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "pi-club-scorings", entityId: deleted?.id, module: "loss-prevention-risk-management", previousData: existing as Record<string, unknown>, request });

@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   famAssetRegistries,
@@ -26,7 +26,7 @@ export async function listAssetRegistries({ tenantId, search, status, cursor, li
   const conditions = [eq(famAssetRegistries.tenantId, tenantId), isNull(famAssetRegistries.deletedAt)];
   if (search) conditions.push(or(ilike(famAssetRegistries.assetRef, `%${search}%`), ilike(famAssetRegistries.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famAssetRegistries.status, status));
-  if (cursor) conditions.push(gt(famAssetRegistries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famAssetRegistries.createdAt, new Date(cursor)));
   const results = await db.select().from(famAssetRegistries).where(and(...conditions)).orderBy(desc(famAssetRegistries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listDepreciationSchedules({ tenantId, search, status, curs
   const conditions = [eq(famDepreciationSchedules.tenantId, tenantId), isNull(famDepreciationSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(famDepreciationSchedules.scheduleRef, `%${search}%`), ilike(famDepreciationSchedules.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famDepreciationSchedules.status, status));
-  if (cursor) conditions.push(gt(famDepreciationSchedules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famDepreciationSchedules.createdAt, new Date(cursor)));
   const results = await db.select().from(famDepreciationSchedules).where(and(...conditions)).orderBy(desc(famDepreciationSchedules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listAssetDisposals({ tenantId, search, status, cursor, lim
   const conditions = [eq(famAssetDisposals.tenantId, tenantId), isNull(famAssetDisposals.deletedAt)];
   if (search) conditions.push(or(ilike(famAssetDisposals.disposalRef, `%${search}%`), ilike(famAssetDisposals.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famAssetDisposals.status, status));
-  if (cursor) conditions.push(gt(famAssetDisposals.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famAssetDisposals.createdAt, new Date(cursor)));
   const results = await db.select().from(famAssetDisposals).where(and(...conditions)).orderBy(desc(famAssetDisposals.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listInsuranceValuations({ tenantId, search, status, cursor
   const conditions = [eq(famInsuranceValuations.tenantId, tenantId), isNull(famInsuranceValuations.deletedAt)];
   if (search) conditions.push(or(ilike(famInsuranceValuations.recordRef, `%${search}%`), ilike(famInsuranceValuations.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famInsuranceValuations.status, status));
-  if (cursor) conditions.push(gt(famInsuranceValuations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famInsuranceValuations.createdAt, new Date(cursor)));
   const results = await db.select().from(famInsuranceValuations).where(and(...conditions)).orderBy(desc(famInsuranceValuations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listMaintenanceSchedules({ tenantId, search, status, curso
   const conditions = [eq(famMaintenanceSchedules.tenantId, tenantId), isNull(famMaintenanceSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(famMaintenanceSchedules.maintenanceRef, `%${search}%`), ilike(famMaintenanceSchedules.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famMaintenanceSchedules.status, status));
-  if (cursor) conditions.push(gt(famMaintenanceSchedules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famMaintenanceSchedules.createdAt, new Date(cursor)));
   const results = await db.select().from(famMaintenanceSchedules).where(and(...conditions)).orderBy(desc(famMaintenanceSchedules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listCapexOpexClassifications({ tenantId, search, status, c
   const conditions = [eq(famCapexOpexClassifications.tenantId, tenantId), isNull(famCapexOpexClassifications.deletedAt)];
   if (search) conditions.push(or(ilike(famCapexOpexClassifications.classificationRef, `%${search}%`), ilike(famCapexOpexClassifications.title, `%${search}%`))!);
   if (status) conditions.push(eq(famCapexOpexClassifications.status, status));
-  if (cursor) conditions.push(gt(famCapexOpexClassifications.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famCapexOpexClassifications.createdAt, new Date(cursor)));
   const results = await db.select().from(famCapexOpexClassifications).where(and(...conditions)).orderBy(desc(famCapexOpexClassifications.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listImpairmentTests({ tenantId, search, status, cursor, li
   const conditions = [eq(famImpairmentTests.tenantId, tenantId), isNull(famImpairmentTests.deletedAt)];
   if (search) conditions.push(or(ilike(famImpairmentTests.testRef, `%${search}%`), ilike(famImpairmentTests.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famImpairmentTests.status, status));
-  if (cursor) conditions.push(gt(famImpairmentTests.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famImpairmentTests.createdAt, new Date(cursor)));
   const results = await db.select().from(famImpairmentTests).where(and(...conditions)).orderBy(desc(famImpairmentTests.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listLeaseAccounting({ tenantId, search, status, cursor, li
   const conditions = [eq(famLeaseAccounting.tenantId, tenantId), isNull(famLeaseAccounting.deletedAt)];
   if (search) conditions.push(or(ilike(famLeaseAccounting.leaseRef, `%${search}%`), ilike(famLeaseAccounting.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famLeaseAccounting.status, status));
-  if (cursor) conditions.push(gt(famLeaseAccounting.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(famLeaseAccounting.createdAt, new Date(cursor)));
   const results = await db.select().from(famLeaseAccounting).where(and(...conditions)).orderBy(desc(famLeaseAccounting.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

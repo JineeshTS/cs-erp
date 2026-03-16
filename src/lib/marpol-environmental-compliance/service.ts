@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   mecAnnexCompliances,
@@ -26,7 +26,7 @@ export async function listAnnexCompliances({ tenantId, search, status, cursor, l
   const conditions = [eq(mecAnnexCompliances.tenantId, tenantId), isNull(mecAnnexCompliances.deletedAt)];
   if (search) conditions.push(or(ilike(mecAnnexCompliances.complianceRef, `%${search}%`), ilike(mecAnnexCompliances.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecAnnexCompliances.status, status));
-  if (cursor) conditions.push(gt(mecAnnexCompliances.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecAnnexCompliances.createdAt, new Date(cursor)));
   const results = await db.select().from(mecAnnexCompliances).where(and(...conditions)).orderBy(desc(mecAnnexCompliances.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listBallastWaters({ tenantId, search, status, cursor, limi
   const conditions = [eq(mecBallastWaters.tenantId, tenantId), isNull(mecBallastWaters.deletedAt)];
   if (search) conditions.push(or(ilike(mecBallastWaters.ballastRef, `%${search}%`), ilike(mecBallastWaters.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecBallastWaters.status, status));
-  if (cursor) conditions.push(gt(mecBallastWaters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecBallastWaters.createdAt, new Date(cursor)));
   const results = await db.select().from(mecBallastWaters).where(and(...conditions)).orderBy(desc(mecBallastWaters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listAntiFoulings({ tenantId, search, status, cursor, limit
   const conditions = [eq(mecAntiFoulings.tenantId, tenantId), isNull(mecAntiFoulings.deletedAt)];
   if (search) conditions.push(or(ilike(mecAntiFoulings.afsRef, `%${search}%`), ilike(mecAntiFoulings.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecAntiFoulings.status, status));
-  if (cursor) conditions.push(gt(mecAntiFoulings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecAntiFoulings.createdAt, new Date(cursor)));
   const results = await db.select().from(mecAntiFoulings).where(and(...conditions)).orderBy(desc(mecAntiFoulings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listWasteManagements({ tenantId, search, status, cursor, l
   const conditions = [eq(mecWasteManagements.tenantId, tenantId), isNull(mecWasteManagements.deletedAt)];
   if (search) conditions.push(or(ilike(mecWasteManagements.wasteRef, `%${search}%`), ilike(mecWasteManagements.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecWasteManagements.status, status));
-  if (cursor) conditions.push(gt(mecWasteManagements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecWasteManagements.createdAt, new Date(cursor)));
   const results = await db.select().from(mecWasteManagements).where(and(...conditions)).orderBy(desc(mecWasteManagements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listSulphurCaps({ tenantId, search, status, cursor, limit 
   const conditions = [eq(mecSulphurCaps.tenantId, tenantId), isNull(mecSulphurCaps.deletedAt)];
   if (search) conditions.push(or(ilike(mecSulphurCaps.sulphurRef, `%${search}%`), ilike(mecSulphurCaps.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecSulphurCaps.status, status));
-  if (cursor) conditions.push(gt(mecSulphurCaps.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecSulphurCaps.createdAt, new Date(cursor)));
   const results = await db.select().from(mecSulphurCaps).where(and(...conditions)).orderBy(desc(mecSulphurCaps.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listCiiRatings({ tenantId, search, status, cursor, limit =
   const conditions = [eq(mecCiiRatings.tenantId, tenantId), isNull(mecCiiRatings.deletedAt)];
   if (search) conditions.push(or(ilike(mecCiiRatings.ciiRef, `%${search}%`), ilike(mecCiiRatings.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecCiiRatings.status, status));
-  if (cursor) conditions.push(gt(mecCiiRatings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecCiiRatings.createdAt, new Date(cursor)));
   const results = await db.select().from(mecCiiRatings).where(and(...conditions)).orderBy(desc(mecCiiRatings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listCargoCharters({ tenantId, search, status, cursor, limi
   const conditions = [eq(mecCargoCharters.tenantId, tenantId), isNull(mecCargoCharters.deletedAt)];
   if (search) conditions.push(or(ilike(mecCargoCharters.charterRef, `%${search}%`), ilike(mecCargoCharters.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecCargoCharters.status, status));
-  if (cursor) conditions.push(gt(mecCargoCharters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecCargoCharters.createdAt, new Date(cursor)));
   const results = await db.select().from(mecCargoCharters).where(and(...conditions)).orderBy(desc(mecCargoCharters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listEnvironmentalIncidents({ tenantId, search, status, cur
   const conditions = [eq(mecEnvironmentalIncidents.tenantId, tenantId), isNull(mecEnvironmentalIncidents.deletedAt)];
   if (search) conditions.push(or(ilike(mecEnvironmentalIncidents.incidentRef, `%${search}%`), ilike(mecEnvironmentalIncidents.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecEnvironmentalIncidents.status, status));
-  if (cursor) conditions.push(gt(mecEnvironmentalIncidents.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(mecEnvironmentalIncidents.createdAt, new Date(cursor)));
   const results = await db.select().from(mecEnvironmentalIncidents).where(and(...conditions)).orderBy(desc(mecEnvironmentalIncidents.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

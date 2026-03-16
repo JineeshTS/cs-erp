@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq, and, isNull, ilike, gt, desc } from "drizzle-orm";
+import { eq, and, isNull, ilike, lt, desc } from "drizzle-orm";
 import {
   capVesselSchedules,
   capPortRotations,
@@ -42,7 +42,7 @@ export async function listVesselSchedules({
     conditions.push(ilike(capVesselSchedules.vesselName, `%${search}%`));
   if (status) conditions.push(eq(capVesselSchedules.status, status));
   if (cursor)
-    conditions.push(gt(capVesselSchedules.createdAt, new Date(cursor)));
+    conditions.push(lt(capVesselSchedules.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -94,7 +94,7 @@ export async function listPortRotations({
     conditions.push(ilike(capPortRotations.portName, `%${search}%`));
   if (status) conditions.push(eq(capPortRotations.status, status));
   if (cursor)
-    conditions.push(gt(capPortRotations.createdAt, new Date(cursor)));
+    conditions.push(lt(capPortRotations.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -146,7 +146,7 @@ export async function listTradeAllocations({
     conditions.push(ilike(capTradeAllocations.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capTradeAllocations.status, status));
   if (cursor)
-    conditions.push(gt(capTradeAllocations.createdAt, new Date(cursor)));
+    conditions.push(lt(capTradeAllocations.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -198,7 +198,7 @@ export async function listSpaceControls({
     conditions.push(ilike(capSpaceControls.bookingReference, `%${search}%`));
   if (status) conditions.push(eq(capSpaceControls.status, status));
   if (cursor)
-    conditions.push(gt(capSpaceControls.createdAt, new Date(cursor)));
+    conditions.push(lt(capSpaceControls.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -252,7 +252,7 @@ export async function listTransshipmentPlans({
     );
   if (status) conditions.push(eq(capTransshipmentPlans.status, status));
   if (cursor)
-    conditions.push(gt(capTransshipmentPlans.createdAt, new Date(cursor)));
+    conditions.push(lt(capTransshipmentPlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -304,7 +304,7 @@ export async function listLoadingLists({
     conditions.push(ilike(capLoadingLists.listReference, `%${search}%`));
   if (status) conditions.push(eq(capLoadingLists.status, status));
   if (cursor)
-    conditions.push(gt(capLoadingLists.createdAt, new Date(cursor)));
+    conditions.push(lt(capLoadingLists.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -356,7 +356,7 @@ export async function listBayPlans({
     conditions.push(ilike(capBayPlans.fileReference, `%${search}%`));
   if (status) conditions.push(eq(capBayPlans.status, status));
   if (cursor)
-    conditions.push(gt(capBayPlans.createdAt, new Date(cursor)));
+    conditions.push(lt(capBayPlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -408,7 +408,7 @@ export async function listStowagePlans({
     conditions.push(ilike(capStowagePlans.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(capStowagePlans.status, status));
   if (cursor)
-    conditions.push(gt(capStowagePlans.createdAt, new Date(cursor)));
+    conditions.push(lt(capStowagePlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -462,7 +462,7 @@ export async function listLoadOptimizations({
     );
   if (status) conditions.push(eq(capLoadOptimizations.status, status));
   if (cursor)
-    conditions.push(gt(capLoadOptimizations.createdAt, new Date(cursor)));
+    conditions.push(lt(capLoadOptimizations.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -514,7 +514,7 @@ export async function listRevenueAnalytics({
     conditions.push(ilike(capRevenueAnalytics.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capRevenueAnalytics.status, status));
   if (cursor)
-    conditions.push(gt(capRevenueAnalytics.createdAt, new Date(cursor)));
+    conditions.push(lt(capRevenueAnalytics.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -566,7 +566,7 @@ export async function listDemandForecasts({
     conditions.push(ilike(capDemandForecasts.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capDemandForecasts.status, status));
   if (cursor)
-    conditions.push(gt(capDemandForecasts.createdAt, new Date(cursor)));
+    conditions.push(lt(capDemandForecasts.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -618,7 +618,7 @@ export async function listSchedulePerformances({
     conditions.push(ilike(capSchedulePerformances.portName, `%${search}%`));
   if (status) conditions.push(eq(capSchedulePerformances.status, status));
   if (cursor)
-    conditions.push(gt(capSchedulePerformances.createdAt, new Date(cursor)));
+    conditions.push(lt(capSchedulePerformances.createdAt, new Date(cursor)));
 
   const results = await db
     .select()

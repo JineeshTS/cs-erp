@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aafEscalations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(aafEscalations.tenantId, user.tenantId), isNull(aafEscalations.deletedAt)];
     if (search) conditions.push(ilike(aafEscalations.escalationRef, `%${search}%`));
     if (status) conditions.push(eq(aafEscalations.status, status));
-    if (cursor) conditions.push(gt(aafEscalations.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(aafEscalations.createdAt, new Date(cursor)));
 
     const results = await db.select().from(aafEscalations).where(and(...conditions))
       .orderBy(desc(aafEscalations.createdAt)).limit(limit + 1);

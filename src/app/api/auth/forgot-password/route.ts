@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const rateLimitKey = `forgot:${createHash("sha256")
       .update(email)
       .digest("hex")}`;
-    const rateCheck = checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000);
+    const rateCheck = await checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000);
 
     if (!rateCheck.allowed) {
       // Still return generic response to not leak info

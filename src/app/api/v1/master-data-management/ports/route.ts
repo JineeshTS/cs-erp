@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ports } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (search) conditions.push(ilike(ports.name, `%${search}%`));
     if (status) conditions.push(eq(ports.status, status));
     if (country) conditions.push(eq(ports.country, country));
-    if (cursor) conditions.push(gt(ports.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(ports.createdAt, new Date(cursor)));
 
     const results = await db.select().from(ports).where(and(...conditions))
       .orderBy(desc(ports.createdAt)).limit(limit + 1);

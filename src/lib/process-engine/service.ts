@@ -12,7 +12,7 @@ import {
   peApprovals,
   peEventLog,
 } from "@/db/schema";
-import { eq, and, isNull, desc, gt, inArray, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, lt, inArray, sql } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
 
 // ── Process Instance Operations ──
@@ -41,7 +41,7 @@ export async function listProcessInstances({
   if (status) conditions.push(eq(peProcessInstances.status, status));
   if (processId) conditions.push(eq(peProcessInstances.processId, processId));
   if (entityType) conditions.push(eq(peProcessInstances.entityType, entityType));
-  if (cursor) conditions.push(gt(peProcessInstances.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(peProcessInstances.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -370,7 +370,7 @@ export async function listEventLog(
   if (options?.eventType) conditions.push(eq(peEventLog.eventType, options.eventType));
   if (options?.entityType) conditions.push(eq(peEventLog.entityType, options.entityType));
   if (options?.entityId) conditions.push(eq(peEventLog.entityId, options.entityId));
-  if (options?.cursor) conditions.push(gt(peEventLog.createdAt, new Date(options.cursor)));
+  if (options?.cursor) conditions.push(lt(peEventLog.createdAt, new Date(options.cursor)));
 
   const results = await db
     .select()

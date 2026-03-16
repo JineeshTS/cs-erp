@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { tenants, users, roles } from "@/db/schema";
+import { tenants, users, roles, sessions } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import { signAccessToken } from "@/lib/jwt";
 import { generateRefreshToken, hashToken } from "@/lib/tokens";
-import { sessions } from "@/db/schema";
 import { logAuditEvent } from "@/lib/audit";
 import { setAuthCookies } from "@/lib/cookies";
 import { getClientIp, getUserAgent } from "@/lib/request";
 import { registerSchema, formatZodErrors } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createHash } from "crypto";
 
 function slugify(name: string): string {
   return name
@@ -21,7 +22,27 @@ function slugify(name: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const ip = getClientIp(request);
+
+    // Rate limit: 5 registrations per hour per IP
+    const rlKey = `register:${createHash("sha256").update(ip).digest("hex")}`;
+    const rl = await checkRateLimit(rlKey, 5, 60 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMIT", message: "Too many registration attempts. Please try again later." } },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000)) } }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
+        { status: 400 }
+      );
+    }
     const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -32,7 +53,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password, tenantName, displayName, country, timezone } = parsed.data;
-    const ip = getClientIp(request);
     const ua = getUserAgent(request);
 
     // Map country to region/currency

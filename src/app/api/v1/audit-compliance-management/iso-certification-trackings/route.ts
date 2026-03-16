@@ -5,7 +5,7 @@ import { acmIsoCertificationTrackings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createIsoCertificationTrackingSchema } from "@/lib/audit-compliance-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(acmIsoCertificationTrackings.tenantId, user.tenantId), isNull(acmIsoCertificationTrackings.deletedAt)];
     if (search) conditions.push(or(ilike(acmIsoCertificationTrackings.certificationRef, `%${search}%`), ilike(acmIsoCertificationTrackings.standard, `%${search}%`))!);
     if (status) conditions.push(eq(acmIsoCertificationTrackings.status, status));
-    if (cursor) conditions.push(gt(acmIsoCertificationTrackings.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(acmIsoCertificationTrackings.createdAt, new Date(cursor)));
     const results = await db.select().from(acmIsoCertificationTrackings).where(and(...conditions)).orderBy(desc(acmIsoCertificationTrackings.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;

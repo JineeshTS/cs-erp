@@ -5,7 +5,7 @@ import { ccrAeoCompliances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createAeoComplianceSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(ccrAeoCompliances.tenantId, user.tenantId), isNull(ccrAeoCompliances.deletedAt)];
     if (search) { conditions.push(or(ilike(ccrAeoCompliances.aeoRef, `%${search}%`), ilike(ccrAeoCompliances.companyName, `%${search}%`), ilike(ccrAeoCompliances.certificateNumber, `%${search}%`))!); }
     if (status) { conditions.push(eq(ccrAeoCompliances.status, status)); }
-    if (cursor) { conditions.push(gt(ccrAeoCompliances.createdAt, new Date(cursor))); }
+    if (cursor) { conditions.push(lt(ccrAeoCompliances.createdAt, new Date(cursor))); }
 
     const results = await db.select().from(ccrAeoCompliances).where(and(...conditions)).orderBy(desc(ccrAeoCompliances.createdAt)).limit(limit + 1);
     const hasMore = results.length > limit;

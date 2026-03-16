@@ -55,10 +55,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if (!(await hasPermission(user.id, user.tenantId, "tenants:edit"))) {
     return forbiddenResponse();
-
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
   }
+
+  const csrf = request.headers.get("x-csrf-token");
+  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
   const body = await request.json();
   const parsed = updateTenantSchema.safeParse(body);

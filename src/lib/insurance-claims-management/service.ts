@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   icmPiClubPolicies,
@@ -26,7 +26,7 @@ export async function listPiClubPolicies({ tenantId, search, status, cursor, lim
   const conditions = [eq(icmPiClubPolicies.tenantId, tenantId), isNull(icmPiClubPolicies.deletedAt)];
   if (search) conditions.push(or(ilike(icmPiClubPolicies.policyRef, `%${search}%`), ilike(icmPiClubPolicies.clubName, `%${search}%`), ilike(icmPiClubPolicies.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmPiClubPolicies.status, status));
-  if (cursor) conditions.push(gt(icmPiClubPolicies.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmPiClubPolicies.createdAt, new Date(cursor)));
   const results = await db.select().from(icmPiClubPolicies).where(and(...conditions)).orderBy(desc(icmPiClubPolicies.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listHullMachineryInsurances({ tenantId, search, status, cu
   const conditions = [eq(icmHullMachineryInsurances.tenantId, tenantId), isNull(icmHullMachineryInsurances.deletedAt)];
   if (search) conditions.push(or(ilike(icmHullMachineryInsurances.policyRef, `%${search}%`), ilike(icmHullMachineryInsurances.insurerName, `%${search}%`), ilike(icmHullMachineryInsurances.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmHullMachineryInsurances.status, status));
-  if (cursor) conditions.push(gt(icmHullMachineryInsurances.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmHullMachineryInsurances.createdAt, new Date(cursor)));
   const results = await db.select().from(icmHullMachineryInsurances).where(and(...conditions)).orderBy(desc(icmHullMachineryInsurances.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listCargoInsurancePolicies({ tenantId, search, status, cur
   const conditions = [eq(icmCargoInsurancePolicies.tenantId, tenantId), isNull(icmCargoInsurancePolicies.deletedAt)];
   if (search) conditions.push(or(ilike(icmCargoInsurancePolicies.policyRef, `%${search}%`), ilike(icmCargoInsurancePolicies.insurerName, `%${search}%`), ilike(icmCargoInsurancePolicies.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmCargoInsurancePolicies.status, status));
-  if (cursor) conditions.push(gt(icmCargoInsurancePolicies.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmCargoInsurancePolicies.createdAt, new Date(cursor)));
   const results = await db.select().from(icmCargoInsurancePolicies).where(and(...conditions)).orderBy(desc(icmCargoInsurancePolicies.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listSurveyAppointments({ tenantId, search, status, cursor,
   const conditions = [eq(icmSurveyAppointments.tenantId, tenantId), isNull(icmSurveyAppointments.deletedAt)];
   if (search) conditions.push(or(ilike(icmSurveyAppointments.appointmentRef, `%${search}%`), ilike(icmSurveyAppointments.surveyorName, `%${search}%`), ilike(icmSurveyAppointments.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmSurveyAppointments.status, status));
-  if (cursor) conditions.push(gt(icmSurveyAppointments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmSurveyAppointments.createdAt, new Date(cursor)));
   const results = await db.select().from(icmSurveyAppointments).where(and(...conditions)).orderBy(desc(icmSurveyAppointments.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listClaimsRegistrations({ tenantId, search, status, cursor
   const conditions = [eq(icmClaimsRegistrations.tenantId, tenantId), isNull(icmClaimsRegistrations.deletedAt)];
   if (search) conditions.push(or(ilike(icmClaimsRegistrations.claimRef, `%${search}%`), ilike(icmClaimsRegistrations.claimantName, `%${search}%`), ilike(icmClaimsRegistrations.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmClaimsRegistrations.status, status));
-  if (cursor) conditions.push(gt(icmClaimsRegistrations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmClaimsRegistrations.createdAt, new Date(cursor)));
   const results = await db.select().from(icmClaimsRegistrations).where(and(...conditions)).orderBy(desc(icmClaimsRegistrations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listClaimsRecoveries({ tenantId, search, status, cursor, l
   const conditions = [eq(icmClaimsRecoveries.tenantId, tenantId), isNull(icmClaimsRecoveries.deletedAt)];
   if (search) conditions.push(or(ilike(icmClaimsRecoveries.recoveryRef, `%${search}%`), ilike(icmClaimsRecoveries.respondentName, `%${search}%`), ilike(icmClaimsRecoveries.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmClaimsRecoveries.status, status));
-  if (cursor) conditions.push(gt(icmClaimsRecoveries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmClaimsRecoveries.createdAt, new Date(cursor)));
   const results = await db.select().from(icmClaimsRecoveries).where(and(...conditions)).orderBy(desc(icmClaimsRecoveries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listClaimsPredictions({ tenantId, search, status, cursor, 
   const conditions = [eq(icmClaimsPredictions.tenantId, tenantId), isNull(icmClaimsPredictions.deletedAt)];
   if (search) conditions.push(or(ilike(icmClaimsPredictions.predictionRef, `%${search}%`), ilike(icmClaimsPredictions.vesselName, `%${search}%`), ilike(icmClaimsPredictions.tradeRoute, `%${search}%`))!);
   if (status) conditions.push(eq(icmClaimsPredictions.status, status));
-  if (cursor) conditions.push(gt(icmClaimsPredictions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmClaimsPredictions.createdAt, new Date(cursor)));
   const results = await db.select().from(icmClaimsPredictions).where(and(...conditions)).orderBy(desc(icmClaimsPredictions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listLossPreventionReports({ tenantId, search, status, curs
   const conditions = [eq(icmLossPreventionReports.tenantId, tenantId), isNull(icmLossPreventionReports.deletedAt)];
   if (search) conditions.push(or(ilike(icmLossPreventionReports.reportRef, `%${search}%`), ilike(icmLossPreventionReports.reportTitle, `%${search}%`), ilike(icmLossPreventionReports.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(icmLossPreventionReports.status, status));
-  if (cursor) conditions.push(gt(icmLossPreventionReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icmLossPreventionReports.createdAt, new Date(cursor)));
   const results = await db.select().from(icmLossPreventionReports).where(and(...conditions)).orderBy(desc(icmLossPreventionReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

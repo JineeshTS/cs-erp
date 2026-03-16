@@ -5,7 +5,7 @@ import { getCargoTracking } from "@/lib/transshipment-hub-management/service";
 import { updateCargoTrackingSchema } from "@/lib/transshipment-hub-management/validation";
 import { db } from "@/lib/db";
 import { thmCargoTrackings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(thmCargoTrackings)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(thmCargoTrackings.id, id), eq(thmCargoTrackings.tenantId, user.tenantId)))
+      .where(and(eq(thmCargoTrackings.id, id), eq(thmCargoTrackings.tenantId, user.tenantId), isNull(thmCargoTrackings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cargo-trackings", entityId: updated?.id, module: "transshipment-hub-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(thmCargoTrackings)
       .set({ deletedAt: new Date() })
-      .where(and(eq(thmCargoTrackings.id, id), eq(thmCargoTrackings.tenantId, user.tenantId)))
+      .where(and(eq(thmCargoTrackings.id, id), eq(thmCargoTrackings.tenantId, user.tenantId), isNull(thmCargoTrackings.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cargo-trackings", entityId: deleted?.id, module: "transshipment-hub-management", previousData: existing as Record<string, unknown>, request });

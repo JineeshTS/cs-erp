@@ -5,7 +5,7 @@ import { getGaAgreement } from "@/lib/agent-network-management/service";
 import { updateGaAgreementSchema } from "@/lib/agent-network-management/validation";
 import { db } from "@/lib/db";
 import { anmGaAgreements } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(anmGaAgreements)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(anmGaAgreements.id, id), eq(anmGaAgreements.tenantId, user.tenantId)))
+      .where(and(eq(anmGaAgreements.id, id), eq(anmGaAgreements.tenantId, user.tenantId), isNull(anmGaAgreements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ga-agreements", entityId: updated?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(anmGaAgreements)
       .set({ deletedAt: new Date() })
-      .where(and(eq(anmGaAgreements.id, id), eq(anmGaAgreements.tenantId, user.tenantId)))
+      .where(and(eq(anmGaAgreements.id, id), eq(anmGaAgreements.tenantId, user.tenantId), isNull(anmGaAgreements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ga-agreements", entityId: deleted?.id, module: "agent-network-management", previousData: existing as Record<string, unknown>, request });

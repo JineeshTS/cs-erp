@@ -5,7 +5,7 @@ import { icdTruckBookings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createTruckBookingSchema } from "@/lib/intermodal-icd-operations/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (cursor) {
-      conditions.push(gt(icdTruckBookings.createdAt, new Date(cursor)));
+      conditions.push(lt(icdTruckBookings.createdAt, new Date(cursor)));
     }
 
     const results = await db

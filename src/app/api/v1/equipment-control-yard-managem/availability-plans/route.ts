@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { eqyAvailabilityPlans } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     ];
     if (search) conditions.push(ilike(eqyAvailabilityPlans.planReference, `%${search}%`));
     if (status) conditions.push(eq(eqyAvailabilityPlans.status, status));
-    if (cursor) conditions.push(gt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

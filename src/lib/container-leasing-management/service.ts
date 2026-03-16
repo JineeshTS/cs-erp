@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   clmLeaseAgreements,
@@ -26,7 +26,7 @@ export async function listLeaseAgreements({ tenantId, search, status, cursor, li
   const conditions = [eq(clmLeaseAgreements.tenantId, tenantId), isNull(clmLeaseAgreements.deletedAt)];
   if (search) conditions.push(or(ilike(clmLeaseAgreements.agreementRef, `%${search}%`), ilike(clmLeaseAgreements.lessorName, `%${search}%`))!);
   if (status) conditions.push(eq(clmLeaseAgreements.status, status));
-  if (cursor) conditions.push(gt(clmLeaseAgreements.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmLeaseAgreements.createdAt, new Date(cursor)));
   const results = await db.select().from(clmLeaseAgreements).where(and(...conditions)).orderBy(desc(clmLeaseAgreements.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listOnhireOffhires({ tenantId, search, status, cursor, lim
   const conditions = [eq(clmOnhireOffhires.tenantId, tenantId), isNull(clmOnhireOffhires.deletedAt)];
   if (search) conditions.push(or(ilike(clmOnhireOffhires.eventRef, `%${search}%`), ilike(clmOnhireOffhires.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(clmOnhireOffhires.status, status));
-  if (cursor) conditions.push(gt(clmOnhireOffhires.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmOnhireOffhires.createdAt, new Date(cursor)));
   const results = await db.select().from(clmOnhireOffhires).where(and(...conditions)).orderBy(desc(clmOnhireOffhires.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listMnrDamageBillings({ tenantId, search, status, cursor, 
   const conditions = [eq(clmMnrDamageBillings.tenantId, tenantId), isNull(clmMnrDamageBillings.deletedAt)];
   if (search) conditions.push(or(ilike(clmMnrDamageBillings.billingRef, `%${search}%`), ilike(clmMnrDamageBillings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(clmMnrDamageBillings.status, status));
-  if (cursor) conditions.push(gt(clmMnrDamageBillings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmMnrDamageBillings.createdAt, new Date(cursor)));
   const results = await db.select().from(clmMnrDamageBillings).where(and(...conditions)).orderBy(desc(clmMnrDamageBillings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listLeaseCostAllocations({ tenantId, search, status, curso
   const conditions = [eq(clmLeaseCostAllocations.tenantId, tenantId), isNull(clmLeaseCostAllocations.deletedAt)];
   if (search) conditions.push(or(ilike(clmLeaseCostAllocations.allocationRef, `%${search}%`), ilike(clmLeaseCostAllocations.tradeLane, `%${search}%`))!);
   if (status) conditions.push(eq(clmLeaseCostAllocations.status, status));
-  if (cursor) conditions.push(gt(clmLeaseCostAllocations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmLeaseCostAllocations.createdAt, new Date(cursor)));
   const results = await db.select().from(clmLeaseCostAllocations).where(and(...conditions)).orderBy(desc(clmLeaseCostAllocations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listLessorReconciliations({ tenantId, search, status, curs
   const conditions = [eq(clmLessorReconciliations.tenantId, tenantId), isNull(clmLessorReconciliations.deletedAt)];
   if (search) conditions.push(or(ilike(clmLessorReconciliations.reconciliationRef, `%${search}%`), ilike(clmLessorReconciliations.lessorName, `%${search}%`))!);
   if (status) conditions.push(eq(clmLessorReconciliations.status, status));
-  if (cursor) conditions.push(gt(clmLessorReconciliations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmLessorReconciliations.createdAt, new Date(cursor)));
   const results = await db.select().from(clmLessorReconciliations).where(and(...conditions)).orderBy(desc(clmLessorReconciliations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listContainerRedeliveries({ tenantId, search, status, curs
   const conditions = [eq(clmContainerRedeliveries.tenantId, tenantId), isNull(clmContainerRedeliveries.deletedAt)];
   if (search) conditions.push(or(ilike(clmContainerRedeliveries.redeliveryRef, `%${search}%`), ilike(clmContainerRedeliveries.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(clmContainerRedeliveries.status, status));
-  if (cursor) conditions.push(gt(clmContainerRedeliveries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmContainerRedeliveries.createdAt, new Date(cursor)));
   const results = await db.select().from(clmContainerRedeliveries).where(and(...conditions)).orderBy(desc(clmContainerRedeliveries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listLeaseVsBuyAnalyses({ tenantId, search, status, cursor,
   const conditions = [eq(clmLeaseVsBuyAnalyses.tenantId, tenantId), isNull(clmLeaseVsBuyAnalyses.deletedAt)];
   if (search) conditions.push(or(ilike(clmLeaseVsBuyAnalyses.analysisRef, `%${search}%`), ilike(clmLeaseVsBuyAnalyses.containerType, `%${search}%`))!);
   if (status) conditions.push(eq(clmLeaseVsBuyAnalyses.status, status));
-  if (cursor) conditions.push(gt(clmLeaseVsBuyAnalyses.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmLeaseVsBuyAnalyses.createdAt, new Date(cursor)));
   const results = await db.select().from(clmLeaseVsBuyAnalyses).where(and(...conditions)).orderBy(desc(clmLeaseVsBuyAnalyses.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listFleetOptimizers({ tenantId, search, status, cursor, li
   const conditions = [eq(clmFleetOptimizers.tenantId, tenantId), isNull(clmFleetOptimizers.deletedAt)];
   if (search) conditions.push(or(ilike(clmFleetOptimizers.optimizerRef, `%${search}%`), ilike(clmFleetOptimizers.modelVersion, `%${search}%`))!);
   if (status) conditions.push(eq(clmFleetOptimizers.status, status));
-  if (cursor) conditions.push(gt(clmFleetOptimizers.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(clmFleetOptimizers.createdAt, new Date(cursor)));
   const results = await db.select().from(clmFleetOptimizers).where(and(...conditions)).orderBy(desc(clmFleetOptimizers.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

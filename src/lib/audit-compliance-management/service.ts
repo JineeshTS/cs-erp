@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   acmInternalAudits,
@@ -26,7 +26,7 @@ export async function listInternalAudits({ tenantId, search, status, cursor, lim
   const conditions = [eq(acmInternalAudits.tenantId, tenantId), isNull(acmInternalAudits.deletedAt)];
   if (search) conditions.push(or(ilike(acmInternalAudits.auditRef, `%${search}%`), ilike(acmInternalAudits.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmInternalAudits.status, status));
-  if (cursor) conditions.push(gt(acmInternalAudits.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmInternalAudits.createdAt, new Date(cursor)));
   const results = await db.select().from(acmInternalAudits).where(and(...conditions)).orderBy(desc(acmInternalAudits.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -45,7 +45,7 @@ export async function listRegulatoryComplianceCalendars({ tenantId, search, stat
   const conditions = [eq(acmRegulatoryComplianceCalendars.tenantId, tenantId), isNull(acmRegulatoryComplianceCalendars.deletedAt)];
   if (search) conditions.push(or(ilike(acmRegulatoryComplianceCalendars.calendarRef, `%${search}%`), ilike(acmRegulatoryComplianceCalendars.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRegulatoryComplianceCalendars.status, status));
-  if (cursor) conditions.push(gt(acmRegulatoryComplianceCalendars.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmRegulatoryComplianceCalendars.createdAt, new Date(cursor)));
   const results = await db.select().from(acmRegulatoryComplianceCalendars).where(and(...conditions)).orderBy(desc(acmRegulatoryComplianceCalendars.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -64,7 +64,7 @@ export async function listRiskRegisters({ tenantId, search, status, cursor, limi
   const conditions = [eq(acmRiskRegisters.tenantId, tenantId), isNull(acmRiskRegisters.deletedAt)];
   if (search) conditions.push(or(ilike(acmRiskRegisters.riskRef, `%${search}%`), ilike(acmRiskRegisters.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRiskRegisters.status, status));
-  if (cursor) conditions.push(gt(acmRiskRegisters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmRiskRegisters.createdAt, new Date(cursor)));
   const results = await db.select().from(acmRiskRegisters).where(and(...conditions)).orderBy(desc(acmRiskRegisters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -83,7 +83,7 @@ export async function listPolicyProcedures({ tenantId, search, status, cursor, l
   const conditions = [eq(acmPolicyProcedures.tenantId, tenantId), isNull(acmPolicyProcedures.deletedAt)];
   if (search) conditions.push(or(ilike(acmPolicyProcedures.policyRef, `%${search}%`), ilike(acmPolicyProcedures.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmPolicyProcedures.status, status));
-  if (cursor) conditions.push(gt(acmPolicyProcedures.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmPolicyProcedures.createdAt, new Date(cursor)));
   const results = await db.select().from(acmPolicyProcedures).where(and(...conditions)).orderBy(desc(acmPolicyProcedures.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -102,7 +102,7 @@ export async function listRegulatoryReportingSubmissions({ tenantId, search, sta
   const conditions = [eq(acmRegulatoryReportingSubmissions.tenantId, tenantId), isNull(acmRegulatoryReportingSubmissions.deletedAt)];
   if (search) conditions.push(or(ilike(acmRegulatoryReportingSubmissions.submissionRef, `%${search}%`), ilike(acmRegulatoryReportingSubmissions.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRegulatoryReportingSubmissions.status, status));
-  if (cursor) conditions.push(gt(acmRegulatoryReportingSubmissions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmRegulatoryReportingSubmissions.createdAt, new Date(cursor)));
   const results = await db.select().from(acmRegulatoryReportingSubmissions).where(and(...conditions)).orderBy(desc(acmRegulatoryReportingSubmissions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -121,7 +121,7 @@ export async function listSoxFinancialControls({ tenantId, search, status, curso
   const conditions = [eq(acmSoxFinancialControls.tenantId, tenantId), isNull(acmSoxFinancialControls.deletedAt)];
   if (search) conditions.push(or(ilike(acmSoxFinancialControls.controlRef, `%${search}%`), ilike(acmSoxFinancialControls.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmSoxFinancialControls.status, status));
-  if (cursor) conditions.push(gt(acmSoxFinancialControls.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmSoxFinancialControls.createdAt, new Date(cursor)));
   const results = await db.select().from(acmSoxFinancialControls).where(and(...conditions)).orderBy(desc(acmSoxFinancialControls.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -140,7 +140,7 @@ export async function listIsoCertificationTrackings({ tenantId, search, status, 
   const conditions = [eq(acmIsoCertificationTrackings.tenantId, tenantId), isNull(acmIsoCertificationTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(acmIsoCertificationTrackings.certificationRef, `%${search}%`), ilike(acmIsoCertificationTrackings.standard, `%${search}%`))!);
   if (status) conditions.push(eq(acmIsoCertificationTrackings.status, status));
-  if (cursor) conditions.push(gt(acmIsoCertificationTrackings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmIsoCertificationTrackings.createdAt, new Date(cursor)));
   const results = await db.select().from(acmIsoCertificationTrackings).where(and(...conditions)).orderBy(desc(acmIsoCertificationTrackings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -159,7 +159,7 @@ export async function listAiRiskDetections({ tenantId, search, status, cursor, l
   const conditions = [eq(acmAiRiskDetections.tenantId, tenantId), isNull(acmAiRiskDetections.deletedAt)];
   if (search) conditions.push(or(ilike(acmAiRiskDetections.detectionRef, `%${search}%`), ilike(acmAiRiskDetections.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmAiRiskDetections.status, status));
-  if (cursor) conditions.push(gt(acmAiRiskDetections.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(acmAiRiskDetections.createdAt, new Date(cursor)));
   const results = await db.select().from(acmAiRiskDetections).where(and(...conditions)).orderBy(desc(acmAiRiskDetections.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

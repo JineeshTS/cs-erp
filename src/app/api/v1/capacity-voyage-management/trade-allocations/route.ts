@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { capTradeAllocations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     ];
     if (search) conditions.push(ilike(capTradeAllocations.tradeLane, `%${search}%`));
     if (status) conditions.push(eq(capTradeAllocations.status, status));
-    if (cursor) conditions.push(gt(capTradeAllocations.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(capTradeAllocations.createdAt, new Date(cursor)));
 
     const results = await db
       .select()

@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +25,21 @@ export async function GET(request: NextRequest) {
       pendingFilings,
       pendingPortMessages,
     ] = await Promise.all([
-      db.select({ id: ielIntegrationConnections.id }).from(ielIntegrationConnections)
+      db.select({ value: count() }).from(ielIntegrationConnections)
         .where(and(eq(ielIntegrationConnections.tenantId, user.tenantId), isNull(ielIntegrationConnections.deletedAt), eq(ielIntegrationConnections.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ielEdiMessages.id }).from(ielEdiMessages)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ielEdiMessages)
         .where(and(eq(ielEdiMessages.tenantId, user.tenantId), isNull(ielEdiMessages.deletedAt), eq(ielEdiMessages.status, "received")))
-        .then((r) => r.length),
-      db.select({ id: ielOracleSyncJobs.id }).from(ielOracleSyncJobs)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ielOracleSyncJobs)
         .where(and(eq(ielOracleSyncJobs.tenantId, user.tenantId), isNull(ielOracleSyncJobs.deletedAt), eq(ielOracleSyncJobs.status, "running")))
-        .then((r) => r.length),
-      db.select({ id: ielCustomsFilings.id }).from(ielCustomsFilings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ielCustomsFilings)
         .where(and(eq(ielCustomsFilings.tenantId, user.tenantId), isNull(ielCustomsFilings.deletedAt), eq(ielCustomsFilings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ielPortConnectMessages.id }).from(ielPortConnectMessages)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(ielPortConnectMessages)
         .where(and(eq(ielPortConnectMessages.tenantId, user.tenantId), isNull(ielPortConnectMessages.deletedAt), eq(ielPortConnectMessages.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

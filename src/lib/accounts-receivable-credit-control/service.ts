@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   arccCustomerAccounts,
@@ -27,7 +27,7 @@ export async function listCustomerAccounts({ tenantId, search, status, cursor, l
   const conditions = [eq(arccCustomerAccounts.tenantId, tenantId), isNull(arccCustomerAccounts.deletedAt)];
   if (search) conditions.push(or(ilike(arccCustomerAccounts.customerName, `%${search}%`), ilike(arccCustomerAccounts.accountNumber, `%${search}%`), ilike(arccCustomerAccounts.customerCode ?? "", `%${search}%`))!);
   if (status) conditions.push(eq(arccCustomerAccounts.accountStatus, status));
-  if (cursor) conditions.push(gt(arccCustomerAccounts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccCustomerAccounts.createdAt, new Date(cursor)));
   const results = await db.select().from(arccCustomerAccounts).where(and(...conditions)).orderBy(desc(arccCustomerAccounts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listCreditLimits({ tenantId, search, status, cursor, limit
   const conditions = [eq(arccCreditLimits.tenantId, tenantId), isNull(arccCreditLimits.deletedAt)];
   if (search) conditions.push(or(ilike(arccCreditLimits.customerName, `%${search}%`), ilike(arccCreditLimits.accountNumber, `%${search}%`))!);
   if (status) conditions.push(eq(arccCreditLimits.status, status));
-  if (cursor) conditions.push(gt(arccCreditLimits.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccCreditLimits.createdAt, new Date(cursor)));
   const results = await db.select().from(arccCreditLimits).where(and(...conditions)).orderBy(desc(arccCreditLimits.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listAgingReports({ tenantId, search, status, cursor, limit
   const conditions = [eq(arccAgingReports.tenantId, tenantId), isNull(arccAgingReports.deletedAt)];
   if (search) conditions.push(or(ilike(arccAgingReports.reportRef, `%${search}%`), ilike(arccAgingReports.reportType, `%${search}%`))!);
   if (status) conditions.push(eq(arccAgingReports.status, status));
-  if (cursor) conditions.push(gt(arccAgingReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccAgingReports.createdAt, new Date(cursor)));
   const results = await db.select().from(arccAgingReports).where(and(...conditions)).orderBy(desc(arccAgingReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listCashApplications({ tenantId, search, status, cursor, l
   const conditions = [eq(arccCashApplications.tenantId, tenantId), isNull(arccCashApplications.deletedAt)];
   if (search) conditions.push(or(ilike(arccCashApplications.applicationRef, `%${search}%`), ilike(arccCashApplications.customerName, `%${search}%`), ilike(arccCashApplications.paymentReference, `%${search}%`))!);
   if (status) conditions.push(eq(arccCashApplications.status, status));
-  if (cursor) conditions.push(gt(arccCashApplications.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccCashApplications.createdAt, new Date(cursor)));
   const results = await db.select().from(arccCashApplications).where(and(...conditions)).orderBy(desc(arccCashApplications.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listCollectionWorkflows({ tenantId, search, status, cursor
   const conditions = [eq(arccCollectionWorkflows.tenantId, tenantId), isNull(arccCollectionWorkflows.deletedAt)];
   if (search) conditions.push(or(ilike(arccCollectionWorkflows.workflowRef, `%${search}%`), ilike(arccCollectionWorkflows.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(arccCollectionWorkflows.status, status));
-  if (cursor) conditions.push(gt(arccCollectionWorkflows.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccCollectionWorkflows.createdAt, new Date(cursor)));
   const results = await db.select().from(arccCollectionWorkflows).where(and(...conditions)).orderBy(desc(arccCollectionWorkflows.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listBadDebtProvisions({ tenantId, search, status, cursor, 
   const conditions = [eq(arccBadDebtProvisions.tenantId, tenantId), isNull(arccBadDebtProvisions.deletedAt)];
   if (search) conditions.push(or(ilike(arccBadDebtProvisions.provisionRef, `%${search}%`), ilike(arccBadDebtProvisions.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(arccBadDebtProvisions.status, status));
-  if (cursor) conditions.push(gt(arccBadDebtProvisions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccBadDebtProvisions.createdAt, new Date(cursor)));
   const results = await db.select().from(arccBadDebtProvisions).where(and(...conditions)).orderBy(desc(arccBadDebtProvisions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listPaymentPredictions({ tenantId, search, status, cursor,
   const conditions = [eq(arccPaymentPredictions.tenantId, tenantId), isNull(arccPaymentPredictions.deletedAt)];
   if (search) conditions.push(or(ilike(arccPaymentPredictions.predictionRef, `%${search}%`), ilike(arccPaymentPredictions.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(arccPaymentPredictions.status, status));
-  if (cursor) conditions.push(gt(arccPaymentPredictions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccPaymentPredictions.createdAt, new Date(cursor)));
   const results = await db.select().from(arccPaymentPredictions).where(and(...conditions)).orderBy(desc(arccPaymentPredictions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listCashFlowForecasts({ tenantId, search, status, cursor, 
   const conditions = [eq(arccCashFlowForecasts.tenantId, tenantId), isNull(arccCashFlowForecasts.deletedAt)];
   if (search) conditions.push(or(ilike(arccCashFlowForecasts.forecastRef, `%${search}%`), ilike(arccCashFlowForecasts.forecastPeriod, `%${search}%`))!);
   if (status) conditions.push(eq(arccCashFlowForecasts.status, status));
-  if (cursor) conditions.push(gt(arccCashFlowForecasts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(arccCashFlowForecasts.createdAt, new Date(cursor)));
   const results = await db.select().from(arccCashFlowForecasts).where(and(...conditions)).orderBy(desc(arccCashFlowForecasts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

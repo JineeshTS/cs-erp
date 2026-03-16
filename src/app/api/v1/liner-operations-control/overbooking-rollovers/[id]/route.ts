@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { locOverbookingRollovers } from "@/db/schema";
 import { getOverbookingRollover } from "@/lib/liner-operations-control/service";
 import { updateOverbookingRolloverSchema } from "@/lib/liner-operations-control/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -62,7 +62,7 @@ export async function PATCH(
     const [record] = await db
       .update(locOverbookingRollovers)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(locOverbookingRollovers.id, id), eq(locOverbookingRollovers.tenantId, user.tenantId)))
+      .where(and(eq(locOverbookingRollovers.id, id), eq(locOverbookingRollovers.tenantId, user.tenantId), isNull(locOverbookingRollovers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "overbooking-rollovers", entityId: record?.id, module: "liner-operations-control", previousData: null, newData: record as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(
     const [record] = await db
       .update(locOverbookingRollovers)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(locOverbookingRollovers.id, id), eq(locOverbookingRollovers.tenantId, user.tenantId)))
+      .where(and(eq(locOverbookingRollovers.id, id), eq(locOverbookingRollovers.tenantId, user.tenantId), isNull(locOverbookingRollovers.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "overbooking-rollovers", entityId: record?.id, module: "liner-operations-control", previousData: null, request });

@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   isfK8sClusters,
@@ -30,7 +30,7 @@ export async function listClusters({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(isfK8sClusters.tenantId, tenantId), isNull(isfK8sClusters.deletedAt)];
   if (search) conditions.push(ilike(isfK8sClusters.clusterName, `%${search}%`));
   if (status) conditions.push(eq(isfK8sClusters.status, status));
-  if (cursor) conditions.push(gt(isfK8sClusters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfK8sClusters.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfK8sClusters).where(and(...conditions)).orderBy(desc(isfK8sClusters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -52,7 +52,7 @@ export async function listNamespaces({ tenantId, search, status, cursor, limit =
   if (clusterId) conditions.push(eq(isfK8sNamespaces.clusterId, clusterId));
   if (search) conditions.push(ilike(isfK8sNamespaces.namespaceName, `%${search}%`));
   if (status) conditions.push(eq(isfK8sNamespaces.status, status));
-  if (cursor) conditions.push(gt(isfK8sNamespaces.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfK8sNamespaces.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfK8sNamespaces).where(and(...conditions)).orderBy(desc(isfK8sNamespaces.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -73,7 +73,7 @@ export async function listDeployments({ tenantId, search, status, cursor, limit 
   const conditions = [eq(isfDeploymentConfigs.tenantId, tenantId), isNull(isfDeploymentConfigs.deletedAt)];
   if (search) conditions.push(ilike(isfDeploymentConfigs.deploymentName, `%${search}%`));
   if (status) conditions.push(eq(isfDeploymentConfigs.status, status));
-  if (cursor) conditions.push(gt(isfDeploymentConfigs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfDeploymentConfigs.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfDeploymentConfigs).where(and(...conditions)).orderBy(desc(isfDeploymentConfigs.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -93,7 +93,7 @@ export async function getDeployment(id: string, tenantId: string) {
 export async function listIamPolicies({ tenantId, search, cursor, limit = 50 }: ListParams) {
   const conditions = [eq(isfIamPolicies.tenantId, tenantId), isNull(isfIamPolicies.deletedAt)];
   if (search) conditions.push(ilike(isfIamPolicies.policyName, `%${search}%`));
-  if (cursor) conditions.push(gt(isfIamPolicies.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfIamPolicies.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfIamPolicies).where(and(...conditions)).orderBy(desc(isfIamPolicies.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -114,7 +114,7 @@ export async function listServiceAccounts({ tenantId, search, status, cursor, li
   const conditions = [eq(isfServiceAccounts.tenantId, tenantId), isNull(isfServiceAccounts.deletedAt)];
   if (search) conditions.push(ilike(isfServiceAccounts.accountName, `%${search}%`));
   if (status) conditions.push(eq(isfServiceAccounts.status, status));
-  if (cursor) conditions.push(gt(isfServiceAccounts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfServiceAccounts.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfServiceAccounts).where(and(...conditions)).orderBy(desc(isfServiceAccounts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -135,7 +135,7 @@ export async function listApiKeys({ tenantId, search, status, cursor, limit = 50
   const conditions = [eq(isfApiKeys.tenantId, tenantId), isNull(isfApiKeys.deletedAt)];
   if (search) conditions.push(ilike(isfApiKeys.keyName, `%${search}%`));
   if (status) conditions.push(eq(isfApiKeys.status, status));
-  if (cursor) conditions.push(gt(isfApiKeys.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfApiKeys.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfApiKeys).where(and(...conditions)).orderBy(desc(isfApiKeys.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -156,7 +156,7 @@ export async function listJitAccessRequests({ tenantId, search, status, cursor, 
   const conditions = [eq(isfJitAccessRequests.tenantId, tenantId), isNull(isfJitAccessRequests.deletedAt)];
   if (search) conditions.push(ilike(isfJitAccessRequests.requestRef, `%${search}%`));
   if (status) conditions.push(eq(isfJitAccessRequests.status, status));
-  if (cursor) conditions.push(gt(isfJitAccessRequests.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfJitAccessRequests.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfJitAccessRequests).where(and(...conditions)).orderBy(desc(isfJitAccessRequests.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -172,7 +172,7 @@ export async function listEncryptionKeys({ tenantId, search, status, cursor, lim
   const conditions = [eq(isfEncryptionKeys.tenantId, tenantId), isNull(isfEncryptionKeys.deletedAt)];
   if (search) conditions.push(ilike(isfEncryptionKeys.keyName, `%${search}%`));
   if (status) conditions.push(eq(isfEncryptionKeys.status, status));
-  if (cursor) conditions.push(gt(isfEncryptionKeys.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfEncryptionKeys.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfEncryptionKeys).where(and(...conditions)).orderBy(desc(isfEncryptionKeys.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -192,7 +192,7 @@ export async function getEncryptionKey(id: string, tenantId: string) {
 export async function listKeyRotationLog({ tenantId, cursor, limit = 50 }: ListParams, keyId?: string) {
   const conditions = [eq(isfKeyRotationLog.tenantId, tenantId), isNull(isfKeyRotationLog.deletedAt)];
   if (keyId) conditions.push(eq(isfKeyRotationLog.keyId, keyId));
-  if (cursor) conditions.push(gt(isfKeyRotationLog.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfKeyRotationLog.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfKeyRotationLog).where(and(...conditions)).orderBy(desc(isfKeyRotationLog.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -209,7 +209,7 @@ export async function listAuditEvents({ tenantId, search, status, cursor, limit 
   if (search) conditions.push(ilike(isfAuditEvents.eventCode, `%${search}%`));
   if (eventType) conditions.push(eq(isfAuditEvents.eventType, eventType));
   if (status) conditions.push(eq(isfAuditEvents.severity, status));
-  if (cursor) conditions.push(gt(isfAuditEvents.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfAuditEvents.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfAuditEvents).where(and(...conditions)).orderBy(desc(isfAuditEvents.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
@@ -230,7 +230,7 @@ export async function listComplianceReports({ tenantId, search, status, cursor, 
   const conditions = [eq(isfComplianceReports.tenantId, tenantId), isNull(isfComplianceReports.deletedAt)];
   if (search) conditions.push(ilike(isfComplianceReports.reportName, `%${search}%`));
   if (status) conditions.push(eq(isfComplianceReports.status, status));
-  if (cursor) conditions.push(gt(isfComplianceReports.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(isfComplianceReports.createdAt, new Date(cursor)));
 
   const results = await db.select().from(isfComplianceReports).where(and(...conditions)).orderBy(desc(isfComplianceReports.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;

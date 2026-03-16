@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, gt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aafWorkflowDefinitions } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(aafWorkflowDefinitions.tenantId, user.tenantId), isNull(aafWorkflowDefinitions.deletedAt)];
     if (search) conditions.push(ilike(aafWorkflowDefinitions.workflowName, `%${search}%`));
-    if (cursor) conditions.push(gt(aafWorkflowDefinitions.createdAt, new Date(cursor)));
+    if (cursor) conditions.push(lt(aafWorkflowDefinitions.createdAt, new Date(cursor)));
 
     const results = await db.select().from(aafWorkflowDefinitions).where(and(...conditions))
       .orderBy(desc(aafWorkflowDefinitions.createdAt)).limit(limit + 1);

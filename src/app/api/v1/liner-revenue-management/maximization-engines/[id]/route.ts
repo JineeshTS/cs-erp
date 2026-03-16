@@ -5,7 +5,7 @@ import { getMaximizationEngine } from "@/lib/liner-revenue-management/service";
 import { updateMaximizationEngineSchema } from "@/lib/liner-revenue-management/validation";
 import { db } from "@/lib/db";
 import { lrmMaximizationEngines } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(lrmMaximizationEngines)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(lrmMaximizationEngines.id, id), eq(lrmMaximizationEngines.tenantId, user.tenantId)))
+      .where(and(eq(lrmMaximizationEngines.id, id), eq(lrmMaximizationEngines.tenantId, user.tenantId), isNull(lrmMaximizationEngines.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "maximization-engines", entityId: updated?.id, module: "liner-revenue-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(lrmMaximizationEngines)
       .set({ deletedAt: new Date() })
-      .where(and(eq(lrmMaximizationEngines.id, id), eq(lrmMaximizationEngines.tenantId, user.tenantId)))
+      .where(and(eq(lrmMaximizationEngines.id, id), eq(lrmMaximizationEngines.tenantId, user.tenantId), isNull(lrmMaximizationEngines.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "maximization-engines", entityId: deleted?.id, module: "liner-revenue-management", previousData: existing as Record<string, unknown>, request });

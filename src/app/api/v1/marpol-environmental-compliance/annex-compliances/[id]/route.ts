@@ -5,7 +5,7 @@ import { getAnnexCompliance } from "@/lib/marpol-environmental-compliance/servic
 import { updateAnnexComplianceSchema } from "@/lib/marpol-environmental-compliance/validation";
 import { db } from "@/lib/db";
 import { mecAnnexCompliances } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(mecAnnexCompliances)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(mecAnnexCompliances.id, id), eq(mecAnnexCompliances.tenantId, user.tenantId)))
+      .where(and(eq(mecAnnexCompliances.id, id), eq(mecAnnexCompliances.tenantId, user.tenantId), isNull(mecAnnexCompliances.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "annex-compliances", entityId: updated?.id, module: "marpol-environmental-compliance", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(mecAnnexCompliances)
       .set({ deletedAt: new Date() })
-      .where(and(eq(mecAnnexCompliances.id, id), eq(mecAnnexCompliances.tenantId, user.tenantId)))
+      .where(and(eq(mecAnnexCompliances.id, id), eq(mecAnnexCompliances.tenantId, user.tenantId), isNull(mecAnnexCompliances.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "annex-compliances", entityId: deleted?.id, module: "marpol-environmental-compliance", previousData: existing as Record<string, unknown>, request });

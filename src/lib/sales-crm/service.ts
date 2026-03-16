@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq, and, isNull, ilike, gt, desc } from "drizzle-orm";
+import { eq, and, isNull, ilike, lt, desc } from "drizzle-orm";
 import {
   scmCustomers,
   scmCustomerContacts,
@@ -44,7 +44,7 @@ export async function listCustomers({
   ];
   if (search) conditions.push(ilike(scmCustomers.companyName, `%${search}%`));
   if (status) conditions.push(eq(scmCustomers.status, status));
-  if (cursor) conditions.push(gt(scmCustomers.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -93,7 +93,7 @@ export async function listCustomerContacts({
   ];
   if (customerId) conditions.push(eq(scmCustomerContacts.customerId, customerId));
   if (search) conditions.push(ilike(scmCustomerContacts.firstName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmCustomerContacts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmCustomerContacts.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -141,7 +141,7 @@ export async function listCustomerSegments({
     isNull(scmCustomerSegments.deletedAt),
   ];
   if (search) conditions.push(ilike(scmCustomerSegments.segmentName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmCustomerSegments.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmCustomerSegments.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -189,7 +189,7 @@ export async function listPipelineStages({
     isNull(scmPipelineStages.deletedAt),
   ];
   if (search) conditions.push(ilike(scmPipelineStages.stageName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmPipelineStages.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmPipelineStages.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -239,7 +239,7 @@ export async function listOpportunities({
   ];
   if (search) conditions.push(ilike(scmOpportunities.opportunityName, `%${search}%`));
   if (status) conditions.push(eq(scmOpportunities.status, status));
-  if (cursor) conditions.push(gt(scmOpportunities.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmOpportunities.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -290,7 +290,7 @@ export async function listOpportunityActivities({
   if (opportunityId) conditions.push(eq(scmOpportunityActivities.opportunityId, opportunityId));
   if (search) conditions.push(ilike(scmOpportunityActivities.subject, `%${search}%`));
   if (status) conditions.push(eq(scmOpportunityActivities.status, status));
-  if (cursor) conditions.push(gt(scmOpportunityActivities.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmOpportunityActivities.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -340,7 +340,7 @@ export async function listRateQuotations({
   ];
   if (search) conditions.push(ilike(scmRateQuotations.quotationNumber, `%${search}%`));
   if (status) conditions.push(eq(scmRateQuotations.status, status));
-  if (cursor) conditions.push(gt(scmRateQuotations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmRateQuotations.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -389,7 +389,7 @@ export async function listQuotationLineItems({
   ];
   if (quotationId) conditions.push(eq(scmQuotationLineItems.quotationId, quotationId));
   if (search) conditions.push(ilike(scmQuotationLineItems.chargeName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmQuotationLineItems.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmQuotationLineItems.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -439,7 +439,7 @@ export async function listContracts({
   ];
   if (search) conditions.push(ilike(scmContracts.contractName, `%${search}%`));
   if (status) conditions.push(eq(scmContracts.status, status));
-  if (cursor) conditions.push(gt(scmContracts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmContracts.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -488,7 +488,7 @@ export async function listContractLineItems({
   ];
   if (contractId) conditions.push(eq(scmContractLineItems.contractId, contractId));
   if (search) conditions.push(ilike(scmContractLineItems.chargeName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmContractLineItems.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmContractLineItems.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -538,7 +538,7 @@ export async function listAccountPlans({
   ];
   if (search) conditions.push(ilike(scmAccountPlans.planName, `%${search}%`));
   if (status) conditions.push(eq(scmAccountPlans.status, status));
-  if (cursor) conditions.push(gt(scmAccountPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmAccountPlans.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -588,7 +588,7 @@ export async function listSalesTargets({
   ];
   if (search) conditions.push(ilike(scmSalesTargets.targetName, `%${search}%`));
   if (status) conditions.push(eq(scmSalesTargets.status, status));
-  if (cursor) conditions.push(gt(scmSalesTargets.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmSalesTargets.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -636,7 +636,7 @@ export async function listIncentiveRules({
     isNull(scmIncentiveRules.deletedAt),
   ];
   if (search) conditions.push(ilike(scmIncentiveRules.ruleName, `%${search}%`));
-  if (cursor) conditions.push(gt(scmIncentiveRules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmIncentiveRules.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -687,7 +687,7 @@ export async function listOnboardingChecklists({
   if (customerId) conditions.push(eq(scmOnboardingChecklists.customerId, customerId));
   if (search) conditions.push(ilike(scmOnboardingChecklists.taskName, `%${search}%`));
   if (status) conditions.push(eq(scmOnboardingChecklists.status, status));
-  if (cursor) conditions.push(gt(scmOnboardingChecklists.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmOnboardingChecklists.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -737,7 +737,7 @@ export async function listLeads({
   ];
   if (search) conditions.push(ilike(scmLeads.companyName, `%${search}%`));
   if (status) conditions.push(eq(scmLeads.status, status));
-  if (cursor) conditions.push(gt(scmLeads.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmLeads.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -787,7 +787,7 @@ export async function listCampaigns({
   ];
   if (search) conditions.push(ilike(scmCampaigns.campaignName, `%${search}%`));
   if (status) conditions.push(eq(scmCampaigns.status, status));
-  if (cursor) conditions.push(gt(scmCampaigns.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(scmCampaigns.createdAt, new Date(cursor)));
 
   const results = await db
     .select()

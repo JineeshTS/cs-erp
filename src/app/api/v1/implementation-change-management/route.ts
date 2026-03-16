@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftTrainingCompletions,
       draftHypercareSupports,
     ] = await Promise.all([
-      db.select({ id: icmProjectPlans.id }).from(icmProjectPlans)
+      db.select({ value: count() }).from(icmProjectPlans)
         .where(and(eq(icmProjectPlans.tenantId, user.tenantId), isNull(icmProjectPlans.deletedAt), eq(icmProjectPlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmDataMigrations.id }).from(icmDataMigrations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmDataMigrations)
         .where(and(eq(icmDataMigrations.tenantId, user.tenantId), isNull(icmDataMigrations.deletedAt), eq(icmDataMigrations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmUatManagements.id }).from(icmUatManagements)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmUatManagements)
         .where(and(eq(icmUatManagements.tenantId, user.tenantId), isNull(icmUatManagements.deletedAt), eq(icmUatManagements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmGoLiveChecklists.id }).from(icmGoLiveChecklists)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmGoLiveChecklists)
         .where(and(eq(icmGoLiveChecklists.tenantId, user.tenantId), isNull(icmGoLiveChecklists.deletedAt), eq(icmGoLiveChecklists.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmChangeRequests.id }).from(icmChangeRequests)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmChangeRequests)
         .where(and(eq(icmChangeRequests.tenantId, user.tenantId), isNull(icmChangeRequests.deletedAt), eq(icmChangeRequests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmSystemConfigs.id }).from(icmSystemConfigs)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmSystemConfigs)
         .where(and(eq(icmSystemConfigs.tenantId, user.tenantId), isNull(icmSystemConfigs.deletedAt), eq(icmSystemConfigs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmTrainingCompletions.id }).from(icmTrainingCompletions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmTrainingCompletions)
         .where(and(eq(icmTrainingCompletions.tenantId, user.tenantId), isNull(icmTrainingCompletions.deletedAt), eq(icmTrainingCompletions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmHypercareSupports.id }).from(icmHypercareSupports)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(icmHypercareSupports)
         .where(and(eq(icmHypercareSupports.tenantId, user.tenantId), isNull(icmHypercareSupports.deletedAt), eq(icmHypercareSupports.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

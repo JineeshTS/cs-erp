@@ -5,7 +5,7 @@ import { getVesselSwap } from "@/lib/fleet-deployment-planning/service";
 import { updateVesselSwapSchema } from "@/lib/fleet-deployment-planning/validation";
 import { db } from "@/lib/db";
 import { fdpVesselSwaps } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const [updated] = await db
       .update(fdpVesselSwaps)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId)))
+      .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId), isNull(fdpVesselSwaps.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vessel-swaps", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const [deleted] = await db
       .update(fdpVesselSwaps)
       .set({ deletedAt: new Date() })
-      .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId)))
+      .where(and(eq(fdpVesselSwaps.id, id), eq(fdpVesselSwaps.tenantId, user.tenantId), isNull(fdpVesselSwaps.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vessel-swaps", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });

@@ -5,7 +5,7 @@ import { simCargoSurveys } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createCargoSurveySchema } from "@/lib/survey-inspection-management/validation";
-import { eq, and, isNull, desc, ilike, or, gt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (cursor) {
-      conditions.push(gt(simCargoSurveys.createdAt, new Date(cursor)));
+      conditions.push(lt(simCargoSurveys.createdAt, new Date(cursor)));
     }
 
     const results = await db

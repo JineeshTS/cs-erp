@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq, and, isNull, ilike, gt, desc } from "drizzle-orm";
+import { eq, and, isNull, ilike, lt, desc } from "drizzle-orm";
 import {
   cpmTariffs,
   cpmTariffRates,
@@ -41,7 +41,7 @@ export async function listTariffs({
   ];
   if (search) conditions.push(ilike(cpmTariffs.tariffName, `%${search}%`));
   if (status) conditions.push(eq(cpmTariffs.status, status));
-  if (cursor) conditions.push(gt(cpmTariffs.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmTariffs.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -90,7 +90,7 @@ export async function listTariffRates({
   ];
   if (tariffId) conditions.push(eq(cpmTariffRates.tariffId, tariffId));
   if (search) conditions.push(ilike(cpmTariffRates.chargeName, `%${search}%`));
-  if (cursor) conditions.push(gt(cpmTariffRates.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmTariffRates.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -140,7 +140,7 @@ export async function listSpecialRates({
   ];
   if (search) conditions.push(ilike(cpmSpecialRates.rateName, `%${search}%`));
   if (status) conditions.push(eq(cpmSpecialRates.status, status));
-  if (cursor) conditions.push(gt(cpmSpecialRates.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmSpecialRates.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -188,7 +188,7 @@ export async function listSurcharges({
     isNull(cpmSurcharges.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmSurcharges.surchargeName, `%${search}%`));
-  if (cursor) conditions.push(gt(cpmSurcharges.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmSurcharges.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -238,7 +238,7 @@ export async function listDetentionDemurrage({
   ];
   if (search) conditions.push(ilike(cpmDetentionDemurrage.tariffName, `%${search}%`));
   if (status) conditions.push(eq(cpmDetentionDemurrage.status, status));
-  if (cursor) conditions.push(gt(cpmDetentionDemurrage.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmDetentionDemurrage.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -288,7 +288,7 @@ export async function listYieldTargets({
   ];
   if (search) conditions.push(ilike(cpmYieldTargets.targetName, `%${search}%`));
   if (status) conditions.push(eq(cpmYieldTargets.status, status));
-  if (cursor) conditions.push(gt(cpmYieldTargets.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmYieldTargets.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -336,7 +336,7 @@ export async function listRateBenchmarks({
     isNull(cpmRateBenchmarks.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmRateBenchmarks.benchmarkName, `%${search}%`));
-  if (cursor) conditions.push(gt(cpmRateBenchmarks.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmRateBenchmarks.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -386,7 +386,7 @@ export async function listProfitabilityAnalyses({
   ];
   if (search) conditions.push(ilike(cpmProfitabilityAnalyses.analysisName, `%${search}%`));
   if (status) conditions.push(eq(cpmProfitabilityAnalyses.status, status));
-  if (cursor) conditions.push(gt(cpmProfitabilityAnalyses.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmProfitabilityAnalyses.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -434,7 +434,7 @@ export async function listAiPricingModels({
     isNull(cpmAiPricingModels.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmAiPricingModels.modelName, `%${search}%`));
-  if (cursor) conditions.push(gt(cpmAiPricingModels.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmAiPricingModels.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -484,7 +484,7 @@ export async function listVsaSlotRates({
   ];
   if (search) conditions.push(ilike(cpmVsaSlotRates.vsaPartner, `%${search}%`));
   if (status) conditions.push(eq(cpmVsaSlotRates.status, status));
-  if (cursor) conditions.push(gt(cpmVsaSlotRates.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmVsaSlotRates.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -534,7 +534,7 @@ export async function listDeadFreightRecords({
   ];
   if (search) conditions.push(ilike(cpmDeadFreightRecords.recordReference, `%${search}%`));
   if (status) conditions.push(eq(cpmDeadFreightRecords.status, status));
-  if (cursor) conditions.push(gt(cpmDeadFreightRecords.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmDeadFreightRecords.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -584,7 +584,7 @@ export async function listRevenueLeakages({
   ];
   if (search) conditions.push(ilike(cpmRevenueLeakages.leakageReference, `%${search}%`));
   if (status) conditions.push(eq(cpmRevenueLeakages.status, status));
-  if (cursor) conditions.push(gt(cpmRevenueLeakages.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmRevenueLeakages.createdAt, new Date(cursor)));
 
   const results = await db
     .select()
@@ -634,7 +634,7 @@ export async function listPricingApprovals({
   ];
   if (search) conditions.push(ilike(cpmPricingApprovals.approvalReference, `%${search}%`));
   if (status) conditions.push(eq(cpmPricingApprovals.status, status));
-  if (cursor) conditions.push(gt(cpmPricingApprovals.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(cpmPricingApprovals.createdAt, new Date(cursor)));
 
   const results = await db
     .select()

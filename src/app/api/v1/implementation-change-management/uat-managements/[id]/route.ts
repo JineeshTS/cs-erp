@@ -5,7 +5,7 @@ import { getUatManagement } from "@/lib/implementation-change-management/service
 import { updateUatManagementSchema } from "@/lib/implementation-change-management/validation";
 import { db } from "@/lib/db";
 import { icmUatManagements } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -70,7 +70,7 @@ export async function PATCH(
 
     const [updated] = await db.update(icmUatManagements)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(icmUatManagements.id, id), eq(icmUatManagements.tenantId, user.tenantId)))
+      .where(and(eq(icmUatManagements.id, id), eq(icmUatManagements.tenantId, user.tenantId), isNull(icmUatManagements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "uat-managements", entityId: updated?.id, module: "implementation-change-management", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
@@ -109,7 +109,7 @@ export async function DELETE(
 
     const [deleted] = await db.update(icmUatManagements)
       .set({ deletedAt: new Date() })
-      .where(and(eq(icmUatManagements.id, id), eq(icmUatManagements.tenantId, user.tenantId)))
+      .where(and(eq(icmUatManagements.id, id), eq(icmUatManagements.tenantId, user.tenantId), isNull(icmUatManagements.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "uat-managements", entityId: deleted?.id, module: "implementation-change-management", previousData: existing as Record<string, unknown>, request });

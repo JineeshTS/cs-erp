@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { glfrPeriodClosures } from "@/db/schema";
 import { getPeriodClosure } from "@/lib/general-ledger-financial-reporting/service";
 import { updatePeriodClosureSchema } from "@/lib/general-ledger-financial-reporting/validation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
@@ -64,7 +64,7 @@ export async function PATCH(
     const [record] = await db
       .update(glfrPeriodClosures)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(glfrPeriodClosures.id, id), eq(glfrPeriodClosures.tenantId, user.tenantId)))
+      .where(and(eq(glfrPeriodClosures.id, id), eq(glfrPeriodClosures.tenantId, user.tenantId), isNull(glfrPeriodClosures.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "period-closures", entityId: record?.id, module: "general-ledger-financial-reporting", previousData: null, newData: record as Record<string, unknown>, request });
@@ -103,7 +103,7 @@ export async function DELETE(
     const [record] = await db
       .update(glfrPeriodClosures)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(glfrPeriodClosures.id, id), eq(glfrPeriodClosures.tenantId, user.tenantId)))
+      .where(and(eq(glfrPeriodClosures.id, id), eq(glfrPeriodClosures.tenantId, user.tenantId), isNull(glfrPeriodClosures.deletedAt)))
       .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "period-closures", entityId: record?.id, module: "general-ledger-financial-reporting", previousData: null, request });

@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   icdDryPorts,
@@ -27,7 +27,7 @@ export async function listDryPorts({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(icdDryPorts.tenantId, tenantId), isNull(icdDryPorts.deletedAt)];
   if (search) conditions.push(or(ilike(icdDryPorts.portRef, `%${search}%`), ilike(icdDryPorts.portName, `%${search}%`), ilike(icdDryPorts.portCode, `%${search}%`))!);
   if (status) conditions.push(eq(icdDryPorts.status, status));
-  if (cursor) conditions.push(gt(icdDryPorts.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdDryPorts.createdAt, new Date(cursor)));
   const results = await db.select().from(icdDryPorts).where(and(...conditions)).orderBy(desc(icdDryPorts.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listRailPlans({ tenantId, search, status, cursor, limit = 
   const conditions = [eq(icdRailPlans.tenantId, tenantId), isNull(icdRailPlans.deletedAt)];
   if (search) conditions.push(or(ilike(icdRailPlans.railPlanRef, `%${search}%`), ilike(icdRailPlans.trainNumber, `%${search}%`), ilike(icdRailPlans.trainOperator, `%${search}%`))!);
   if (status) conditions.push(eq(icdRailPlans.status, status));
-  if (cursor) conditions.push(gt(icdRailPlans.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdRailPlans.createdAt, new Date(cursor)));
   const results = await db.select().from(icdRailPlans).where(and(...conditions)).orderBy(desc(icdRailPlans.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listTruckBookings({ tenantId, search, status, cursor, limi
   const conditions = [eq(icdTruckBookings.tenantId, tenantId), isNull(icdTruckBookings.deletedAt)];
   if (search) conditions.push(or(ilike(icdTruckBookings.bookingRef, `%${search}%`), ilike(icdTruckBookings.transporterName, `%${search}%`), ilike(icdTruckBookings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(icdTruckBookings.status, status));
-  if (cursor) conditions.push(gt(icdTruckBookings.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdTruckBookings.createdAt, new Date(cursor)));
   const results = await db.select().from(icdTruckBookings).where(and(...conditions)).orderBy(desc(icdTruckBookings.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listBondedWarehouses({ tenantId, search, status, cursor, l
   const conditions = [eq(icdBondedWarehouses.tenantId, tenantId), isNull(icdBondedWarehouses.deletedAt)];
   if (search) conditions.push(or(ilike(icdBondedWarehouses.warehouseRef, `%${search}%`), ilike(icdBondedWarehouses.warehouseName, `%${search}%`), ilike(icdBondedWarehouses.warehouseCode, `%${search}%`))!);
   if (status) conditions.push(eq(icdBondedWarehouses.status, status));
-  if (cursor) conditions.push(gt(icdBondedWarehouses.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdBondedWarehouses.createdAt, new Date(cursor)));
   const results = await db.select().from(icdBondedWarehouses).where(and(...conditions)).orderBy(desc(icdBondedWarehouses.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listLastMileDeliveries({ tenantId, search, status, cursor,
   const conditions = [eq(icdLastMileDeliveries.tenantId, tenantId), isNull(icdLastMileDeliveries.deletedAt)];
   if (search) conditions.push(or(ilike(icdLastMileDeliveries.deliveryRef, `%${search}%`), ilike(icdLastMileDeliveries.customerName, `%${search}%`), ilike(icdLastMileDeliveries.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(icdLastMileDeliveries.status, status));
-  if (cursor) conditions.push(gt(icdLastMileDeliveries.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdLastMileDeliveries.createdAt, new Date(cursor)));
   const results = await db.select().from(icdLastMileDeliveries).where(and(...conditions)).orderBy(desc(icdLastMileDeliveries.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listMultimodalBols({ tenantId, search, status, cursor, lim
   const conditions = [eq(icdMultimodalBols.tenantId, tenantId), isNull(icdMultimodalBols.deletedAt)];
   if (search) conditions.push(or(ilike(icdMultimodalBols.bolRef, `%${search}%`), ilike(icdMultimodalBols.shipperName, `%${search}%`), ilike(icdMultimodalBols.bolNumber, `%${search}%`))!);
   if (status) conditions.push(eq(icdMultimodalBols.status, status));
-  if (cursor) conditions.push(gt(icdMultimodalBols.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdMultimodalBols.createdAt, new Date(cursor)));
   const results = await db.select().from(icdMultimodalBols).where(and(...conditions)).orderBy(desc(icdMultimodalBols.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listHaulageRates({ tenantId, search, status, cursor, limit
   const conditions = [eq(icdHaulageRates.tenantId, tenantId), isNull(icdHaulageRates.deletedAt)];
   if (search) conditions.push(or(ilike(icdHaulageRates.rateRef, `%${search}%`), ilike(icdHaulageRates.rateName, `%${search}%`), ilike(icdHaulageRates.carrierName, `%${search}%`))!);
   if (status) conditions.push(eq(icdHaulageRates.status, status));
-  if (cursor) conditions.push(gt(icdHaulageRates.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdHaulageRates.createdAt, new Date(cursor)));
   const results = await db.select().from(icdHaulageRates).where(and(...conditions)).orderBy(desc(icdHaulageRates.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listRouteOptimizations({ tenantId, search, status, cursor,
   const conditions = [eq(icdRouteOptimizations.tenantId, tenantId), isNull(icdRouteOptimizations.deletedAt)];
   if (search) conditions.push(or(ilike(icdRouteOptimizations.optimizationRef, `%${search}%`), ilike(icdRouteOptimizations.originLocation, `%${search}%`), ilike(icdRouteOptimizations.destinationLocation, `%${search}%`))!);
   if (status) conditions.push(eq(icdRouteOptimizations.status, status));
-  if (cursor) conditions.push(gt(icdRouteOptimizations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(icdRouteOptimizations.createdAt, new Date(cursor)));
   const results = await db.select().from(icdRouteOptimizations).where(and(...conditions)).orderBy(desc(icdRouteOptimizations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

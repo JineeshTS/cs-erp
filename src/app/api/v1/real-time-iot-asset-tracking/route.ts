@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftPredictiveAlerts,
       draftDataLakeAnalytics,
     ] = await Promise.all([
-      db.select({ id: iotContainerGpsTrackings.id }).from(iotContainerGpsTrackings)
+      db.select({ value: count() }).from(iotContainerGpsTrackings)
         .where(and(eq(iotContainerGpsTrackings.tenantId, user.tenantId), isNull(iotContainerGpsTrackings.deletedAt), eq(iotContainerGpsTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotReeferMonitorings.id }).from(iotReeferMonitorings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotReeferMonitorings)
         .where(and(eq(iotReeferMonitorings.tenantId, user.tenantId), isNull(iotReeferMonitorings.deletedAt), eq(iotReeferMonitorings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotElectronicSeals.id }).from(iotElectronicSeals)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotElectronicSeals)
         .where(and(eq(iotElectronicSeals.tenantId, user.tenantId), isNull(iotElectronicSeals.deletedAt), eq(iotElectronicSeals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotShockDetections.id }).from(iotShockDetections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotShockDetections)
         .where(and(eq(iotShockDetections.tenantId, user.tenantId), isNull(iotShockDetections.deletedAt), eq(iotShockDetections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotVesselPositions.id }).from(iotVesselPositions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotVesselPositions)
         .where(and(eq(iotVesselPositions.tenantId, user.tenantId), isNull(iotVesselPositions.deletedAt), eq(iotVesselPositions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotPortEquipments.id }).from(iotPortEquipments)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotPortEquipments)
         .where(and(eq(iotPortEquipments.tenantId, user.tenantId), isNull(iotPortEquipments.deletedAt), eq(iotPortEquipments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotPredictiveAlerts.id }).from(iotPredictiveAlerts)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotPredictiveAlerts)
         .where(and(eq(iotPredictiveAlerts.tenantId, user.tenantId), isNull(iotPredictiveAlerts.deletedAt), eq(iotPredictiveAlerts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotDataLakeAnalytics.id }).from(iotDataLakeAnalytics)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(iotDataLakeAnalytics)
         .where(and(eq(iotDataLakeAnalytics.tenantId, user.tenantId), isNull(iotDataLakeAnalytics.deletedAt), eq(iotDataLakeAnalytics.status, "draft")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

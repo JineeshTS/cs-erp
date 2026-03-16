@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       activeCertifications,
       activeDetections,
     ] = await Promise.all([
-      db.select({ id: acmInternalAudits.id }).from(acmInternalAudits)
+      db.select({ value: count() }).from(acmInternalAudits)
         .where(and(eq(acmInternalAudits.tenantId, user.tenantId), isNull(acmInternalAudits.deletedAt), eq(acmInternalAudits.status, "in_progress")))
-        .then((r) => r.length),
-      db.select({ id: acmRegulatoryComplianceCalendars.id }).from(acmRegulatoryComplianceCalendars)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmRegulatoryComplianceCalendars)
         .where(and(eq(acmRegulatoryComplianceCalendars.tenantId, user.tenantId), isNull(acmRegulatoryComplianceCalendars.deletedAt), eq(acmRegulatoryComplianceCalendars.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: acmRiskRegisters.id }).from(acmRiskRegisters)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmRiskRegisters)
         .where(and(eq(acmRiskRegisters.tenantId, user.tenantId), isNull(acmRiskRegisters.deletedAt), eq(acmRiskRegisters.riskLevel, "high")))
-        .then((r) => r.length),
-      db.select({ id: acmPolicyProcedures.id }).from(acmPolicyProcedures)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmPolicyProcedures)
         .where(and(eq(acmPolicyProcedures.tenantId, user.tenantId), isNull(acmPolicyProcedures.deletedAt), eq(acmPolicyProcedures.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmRegulatoryReportingSubmissions.id }).from(acmRegulatoryReportingSubmissions)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmRegulatoryReportingSubmissions)
         .where(and(eq(acmRegulatoryReportingSubmissions.tenantId, user.tenantId), isNull(acmRegulatoryReportingSubmissions.deletedAt), eq(acmRegulatoryReportingSubmissions.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: acmSoxFinancialControls.id }).from(acmSoxFinancialControls)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmSoxFinancialControls)
         .where(and(eq(acmSoxFinancialControls.tenantId, user.tenantId), isNull(acmSoxFinancialControls.deletedAt), eq(acmSoxFinancialControls.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmIsoCertificationTrackings.id }).from(acmIsoCertificationTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmIsoCertificationTrackings)
         .where(and(eq(acmIsoCertificationTrackings.tenantId, user.tenantId), isNull(acmIsoCertificationTrackings.deletedAt), eq(acmIsoCertificationTrackings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmAiRiskDetections.id }).from(acmAiRiskDetections)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(acmAiRiskDetections)
         .where(and(eq(acmAiRiskDetections.tenantId, user.tenantId), isNull(acmAiRiskDetections.deletedAt), eq(acmAiRiskDetections.status, "active")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({

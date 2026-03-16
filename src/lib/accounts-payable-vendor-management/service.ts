@@ -1,4 +1,4 @@
-import { and, eq, ilike, isNull, gt, desc, or } from "drizzle-orm";
+import { and, eq, ilike, isNull, lt, desc, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   apvmVendorMasters,
@@ -27,7 +27,7 @@ export async function listVendorMasters({ tenantId, search, status, cursor, limi
   const conditions = [eq(apvmVendorMasters.tenantId, tenantId), isNull(apvmVendorMasters.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorMasters.vendorName, `%${search}%`), ilike(apvmVendorMasters.vendorCode, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorMasters.status, status));
-  if (cursor) conditions.push(gt(apvmVendorMasters.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmVendorMasters.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmVendorMasters).where(and(...conditions)).orderBy(desc(apvmVendorMasters.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -47,7 +47,7 @@ export async function listPurchaseOrders({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmPurchaseOrders.tenantId, tenantId), isNull(apvmPurchaseOrders.deletedAt)];
   if (search) conditions.push(or(ilike(apvmPurchaseOrders.poNumber, `%${search}%`), ilike(apvmPurchaseOrders.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmPurchaseOrders.status, status));
-  if (cursor) conditions.push(gt(apvmPurchaseOrders.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmPurchaseOrders.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmPurchaseOrders).where(and(...conditions)).orderBy(desc(apvmPurchaseOrders.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -67,7 +67,7 @@ export async function listVendorInvoices({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmVendorInvoices.tenantId, tenantId), isNull(apvmVendorInvoices.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorInvoices.invoiceNumber, `%${search}%`), ilike(apvmVendorInvoices.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorInvoices.status, status));
-  if (cursor) conditions.push(gt(apvmVendorInvoices.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmVendorInvoices.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmVendorInvoices).where(and(...conditions)).orderBy(desc(apvmVendorInvoices.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -87,7 +87,7 @@ export async function listThreeWayMatches({ tenantId, search, status, cursor, li
   const conditions = [eq(apvmThreeWayMatches.tenantId, tenantId), isNull(apvmThreeWayMatches.deletedAt)];
   if (search) conditions.push(or(ilike(apvmThreeWayMatches.matchRef, `%${search}%`), ilike(apvmThreeWayMatches.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmThreeWayMatches.status, status));
-  if (cursor) conditions.push(gt(apvmThreeWayMatches.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmThreeWayMatches.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmThreeWayMatches).where(and(...conditions)).orderBy(desc(apvmThreeWayMatches.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -107,7 +107,7 @@ export async function listPaymentSchedules({ tenantId, search, status, cursor, l
   const conditions = [eq(apvmPaymentSchedules.tenantId, tenantId), isNull(apvmPaymentSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(apvmPaymentSchedules.scheduleRef, `%${search}%`), ilike(apvmPaymentSchedules.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmPaymentSchedules.status, status));
-  if (cursor) conditions.push(gt(apvmPaymentSchedules.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmPaymentSchedules.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmPaymentSchedules).where(and(...conditions)).orderBy(desc(apvmPaymentSchedules.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -127,7 +127,7 @@ export async function listVendorReconciliations({ tenantId, search, status, curs
   const conditions = [eq(apvmVendorReconciliations.tenantId, tenantId), isNull(apvmVendorReconciliations.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorReconciliations.reconciliationRef, `%${search}%`), ilike(apvmVendorReconciliations.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorReconciliations.status, status));
-  if (cursor) conditions.push(gt(apvmVendorReconciliations.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmVendorReconciliations.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmVendorReconciliations).where(and(...conditions)).orderBy(desc(apvmVendorReconciliations.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -147,7 +147,7 @@ export async function listOcrExtractions({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmOcrExtractions.tenantId, tenantId), isNull(apvmOcrExtractions.deletedAt)];
   if (search) conditions.push(or(ilike(apvmOcrExtractions.extractionRef, `%${search}%`), ilike(apvmOcrExtractions.fileName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmOcrExtractions.status, status));
-  if (cursor) conditions.push(gt(apvmOcrExtractions.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmOcrExtractions.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmOcrExtractions).where(and(...conditions)).orderBy(desc(apvmOcrExtractions.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
@@ -167,7 +167,7 @@ export async function listSpendAnalytics({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmSpendAnalytics.tenantId, tenantId), isNull(apvmSpendAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(apvmSpendAnalytics.reportRef, `%${search}%`), ilike(apvmSpendAnalytics.reportType, `%${search}%`))!);
   if (status) conditions.push(eq(apvmSpendAnalytics.status, status));
-  if (cursor) conditions.push(gt(apvmSpendAnalytics.createdAt, new Date(cursor)));
+  if (cursor) conditions.push(lt(apvmSpendAnalytics.createdAt, new Date(cursor)));
   const results = await db.select().from(apvmSpendAnalytics).where(and(...conditions)).orderBy(desc(apvmSpendAnalytics.createdAt)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;

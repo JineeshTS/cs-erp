@@ -12,7 +12,7 @@ import {
 } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,30 +31,30 @@ export async function GET(request: NextRequest) {
       draftGratuities,
       pendingVisas,
     ] = await Promise.all([
-      db.select({ id: hpsEmployeeProfiles.id }).from(hpsEmployeeProfiles)
+      db.select({ value: count() }).from(hpsEmployeeProfiles)
         .where(and(eq(hpsEmployeeProfiles.tenantId, user.tenantId), isNull(hpsEmployeeProfiles.deletedAt), eq(hpsEmployeeProfiles.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: hpsLeaveAbsences.id }).from(hpsLeaveAbsences)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsLeaveAbsences)
         .where(and(eq(hpsLeaveAbsences.tenantId, user.tenantId), isNull(hpsLeaveAbsences.deletedAt), eq(hpsLeaveAbsences.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: hpsAttendanceTimeTrackings.id }).from(hpsAttendanceTimeTrackings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsAttendanceTimeTrackings)
         .where(and(eq(hpsAttendanceTimeTrackings.tenantId, user.tenantId), isNull(hpsAttendanceTimeTrackings.deletedAt), eq(hpsAttendanceTimeTrackings.status, "present")))
-        .then((r) => r.length),
-      db.select({ id: hpsPerformanceAppraisals.id }).from(hpsPerformanceAppraisals)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsPerformanceAppraisals)
         .where(and(eq(hpsPerformanceAppraisals.tenantId, user.tenantId), isNull(hpsPerformanceAppraisals.deletedAt), eq(hpsPerformanceAppraisals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsPayrollProcessings.id }).from(hpsPayrollProcessings)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsPayrollProcessings)
         .where(and(eq(hpsPayrollProcessings.tenantId, user.tenantId), isNull(hpsPayrollProcessings.deletedAt), eq(hpsPayrollProcessings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsSocialInsuranceRecords.id }).from(hpsSocialInsuranceRecords)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsSocialInsuranceRecords)
         .where(and(eq(hpsSocialInsuranceRecords.tenantId, user.tenantId), isNull(hpsSocialInsuranceRecords.deletedAt), eq(hpsSocialInsuranceRecords.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsGratuityCalculations.id }).from(hpsGratuityCalculations)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsGratuityCalculations)
         .where(and(eq(hpsGratuityCalculations.tenantId, user.tenantId), isNull(hpsGratuityCalculations.deletedAt), eq(hpsGratuityCalculations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsVisaResidencyRecords.id }).from(hpsVisaResidencyRecords)
+        .then(([r]) => r.value),
+      db.select({ value: count() }).from(hpsVisaResidencyRecords)
         .where(and(eq(hpsVisaResidencyRecords.tenantId, user.tenantId), isNull(hpsVisaResidencyRecords.deletedAt), eq(hpsVisaResidencyRecords.status, "pending")))
-        .then((r) => r.length),
+        .then(([r]) => r.value),
     ]);
 
     return NextResponse.json({
