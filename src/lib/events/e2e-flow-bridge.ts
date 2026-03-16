@@ -29,25 +29,69 @@ import type { E2EProcessFlow, E2EFlowStep } from "@/types/processes";
  * flow definitions use dot.notation (booking.confirmed).
  */
 const EVENT_TYPE_TO_TRIGGER: Partial<Record<EventType, string>> = {
+  // Booking & Documentation
   BOOKING_CONFIRMED: "booking.confirmed",
   BOOKING_CREATED: "booking.created",
-  VESSEL_ARRIVED: "vessel.eta_24h",
-  VESSEL_DEPARTED: "vessel.departed",
-  VOYAGE_COMPLETED: "voyage.completed",
+  BOOKING_CANCELLED: "booking.cancelled",
+  BL_ISSUED: "bl.issued",
+  BL_SURRENDERED: "bl.surrendered",
+  // Container & Equipment
   CONTAINER_GATE_IN: "container.gate_in",
   CONTAINER_GATE_OUT: "container.gate_out",
   CONTAINER_DAMAGED: "incident.reported",
+  // Vessel & Voyage
+  VESSEL_ARRIVED: "vessel.arrived_destination",
+  VESSEL_DEPARTED: "vessel.departed",
+  VOYAGE_COMPLETED: "voyage.completed",
+  // Customs & Compliance
+  CUSTOMS_CLEARED: "customs.cleared",
+  CUSTOMS_HELD: "customs.held",
+  // Financial
   INVOICE_GENERATED: "invoice.generated",
   PAYMENT_OVERDUE: "invoice.overdue",
   PAYMENT_RECEIVED: "payment.received",
-  LEAD_CREATED: "lead.created",
-  CUSTOMS_CLEARED: "customs.cleared",
-  CUSTOMS_HELD: "customs.held",
-  CARGO_CLAIM_FILED: "incident.reported",
+  // Cargo
   CARGO_RELEASED: "cargo.released",
-  BL_ISSUED: "bl.issued",
-  BL_SURRENDERED: "bl.surrendered",
+  CARGO_CLAIM_FILED: "incident.reported",
+  // Sales & CRM
+  LEAD_CREATED: "lead.created",
+  LEAD_QUALIFIED: "lead.qualified",
+  LEAD_CONVERTED: "lead.converted",
   CUSTOMER_CREATED: "customer.created",
+  OPPORTUNITY_CREATED: "opportunity.created",
+  OPPORTUNITY_WON: "opportunity.won",
+  QUOTATION_CREATED: "quotation.created",
+  QUOTATION_ACCEPTED: "quote.accepted",
+  QUOTATION_APPROVED: "quotation.approved",
+  CONTRACT_CREATED: "contract.created",
+  CONTRACT_ACTIVATED: "contract.activated",
+  // Approval
+  APPROVAL_REQUESTED: "approval.requested",
+  APPROVAL_DECIDED: "approval.decided",
+};
+
+/**
+ * Some flows use trigger strings that don't have dedicated EventBus types.
+ * These are handled via dynamic pe_event_triggers or manual triggering.
+ * For reference, unmapped trigger strings include:
+ * - scheduled.weekly, scheduled.monthly, scheduled.quarterly, scheduled.annual (cron-driven)
+ * - booking.lc_terms, lease.signed, container.free_time_expired (domain-specific)
+ * - voyage.created, feeder_schedule.published, charter.fixture_confirmed (operations)
+ * - dry_dock.planned, service.planning.initiated, vessel.inspection_due (maintenance)
+ * - requisition.approved, bunker.requirement, sanctions_list.updated (procurement/compliance)
+ * - trade_route.approved, vsa.period_start, agency.appointed (commercial)
+ * - lcl_booking.confirmed, crew.rotation_due, tenant.signup (specialized)
+ */
+
+/**
+ * H2 fix: Multiple event types may need to trigger the same flow.
+ * VESSEL_ARRIVED maps to "vessel.arrived_destination" but flows also use
+ * "vessel.eta_24h" and "vessel.arrived_hub". Handle these via secondary lookup.
+ */
+const SECONDARY_TRIGGERS: Partial<Record<EventType, string[]>> = {
+  VESSEL_ARRIVED: ["vessel.eta_24h", "vessel.arrived_hub"],
+  CONTAINER_DAMAGED: ["incident.reported"],
+  CARGO_CLAIM_FILED: ["incident.reported"],
 };
 
 /** Pre-index flows by triggerEvent for O(1) lookup */
@@ -98,8 +142,19 @@ async function handleDomainEvent(event: EventOfType<EventType>): Promise<void> {
   const triggerString = EVENT_TYPE_TO_TRIGGER[event.type as EventType];
   if (!triggerString) return;
 
-  // 1. Static flow matches from e2e-process-flows.ts
-  const staticFlows = FLOWS_BY_TRIGGER.get(triggerString) ?? [];
+  // 1. Static flow matches — check primary trigger + secondary triggers
+  const primaryFlows = FLOWS_BY_TRIGGER.get(triggerString) ?? [];
+  const secondaryTriggers = SECONDARY_TRIGGERS[event.type as EventType] ?? [];
+  const secondaryFlows = secondaryTriggers.flatMap(t => FLOWS_BY_TRIGGER.get(t) ?? []);
+  // Deduplicate by flow ID
+  const seenIds = new Set(primaryFlows.map(f => f.id));
+  const staticFlows = [...primaryFlows];
+  for (const f of secondaryFlows) {
+    if (!seenIds.has(f.id)) {
+      seenIds.add(f.id);
+      staticFlows.push(f);
+    }
+  }
 
   for (const flow of staticFlows) {
     try {
