@@ -213,7 +213,7 @@ async function notifySlaBreach(gate: {
  *
  * Returns counts of warnings sent, breaches detected, and auto-approvals.
  */
-export async function checkGateSlas(): Promise<{
+export async function checkGateSlas(tenantId: string): Promise<{
   warnings: number;
   breaches: number;
   escalations: number;
@@ -225,11 +225,16 @@ export async function checkGateSlas(): Promise<{
   let escalations = 0;
   let autoApprovals = 0;
 
-  // Get all pending gates (no decision yet)
+  // C3 fix: tenant-isolated query (was querying ALL tenants)
   const pendingGates = await db
     .select()
     .from(peHumanGates)
-    .where(isNull(peHumanGates.decision));
+    .where(
+      and(
+        eq(peHumanGates.tenantId, tenantId),
+        isNull(peHumanGates.decision)
+      )
+    );
 
   for (const gate of pendingGates) {
     const tier = SLA_TIERS[gate.priority] ?? SLA_TIERS.normal;
@@ -237,27 +242,43 @@ export async function checkGateSlas(): Promise<{
       gate.createdAt.getTime() + tier.warningHours * 3600000
     );
 
+    // H5 fix: idempotency — check metadata for already-notified flags
+    const gateMeta = (gate.decisionData ?? {}) as Record<string, unknown>;
+
     // Check for SLA breach
     if (now >= gate.slaDeadline) {
-      breaches++;
-      await notifySlaBreach(gate);
+      // Only notify/escalate if not already processed in a prior run
+      if (!gateMeta._breachNotifiedAt) {
+        breaches++;
+        await notifySlaBreach(gate);
 
-      // Log breach event
-      await db.insert(peFlowEvents).values({
-        tenantId: gate.tenantId,
-        flowInstanceId: gate.flowInstanceId,
-        stepInstanceId: gate.stepInstanceId,
-        eventType: "sla_breached",
-        metadata: {
-          gateId: gate.id,
-          gateType: gate.gateType,
-          priority: gate.priority,
-          slaDeadline: gate.slaDeadline.toISOString(),
-          minutesOverdue: Math.round(
-            (now.getTime() - gate.slaDeadline.getTime()) / 60000
-          ),
-        },
-      });
+        await db.insert(peFlowEvents).values({
+          tenantId: gate.tenantId,
+          flowInstanceId: gate.flowInstanceId,
+          stepInstanceId: gate.stepInstanceId,
+          eventType: "sla_breached",
+          metadata: {
+            gateId: gate.id,
+            gateType: gate.gateType,
+            priority: gate.priority,
+            slaDeadline: gate.slaDeadline.toISOString(),
+            minutesOverdue: Math.round(
+              (now.getTime() - gate.slaDeadline.getTime()) / 60000
+            ),
+          },
+        });
+
+        // Mark breach as notified to prevent duplicate notifications
+        await db
+          .update(peHumanGates)
+          .set({
+            decisionData: {
+              ...gateMeta,
+              _breachNotifiedAt: now.toISOString(),
+            },
+          })
+          .where(and(eq(peHumanGates.id, gate.id), eq(peHumanGates.tenantId, tenantId)));
+      }
 
       // Attempt auto-approve for non-critical gates
       const autoApproved = await attemptAutoApprove(gate, tier);
@@ -267,33 +288,47 @@ export async function checkGateSlas(): Promise<{
       }
 
       // Escalate
-      const escalated = await escalateGate(gate);
+      const escalated = await escalateGate(gate, tenantId);
       if (escalated) escalations++;
     }
     // Check for SLA warning
     else if (now >= warningTime) {
-      warnings++;
-      await notifySlaWarning(gate);
+      // Only notify if not already warned
+      if (!gateMeta._warningNotifiedAt) {
+        warnings++;
+        await notifySlaWarning(gate);
 
-      await db.insert(peFlowEvents).values({
-        tenantId: gate.tenantId,
-        flowInstanceId: gate.flowInstanceId,
-        stepInstanceId: gate.stepInstanceId,
-        eventType: "sla_warning",
-        metadata: {
-          gateId: gate.id,
-          gateType: gate.gateType,
-          minutesRemaining: Math.round(
-            (gate.slaDeadline.getTime() - now.getTime()) / 60000
-          ),
-        },
-      });
+        await db.insert(peFlowEvents).values({
+          tenantId: gate.tenantId,
+          flowInstanceId: gate.flowInstanceId,
+          stepInstanceId: gate.stepInstanceId,
+          eventType: "sla_warning",
+          metadata: {
+            gateId: gate.id,
+            gateType: gate.gateType,
+            minutesRemaining: Math.round(
+              (gate.slaDeadline.getTime() - now.getTime()) / 60000
+            ),
+          },
+        });
+
+        // Mark warning as notified
+        await db
+          .update(peHumanGates)
+          .set({
+            decisionData: {
+              ...gateMeta,
+              _warningNotifiedAt: now.toISOString(),
+            },
+          })
+          .where(and(eq(peHumanGates.id, gate.id), eq(peHumanGates.tenantId, tenantId)));
+      }
     }
   }
 
   if (breaches > 0 || warnings > 0) {
     console.log(
-      `[GateManager] SLA check: ${warnings} warnings, ${breaches} breaches, ` +
+      `[GateManager] SLA check (${tenantId}): ${warnings} warnings, ${breaches} breaches, ` +
       `${escalations} escalations, ${autoApprovals} auto-approvals`
     );
   }
@@ -321,16 +356,20 @@ async function attemptAutoApprove(
   const confidence = typeof recommendation.confidence === "number"
     ? recommendation.confidence
     : 0;
-  const amount = typeof recommendation.amount === "number"
-    ? recommendation.amount
-    : Infinity;
+  // C2 fix: field is "estimatedAmount" (from AiGateRecommendation), not "amount"
+  const amount = typeof recommendation.estimatedAmount === "number"
+    ? recommendation.estimatedAmount
+    : typeof recommendation.amount === "number"
+      ? recommendation.amount
+      : 0; // Default to 0 (not Infinity) — unknown amounts should NOT auto-approve
 
   if (confidence >= tier.autoApproveMinConfidence && amount <= tier.autoApproveMaxAmount) {
-    // Auto-approve
+    // Auto-approve — with tenant isolation
     await db
       .update(peHumanGates)
       .set({
         decision: "approved",
+        decidedBy: "system_auto_approve",
         decidedAt: new Date(),
         autoApproved: true,
         decisionData: {
@@ -339,13 +378,23 @@ async function attemptAutoApprove(
           reason: `Auto-approved: AI confidence ${(confidence * 100).toFixed(1)}% ≥ ${(tier.autoApproveMinConfidence * 100).toFixed(0)}%, amount $${amount} ≤ $${tier.autoApproveMaxAmount}`,
         },
       })
-      .where(eq(peHumanGates.id, gate.id));
+      .where(and(eq(peHumanGates.id, gate.id), eq(peHumanGates.tenantId, gate.tenantId)));
 
-    // Resume flow
+    // H6 fix: Resume flow AND trigger step execution (was only setting status)
     await db
       .update(peE2eFlowInstances)
       .set({ status: "active" })
-      .where(eq(peE2eFlowInstances.id, gate.flowInstanceId));
+      .where(and(eq(peE2eFlowInstances.id, gate.flowInstanceId), eq(peE2eFlowInstances.tenantId, gate.tenantId)));
+
+    // Advance past the gate step and continue execution
+    // Import dynamically to avoid circular dependency
+    const { resumeAfterGate } = await import("./step-executor");
+    resumeAfterGate(gate.flowInstanceId, gate.tenantId, "approved", {
+      autoApproved: true,
+      aiConfidence: confidence,
+    }).catch((err: unknown) =>
+      console.error(`[GateManager] Auto-approve resume failed for gate ${gate.id}:`, err)
+    );
 
     await db.insert(peFlowEvents).values({
       tenantId: gate.tenantId,
@@ -377,7 +426,8 @@ async function attemptAutoApprove(
  * Escalate a gate to the next person in the escalation chain.
  */
 async function escalateGate(
-  gate: typeof peHumanGates.$inferSelect
+  gate: typeof peHumanGates.$inferSelect,
+  tenantId: string
 ): Promise<boolean> {
   const currentRole = gate.escalationToRole ?? gate.assignedToRole;
   const currentIdx = ESCALATION_CHAIN.indexOf(currentRole);
@@ -392,6 +442,7 @@ async function escalateGate(
 
   const nextRole = ESCALATION_CHAIN[nextIdx];
 
+  // M7 fix: add tenant isolation to update
   await db
     .update(peHumanGates)
     .set({
@@ -399,7 +450,7 @@ async function escalateGate(
       // Extend SLA by 1 hour for escalated gates
       slaDeadline: new Date(Date.now() + 3600000),
     })
-    .where(eq(peHumanGates.id, gate.id));
+    .where(and(eq(peHumanGates.id, gate.id), eq(peHumanGates.tenantId, tenantId)));
 
   await db.insert(peFlowEvents).values({
     tenantId: gate.tenantId,

@@ -204,9 +204,18 @@ export async function advanceFlowStep(
   // Wrap in transaction to prevent race conditions (concurrent step advances)
   return db.transaction(async (tx) => {
     // Lock the flow instance row to prevent concurrent advances
-    const [instance] = await tx.execute(
-      sql`SELECT * FROM pe_e2e_flow_instances WHERE id = ${flowInstanceId} AND tenant_id = ${tenantId} FOR UPDATE`
-    ) as unknown as [typeof peE2eFlowInstances.$inferSelect | undefined];
+    // tx.execute returns raw rows from postgres-js — use typed select + raw FOR UPDATE
+    const lockedRows = await tx
+      .select()
+      .from(peE2eFlowInstances)
+      .where(
+        and(
+          eq(peE2eFlowInstances.id, flowInstanceId),
+          eq(peE2eFlowInstances.tenantId, tenantId)
+        )
+      )
+      .for("update");
+    const instance = lockedRows[0];
 
     if (!instance || instance.status === "completed" || instance.status === "failed") {
       return null;

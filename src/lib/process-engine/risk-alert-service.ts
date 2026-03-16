@@ -182,7 +182,9 @@ async function detectBottlenecks(tenantId?: string): Promise<[RiskAlert[], numbe
 
     if (!currentStep) continue;
 
-    const stepAge = now.getTime() - currentStep.createdAt.getTime();
+    // M1 fix: use startedAt (when step began executing) not createdAt (row insert time)
+    const stepStart = currentStep.startedAt ?? currentStep.createdAt;
+    const stepAge = now.getTime() - stepStart.getTime();
     if (stepAge > stuckThresholdMs && currentStep.status !== "completed") {
       const hoursStuck = Math.round(stepAge / 3600000 * 10) / 10;
       alerts.push({

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await checkGateSlas();
+    const result = await checkGateSlas(user.tenantId);
     return NextResponse.json({ data: result });
   } catch (err) {
     console.error("[human-gates/sla-check] POST error:", err);

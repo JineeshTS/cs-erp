@@ -11,30 +11,35 @@ import { logBusinessAudit } from "@/lib/business-audit";
 type RouteParams = { params: Promise<{ tenantId: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
-  const { tenantId } = await params;
-  if (user.tenantId !== tenantId) return forbiddenResponse();
+    const { tenantId } = await params;
+    if (user.tenantId !== tenantId) return forbiddenResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "tenants:read"))) {
-    return forbiddenResponse();
+    if (!(await hasPermission(user.id, user.tenantId, "tenants:read"))) {
+      return forbiddenResponse();
+    }
+
+    const [tenant] = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+
+    if (!tenant) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: "Tenant not found" } },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ data: tenant });
+  } catch (err) {
+    console.error("[API] GET /tenants/:id error:", err);
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, { status: 500 });
   }
-
-  const [tenant] = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.id, tenantId))
-    .limit(1);
-
-  if (!tenant) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Tenant not found" } },
-      { status: 404 }
-    );
-  }
-
-  return NextResponse.json({ data: tenant });
 }
 
 const updateTenantSchema = z.object({
@@ -47,45 +52,50 @@ const updateTenantSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const user = await getApiUser(request);
-  if (!user) return unauthorizedResponse();
+  try {
+    const user = await getApiUser(request);
+    if (!user) return unauthorizedResponse();
 
-  const { tenantId } = await params;
-  if (user.tenantId !== tenantId) return forbiddenResponse();
+    const { tenantId } = await params;
+    if (user.tenantId !== tenantId) return forbiddenResponse();
 
-  if (!(await hasPermission(user.id, user.tenantId, "tenants:edit"))) {
-    return forbiddenResponse();
-  }
+    if (!(await hasPermission(user.id, user.tenantId, "tenants:edit"))) {
+      return forbiddenResponse();
+    }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrf = request.headers.get("x-csrf-token");
+    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
 
-  const body = await request.json();
-  const parsed = updateTenantSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
-      { status: 422 }
-    );
-  }
+    const body = await request.json();
+    const parsed = updateTenantSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
+        { status: 422 }
+      );
+    }
 
-  // If settings.onboarded is set, also stamp onboardedAt
-  const updateData: Record<string, unknown> = { ...parsed.data };
-  if (
-    parsed.data.settings &&
-    typeof parsed.data.settings === "object" &&
-    "onboarded" in parsed.data.settings
-  ) {
-    updateData.onboardedAt = new Date();
-  }
+    // If settings.onboarded is set, also stamp onboardedAt
+    const updateData: Record<string, unknown> = { ...parsed.data };
+    if (
+      parsed.data.settings &&
+      typeof parsed.data.settings === "object" &&
+      "onboarded" in parsed.data.settings
+    ) {
+      updateData.onboardedAt = new Date();
+    }
 
-  const [updated] = await db
-    .update(tenants)
-    .set(updateData)
-    .where(eq(tenants.id, tenantId))
-    .returning();
+    const [updated] = await db
+      .update(tenants)
+      .set(updateData)
+      .where(eq(tenants.id, tenantId))
+      .returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "tenants", entityId: updated?.id, module: "tenants", previousData: null, newData: updated as Record<string, unknown>, request });
 
-  return NextResponse.json({ data: updated });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    console.error("[API] PATCH /tenants/:id error:", err);
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, { status: 500 });
+  }
 }

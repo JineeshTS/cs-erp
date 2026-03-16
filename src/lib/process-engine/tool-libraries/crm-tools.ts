@@ -367,10 +367,15 @@ export async function executeAnalyzeCustomerResponse(
   const urgencyLevel = (input.urgencyLevel as string) ?? "medium";
   const keyRequirements = (input.keyRequirements as string[]) ?? [];
 
+  // H8 fix: merge metadata instead of overwriting
+  const existingOpp = oppBinding?.entityData as Record<string, unknown> | null;
+  const existingMeta = (existingOpp?.metadata as Record<string, unknown>) ?? {};
+
   const [updated] = await db
     .update(scmOpportunities)
     .set({
       metadata: {
+        ...existingMeta,
         responseAnalysis: {
           sentiment,
           priceObjection,
@@ -427,10 +432,15 @@ export async function executeGenerateNegotiationStrategy(
   const walkAwayThreshold = (input.walkAwayThreshold as number) ?? 0;
   const bundlingOptions = (input.bundlingOptions as string[]) ?? [];
 
+  // H8 fix: merge metadata instead of overwriting
+  const existingOppStrat = oppBinding?.entityData as Record<string, unknown> | null;
+  const existingMetaStrat = (existingOppStrat?.metadata as Record<string, unknown>) ?? {};
+
   const [updated] = await db
     .update(scmOpportunities)
     .set({
       metadata: {
+        ...existingMetaStrat,
         negotiationStrategy: {
           strategy,
           maxDiscountPercent: maxDiscount,
@@ -565,10 +575,15 @@ export async function executeExtractKycData(
   const beneficialOwners = (input.beneficialOwners as string[]) ?? [];
   const riskLevel = (input.riskLevel as string) ?? "standard";
 
+  // H8 fix: merge metadata instead of overwriting
+  const existingCust = custBinding?.entityData as Record<string, unknown> | null;
+  const existingCustMeta = (existingCust?.metadata as Record<string, unknown>) ?? {};
+
   const [updated] = await db
     .update(scmCustomers)
     .set({
       metadata: {
+        ...existingCustMeta,
         kyc: {
           companyName,
           registrationNumber,
@@ -630,10 +645,15 @@ export async function executeValidateDocuments(
     issues: d.issues ?? [],
   }));
 
+  // H8 fix: merge metadata instead of overwriting
+  const existingCustDoc = custBinding?.entityData as Record<string, unknown> | null;
+  const existingCustDocMeta = (existingCustDoc?.metadata as Record<string, unknown>) ?? {};
+
   const [updated] = await db
     .update(scmCustomers)
     .set({
       metadata: {
+        ...existingCustDocMeta,
         documentValidation: {
           allValid,
           documents: validationSummary,
@@ -788,10 +808,15 @@ export async function executeAssessCountryRisk(
   const cpiScore = (input.cpiScore as number) ?? 50;
 
   if (customerId) {
+    // H8 fix: merge metadata instead of overwriting
+    const existingCustRisk = custBinding?.entityData as Record<string, unknown> | null;
+    const existingCustRiskMeta = (existingCustRisk?.metadata as Record<string, unknown>) ?? {};
+
     await db
       .update(scmCustomers)
       .set({
         metadata: {
+          ...existingCustRiskMeta,
           countryRisk: {
             country,
             riskLevel,

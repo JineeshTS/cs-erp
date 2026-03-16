@@ -19,6 +19,7 @@ const updateMemberSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
   const currentUser = await getApiUser(request);
   if (!currentUser) return unauthorizedResponse();
 
@@ -89,9 +90,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   return NextResponse.json({ data: updated });
+  } catch (err) {
+    console.error("[API] PATCH /tenants/:id/members/:userId error:", err);
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
   const currentUser = await getApiUser(request);
   if (!currentUser) return unauthorizedResponse();
 
@@ -140,4 +146,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   });
 
   return NextResponse.json({ data: { id: removed.id, removed: true } });
+  } catch (err) {
+    console.error("[API] DELETE /tenants/:id/members/:userId error:", err);
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, { status: 500 });
+  }
 }

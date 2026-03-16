@@ -257,13 +257,14 @@ export async function executeReserveEquipment(
   const reservedNumber = container?.containerNumber ?? containerNumber;
 
   if (container) {
+    // M8 fix: add tenant isolation to update
     await db
       .update(eqyContainerFleet)
       .set({
         currentStatus: "reserved",
         updatedAt: new Date(),
       })
-      .where(eq(eqyContainerFleet.id, container.id));
+      .where(and(eq(eqyContainerFleet.id, container.id), eq(eqyContainerFleet.tenantId, tenantId)));
   }
 
   return {
