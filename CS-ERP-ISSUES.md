@@ -1,6 +1,6 @@
 # CS ERP — Complete Issue Registry
 # Generated: 2026-03-15 by full codebase audit (154K lines, 4,487 files)
-# Updated: 2026-03-16 — 38 original issues + 11 deep audit fixes (batch 5)
+# Updated: 2026-03-16 — 38 original + 21 deep audit fixes (ALL RESOLVED)
 
 ---
 
@@ -63,7 +63,17 @@
 | M1 | MEDIUM | detectBottlenecks uses createdAt instead of startedAt | risk-alert-service.ts:185 | FIXED |
 | M7 | MEDIUM | escalateGate lacks tenant isolation in update | human-gate-manager.ts:395 | FIXED |
 | M8 | MEDIUM | reserve_equipment UPDATE lacks tenant isolation | operations-tools.ts:263 | FIXED |
-| C4 | CRITICAL | check_credit queries wrong ID (accountId vs customerId) | operations-tools.ts:78 | DEFERRED — needs schema-level mapping table |
+| C4 | CRITICAL | check_credit queries wrong ID (accountId vs customerId) | operations-tools.ts:78 | FIXED (c49f1dc) — customerCode lookup chain |
+| C6 | CRITICAL | Step conditions never evaluated (218 steps) | step-executor.ts | FIXED (9aa66b3) — evaluateSimpleCondition() |
+| H4 | HIGH | mapFieldsToColumns mass-assignment vulnerability | entity-step-executor.ts:365 | FIXED (9849c7c) — removed catch-all pass-through |
+| M2 | MEDIUM | createApproval sets requestedById = approverId | service.ts:295 | FIXED (9849c7c) — separate requestedById param |
+| M3 | MEDIUM | Legacy advanceProcessStep has no transaction locking | service.ts:151 | FIXED (9849c7c) — FOR UPDATE transaction |
+| M4 | MEDIUM | Auth routes use inconsistent error format | login, refresh | FIXED (9849c7c) — standardized to { error: { code, message } } |
+| M5 | MEDIUM | No rate limiting on /api/auth/refresh | refresh/route.ts | FIXED (9849c7c) — 30/15min per IP |
+| M6 | MEDIUM | AI JSON repair regex corrupts valid unicode | 3 files | FIXED (9849c7c) — regex removed |
+| M9 | MEDIUM | 11 tables missing deleted_at, 6 missing updated_at | Various schema files | FIXED (c49f1dc) — migration 0075 |
+| M10 | MEDIUM | role_permissions missing standard columns | permissions.ts | FIXED (c49f1dc) — migration 0075, 1499 rows backfilled |
+| M11 | MEDIUM | auth_audit_log zero indexes, nullable tenant_id | audit-log.ts | FIXED (c49f1dc) — 4 indexes + sessions/roles indexes |
 
 ---
 
@@ -74,6 +84,10 @@
 - **Commit e254cfb** (batch 3): Issues 7, 11-14, 17-38 — all remaining
 - **Commit dfc3238** (batch 4): 485 files — async rate limiter, auth hardening, pagination cursor fix
 - **Commit 1e80788** (batch 5): 9 files — critical process engine fixes from deep audit
+- **Commit 9849c7c** (batch 6): 7 files — auth, process engine, security fixes
+- **Commit 9aa66b3** (C6): step condition evaluation (218 steps)
+- **Commit c49f1dc** (C4+M9-M11): credit check ID resolution + schema completeness
 - **Migration 0073** applied: soft deletes, FK indexes, unique(tenant_id, email)
 - **Migration 0074** applied: partial unique index, role_assignments tenant_id
+- **Migration 0075** applied: schema completeness (columns, indexes, role_permissions backfill)
 - **Container 06-build-cs-erp-web-1**: healthy, verified 200 on /login and /api/health
