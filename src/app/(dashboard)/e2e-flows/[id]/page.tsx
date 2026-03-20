@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ArrowLeft,
   Activity,
@@ -274,7 +275,7 @@ export default function FlowDetailPage() {
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/execute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -295,7 +296,7 @@ export default function FlowDetailPage() {
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/ai-assist`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ action }),
       });
       if (!res.ok) {
@@ -317,7 +318,7 @@ export default function FlowDetailPage() {
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ output: { completedManually: true, completedAt: new Date().toISOString() } }),
       });
       if (!res.ok) {

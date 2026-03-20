@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ShieldAlert,
   Clock,
@@ -133,7 +134,7 @@ export default function HumanGateInboxPage() {
     try {
       const res = await fetch(`/api/v1/process-engine/human-gates/${gateId}/resolve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-csrf-token": "1" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ decision }),
       });
       if (!res.ok) {
