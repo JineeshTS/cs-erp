@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 interface Permission {
   id: string;
@@ -116,7 +117,7 @@ export function RoleForm({ allPermissions, initialData, isEdit, apiPath, returnP
     try {
       const res = await fetch(apiPath, {
         method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json", "x-csrf-token": "1" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({
           name,
           description,

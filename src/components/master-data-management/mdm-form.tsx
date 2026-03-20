@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { getCsrfToken } from "@/lib/client/csrf";
 interface FieldConfig {
   name: string;
   label: string;
@@ -48,7 +49,7 @@ export function MdmForm({
     try {
       const res = await fetch(apiPath, {
         method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify(formData),
       });
 

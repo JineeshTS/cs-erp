@@ -18,6 +18,7 @@ import {
   ArrowRight,
   RefreshCw,
 } from "lucide-react";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 // ── Types ──
 
@@ -45,12 +46,6 @@ interface StepContext {
 }
 
 // ── Helpers ──
-
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match?.[1] ?? "csrf-placeholder";
-}
 
 function inferFieldType(fieldName: string): "text" | "number" | "date" | "textarea" | "select" {
   const lower = fieldName.toLowerCase();
@@ -165,7 +160,7 @@ export function StepInputForm({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken(),
+          "x-csrf-token": getCsrfToken(),
         },
         body: JSON.stringify({
           stepNumber,

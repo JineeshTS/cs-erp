@@ -1,0 +1,66 @@
+{
+  "node_type": "bug",
+  "id": "BUG-002",
+  "name": "CSERP-001+002: 55 form components missing CSRF + 2 files with wrong getCsrfToken",
+  "created_at": "2026-03-20",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "severity": "critical",
+  "relationships": [
+    { "target_id": "D-005", "relationship_type": "depends_on", "description": "Process engine forms affected" }
+  ],
+  "content": {
+    "reported_by": "Full CS ERP audit 2026-03-20",
+    "steps_to_reproduce": [
+      "1. Log into cs-erp.codilla.ai",
+      "2. Navigate to any module (e.g., HR Payroll, Cargo Claims, Sales CRM)",
+      "3. Click 'Create New' or 'Edit' on any record",
+      "4. Fill in the form and submit",
+      "5. Result: 403 Forbidden — Invalid CSRF token"
+    ],
+    "expected_behavior": "Form submission succeeds. The fetch() call includes x-csrf-token header with the value from the cs_csrf cookie.",
+    "actual_behavior": "49 form components send NO x-csrf-token header. 6 form components send hardcoded '1'. 2 pages use a wrong local getCsrfToken() that reads 'csrf_token' cookie instead of 'cs_csrf'.",
+    "root_cause_analysis": "CSRF protection (src/lib/csrf.ts + src/lib/client/csrf.ts) was added AFTER most modules were built. The form component template used during module generation did not include the CSRF import or header. 49 modules (MOD-001→MOD-055) have NO csrf at all. 6 later modules (MOD-057→060) got a hardcoded '1' placeholder. 2 E2E flow pages copy-pasted a wrong getCsrfToken() that reads the wrong cookie name.",
+    "root_cause_pattern": "pattern-not-inherited-by-new-code",
+
+    "acceptance_criteria": [
+      "AC-1: ALL 55 form components import getCsrfToken from @/lib/client/csrf",
+      "AC-2: ALL 55 form components include 'x-csrf-token': getCsrfToken() in fetch headers",
+      "AC-3: The 6 files with hardcoded '1' are updated to use getCsrfToken()",
+      "AC-4: The 2 files with wrong local getCsrfToken() delete their local function and import from @/lib/client/csrf",
+      "AC-5: No form component uses a hardcoded CSRF value ('1', 'csrf-placeholder', or empty string)",
+      "AC-6: All existing correct files (16 files listed in audit) remain unchanged",
+      "AC-7: After the fix, creating/editing a record in any module succeeds (no 403)",
+      "AC-8: The 7 files with uncommitted local fixes are included in the commit"
+    ],
+    "edge_cases": [
+      "Files with multiple fetch() calls (some forms have separate create vs update paths) — ALL fetch calls must get the header",
+      "The scm-form.tsx (Sales CRM) has a different structure (line 89-93) — verify it matches the pattern",
+      "step-input-form.tsx in processes/ already has getCsrfToken via a different import path — verify no duplication",
+      "admin-form.tsx and mels-form.tsx have slightly different header patterns (line 51-55) — verify compatibility"
+    ],
+    "error_handling": [
+      "If getCsrfToken() returns empty string (cookie not set), the API returns 403 CSRF_MISSING — this is correct behavior, login sets the cookie",
+      "The fix must NOT suppress CSRF errors — they should still appear if the cookie is genuinely missing"
+    ],
+    "security_considerations": [
+      "The CSRF token must come from the cs_csrf cookie, NOT be hardcoded",
+      "The token comparison on the server uses timingSafeEqual — no change needed server-side",
+      "All form components must use the centralized @/lib/client/csrf import, never a local function"
+    ],
+    "affected_files": [
+      "49 files with NO CSRF: src/components/{module}/*-form.tsx",
+      "6 files with hardcoded '1': lpr-form, fdp-form, mec-form, ecr-form, vrs-form, role-form",
+      "2 files with wrong getCsrfToken: e2e-flows/definition/[flowId]/page.tsx, processes/instances/[id]/page.tsx",
+      "7 files with uncommitted local fixes to be included"
+    ],
+    "testing_requirements": [
+      "Grep entire src/ for 'x-csrf-token.*\"1\"' — must return 0 results",
+      "Grep entire src/ for 'csrf-placeholder' — must return 0 results",
+      "Grep entire src/components for fetch POST/PATCH without getCsrfToken — must return 0 results (except auth pages)",
+      "Manual test: create a record in any module — should succeed",
+      "Manual test: edit a record in any module — should succeed"
+    ]
+  }
+}

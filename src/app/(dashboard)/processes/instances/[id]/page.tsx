@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ArrowLeft,
   Bot,
@@ -96,11 +97,7 @@ function formatDuration(ms: number | null): string {
   return `${Math.floor(ms / 3600000)}h ${Math.round((ms % 3600000) / 60000)}m`;
 }
 
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match?.[1] ?? "csrf-placeholder";
-}
+// getCsrfToken imported from @/lib/client/csrf (BUG-002 fix)
 
 // ── Main Page ──
 

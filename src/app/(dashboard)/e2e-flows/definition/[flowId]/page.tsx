@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ArrowLeft,
   ArrowRight,
@@ -88,11 +89,7 @@ const GATE_COLORS: Record<string, string> = {
 
 // ── Helpers ──
 
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match?.[1] ?? "csrf-placeholder";
-}
+// getCsrfToken imported from @/lib/client/csrf (BUG-002 fix)
 
 function formatDuration(startStr: string | null, endStr: string | null): string {
   if (!startStr) return "\u2014";
