@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
 const IS_PROD = process.env.NODE_ENV === "production";
-const COOKIE_DOMAIN = IS_PROD ? "cs-erp.codilla.ai" : undefined;
+// CSERP-001 fix: Remove explicit domain — let browser use exact host origin.
+// Explicit domain caused cookie accessibility issues with the double-submit CSRF pattern.
+const COOKIE_DOMAIN = undefined;
 
 interface CookieOptions {
   name: string;
@@ -37,6 +39,19 @@ export function setAuthCookies(
   });
 }
 
+export function setCsrfCookie(response: NextResponse, token: string): void {
+  response.cookies.set({
+    name: "cs_csrf",
+    value: token,
+    httpOnly: false, // Must be readable by JavaScript for double-submit pattern
+    secure: IS_PROD,
+    sameSite: "strict",
+    path: "/",
+    domain: COOKIE_DOMAIN,
+    maxAge: 30 * 24 * 60 * 60, // 30 days (matches refresh token)
+  });
+}
+
 export function clearAuthCookies(response: NextResponse): void {
   const cookieBase = {
     httpOnly: true,
@@ -57,6 +72,18 @@ export function clearAuthCookies(response: NextResponse): void {
     ...cookieBase,
     name: "cs_refresh_token",
     value: "",
+    maxAge: 0,
+  });
+
+  // Clear CSRF cookie (not httpOnly)
+  response.cookies.set({
+    name: "cs_csrf",
+    value: "",
+    httpOnly: false,
+    secure: IS_PROD,
+    sameSite: "strict" as const,
+    path: "/",
+    domain: COOKIE_DOMAIN,
     maxAge: 0,
   });
 }
