@@ -1,0 +1,27 @@
+{
+  "node_type": "bug",
+  "id": "BUG-004",
+  "name": "CSERP-008→022: Remaining high/medium fixes batch",
+  "created_at": "2026-03-20",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "severity": "high",
+  "relationships": [
+    { "target_id": "BUG-003", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "sub_issues": [
+      {"id": "CSERP-008", "fix": "Convert HTML form DELETE buttons to client-side fetch with CSRF header"},
+      {"id": "CSERP-010", "fix": "Add Redis JWT blacklist with 15-min TTL on logout"},
+      {"id": "CSERP-011", "fix": "Include tenant_id in HMAC-signed payload body, reject header-only tenant"},
+      {"id": "CSERP-012", "fix": "Document Caddy X-Forwarded-For stripping requirement"},
+      {"id": "CSERP-014", "fix": "NavItem checks category module hrefs for active state"},
+      {"id": "CSERP-018", "fix": "Pass tx to logFlowEvent inside transactions"},
+      {"id": "CSERP-019", "fix": "Add rate limiting to /execute endpoint"},
+      {"id": "CSERP-020", "fix": "Await resumeAfterGate instead of fire-and-forget"},
+      {"id": "CSERP-021", "fix": "Add dark: variants to CategoryHubPage"},
+      {"id": "CSERP-022", "fix": "Generate loading.tsx for all route segments — separate session"}
+    ]
+  }
+}

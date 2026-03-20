@@ -386,15 +386,21 @@ async function attemptAutoApprove(
       .set({ status: "active" })
       .where(and(eq(peE2eFlowInstances.id, gate.flowInstanceId), eq(peE2eFlowInstances.tenantId, gate.tenantId)));
 
-    // Advance past the gate step and continue execution
-    // Import dynamically to avoid circular dependency
+    // CSERP-020: Await resumeAfterGate (was fire-and-forget, could leave flow stuck)
     const { resumeAfterGate } = await import("./step-executor");
-    resumeAfterGate(gate.flowInstanceId, gate.tenantId, "approved", {
-      autoApproved: true,
-      aiConfidence: confidence,
-    }).catch((err: unknown) =>
-      console.error(`[GateManager] Auto-approve resume failed for gate ${gate.id}:`, err)
-    );
+    try {
+      await resumeAfterGate(gate.flowInstanceId, gate.tenantId, "approved", {
+        autoApproved: true,
+        aiConfidence: confidence,
+      });
+    } catch (err) {
+      console.error(`[GateManager] Auto-approve resume failed for gate ${gate.id}:`, err);
+      // Revert flow to paused_at_gate so it's not stuck at active
+      await db
+        .update(peE2eFlowInstances)
+        .set({ status: "paused_at_gate" })
+        .where(and(eq(peE2eFlowInstances.id, gate.flowInstanceId), eq(peE2eFlowInstances.tenantId, gate.tenantId)));
+    }
 
     await db.insert(peFlowEvents).values({
       tenantId: gate.tenantId,

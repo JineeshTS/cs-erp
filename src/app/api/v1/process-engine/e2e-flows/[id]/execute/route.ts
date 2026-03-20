@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getFlowInstance } from "@/lib/process-engine/e2e-flow-service";
 import { executeCurrentStep } from "@/lib/process-engine/step-executor";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/v1/process-engine/e2e-flows/[id]/execute
@@ -21,11 +23,15 @@ export async function POST(
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
+
+    // CSERP-019: Rate limit expensive AI execution (10 per 5 min per user)
+    const rl = await checkRateLimit(`execute:${user.id}`, 10, 5 * 60 * 1000);
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
+        { error: { code: "RATE_LIMITED", message: "Too many execution requests. Try again later." } },
+        { status: 429 }
       );
     }
 

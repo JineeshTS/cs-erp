@@ -452,8 +452,10 @@ async function logFlowEvent(params: {
   eventType: string;
   metadata?: Record<string, unknown>;
   cascadedFlowIds?: string[];
+  tx?: typeof db; // CSERP-018: use transaction context when available
 }) {
-  await db.insert(peFlowEvents).values({
+  const conn = params.tx ?? db;
+  await conn.insert(peFlowEvents).values({
     tenantId: params.tenantId,
     flowInstanceId: params.flowInstanceId,
     stepInstanceId: params.stepInstanceId,

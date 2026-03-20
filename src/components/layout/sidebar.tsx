@@ -51,6 +51,7 @@ export function Sidebar({ tenantName, permissions: perms }: SidebarProps) {
             label={cat.label}
             icon={cat.icon}
             collapsed={collapsed}
+            modulePrefixes={cat.modules.map((m) => m.href)}
           />
         ))}
       </nav>

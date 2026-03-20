@@ -12,11 +12,14 @@ interface NavItemProps {
   label: string;
   icon: LucideIcon;
   collapsed?: boolean;
+  modulePrefixes?: string[]; // CSERP-014: module URL prefixes that should also highlight this category
 }
 
-export function NavItem({ href, label, icon: Icon, collapsed }: NavItemProps) {
+export function NavItem({ href, label, icon: Icon, collapsed, modulePrefixes }: NavItemProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+  const isActive = pathname === href
+    || (href !== "/" && href !== "/dashboard" && pathname.startsWith(href))
+    || (modulePrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? false);
 
   return (
     <Link
