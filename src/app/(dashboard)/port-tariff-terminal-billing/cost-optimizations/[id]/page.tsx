@@ -5,6 +5,8 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getCostOptimization } from "@/lib/port-tariff-terminal-billing/service";
 import { Badge } from "@/components/ui/badge";
+import { DeleteButton } from "@/components/ui/delete-button";
+
 
 export default async function CostOptimizationDetailPage({
   params,
@@ -62,19 +64,7 @@ export default async function CostOptimizationDetailPage({
             </Link>
           )}
           {canDelete && (
-            <form
-              action={`/api/v1/port-tariff-terminal-billing/cost-optimizations/${id}`}
-              method="POST"
-            >
-              <input type="hidden" name="_method" value="DELETE" />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </button>
-            </form>
+            <DeleteButton apiPath={`/api/v1/port-tariff-terminal-billing/cost-optimizations/${id}`} />
           )}
         </div>
       </div>

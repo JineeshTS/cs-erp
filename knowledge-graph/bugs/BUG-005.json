@@ -1,0 +1,23 @@
+{
+  "node_type": "bug",
+  "id": "BUG-005",
+  "name": "CSERP-008: 62 HTML form DELETE buttons cannot send CSRF header",
+  "created_at": "2026-03-20",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "severity": "high",
+  "relationships": [{ "target_id": "BUG-002", "relationship_type": "depends_on" }],
+  "content": {
+    "reported_by": "CS ERP audit 2026-03-20",
+    "acceptance_criteria": [
+      "AC-1: A reusable DeleteButton client component exists at src/components/ui/delete-button.tsx",
+      "AC-2: DeleteButton uses fetch() with method DELETE + getCsrfToken() header",
+      "AC-3: DeleteButton shows confirm dialog before deleting",
+      "AC-4: DeleteButton shows loading state during deletion",
+      "AC-5: All 62 HTML form delete patterns are replaced with DeleteButton",
+      "AC-6: No <form method=POST> delete patterns remain in dashboard pages"
+    ],
+    "fix": "Create DeleteButton component, then script-replace all 62 occurrences"
+  }
+}

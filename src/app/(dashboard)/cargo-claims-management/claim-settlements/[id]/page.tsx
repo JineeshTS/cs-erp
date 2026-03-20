@@ -5,6 +5,8 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getClaimSettlement } from "@/lib/cargo-claims-management/service";
 import { Badge } from "@/components/ui/badge";
+import { DeleteButton } from "@/components/ui/delete-button";
+
 
 export default async function ClaimSettlementDetailPage({
   params,
@@ -62,19 +64,7 @@ export default async function ClaimSettlementDetailPage({
             </Link>
           )}
           {canDelete && (
-            <form
-              action={`/api/v1/cargo-claims-management/claim-settlements/${id}`}
-              method="POST"
-            >
-              <input type="hidden" name="_method" value="DELETE" />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </button>
-            </form>
+            <DeleteButton apiPath={`/api/v1/cargo-claims-management/claim-settlements/${id}`} />
           )}
         </div>
       </div>

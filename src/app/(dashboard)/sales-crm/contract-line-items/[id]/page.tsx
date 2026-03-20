@@ -6,6 +6,8 @@ import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { scmContractLineItems } from "@/db/schema";
+import { DeleteButton } from "@/components/ui/delete-button";
+
 
 export default async function ContractLineItemDetailPage({
   params,
@@ -66,18 +68,7 @@ export default async function ContractLineItemDetailPage({
             </Link>
           )}
           {canDelete && (
-            <form
-              action={`/api/v1/sales-crm/contract-line-items/${id}`}
-              method="POST"
-            >
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </button>
-            </form>
+            <DeleteButton apiPath={`/api/v1/sales-crm/contract-line-items/${id}`} />
           )}
         </div>
       </div>

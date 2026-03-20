@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { csoSlaBreaches } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
+import { DeleteButton } from "@/components/ui/delete-button";
+
 
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
@@ -86,17 +88,7 @@ export default async function SLABreachDetailPage({
             </Link>
           )}
           {canDelete && (
-            <form
-              action={`/api/v1/customer-service-operations/sla-breaches/${id}`}
-              method="POST"
-            >
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </button>
-            </form>
+            <DeleteButton apiPath={`/api/v1/customer-service-operations/sla-breaches/${id}`} />
           )}
         </div>
       </div>

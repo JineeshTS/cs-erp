@@ -19,6 +19,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/delete-button";
+
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -154,11 +156,7 @@ export default async function BlDetailPage({
             </Link>
           )}
           {canDelete && (
-            <form action={`/api/v1/operations-documentation/bills-of-lading/${id}`} method="POST">
-              <button type="submit" className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </button>
-            </form>
+            <DeleteButton apiPath={`/api/v1/operations-documentation/bills-of-lading/${id}`} />
           )}
         </div>
       </div>
