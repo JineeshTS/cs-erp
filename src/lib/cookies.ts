@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 
-const IS_PROD = process.env.NODE_ENV === "production";
-// CSERP-001 fix: Remove explicit domain — let browser use exact host origin.
-// Explicit domain caused cookie accessibility issues with the double-submit CSRF pattern.
-const COOKIE_DOMAIN = undefined;
+/**
+ * CSERP-001: Cookie domain must be evaluated at RUNTIME, not compile-time.
+ * Turbopack inlines compile-time constants, which caused the old domain
+ * to persist in builds even after changing the source.
+ * 
+ * Using undefined (no explicit domain) — browser uses exact host origin.
+ */
+function getCookieDomain(): string | undefined {
+  return undefined;
+}
 
 interface CookieOptions {
   name: string;
   value: string;
-  maxAge: number; // seconds
+  maxAge: number;
 }
 
 export function setAuthCookies(
@@ -16,49 +22,52 @@ export function setAuthCookies(
   accessToken: string,
   refreshToken: string
 ): void {
+  const IS_PROD = process.env.NODE_ENV === "production";
   const cookieBase = {
     httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict" as const,
     path: "/",
-    domain: COOKIE_DOMAIN,
+    domain: getCookieDomain(),
   };
 
   response.cookies.set({
     ...cookieBase,
     name: "cs_access_token",
     value: accessToken,
-    maxAge: 15 * 60, // 15 minutes
+    maxAge: 15 * 60,
   });
 
   response.cookies.set({
     ...cookieBase,
     name: "cs_refresh_token",
     value: refreshToken,
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 
 export function setCsrfCookie(response: NextResponse, token: string): void {
+  const IS_PROD = process.env.NODE_ENV === "production";
   response.cookies.set({
     name: "cs_csrf",
     value: token,
-    httpOnly: false, // Must be readable by JavaScript for double-submit pattern
+    httpOnly: false,
     secure: IS_PROD,
     sameSite: "strict",
     path: "/",
-    domain: COOKIE_DOMAIN,
-    maxAge: 30 * 24 * 60 * 60, // 30 days (matches refresh token)
+    domain: getCookieDomain(),
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 
 export function clearAuthCookies(response: NextResponse): void {
+  const IS_PROD = process.env.NODE_ENV === "production";
   const cookieBase = {
     httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict" as const,
     path: "/",
-    domain: COOKIE_DOMAIN,
+    domain: getCookieDomain(),
   };
 
   response.cookies.set({
@@ -75,7 +84,6 @@ export function clearAuthCookies(response: NextResponse): void {
     maxAge: 0,
   });
 
-  // Clear CSRF cookie (not httpOnly)
   response.cookies.set({
     name: "cs_csrf",
     value: "",
@@ -83,7 +91,7 @@ export function clearAuthCookies(response: NextResponse): void {
     secure: IS_PROD,
     sameSite: "strict" as const,
     path: "/",
-    domain: COOKIE_DOMAIN,
+    domain: getCookieDomain(),
     maxAge: 0,
   });
 }
