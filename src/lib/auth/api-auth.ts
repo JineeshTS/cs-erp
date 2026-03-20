@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAccessToken } from "@/lib/jwt";
+import { verifyAccessToken, isTokenBlacklisted } from "@/lib/jwt";
+import { setTenantRLS } from "@/lib/db";
 import type { SessionUser } from "./session";
 
 /**
- * Extract authenticated user from request.
+ * Extract authenticated user from request and set RLS tenant context.
  * Always verifies JWT — never trusts raw headers (they can be spoofed).
+ *
+ * After successful auth, calls set_config('app.tenant_id', tenantId)
+ * so PostgreSQL RLS policies can enforce tenant isolation.
  */
 export async function getApiUser(
   request: NextRequest
@@ -21,12 +25,23 @@ export async function getApiUser(
 
   try {
     const payload = await verifyAccessToken(token);
-    return {
+
+    // CSERP-010: Check if token was blacklisted (e.g., after logout)
+    if (await isTokenBlacklisted(payload.jti)) {
+      return null;
+    }
+
+    const user: SessionUser = {
       id: payload.sub,
       tenantId: payload.tid,
       email: payload.email,
       role: payload.role,
     };
+
+    // Set PostgreSQL RLS context for this request
+    await setTenantRLS(user.tenantId);
+
+    return user;
   } catch {
     return null;
   }

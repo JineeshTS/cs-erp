@@ -62,8 +62,10 @@ export async function signAccessToken(
   payload: AccessTokenPayload
 ): Promise<string> {
   const key = await getPrivateKey();
+  const { randomUUID } = await import("crypto");
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setJti(randomUUID()) // CSERP-010: unique token ID for blacklisting
     .setIssuedAt()
     .setIssuer("cs-erp")
     .setAudience("cs-erp")
@@ -90,5 +92,34 @@ export async function verifyAccessToken(
     tid: parsed.data.tid,
     email: parsed.data.email,
     role: parsed.data.role,
+    jti: (payload.jti as string) || undefined,
   };
+}
+
+// CSERP-010: JWT blacklist for immediate token revocation on logout
+const BLACKLIST_PREFIX = "jwt:bl:";
+const BLACKLIST_TTL_SECONDS = 15 * 60; // 15 minutes (matches access token lifetime)
+
+export async function blacklistToken(jti: string): Promise<void> {
+  try {
+    const { getRedis } = await import("@/lib/redis");
+    const redis = getRedis();
+    await redis.set(`${BLACKLIST_PREFIX}${jti}`, "1", "EX", BLACKLIST_TTL_SECONDS);
+  } catch {
+    // Fail-open: if Redis is down, token remains valid until natural expiry
+    console.error("[JWT] Failed to blacklist token — Redis unavailable");
+  }
+}
+
+export async function isTokenBlacklisted(jti: string | undefined): Promise<boolean> {
+  if (!jti) return false;
+  try {
+    const { getRedis } = await import("@/lib/redis");
+    const redis = getRedis();
+    const result = await redis.get(`${BLACKLIST_PREFIX}${jti}`);
+    return result === "1";
+  } catch {
+    // Fail-open: if Redis is down, allow the token
+    return false;
+  }
 }

@@ -74,9 +74,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      tenantId = webhookTenantId;
+      // CSERP-011: Extract tenant_id from the HMAC-signed body (not from spoofable header)
+      const bodyJson = JSON.parse(body);
+      tenantId = bodyJson.tenant_id ?? webhookTenantId;
+      if (!tenantId) return unauthorizedResponse();
 
-      const parsed = singleOrBatchSchema.safeParse(JSON.parse(body));
+      const parsed = singleOrBatchSchema.safeParse(bodyJson);
       if (!parsed.success) {
         return NextResponse.json(
           { error: { code: "VALIDATION_ERROR", message: "Invalid payload", details: formatZodErrors(parsed.error) } },
