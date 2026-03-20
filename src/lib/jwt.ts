@@ -56,6 +56,7 @@ export type AccessTokenPayload = {
   tid: string;
   email: string;
   role: string;
+  jti?: string;
 };
 
 export async function signAccessToken(
