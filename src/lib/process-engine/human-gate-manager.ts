@@ -117,7 +117,7 @@ export async function notifyGateCreated(params: {
       body,
       entityType: "human_gate",
       entityId: params.gateId,
-      actionUrl: `/processes/gates/${params.gateId}`,
+      actionUrl: `/e2e-flows/gates?gate=${params.gateId}`,
       priority: params.priority,
       status: "pending",
     });
@@ -167,7 +167,7 @@ async function notifySlaWarning(gate: {
     body: `You have ${minutesRemaining} minutes remaining to respond to this ${gate.gateType} gate. The SLA deadline is ${gate.slaDeadline.toISOString()}.`,
     entityType: "human_gate",
     entityId: gate.id,
-    actionUrl: `/processes/gates/${gate.id}`,
+    actionUrl: `/e2e-flows/gates?gate=${gate.id}`,
     priority: "high",
     status: "pending",
   });
@@ -199,7 +199,7 @@ async function notifySlaBreach(gate: {
     body: `This ${gate.gateType} gate has exceeded its SLA deadline by ${minutesOverdue} minutes. Escalation in progress.`,
     entityType: "human_gate",
     entityId: gate.id,
-    actionUrl: `/processes/gates/${gate.id}`,
+    actionUrl: `/e2e-flows/gates?gate=${gate.id}`,
     priority: "critical",
     status: "pending",
   });

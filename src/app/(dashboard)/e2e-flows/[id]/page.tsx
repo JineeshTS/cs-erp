@@ -297,7 +297,7 @@ export default function FlowDetailPage() {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/ai-assist`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, stepNumber: flow.currentStepNumber }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);

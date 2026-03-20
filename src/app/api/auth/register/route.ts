@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { eq, and, isNull } from "drizzle-orm";
+import { db, clearTenantRLS } from "@/lib/db";
 import { tenants, users, roles, sessions } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import { signAccessToken } from "@/lib/jwt";
 import { generateRefreshToken, hashToken } from "@/lib/tokens";
 import { logAuditEvent } from "@/lib/audit";
-import { setAuthCookies } from "@/lib/cookies";
+import { setAuthCookies, setCsrfCookie } from "@/lib/cookies";
+import { generateCsrfToken } from "@/lib/csrf";
 import { getClientIp, getUserAgent } from "@/lib/request";
 import { registerSchema, formatZodErrors } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -55,52 +56,77 @@ export async function POST(request: NextRequest) {
     const { email, password, tenantName, displayName, country, timezone } = parsed.data;
     const ua = getUserAgent(request);
 
+    // Clear stale tenant context from pooled connection (prevents RLS filtering)
+    await clearTenantRLS();
+
+    // Check for existing user with this email (prevent orphan tenants)
+    const [existingUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: { code: "CONFLICT", message: "An account with this email already exists" } },
+        { status: 409 }
+      );
+    }
+
     // Map country to region/currency
     const regionMap: Record<string, string> = { QA: "qa", AE: "ae", SA: "sa", IN: "in" };
     const currencyMap: Record<string, string> = { QA: "QAR", AE: "AED", SA: "SAR", IN: "INR" };
 
     const slug = slugify(tenantName) + "-" + Date.now().toString(36);
 
-    // Create tenant
-    const [tenant] = await db
-      .insert(tenants)
-      .values({
-        name: tenantName,
-        slug,
-        plan: "starter",
-        region: (regionMap[country || "QA"] || "global") as "qa" | "ae" | "sa" | "in" | "global",
-        status: "trial",
-        country: country || "QA",
-        timezone: timezone || "Asia/Qatar",
-        currency: currencyMap[country || "QA"] || "QAR",
-      })
-      .returning({ id: tenants.id });
-
-    // Find the seeded tenant_admin system role
+    // Find the seeded tenant_admin system role (filter by null tenantId to avoid tenant-scoped custom roles)
     const [adminRole] = await db
       .select({ id: roles.id })
       .from(roles)
-      .where(eq(roles.name, "tenant_admin"))
+      .where(and(
+        eq(roles.name, "tenant_admin"),
+        isNull(roles.tenantId)
+      ))
       .limit(1);
 
     if (!adminRole) {
       throw new Error("tenant_admin role not found. Run RBAC seed.");
     }
 
-    // Hash password and create user
+    // Hash password before transaction (bcrypt is slow, don't hold tx open)
     const passwordHash = await hashPassword(password);
-    const [user] = await db
-      .insert(users)
-      .values({
-        tenantId: tenant.id,
-        email,
-        displayName: displayName || email.split("@")[0],
-        passwordHash,
-        roleId: adminRole.id,
-        status: "active",
-        emailVerified: false,
-      })
-      .returning({ id: users.id });
+
+    // Wrap tenant + user creation in transaction (prevent orphan tenants on failure)
+    const { tenant, user } = await db.transaction(async (tx) => {
+      const [newTenant] = await tx
+        .insert(tenants)
+        .values({
+          name: tenantName,
+          slug,
+          plan: "starter",
+          region: (regionMap[country || "QA"] || "global") as "qa" | "ae" | "sa" | "in" | "global",
+          status: "trial",
+          country: country || "QA",
+          timezone: timezone || "Asia/Qatar",
+          currency: currencyMap[country || "QA"] || "QAR",
+        })
+        .returning({ id: tenants.id });
+
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          tenantId: newTenant.id,
+          email,
+          displayName: displayName || email.split("@")[0],
+          passwordHash,
+          roleId: adminRole.id,
+          status: "active",
+          emailVerified: false,
+        })
+        .returning({ id: users.id });
+
+      return { tenant: newTenant, user: newUser };
+    });
 
     await logAuditEvent({
       tenantId: tenant.id,
@@ -141,6 +167,7 @@ export async function POST(request: NextRequest) {
     );
 
     setAuthCookies(response, accessToken, refreshToken);
+    setCsrfCookie(response, generateCsrfToken());
     return response;
   } catch (error) {
     console.error("[register]", error);

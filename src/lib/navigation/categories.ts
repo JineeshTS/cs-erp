@@ -36,7 +36,7 @@ export const CATEGORIES: NavCategory[] = [
     slug: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    href: "/",
+    href: "/dashboard",
     permissionPrefixes: [],
     modules: [],
   },

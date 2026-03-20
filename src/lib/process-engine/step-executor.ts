@@ -18,7 +18,7 @@
 
 import { db } from "@/lib/db";
 import { peE2eStepInstances, peE2eFlowInstances, peHumanGates } from "@/db/schema";
-import { eq, and, lt, isNull } from "drizzle-orm";
+import { eq, and, lt, isNull, sql } from "drizzle-orm";
 import {
   advanceFlowStep,
   createHumanGate,
@@ -142,7 +142,22 @@ export async function executeCurrentStep(
   const maxChain = 50; // safety: prevent infinite loops
 
   for (let i = 0; i < maxChain; i++) {
-    const instance = await getFlowInstance(flowInstanceId, tenantId);
+    // CSERP-004: Wrap FOR UPDATE in transaction so the lock actually holds
+    const instance = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(peE2eFlowInstances)
+        .where(
+          and(
+            eq(peE2eFlowInstances.id, flowInstanceId),
+            eq(peE2eFlowInstances.tenantId, tenantId),
+            isNull(peE2eFlowInstances.deletedAt)
+          )
+        )
+        .for("update")
+        .limit(1);
+      return row ?? null;
+    });
     if (!instance) return { status: "error", stepsExecuted };
 
     // Flow already finished

@@ -128,53 +128,57 @@ interface CreateFlowInstanceParams {
 }
 
 export async function createFlowInstance(params: CreateFlowInstanceParams) {
-  const [instance] = await db
-    .insert(peE2eFlowInstances)
-    .values({
-      tenantId: params.tenantId,
-      e2eFlowId: params.e2eFlowId,
-      entityType: params.entityType,
-      entityId: params.entityId,
-      triggerEvent: params.triggerEvent,
-      status: "active",
-      currentStepNumber: 1,
-      totalSteps: params.steps.length,
-      parentFlowInstanceId: params.parentFlowInstanceId,
-      metadata: params.metadata ?? {},
-    })
-    .returning();
-
-  if (params.steps.length > 0) {
-    await db.insert(peE2eStepInstances).values(
-      params.steps.map((step) => ({
+  // Wrap in transaction — ensures flow + steps + event log are atomically committed
+  return db.transaction(async (tx) => {
+    const [instance] = await tx
+      .insert(peE2eFlowInstances)
+      .values({
         tenantId: params.tenantId,
-        flowInstanceId: instance.id,
-        stepNumber: step.stepNumber,
-        processRef: step.processRef,
-        stepName: step.stepName,
-        executorType: step.executorType,
-        agentId: step.agentId,
-        status: step.stepNumber === 1 ? "in_progress" : "pending",
-        startedAt: step.stepNumber === 1 ? new Date() : undefined,
-      }))
-    );
-  }
+        e2eFlowId: params.e2eFlowId,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        triggerEvent: params.triggerEvent,
+        status: "active",
+        currentStepNumber: 1,
+        totalSteps: params.steps.length,
+        startedAt: new Date(),
+        parentFlowInstanceId: params.parentFlowInstanceId,
+        metadata: params.metadata ?? {},
+      })
+      .returning();
 
-  // Log flow_started event
-  await logFlowEvent({
-    tenantId: params.tenantId,
-    flowInstanceId: instance.id,
-    eventType: "flow_started",
-    metadata: {
-      e2eFlowId: params.e2eFlowId,
-      triggerEvent: params.triggerEvent,
-      entityType: params.entityType,
-      entityId: params.entityId,
-      totalSteps: params.steps.length,
-    },
+    if (params.steps.length > 0) {
+      await tx.insert(peE2eStepInstances).values(
+        params.steps.map((step) => ({
+          tenantId: params.tenantId,
+          flowInstanceId: instance.id,
+          stepNumber: step.stepNumber,
+          processRef: step.processRef,
+          stepName: step.stepName,
+          executorType: step.executorType,
+          agentId: step.agentId,
+          status: step.stepNumber === 1 ? "in_progress" : "pending",
+          startedAt: step.stepNumber === 1 ? new Date() : undefined,
+        }))
+      );
+    }
+
+    // Log flow_started event
+    await tx.insert(peFlowEvents).values({
+      tenantId: params.tenantId,
+      flowInstanceId: instance.id,
+      eventType: "flow_started",
+      metadata: {
+        e2eFlowId: params.e2eFlowId,
+        triggerEvent: params.triggerEvent,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        totalSteps: params.steps.length,
+      },
+    });
+
+    return instance;
   });
-
-  return instance;
 }
 
 export async function updateFlowStatus(
@@ -217,7 +221,7 @@ export async function advanceFlowStep(
       .for("update");
     const instance = lockedRows[0];
 
-    if (!instance || instance.status === "completed" || instance.status === "failed") {
+    if (!instance || instance.status === "completed" || instance.status === "failed" || instance.status === "paused_at_gate" || instance.status === "cancelled") {
       return null;
     }
 
@@ -324,48 +328,51 @@ interface CreateHumanGateParams {
 }
 
 export async function createHumanGate(params: CreateHumanGateParams) {
-  const [gate] = await db
-    .insert(peHumanGates)
-    .values({
+  // Wrap in transaction — gate creation + flow pause + event log must be atomic
+  return db.transaction(async (tx) => {
+    const [gate] = await tx
+      .insert(peHumanGates)
+      .values({
+        tenantId: params.tenantId,
+        stepInstanceId: params.stepInstanceId,
+        flowInstanceId: params.flowInstanceId,
+        gateType: params.gateType,
+        assignedToRole: params.assignedToRole,
+        assignedToUserId: params.assignedToUserId,
+        aiRecommendation: params.aiRecommendation ?? {},
+        presentedInfo: params.presentedInfo ?? {},
+        slaDeadline: params.slaDeadline,
+        escalationToRole: params.escalationToRole,
+        priority: params.priority ?? "normal",
+      })
+      .returning();
+
+    // Pause flow at gate
+    await tx
+      .update(peE2eFlowInstances)
+      .set({ status: "paused_at_gate" })
+      .where(
+        and(
+          eq(peE2eFlowInstances.id, params.flowInstanceId),
+          eq(peE2eFlowInstances.tenantId, params.tenantId)
+        )
+      );
+
+    await tx.insert(peFlowEvents).values({
       tenantId: params.tenantId,
-      stepInstanceId: params.stepInstanceId,
       flowInstanceId: params.flowInstanceId,
-      gateType: params.gateType,
-      assignedToRole: params.assignedToRole,
-      assignedToUserId: params.assignedToUserId,
-      aiRecommendation: params.aiRecommendation ?? {},
-      presentedInfo: params.presentedInfo ?? {},
-      slaDeadline: params.slaDeadline,
-      escalationToRole: params.escalationToRole,
-      priority: params.priority ?? "normal",
-    })
-    .returning();
+      stepInstanceId: params.stepInstanceId,
+      eventType: "gate_created",
+      metadata: {
+        gateType: params.gateType,
+        assignedToRole: params.assignedToRole,
+        slaDeadline: params.slaDeadline.toISOString(),
+        priority: params.priority ?? "normal",
+      },
+    });
 
-  // Pause flow at gate
-  await db
-    .update(peE2eFlowInstances)
-    .set({ status: "paused_at_gate" })
-    .where(
-      and(
-        eq(peE2eFlowInstances.id, params.flowInstanceId),
-        eq(peE2eFlowInstances.tenantId, params.tenantId)
-      )
-    );
-
-  await logFlowEvent({
-    tenantId: params.tenantId,
-    flowInstanceId: params.flowInstanceId,
-    stepInstanceId: params.stepInstanceId,
-    eventType: "gate_created",
-    metadata: {
-      gateType: params.gateType,
-      assignedToRole: params.assignedToRole,
-      slaDeadline: params.slaDeadline.toISOString(),
-      priority: params.priority ?? "normal",
-    },
+    return gate;
   });
-
-  return gate;
 }
 
 export async function resolveHumanGate(
@@ -375,45 +382,49 @@ export async function resolveHumanGate(
   decidedBy: string,
   decisionData?: Record<string, unknown>
 ) {
-  const [updated] = await db
-    .update(peHumanGates)
-    .set({
-      decision,
-      decidedBy,
-      decidedAt: new Date(),
-      decisionData: decisionData ?? null,
-    })
-    .where(
-      and(
-        eq(peHumanGates.id, gateId),
-        eq(peHumanGates.tenantId, tenantId),
-        isNull(peHumanGates.decision)
-      )
-    )
-    .returning();
-
-  if (updated) {
-    // Resume flow
-    await db
-      .update(peE2eFlowInstances)
-      .set({ status: "active" })
+  // Wrap in transaction — gate resolution + flow resume + event log must be atomic
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(peHumanGates)
+      .set({
+        decision,
+        decidedBy,
+        decidedAt: new Date(),
+        decisionData: decisionData ?? null,
+      })
       .where(
         and(
-          eq(peE2eFlowInstances.id, updated.flowInstanceId),
-          eq(peE2eFlowInstances.tenantId, tenantId)
+          eq(peHumanGates.id, gateId),
+          eq(peHumanGates.tenantId, tenantId),
+          isNull(peHumanGates.decision)
         )
-      );
+      )
+      .returning();
 
-    await logFlowEvent({
-      tenantId,
-      flowInstanceId: updated.flowInstanceId,
-      stepInstanceId: updated.stepInstanceId,
-      eventType: "gate_resolved",
-      metadata: { gateId, decision, decidedBy },
-    });
-  }
+    if (updated) {
+      // CSERP-016: Only resume flow if it's still paused_at_gate (not cancelled/failed)
+      await tx
+        .update(peE2eFlowInstances)
+        .set({ status: "active" })
+        .where(
+          and(
+            eq(peE2eFlowInstances.id, updated.flowInstanceId),
+            eq(peE2eFlowInstances.tenantId, tenantId),
+            eq(peE2eFlowInstances.status, "paused_at_gate")
+          )
+        );
 
-  return updated ?? null;
+      await tx.insert(peFlowEvents).values({
+        tenantId,
+        flowInstanceId: updated.flowInstanceId,
+        stepInstanceId: updated.stepInstanceId,
+        eventType: "gate_resolved",
+        metadata: { gateId, decision, decidedBy },
+      });
+    }
+
+    return updated ?? null;
+  });
 }
 
 export async function listPendingGates(tenantId: string, userId?: string) {
