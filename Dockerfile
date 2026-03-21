@@ -17,7 +17,10 @@ ENV NODE_ENV=production
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 ENV REDIS_URL=redis://localhost:6379
 
-RUN rm -rf .next node_modules/.cache && npm run build
+RUN rm -rf .next node_modules/.cache /tmp/.next-* /tmp/turbopack-* && \
+    find node_modules -name ".cache" -type d -exec rm -rf {} + 2>/dev/null; \
+    find node_modules -name "*.tsbuildinfo" -delete 2>/dev/null; \
+    npm run build
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
