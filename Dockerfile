@@ -11,11 +11,13 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm rebuild bcrypt
 
-# Build-time env (no secrets)
+# Build-time env (no secrets — dummy DATABASE_URL for standalone build)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+ENV REDIS_URL=redis://localhost:6379
 
-RUN npm run build
+RUN rm -rf .next node_modules/.cache && npm run build
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
