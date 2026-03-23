@@ -48,28 +48,15 @@ export interface StepExecutorConfig {
 // ═══════════════════════════════════════════════════════════
 
 export const E2E_01_STEP_CONFIGS: Record<number, StepExecutorConfig> = {
-  // ── Step 1: Lead Capture (CRUD → scm_leads) ──
+  // ── Step 1: Lead Capture (Human Form → user creates lead in CRM, then links it) ──
+  // CSERP-024 fix: Changed from "crud" to "human_form" because step 1 has no prior
+  // step data to populate required fields (companyName, contactName, source).
+  // Flow pauses here; user creates lead via /sales-crm/leads/new, then calls
+  // step-complete with the entity binding.
   1: {
-    mode: "crud",
+    mode: "human_form",
     entityTable: "scm_leads",
     entityAction: "create",
-    fieldMapping: {
-      "Company Name": "companyName",
-      "Contact Person & Email": "contactName",
-      "Contact Email": "contactEmail",
-      "Contact Phone": "contactPhone",
-      "Job Title": "jobTitle",
-      "Trade Lanes of Interest": "tradeLane",
-      "Estimated Annual TEU Volume": "estimatedTeu",
-      "Cargo Types (dry/reefer/DG/OOG)": "industry",
-      "Source Channel": "source",
-      "Country": "country",
-      "City": "city",
-      "Notes": "notes",
-    },
-    defaults: {
-      status: "new",
-    },
   },
 
   // ── Step 2: Lead Scoring (AI with tools → update scm_leads) ──

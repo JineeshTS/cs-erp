@@ -246,12 +246,17 @@ export async function advanceFlowStep(
       )
       .returning();
 
+    // CSERP-024 fix: pass tx to logFlowEvent — without it, the INSERT on
+    // pe_flow_events (which has FK to pe_e2e_flow_instances) tries to verify
+    // the FK on a separate connection, but the row is locked by FOR UPDATE
+    // in this transaction → deadlock/hang.
     await logFlowEvent({
       tenantId,
       flowInstanceId,
       stepInstanceId: completedStep?.id,
       eventType: "step_completed",
       metadata: { stepNumber: currentStepNum, output },
+      tx,
     });
 
     const nextStep = currentStepNum + 1;
@@ -277,6 +282,7 @@ export async function advanceFlowStep(
         tenantId,
         flowInstanceId,
         eventType: "flow_completed",
+        tx,
       });
 
       return updated;
@@ -452,7 +458,9 @@ async function logFlowEvent(params: {
   eventType: string;
   metadata?: Record<string, unknown>;
   cascadedFlowIds?: string[];
-  tx?: typeof db; // CSERP-018: use transaction context when available
+  // CSERP-018 + CSERP-024: use transaction context when available
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx?: { insert: typeof db.insert };
 }) {
   const conn = params.tx ?? db;
   await conn.insert(peFlowEvents).values({
