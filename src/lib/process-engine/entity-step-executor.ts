@@ -16,7 +16,7 @@ import {
   scmContracts,
   scmCustomers,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ilike, isNull } from "drizzle-orm";
 import type { StepExecutorConfig } from "./executor-configs/e2e-01-lead-to-quote";
 import { createEntityBinding } from "./entity-binding-service";
 import { resolveEntityInFlow } from "./entity-binding-service";
@@ -170,15 +170,76 @@ async function executeCreate(
     dbValues.ownerId = userId;
   }
 
-  // For opportunities: need customerId — try to resolve from lead's converted customer
-  // If no customer yet, this will need to be handled by the form or a prior step
+  // For opportunities: need customerId — resolve from lead's converted customer,
+  // match existing customer by company name, or auto-create from lead data.
   if (config.entityTable === "scm_opportunities" && !dbValues.customerId) {
-    // Try to get customerId from lead metadata or create a placeholder
     const leadBinding = await resolveEntityInFlow(flowInstanceId, tenantId, "scm_leads");
     if (leadBinding) {
       const leadData = leadBinding.entityData as Record<string, unknown> | null;
+
+      // 1. Check if lead already has a converted customer
       if (leadData?.convertedToCustomerId) {
         dbValues.customerId = leadData.convertedToCustomerId;
+      } else {
+        const companyName = leadData?.companyName as string | undefined;
+
+        // 2. Search for existing customer by company name (same tenant)
+        let existingCustomerId: string | null = null;
+        if (companyName) {
+          const [existing] = await db
+            .select({ id: scmCustomers.id })
+            .from(scmCustomers)
+            .where(
+              and(
+                eq(scmCustomers.tenantId, tenantId),
+                ilike(scmCustomers.companyName, companyName),
+                isNull(scmCustomers.deletedAt)
+              )
+            )
+            .limit(1);
+          if (existing) existingCustomerId = existing.id;
+        }
+
+        if (existingCustomerId) {
+          // Use existing customer
+          dbValues.customerId = existingCustomerId;
+        } else {
+          // 3. Auto-create customer from lead data
+          const customerCode = `CUST-${Date.now().toString(36).toUpperCase()}`;
+          const [newCustomer] = await db
+            .insert(scmCustomers)
+            .values({
+              tenantId,
+              customerCode,
+              companyName: companyName ?? "Unknown",
+              customerType: "shipper",
+              country: (leadData?.country as string) ?? "QA",
+              city: (leadData?.city as string) ?? undefined,
+              phone: (leadData?.contactPhone as string) ?? undefined,
+              email: (leadData?.contactEmail as string) ?? undefined,
+              industry: (leadData?.industry as string) ?? undefined,
+              status: "active",
+              notes: `Auto-created from lead ${leadBinding.entityId} during E2E flow`,
+            })
+            .returning({ id: scmCustomers.id });
+
+          dbValues.customerId = newCustomer.id;
+
+          // Update lead with converted customer reference
+          await db
+            .update(scmLeads)
+            .set({
+              convertedToCustomerId: newCustomer.id,
+              convertedAt: new Date(),
+              status: "converted",
+            })
+            .where(
+              and(
+                eq(scmLeads.id, leadBinding.entityId),
+                eq(scmLeads.tenantId, tenantId)
+              )
+            );
+        }
       }
     }
   }
