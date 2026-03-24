@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ArrowLeft,
+  ArrowRight,
   Activity,
   Clock,
   CheckCircle,
@@ -927,7 +928,7 @@ export default function FlowDetailPage() {
 
                       {/* Human Gates for this step */}
                       {stepGates.map((gate) => (
-                        <GateCard key={gate.id} gate={gate} />
+                        <GateCard key={gate.id} gate={gate} onResolved={fetchData} />
                       ))}
                     </div>
                   </div>
@@ -999,11 +1000,43 @@ export default function FlowDetailPage() {
   );
 }
 
-// ── Gate Card Component ──
+// ── Gate Card Component (with inline approve/reject/input controls) ──
 
-function GateCard({ gate }: { gate: HumanGate }) {
+function GateCard({ gate, onResolved }: { gate: HumanGate; onResolved?: () => void }) {
   const sla = formatSlaRemaining(gate.slaDeadline);
   const isResolved = gate.decision != null;
+  const [resolving, setResolving] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [additionalInput, setAdditionalInput] = useState("");
+
+  const resolveGate = async (decision: string) => {
+    setResolving(true);
+    setGateError(null);
+    try {
+      const decisionData: Record<string, unknown> = {};
+      if (comment.trim()) decisionData.comment = comment.trim();
+      if (additionalInput.trim()) decisionData.additionalInput = additionalInput.trim();
+
+      const res = await fetch(`/api/v1/process-engine/human-gates/${gate.id}/resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfToken(),
+        },
+        body: JSON.stringify({ decision, decisionData: Object.keys(decisionData).length > 0 ? decisionData : undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error?.message ?? `Failed (${res.status})`);
+      }
+      onResolved?.();
+    } catch (err) {
+      setGateError(err instanceof Error ? err.message : "Resolution failed");
+    } finally {
+      setResolving(false);
+    }
+  };
 
   return (
     <div className={`rounded-lg border p-3 ${
@@ -1071,19 +1104,175 @@ function GateCard({ gate }: { gate: HumanGate }) {
           <span className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300">
             <Bot className="h-3 w-3" /> AI Recommendation
           </span>
-          <pre className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-            {JSON.stringify(gate.aiRecommendation, null, 2)}
-          </pre>
+          <div className="mt-1 space-y-0.5 text-xs text-blue-600 dark:text-blue-400">
+            {Object.entries(gate.aiRecommendation).map(([k, v]) => (
+              <div key={k}>
+                <span className="font-medium">{k.replace(/([A-Z])/g, " $1").trim()}:</span>{" "}
+                {typeof v === "object" ? JSON.stringify(v) : String(v)}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Decision Data */}
-      {gate.decisionData && Object.keys(gate.decisionData).length > 0 && (
+      {/* Presented Info (context for decision) */}
+      {gate.presentedInfo && Object.keys(gate.presentedInfo).length > 0 && (
+        <div className="mt-2 rounded bg-gray-50 p-2 dark:bg-gray-800/50">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Context</span>
+          <div className="mt-1 space-y-0.5 text-xs text-gray-700 dark:text-gray-300">
+            {Object.entries(gate.presentedInfo).map(([k, v]) => (
+              <div key={k}>
+                <span className="font-medium">{k.replace(/([A-Z])/g, " $1").trim()}:</span>{" "}
+                {typeof v === "object" ? JSON.stringify(v) : String(v)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Decision Data (when resolved) */}
+      {isResolved && gate.decisionData && Object.keys(gate.decisionData).length > 0 && (
         <div className="mt-2">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Decision Data</span>
-          <pre className="mt-1 max-h-24 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            {JSON.stringify(gate.decisionData, null, 2)}
-          </pre>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Decision Notes</span>
+          <div className="mt-1 space-y-0.5 text-xs text-gray-700 dark:text-gray-300">
+            {Object.entries(gate.decisionData).map(([k, v]) => (
+              <div key={k}>
+                <span className="font-medium">{k}:</span> {String(v)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Action Controls (only for unresolved gates) ── */}
+      {!isResolved && (
+        <div className="mt-3 space-y-2 border-t border-amber-200 pt-3 dark:border-amber-800">
+          {/* Comment / Notes input */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              {gate.gateType === "input" ? "Your Input" : "Notes / Comment"}{" "}
+              <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              value={gate.gateType === "input" ? additionalInput : comment}
+              onChange={(e) => gate.gateType === "input" ? setAdditionalInput(e.target.value) : setComment(e.target.value)}
+              rows={2}
+              placeholder={
+                gate.gateType === "input"
+                  ? "Provide the requested information..."
+                  : gate.gateType === "exception"
+                  ? "Describe the resolution or escalation reason..."
+                  : "Add notes for your decision..."
+              }
+              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+
+          {/* Action Buttons — vary by gate type */}
+          <div className="flex flex-wrap items-center gap-2">
+            {gate.gateType === "approval" && (
+              <>
+                <button
+                  onClick={() => resolveGate("approved")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Approve
+                </button>
+                <button
+                  onClick={() => resolveGate("rejected")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                  Reject
+                </button>
+              </>
+            )}
+
+            {gate.gateType === "decision" && (
+              <>
+                <button
+                  onClick={() => resolveGate("approved")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Qualify / Accept
+                </button>
+                <button
+                  onClick={() => resolveGate("rejected")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                >
+                  <X className="h-4 w-4" />
+                  Decline / Defer
+                </button>
+              </>
+            )}
+
+            {gate.gateType === "input" && (
+              <button
+                onClick={() => resolveGate("input_provided")}
+                disabled={resolving || !additionalInput.trim()}
+                className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                Submit Input
+              </button>
+            )}
+
+            {gate.gateType === "exception" && (
+              <>
+                <button
+                  onClick={() => resolveGate("approved")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Resolve Exception
+                </button>
+                <button
+                  onClick={() => resolveGate("rejected")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Escalate
+                </button>
+              </>
+            )}
+
+            {/* Fallback for unknown gate types */}
+            {!["approval", "decision", "input", "exception"].includes(gate.gateType) && (
+              <>
+                <button
+                  onClick={() => resolveGate("approved")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Approve
+                </button>
+                <button
+                  onClick={() => resolveGate("rejected")}
+                  disabled={resolving}
+                  className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                >
+                  <X className="h-4 w-4" />
+                  Reject
+                </button>
+              </>
+            )}
+          </div>
+
+          {gateError && (
+            <div className="flex items-center gap-1.5 rounded bg-rose-50 px-3 py-1.5 text-xs text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {gateError}
+            </div>
+          )}
         </div>
       )}
     </div>
