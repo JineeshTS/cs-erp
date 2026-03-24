@@ -393,6 +393,110 @@ async function executeUpdate(
 }
 
 // ═══════════════════════════════════════════════════════════
+// HUMAN FORM ENTITY INSERT
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Insert a real entity into the DB from a human_form step submission.
+ * Maps form field names (e.g., "Company Name") to DB column names (e.g., "companyName")
+ * using a standard camelCase conversion, then inserts into the target table.
+ */
+export async function insertEntityForHumanFormStep(params: {
+  tenantId: string;
+  entityTable: string;
+  entityData: Record<string, unknown>;
+  userId: string;
+}): Promise<{ entityId: string; entityData: Record<string, unknown> } | null> {
+  const { tenantId, entityTable, entityData, userId } = params;
+
+  const tableEntry = TABLE_REGISTRY[entityTable];
+  if (!tableEntry) return null;
+
+  // Map human-friendly field names to DB column names
+  const dbValues: Record<string, unknown> = { tenantId };
+
+  // Field name → column name mapping for scm_leads
+  const LEAD_FIELD_MAP: Record<string, string> = {
+    "Company Name": "companyName",
+    "Contact Person & Email": "contactName",
+    "Contact Person": "contactName",
+    "Contact Name": "contactName",
+    "Contact Email": "contactEmail",
+    "Contact Phone": "contactPhone",
+    "Email": "contactEmail",
+    "Phone": "contactPhone",
+    "Trade Lanes of Interest": "tradeLane",
+    "Trade Lane": "tradeLane",
+    "Estimated Annual TEU Volume": "estimatedTeu",
+    "Estimated TEU": "estimatedTeu",
+    "Cargo Types (dry/reefer/DG/OOG)": "notes",
+    "Current Carrier(s)": "notes",
+    "Source Channel": "source",
+    "Source": "source",
+    "Country": "country",
+    "City": "city",
+    "Industry": "industry",
+    "Job Title": "jobTitle",
+    "Notes": "notes",
+  };
+
+  for (const [key, value] of Object.entries(entityData)) {
+    if (value === undefined || value === null || value === "") continue;
+
+    // Try mapped name first
+    const mapped = LEAD_FIELD_MAP[key];
+    if (mapped) {
+      // For notes-type fields, concatenate if already set
+      if (mapped === "notes" && dbValues.notes) {
+        dbValues.notes = `${dbValues.notes}\n${key}: ${value}`;
+      } else {
+        dbValues[mapped] = value;
+      }
+    } else {
+      // Try direct camelCase column name
+      const camel = key.replace(/\s+(.)/g, (_, c: string) => c.toUpperCase()).replace(/\s+/g, "").replace(/^(.)/, (c) => c.toLowerCase());
+      dbValues[camel] = value;
+    }
+  }
+
+  // Parse "Contact Person & Email" into separate fields if it contains @
+  if (dbValues.contactName && typeof dbValues.contactName === "string") {
+    const val = dbValues.contactName;
+    const emailMatch = val.match(/[\w.-]+@[\w.-]+\.\w+/);
+    if (emailMatch && !dbValues.contactEmail) {
+      dbValues.contactEmail = emailMatch[0];
+      dbValues.contactName = val.replace(emailMatch[0], "").replace(/[,;/|]+/g, "").trim() || val;
+    }
+  }
+
+  // Ensure required fields have defaults
+  if (!dbValues.source) dbValues.source = "manual_entry";
+  if (!dbValues.companyName) dbValues.companyName = "Unknown";
+  if (!dbValues.contactName) dbValues.contactName = "Unknown";
+  if (!dbValues.status) dbValues.status = "new";
+
+  // Set assigned user
+  dbValues.assignedTo = userId;
+
+  // Convert TEU to integer
+  if (dbValues.estimatedTeu && typeof dbValues.estimatedTeu === "string") {
+    dbValues.estimatedTeu = parseInt(dbValues.estimatedTeu, 10) || null;
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [created] = await db.insert(tableEntry.table).values(dbValues as any).returning();
+    if (!created) return null;
+
+    const record = created as Record<string, unknown>;
+    return { entityId: record.id as string, entityData: record };
+  } catch (err) {
+    console.error(`[insertEntityForHumanFormStep] Failed to insert into ${entityTable}:`, err);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // FIELD MAPPING
 // ═══════════════════════════════════════════════════════════
 

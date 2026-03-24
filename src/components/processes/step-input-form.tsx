@@ -47,29 +47,64 @@ interface StepContext {
 
 // ── Helpers ──
 
+/** Human-friendly labels for DB column names */
+const COLUMN_LABELS: Record<string, string> = {
+  companyName: "Company Name",
+  contactName: "Contact Person",
+  contactEmail: "Email",
+  contactPhone: "Phone",
+  source: "Source",
+  tradeLane: "Trade Lane",
+  estimatedTeu: "Estimated TEU",
+  estimatedRevenue: "Est. Revenue",
+  qualificationScore: "Score",
+  status: "Status",
+  country: "Country",
+  city: "City",
+  industry: "Industry",
+  jobTitle: "Job Title",
+  notes: "Notes",
+};
+
+/** Fields to skip when rendering entity summary */
+const HIDDEN_FIELDS = new Set([
+  "id", "tenantId", "deletedAt", "createdAt", "updatedAt", "metadata",
+  "campaignId", "assignedTo", "convertedToCustomerId", "convertedAt",
+]);
+
+function formatFieldLabel(key: string): string {
+  return COLUMN_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).trim();
+}
+
 function inferFieldType(fieldName: string): "text" | "number" | "date" | "textarea" | "select" {
   const lower = fieldName.toLowerCase();
   if (lower.includes("date") || lower.includes("deadline") || lower.includes("valid from") || lower.includes("valid to")) return "date";
   if (lower.includes("volume") || lower.includes("teu") || lower.includes("revenue") || lower.includes("amount") || lower.includes("score") || lower.includes("limit") || lower.includes("days")) return "number";
   if (lower.includes("notes") || lower.includes("description") || lower.includes("strategy") || lower.includes("analysis") || lower.includes("brief")) return "textarea";
-  if (lower.includes("source") || lower.includes("channel") || lower.includes("type") || lower.includes("rating") || lower.includes("incoterm")) return "select";
+  if (lower.includes("source") || lower.includes("channel") || lower.includes("type") || lower.includes("rating") || lower.includes("incoterm") || lower === "country" || lower === "industry" || lower.includes("cargo type")) return "select";
   return "text";
 }
 
-const SELECT_OPTIONS: Record<string, string[]> = {
-  "source": ["web_inquiry", "email_parsed", "trade_show", "agent_referral", "sales_rep", "platform_rfq", "customer_portal", "advertisement"],
-  "channel": ["web_inquiry", "email_parsed", "trade_show", "agent_referral", "sales_rep", "platform_rfq"],
-  "type": ["dry", "reefer", "DG", "OOG", "tank"],
-  "rating": ["green", "amber", "red"],
-  "incoterm": ["FOB", "CIF", "CFR", "EXW", "FCA", "DAP", "DDP"],
+/** Map field name patterns to form-options API field keys */
+const FIELD_TO_OPTIONS_KEY: Record<string, string> = {
+  "source": "source",
+  "channel": "source",
+  "cargo type": "cargo_type",
+  "type": "cargo_type",
+  "rating": "rating",
+  "incoterm": "incoterm",
+  "country": "country",
+  "industry": "industry",
 };
 
-function getSelectOptions(fieldName: string): string[] {
+interface SelectOption { value: string; label: string }
+
+function matchOptionsKey(fieldName: string): string | null {
   const lower = fieldName.toLowerCase();
-  for (const [key, options] of Object.entries(SELECT_OPTIONS)) {
-    if (lower.includes(key)) return options;
+  for (const [pattern, key] of Object.entries(FIELD_TO_OPTIONS_KEY)) {
+    if (lower.includes(pattern)) return key;
   }
-  return [];
+  return null;
 }
 
 // ── Component ──
@@ -89,6 +124,24 @@ export function StepInputForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [selectOptions, setSelectOptions] = useState<Record<string, SelectOption[]>>({});
+
+  // Fetch dropdown options for select fields
+  useEffect(() => {
+    const optionKeys = new Set<string>();
+    for (const field of inputFields) {
+      const key = matchOptionsKey(field.field);
+      if (key) optionKeys.add(key);
+    }
+    if (optionKeys.size === 0) return;
+
+    fetch(`/api/v1/process-engine/form-options?fields=${Array.from(optionKeys).join(",")}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => {
+        if (json?.data) setSelectOptions(json.data);
+      })
+      .catch(() => { /* best-effort */ });
+  }, [inputFields]);
 
   // Fetch step context on mount
   const fetchContext = useCallback(async () => {
@@ -108,7 +161,10 @@ export function StepInputForm({
       for (const field of inputFields) {
         const resolved = ctx.resolvedInputs[field.field];
         if (resolved !== undefined && resolved !== null) {
-          prefilled[field.field] = typeof resolved === "object" ? JSON.stringify(resolved) : String(resolved);
+          // Don't stringify objects into form fields — they'll be rendered as summaries
+          if (typeof resolved !== "object") {
+            prefilled[field.field] = String(resolved);
+          }
         }
       }
       setFormValues((prev) => ({ ...prefilled, ...prev }));
@@ -226,9 +282,37 @@ export function StepInputForm({
         ) : (
           <>
             {inputFields.map((field) => {
+              const resolved = context?.resolvedInputs[field.field];
+              const isObjectValue = resolved !== null && resolved !== undefined && typeof resolved === "object";
               const fieldType = inferFieldType(field.field);
-              const isResolved = context?.resolvedInputs[field.field] !== undefined;
+              const isResolved = resolved !== undefined;
               const value = formValues[field.field] ?? "";
+
+              // Render object values as a read-only summary panel
+              if (isObjectValue) {
+                const entries = Object.entries(resolved as Record<string, unknown>)
+                  .filter(([k, v]) => !HIDDEN_FIELDS.has(k) && v !== null && v !== undefined && v !== "");
+                return (
+                  <div key={field.field} className="space-y-1">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {field.field}
+                      <span className="rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-medium text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                        from prior step
+                      </span>
+                    </label>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                        {entries.map(([k, v]) => (
+                          <div key={k} className="contents">
+                            <dt className="font-medium text-gray-500 dark:text-gray-400">{formatFieldLabel(k)}</dt>
+                            <dd className="text-gray-900 dark:text-gray-100 truncate" title={String(v)}>{String(v)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <div key={field.field} className="space-y-1">
@@ -253,18 +337,25 @@ export function StepInputForm({
                       className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                       placeholder={field.source}
                     />
-                  ) : fieldType === "select" ? (
-                    <select
-                      value={value}
-                      onChange={(e) => handleChange(field.field, e.target.value)}
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                    >
-                      <option value="">Select...</option>
-                      {getSelectOptions(field.field).map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : (
+                  ) : fieldType === "select" ? (() => {
+                    const optKey = matchOptionsKey(field.field);
+                    const opts = optKey ? selectOptions[optKey] : [];
+                    return (
+                      <select
+                        value={value}
+                        onChange={(e) => handleChange(field.field, e.target.value)}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      >
+                        <option value="">Select...</option>
+                        {opts && opts.length > 0
+                          ? opts.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))
+                          : null
+                        }
+                      </select>
+                    );
+                  })() : (
                     <input
                       type={fieldType === "date" ? "date" : fieldType === "number" ? "number" : "text"}
                       value={value}

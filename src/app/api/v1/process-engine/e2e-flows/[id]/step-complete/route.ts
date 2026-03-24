@@ -18,6 +18,7 @@ import { hasPermission } from "@/lib/rbac";
 import { stepCompleteSchema } from "@/lib/process-engine/validation";
 import { getFlowInstance, advanceFlowStep } from "@/lib/process-engine/e2e-flow-service";
 import { createEntityBinding } from "@/lib/process-engine/entity-binding-service";
+import { insertEntityForHumanFormStep } from "@/lib/process-engine/entity-step-executor";
 import { db } from "@/lib/db";
 import { peE2eStepInstances } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -95,22 +96,39 @@ export async function POST(
       );
     }
 
+    // For human_form steps with entityAction=create, actually insert the entity into the DB
+    let realEntityId = parsed.data.entityId;
+    let realEntityData = parsed.data.entityData ?? {};
+
+    if (parsed.data.entityAction === "create" && parsed.data.entityData) {
+      const insertResult = await insertEntityForHumanFormStep({
+        tenantId: user.tenantId,
+        entityTable: parsed.data.entityTable,
+        entityData: parsed.data.entityData,
+        userId: user.id,
+      });
+      if (insertResult) {
+        realEntityId = insertResult.entityId;
+        realEntityData = insertResult.entityData;
+      }
+    }
+
     // Create entity binding
     const binding = await createEntityBinding({
       tenantId: user.tenantId,
       stepInstanceId: stepInstance.id,
       flowInstanceId,
       entityTable: parsed.data.entityTable,
-      entityId: parsed.data.entityId,
+      entityId: realEntityId,
       entityAction: parsed.data.entityAction,
-      entityData: parsed.data.entityData,
+      entityData: realEntityData,
     });
 
     // Advance the flow to the next step
     const advanced = await advanceFlowStep(flowInstanceId, user.tenantId, {
       entityBinding: {
         entityTable: parsed.data.entityTable,
-        entityId: parsed.data.entityId,
+        entityId: realEntityId,
         entityAction: parsed.data.entityAction,
       },
       completedBy: user.id,
