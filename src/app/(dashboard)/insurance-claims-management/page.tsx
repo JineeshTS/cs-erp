@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   icmPiClubPolicies,
   icmHullMachineryInsurances,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function InsuranceClaimsManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function InsuranceClaimsManagementPage({
 
   const [activePi, activeHull, activeCargo, openClaims, openRecoveries] =
     await Promise.all([
-      db.select({ id: icmPiClubPolicies.id }).from(icmPiClubPolicies)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmPiClubPolicies)
         .where(and(eq(icmPiClubPolicies.tenantId, session.tenantId), isNull(icmPiClubPolicies.deletedAt), eq(icmPiClubPolicies.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmHullMachineryInsurances.id }).from(icmHullMachineryInsurances)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmHullMachineryInsurances)
         .where(and(eq(icmHullMachineryInsurances.tenantId, session.tenantId), isNull(icmHullMachineryInsurances.deletedAt), eq(icmHullMachineryInsurances.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmCargoInsurancePolicies.id }).from(icmCargoInsurancePolicies)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmCargoInsurancePolicies)
         .where(and(eq(icmCargoInsurancePolicies.tenantId, session.tenantId), isNull(icmCargoInsurancePolicies.deletedAt), eq(icmCargoInsurancePolicies.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icmClaimsRegistrations.id }).from(icmClaimsRegistrations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmClaimsRegistrations)
         .where(and(eq(icmClaimsRegistrations.tenantId, session.tenantId), isNull(icmClaimsRegistrations.deletedAt), eq(icmClaimsRegistrations.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: icmClaimsRecoveries.id }).from(icmClaimsRecoveries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmClaimsRecoveries)
         .where(and(eq(icmClaimsRecoveries.tenantId, session.tenantId), isNull(icmClaimsRecoveries.deletedAt), eq(icmClaimsRecoveries.status, "open")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function InsuranceClaimsManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmPiClubPolicies.policyRef, `%${search}%`),
-        ilike(icmPiClubPolicies.clubName, `%${search}%`),
-        ilike(icmPiClubPolicies.vesselName, `%${search}%`)
+        ilike(icmPiClubPolicies.policyRef, `%${escapeIlike(search)}%`),
+        ilike(icmPiClubPolicies.clubName, `%${escapeIlike(search)}%`),
+        ilike(icmPiClubPolicies.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmPiClubPolicies.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmPiClubPolicies.createdAt, icmPiClubPolicies.id, parsedCursor));
 
   const data = await db.select().from(icmPiClubPolicies)
     .where(and(...conditions))
-    .orderBy(desc(icmPiClubPolicies.createdAt))
+    .orderBy(desc(icmPiClubPolicies.createdAt), desc(icmPiClubPolicies.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

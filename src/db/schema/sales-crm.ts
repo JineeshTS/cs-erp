@@ -12,6 +12,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-005-1-001: Customer Master & Segmentation
@@ -255,7 +256,7 @@ export const scmOpportunityActivities = pgTable(
     activityDate: timestamp("activity_date", { withTimezone: true }).notNull(),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     outcome: varchar("outcome", { length: 50 }),
     status: varchar("status", { length: 20 }).notNull().default("planned"),
     metadata: jsonb("metadata"),
@@ -633,10 +634,10 @@ export const scmOnboardingChecklists = pgTable(
     taskName: varchar("task_name", { length: 255 }).notNull(),
     taskCategory: varchar("task_category", { length: 50 }).notNull(),
     description: text("description"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
-    completedBy: uuid("completed_by"),
+    completedBy: uuid("completed_by").references(() => users.id, { onDelete: "set null" }),
     sortOrder: integer("sort_order").default(0),
     isRequired: boolean("is_required").default(true),
     documentRequired: boolean("document_required").default(false),
@@ -686,7 +687,7 @@ export const scmLeads = pgTable(
     tradeLane: varchar("trade_lane", { length: 100 }),
     source: varchar("source", { length: 50 }).notNull(),
     campaignId: uuid("campaign_id"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     qualificationScore: integer("qualification_score"),
     convertedToCustomerId: uuid("converted_to_customer_id"),
     convertedAt: timestamp("converted_at", { withTimezone: true }),

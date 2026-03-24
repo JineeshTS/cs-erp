@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getLessonLearned } from "@/lib/knowledge-management-training/service";
@@ -47,8 +48,8 @@ export async function PATCH(
     if (!(await hasPermission(user.id, user.tenantId, "kmt:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const existing = await getLessonLearned(id, user.tenantId);
@@ -73,7 +74,7 @@ export async function PATCH(
       .where(and(eq(kmtLessonsLearned.id, id), eq(kmtLessonsLearned.tenantId, user.tenantId), isNull(kmtLessonsLearned.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "lessons-learned", entityId: updated?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "lessons-learned", entityId: updated.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -95,8 +96,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "kmt:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const existing = await getLessonLearned(id, user.tenantId);
@@ -112,7 +113,7 @@ export async function DELETE(
       .where(and(eq(kmtLessonsLearned.id, id), eq(kmtLessonsLearned.tenantId, user.tenantId), isNull(kmtLessonsLearned.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "lessons-learned", entityId: deleted?.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "lessons-learned", entityId: deleted.id, module: "knowledge-management-training", previousData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: deleted });
   } catch (error) {

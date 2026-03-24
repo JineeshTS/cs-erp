@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { isfApiKeys } from "@/db/schema";
@@ -18,8 +19,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "infra:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -69,7 +70,7 @@ export async function DELETE(
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "revoke", entityId: existing?.id, module: "infrastructure-security", previousData: null, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "revoke", entityId: existing.id, module: "infrastructure-security", previousData: null, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {

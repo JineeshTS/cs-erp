@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmLeads } from "@/db/schema";
@@ -38,8 +39,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "sales:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -56,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(scmLeads).set(parsed.data)
       .where(and(eq(scmLeads.id, id), eq(scmLeads.tenantId, user.tenantId), isNull(scmLeads.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "leads", entityId: existing?.id, module: "sales-crm", previousData: null, newData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "leads", entityId: existing.id, module: "sales-crm", previousData: null, newData: existing as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lead not found" } }, { status: 404 });
 
@@ -108,16 +109,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "sales:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(scmLeads).set({ deletedAt: new Date() })
       .where(and(eq(scmLeads.id, id), eq(scmLeads.tenantId, user.tenantId), isNull(scmLeads.deletedAt))).returning({ id: scmLeads.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "leads", entityId: deleted?.id, module: "sales-crm", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lead not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "leads", entityId: deleted.id, module: "sales-crm", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (err) {
     console.error("Lead delete error:", err);

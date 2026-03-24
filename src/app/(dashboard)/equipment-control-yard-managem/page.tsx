@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   eqyContainerFleet,
   eqyMaintenanceRepairs,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function EquipmentControlYardManagementPage({
   searchParams,
 }: {
@@ -46,7 +48,7 @@ export default async function EquipmentControlYardManagementPage({
   const [totalFleet, underRepair, reeferActive, yardOccupied] =
     await Promise.all([
       db
-        .select({ id: eqyContainerFleet.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(eqyContainerFleet)
         .where(
           and(
@@ -55,9 +57,9 @@ export default async function EquipmentControlYardManagementPage({
             eq(eqyContainerFleet.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: eqyMaintenanceRepairs.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(eqyMaintenanceRepairs)
         .where(
           and(
@@ -66,9 +68,9 @@ export default async function EquipmentControlYardManagementPage({
             eq(eqyMaintenanceRepairs.status, "in_progress")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: eqyReeferContainers.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(eqyReeferContainers)
         .where(
           and(
@@ -77,9 +79,9 @@ export default async function EquipmentControlYardManagementPage({
             eq(eqyReeferContainers.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: eqyYardSlots.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(eqyYardSlots)
         .where(
           and(
@@ -88,7 +90,7 @@ export default async function EquipmentControlYardManagementPage({
             eq(eqyYardSlots.status, "occupied")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -101,20 +103,20 @@ export default async function EquipmentControlYardManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(eqyContainerFleet.containerNumber, `%${search}%`),
-        ilike(eqyContainerFleet.currentPort, `%${search}%`),
-        ilike(eqyContainerFleet.manufacturer, `%${search}%`)
+        ilike(eqyContainerFleet.containerNumber, `%${escapeIlike(search)}%`),
+        ilike(eqyContainerFleet.currentPort, `%${escapeIlike(search)}%`),
+        ilike(eqyContainerFleet.manufacturer, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(eqyContainerFleet.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyContainerFleet.createdAt, eqyContainerFleet.id, parsedCursor));
 
   const data = await db
     .select()
     .from(eqyContainerFleet)
     .where(and(...conditions))
-    .orderBy(desc(eqyContainerFleet.createdAt))
+    .orderBy(desc(eqyContainerFleet.createdAt), desc(eqyContainerFleet.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

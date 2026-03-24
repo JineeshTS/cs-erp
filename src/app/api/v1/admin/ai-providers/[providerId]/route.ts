@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -28,13 +29,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { providerId } = await params;
 
@@ -89,7 +85,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .where(eq(aiProviders.id, providerId))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ai-providers", entityId: existing?.id, module: "admin", previousData: null, newData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ai-providers", entityId: existing.id, module: "admin", previousData: null, newData: existing as Record<string, unknown>, request });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
@@ -110,13 +106,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { providerId } = await params;
 
@@ -147,7 +138,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .where(eq(aiProviders.id, providerId))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ai-providers", entityId: existing?.id, module: "admin", previousData: null, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ai-providers", entityId: existing.id, module: "admin", previousData: null, request });
 
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {

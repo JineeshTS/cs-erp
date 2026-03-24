@@ -7,13 +7,15 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ecrInventorySnapshots, ecrRepositioningPlans, ecrCostTrackings, ecrRouteOptimizers,
   ecrDemandForecasts, ecrLeasingDecisions, ecrReturnIncentives, ecrPnlAttributions,
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function EmptyContainerRepositioningAIPage({
   searchParams,
 }: {
@@ -31,22 +33,23 @@ export default async function EmptyContainerRepositioningAIPage({
   const limit = 50;
 
   const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
-    db.select({ id: ecrInventorySnapshots.id }).from(ecrInventorySnapshots).where(and(eq(ecrInventorySnapshots.tenantId, session.tenantId), isNull(ecrInventorySnapshots.deletedAt), eq(ecrInventorySnapshots.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrRepositioningPlans.id }).from(ecrRepositioningPlans).where(and(eq(ecrRepositioningPlans.tenantId, session.tenantId), isNull(ecrRepositioningPlans.deletedAt), eq(ecrRepositioningPlans.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrCostTrackings.id }).from(ecrCostTrackings).where(and(eq(ecrCostTrackings.tenantId, session.tenantId), isNull(ecrCostTrackings.deletedAt), eq(ecrCostTrackings.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrRouteOptimizers.id }).from(ecrRouteOptimizers).where(and(eq(ecrRouteOptimizers.tenantId, session.tenantId), isNull(ecrRouteOptimizers.deletedAt), eq(ecrRouteOptimizers.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrDemandForecasts.id }).from(ecrDemandForecasts).where(and(eq(ecrDemandForecasts.tenantId, session.tenantId), isNull(ecrDemandForecasts.deletedAt), eq(ecrDemandForecasts.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrLeasingDecisions.id }).from(ecrLeasingDecisions).where(and(eq(ecrLeasingDecisions.tenantId, session.tenantId), isNull(ecrLeasingDecisions.deletedAt), eq(ecrLeasingDecisions.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrReturnIncentives.id }).from(ecrReturnIncentives).where(and(eq(ecrReturnIncentives.tenantId, session.tenantId), isNull(ecrReturnIncentives.deletedAt), eq(ecrReturnIncentives.status, "draft"))).then((r) => r.length),
-    db.select({ id: ecrPnlAttributions.id }).from(ecrPnlAttributions).where(and(eq(ecrPnlAttributions.tenantId, session.tenantId), isNull(ecrPnlAttributions.deletedAt), eq(ecrPnlAttributions.status, "draft"))).then((r) => r.length),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrInventorySnapshots).where(and(eq(ecrInventorySnapshots.tenantId, session.tenantId), isNull(ecrInventorySnapshots.deletedAt), eq(ecrInventorySnapshots.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrRepositioningPlans).where(and(eq(ecrRepositioningPlans.tenantId, session.tenantId), isNull(ecrRepositioningPlans.deletedAt), eq(ecrRepositioningPlans.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrCostTrackings).where(and(eq(ecrCostTrackings.tenantId, session.tenantId), isNull(ecrCostTrackings.deletedAt), eq(ecrCostTrackings.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrRouteOptimizers).where(and(eq(ecrRouteOptimizers.tenantId, session.tenantId), isNull(ecrRouteOptimizers.deletedAt), eq(ecrRouteOptimizers.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrDemandForecasts).where(and(eq(ecrDemandForecasts.tenantId, session.tenantId), isNull(ecrDemandForecasts.deletedAt), eq(ecrDemandForecasts.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrLeasingDecisions).where(and(eq(ecrLeasingDecisions.tenantId, session.tenantId), isNull(ecrLeasingDecisions.deletedAt), eq(ecrLeasingDecisions.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrReturnIncentives).where(and(eq(ecrReturnIncentives.tenantId, session.tenantId), isNull(ecrReturnIncentives.deletedAt), eq(ecrReturnIncentives.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(ecrPnlAttributions).where(and(eq(ecrPnlAttributions.tenantId, session.tenantId), isNull(ecrPnlAttributions.deletedAt), eq(ecrPnlAttributions.status, "draft"))).then((r) => r[0]?.value ?? 0),
   ]);
 
   const conditions = [eq(ecrInventorySnapshots.tenantId, session.tenantId), isNull(ecrInventorySnapshots.deletedAt)];
   if (status) conditions.push(eq(ecrInventorySnapshots.status, status));
-  if (search) conditions.push(or(ilike(ecrInventorySnapshots.snapshotRef, `%${search}%`), ilike(ecrInventorySnapshots.title, `%${search}%`))!);
-  if (cursor) conditions.push(lt(ecrInventorySnapshots.createdAt, new Date(cursor)));
+  if (search) conditions.push(or(ilike(ecrInventorySnapshots.snapshotRef, `%${escapeIlike(search)}%`), ilike(ecrInventorySnapshots.title, `%${escapeIlike(search)}%`))!);
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ecrInventorySnapshots.createdAt, ecrInventorySnapshots.id, parsedCursor));
 
-  const data = await db.select().from(ecrInventorySnapshots).where(and(...conditions)).orderBy(desc(ecrInventorySnapshots.createdAt)).limit(limit + 1);
+  const data = await db.select().from(ecrInventorySnapshots).where(and(...conditions)).orderBy(desc(ecrInventorySnapshots.createdAt), desc(ecrInventorySnapshots.id)).limit(limit + 1);
   const hasMore = data.length > limit;
   const items = hasMore ? data.slice(0, limit) : data;
   const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
@@ -78,7 +81,7 @@ export default async function EmptyContainerRepositioningAIPage({
         ].map((c) => (
           <div key={c.label} className="rounded-lg border bg-white p-5">
             <div className="flex items-center gap-3">
-              <div className={`rounded-lg bg-${c.color}-50 p-2.5 text-${c.color}-600`}><c.icon className="h-5 w-5" /></div>
+              <div className={`rounded-lg p-2.5 ${({ blue: "bg-blue-50 text-blue-600", green: "bg-green-50 text-green-600", orange: "bg-orange-50 text-orange-600", red: "bg-red-50 text-red-600", purple: "bg-purple-50 text-purple-600", indigo: "bg-indigo-50 text-indigo-600", teal: "bg-teal-50 text-teal-600", yellow: "bg-yellow-50 text-yellow-600" } as Record<string, string>)[c.color] ?? ""}`}><c.icon className="h-5 w-5" /></div>
               <div><p className="text-sm text-gray-500">{c.label}</p><p className="text-2xl font-bold text-gray-900">{c.count}</p></div>
             </div>
           </div>

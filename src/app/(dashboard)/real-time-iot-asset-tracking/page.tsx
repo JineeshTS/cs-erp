@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   iotContainerGpsTrackings,
   iotReeferMonitorings,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RealTimeIotAssetTrackingPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function RealTimeIotAssetTrackingPage({
 
   const [draftContainerGps, draftReeferMonitorings, draftElectronicSeals, draftShockDetections, draftVesselPositions, draftPortEquipments, draftPredictiveAlerts, draftDataLakeAnalytics] =
     await Promise.all([
-      db.select({ id: iotContainerGpsTrackings.id }).from(iotContainerGpsTrackings)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotContainerGpsTrackings)
         .where(and(eq(iotContainerGpsTrackings.tenantId, session.tenantId), isNull(iotContainerGpsTrackings.deletedAt), eq(iotContainerGpsTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotReeferMonitorings.id }).from(iotReeferMonitorings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotReeferMonitorings)
         .where(and(eq(iotReeferMonitorings.tenantId, session.tenantId), isNull(iotReeferMonitorings.deletedAt), eq(iotReeferMonitorings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotElectronicSeals.id }).from(iotElectronicSeals)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotElectronicSeals)
         .where(and(eq(iotElectronicSeals.tenantId, session.tenantId), isNull(iotElectronicSeals.deletedAt), eq(iotElectronicSeals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotShockDetections.id }).from(iotShockDetections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotShockDetections)
         .where(and(eq(iotShockDetections.tenantId, session.tenantId), isNull(iotShockDetections.deletedAt), eq(iotShockDetections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotVesselPositions.id }).from(iotVesselPositions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotVesselPositions)
         .where(and(eq(iotVesselPositions.tenantId, session.tenantId), isNull(iotVesselPositions.deletedAt), eq(iotVesselPositions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotPortEquipments.id }).from(iotPortEquipments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotPortEquipments)
         .where(and(eq(iotPortEquipments.tenantId, session.tenantId), isNull(iotPortEquipments.deletedAt), eq(iotPortEquipments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotPredictiveAlerts.id }).from(iotPredictiveAlerts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotPredictiveAlerts)
         .where(and(eq(iotPredictiveAlerts.tenantId, session.tenantId), isNull(iotPredictiveAlerts.deletedAt), eq(iotPredictiveAlerts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: iotDataLakeAnalytics.id }).from(iotDataLakeAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(iotDataLakeAnalytics)
         .where(and(eq(iotDataLakeAnalytics.tenantId, session.tenantId), isNull(iotDataLakeAnalytics.deletedAt), eq(iotDataLakeAnalytics.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function RealTimeIotAssetTrackingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(iotContainerGpsTrackings.trackingRef, `%${search}%`),
-        ilike(iotContainerGpsTrackings.containerNumber, `%${search}%`)
+        ilike(iotContainerGpsTrackings.trackingRef, `%${escapeIlike(search)}%`),
+        ilike(iotContainerGpsTrackings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(iotContainerGpsTrackings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(iotContainerGpsTrackings.createdAt, iotContainerGpsTrackings.id, parsedCursor));
 
   const data = await db.select().from(iotContainerGpsTrackings)
     .where(and(...conditions))
-    .orderBy(desc(iotContainerGpsTrackings.createdAt))
+    .orderBy(desc(iotContainerGpsTrackings.createdAt), desc(iotContainerGpsTrackings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, or, ilike, gt } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, or, ilike, gt } from "drizzle-orm";
 import {
   cvmCharterParties,
   cvmTcContracts,
@@ -19,6 +19,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CharteringVesselManagementPage({
   searchParams,
 }: {
@@ -49,7 +51,7 @@ export default async function CharteringVesselManagementPage({
   const [activeCharters, upcomingLaycan, expiringTc, utilizationRows] =
     await Promise.all([
       db
-        .select({ id: cvmCharterParties.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cvmCharterParties)
         .where(
           and(
@@ -61,9 +63,9 @@ export default async function CharteringVesselManagementPage({
             )
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: cvmCharterParties.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cvmCharterParties)
         .where(
           and(
@@ -73,9 +75,9 @@ export default async function CharteringVesselManagementPage({
             lt(cvmCharterParties.laycanFrom, in30Days)
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: cvmTcContracts.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cvmTcContracts)
         .where(
           and(
@@ -85,7 +87,7 @@ export default async function CharteringVesselManagementPage({
             lt(cvmTcContracts.redeliveryDate, in30Days)
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
         .select({
           currentUtilizationPercent:
@@ -124,24 +126,24 @@ export default async function CharteringVesselManagementPage({
     conditions.push(eq(cvmCharterParties.charterType, charterType));
   if (status) conditions.push(eq(cvmCharterParties.status, status));
   if (vessel)
-    conditions.push(ilike(cvmCharterParties.vesselName, `%${vessel}%`));
+    conditions.push(ilike(cvmCharterParties.vesselName, `%${escapeIlike(vessel)}%`));
   if (search) {
     conditions.push(
       or(
-        ilike(cvmCharterParties.cpReference, `%${search}%`),
-        ilike(cvmCharterParties.chartererName, `%${search}%`),
-        ilike(cvmCharterParties.ownerName, `%${search}%`)
+        ilike(cvmCharterParties.cpReference, `%${escapeIlike(search)}%`),
+        ilike(cvmCharterParties.chartererName, `%${escapeIlike(search)}%`),
+        ilike(cvmCharterParties.ownerName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(cvmCharterParties.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmCharterParties.createdAt, cvmCharterParties.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cvmCharterParties)
     .where(and(...conditions))
-    .orderBy(desc(cvmCharterParties.createdAt))
+    .orderBy(desc(cvmCharterParties.createdAt), desc(cvmCharterParties.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

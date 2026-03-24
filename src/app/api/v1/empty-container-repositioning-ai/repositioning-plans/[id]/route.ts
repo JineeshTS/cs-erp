@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getRepositioningPlan } from "@/lib/empty-container-repositioning-ai/service";
@@ -29,8 +30,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ecr:edit"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const existing = await getRepositioningPlan(id, user.tenantId);
     if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Not found" } }, { status: 404 });
@@ -39,7 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(ecrRepositioningPlans).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(ecrRepositioningPlans.id, id), eq(ecrRepositioningPlans.tenantId, user.tenantId), isNull(ecrRepositioningPlans.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "repositioning-plans", entityId: updated?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "repositioning-plans", entityId: updated.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update repositioning plan:", error);
@@ -52,14 +53,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ecr:delete"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const existing = await getRepositioningPlan(id, user.tenantId);
     if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Not found" } }, { status: 404 });
     const [deleted] = await db.update(ecrRepositioningPlans).set({ deletedAt: new Date() }).where(and(eq(ecrRepositioningPlans.id, id), eq(ecrRepositioningPlans.tenantId, user.tenantId), isNull(ecrRepositioningPlans.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "repositioning-plans", entityId: deleted?.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "repositioning-plans", entityId: deleted.id, module: "empty-container-repositioning-ai", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });
   } catch (error) {
     console.error("Failed to delete repositioning plan:", error);

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmTeuMaximizations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function TeuMaximizationsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function TeuMaximizationsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmTeuMaximizations.strategyRef, `%${search}%`),
-        ilike(lrmTeuMaximizations.tradeLane, `%${search}%`)
+        ilike(lrmTeuMaximizations.strategyRef, `%${escapeIlike(search)}%`),
+        ilike(lrmTeuMaximizations.tradeLane, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmTeuMaximizations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmTeuMaximizations.createdAt, lrmTeuMaximizations.id, parsedCursor));
 
   const data = await db.select().from(lrmTeuMaximizations)
     .where(and(...conditions))
-    .orderBy(desc(lrmTeuMaximizations.createdAt))
+    .orderBy(desc(lrmTeuMaximizations.createdAt), desc(lrmTeuMaximizations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -7,13 +7,15 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   fdpDeploymentDecisions, fdpFleetUtilizations, fdpNetworkDesigns, fdpDeploymentOptimizers,
   fdpFleetFinancials, fdpVesselSwaps, fdpDeploymentContracts, fdpMarketIntelligence,
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FleetDeploymentPlanningPage({
   searchParams,
 }: {
@@ -31,22 +33,23 @@ export default async function FleetDeploymentPlanningPage({
   const limit = 50;
 
   const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
-    db.select({ id: fdpDeploymentDecisions.id }).from(fdpDeploymentDecisions).where(and(eq(fdpDeploymentDecisions.tenantId, session.tenantId), isNull(fdpDeploymentDecisions.deletedAt), eq(fdpDeploymentDecisions.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpFleetUtilizations.id }).from(fdpFleetUtilizations).where(and(eq(fdpFleetUtilizations.tenantId, session.tenantId), isNull(fdpFleetUtilizations.deletedAt), eq(fdpFleetUtilizations.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpNetworkDesigns.id }).from(fdpNetworkDesigns).where(and(eq(fdpNetworkDesigns.tenantId, session.tenantId), isNull(fdpNetworkDesigns.deletedAt), eq(fdpNetworkDesigns.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpDeploymentOptimizers.id }).from(fdpDeploymentOptimizers).where(and(eq(fdpDeploymentOptimizers.tenantId, session.tenantId), isNull(fdpDeploymentOptimizers.deletedAt), eq(fdpDeploymentOptimizers.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpFleetFinancials.id }).from(fdpFleetFinancials).where(and(eq(fdpFleetFinancials.tenantId, session.tenantId), isNull(fdpFleetFinancials.deletedAt), eq(fdpFleetFinancials.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpVesselSwaps.id }).from(fdpVesselSwaps).where(and(eq(fdpVesselSwaps.tenantId, session.tenantId), isNull(fdpVesselSwaps.deletedAt), eq(fdpVesselSwaps.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpDeploymentContracts.id }).from(fdpDeploymentContracts).where(and(eq(fdpDeploymentContracts.tenantId, session.tenantId), isNull(fdpDeploymentContracts.deletedAt), eq(fdpDeploymentContracts.status, "draft"))).then((r) => r.length),
-    db.select({ id: fdpMarketIntelligence.id }).from(fdpMarketIntelligence).where(and(eq(fdpMarketIntelligence.tenantId, session.tenantId), isNull(fdpMarketIntelligence.deletedAt), eq(fdpMarketIntelligence.status, "draft"))).then((r) => r.length),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpDeploymentDecisions).where(and(eq(fdpDeploymentDecisions.tenantId, session.tenantId), isNull(fdpDeploymentDecisions.deletedAt), eq(fdpDeploymentDecisions.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpFleetUtilizations).where(and(eq(fdpFleetUtilizations.tenantId, session.tenantId), isNull(fdpFleetUtilizations.deletedAt), eq(fdpFleetUtilizations.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpNetworkDesigns).where(and(eq(fdpNetworkDesigns.tenantId, session.tenantId), isNull(fdpNetworkDesigns.deletedAt), eq(fdpNetworkDesigns.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpDeploymentOptimizers).where(and(eq(fdpDeploymentOptimizers.tenantId, session.tenantId), isNull(fdpDeploymentOptimizers.deletedAt), eq(fdpDeploymentOptimizers.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpFleetFinancials).where(and(eq(fdpFleetFinancials.tenantId, session.tenantId), isNull(fdpFleetFinancials.deletedAt), eq(fdpFleetFinancials.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpVesselSwaps).where(and(eq(fdpVesselSwaps.tenantId, session.tenantId), isNull(fdpVesselSwaps.deletedAt), eq(fdpVesselSwaps.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpDeploymentContracts).where(and(eq(fdpDeploymentContracts.tenantId, session.tenantId), isNull(fdpDeploymentContracts.deletedAt), eq(fdpDeploymentContracts.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(fdpMarketIntelligence).where(and(eq(fdpMarketIntelligence.tenantId, session.tenantId), isNull(fdpMarketIntelligence.deletedAt), eq(fdpMarketIntelligence.status, "draft"))).then((r) => r[0]?.value ?? 0),
   ]);
 
   const conditions = [eq(fdpDeploymentDecisions.tenantId, session.tenantId), isNull(fdpDeploymentDecisions.deletedAt)];
   if (status) conditions.push(eq(fdpDeploymentDecisions.status, status));
-  if (search) conditions.push(or(ilike(fdpDeploymentDecisions.decisionRef, `%${search}%`), ilike(fdpDeploymentDecisions.title, `%${search}%`))!);
-  if (cursor) conditions.push(lt(fdpDeploymentDecisions.createdAt, new Date(cursor)));
+  if (search) conditions.push(or(ilike(fdpDeploymentDecisions.decisionRef, `%${escapeIlike(search)}%`), ilike(fdpDeploymentDecisions.title, `%${escapeIlike(search)}%`))!);
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(fdpDeploymentDecisions.createdAt, fdpDeploymentDecisions.id, parsedCursor));
 
-  const data = await db.select().from(fdpDeploymentDecisions).where(and(...conditions)).orderBy(desc(fdpDeploymentDecisions.createdAt)).limit(limit + 1);
+  const data = await db.select().from(fdpDeploymentDecisions).where(and(...conditions)).orderBy(desc(fdpDeploymentDecisions.createdAt), desc(fdpDeploymentDecisions.id)).limit(limit + 1);
   const hasMore = data.length > limit;
   const items = hasMore ? data.slice(0, limit) : data;
   const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
@@ -78,7 +81,7 @@ export default async function FleetDeploymentPlanningPage({
         ].map((c) => (
           <div key={c.label} className="rounded-lg border bg-white p-5">
             <div className="flex items-center gap-3">
-              <div className={`rounded-lg bg-${c.color}-50 p-2.5 text-${c.color}-600`}><c.icon className="h-5 w-5" /></div>
+              <div className={`rounded-lg p-2.5 ${({ blue: "bg-blue-50 text-blue-600", green: "bg-green-50 text-green-600", orange: "bg-orange-50 text-orange-600", red: "bg-red-50 text-red-600", purple: "bg-purple-50 text-purple-600", indigo: "bg-indigo-50 text-indigo-600", teal: "bg-teal-50 text-teal-600", yellow: "bg-yellow-50 text-yellow-600" } as Record<string, string>)[c.color] ?? ""}`}><c.icon className="h-5 w-5" /></div>
               <div><p className="text-sm text-gray-500">{c.label}</p><p className="text-2xl font-bold text-gray-900">{c.count}</p></div>
             </div>
           </div>

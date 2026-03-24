@@ -1,0 +1,27 @@
+# Secrets
+.env*
+.keys/
+
+# Git
+.git/
+.gitignore
+
+# Dev/IDE
+.claude/
+node_modules/
+scripts/
+CLAUDE.md
+CS-ERP-ISSUES.md
+
+# Knowledge graph (not needed in container)
+knowledge-graph/
+
+# Build artifacts
+.next/
+*.log
+
+# CloudFormation
+cloudformation/
+
+# Docs
+docs/

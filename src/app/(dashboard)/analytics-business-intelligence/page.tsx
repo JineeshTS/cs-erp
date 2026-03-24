@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   abiExecutiveKpiDashboards,
   abiVoyageAnalytics,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AnalyticsBusinessIntelligencePage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function AnalyticsBusinessIntelligencePage({
 
   const [publishedKpi, draftVoyage, draftTradeLane, draftCustomer, activePredictions, draftMarket, draftEfficiency, scheduledReports] =
     await Promise.all([
-      db.select({ id: abiExecutiveKpiDashboards.id }).from(abiExecutiveKpiDashboards)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiExecutiveKpiDashboards)
         .where(and(eq(abiExecutiveKpiDashboards.tenantId, session.tenantId), isNull(abiExecutiveKpiDashboards.deletedAt), eq(abiExecutiveKpiDashboards.status, "published")))
-        .then((r) => r.length),
-      db.select({ id: abiVoyageAnalytics.id }).from(abiVoyageAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiVoyageAnalytics)
         .where(and(eq(abiVoyageAnalytics.tenantId, session.tenantId), isNull(abiVoyageAnalytics.deletedAt), eq(abiVoyageAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiTradeLaneAnalytics.id }).from(abiTradeLaneAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiTradeLaneAnalytics)
         .where(and(eq(abiTradeLaneAnalytics.tenantId, session.tenantId), isNull(abiTradeLaneAnalytics.deletedAt), eq(abiTradeLaneAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiCustomerRevenueAnalytics.id }).from(abiCustomerRevenueAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiCustomerRevenueAnalytics)
         .where(and(eq(abiCustomerRevenueAnalytics.tenantId, session.tenantId), isNull(abiCustomerRevenueAnalytics.deletedAt), eq(abiCustomerRevenueAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiPredictiveForecasts.id }).from(abiPredictiveForecasts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiPredictiveForecasts)
         .where(and(eq(abiPredictiveForecasts.tenantId, session.tenantId), isNull(abiPredictiveForecasts.deletedAt), eq(abiPredictiveForecasts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: abiMarketIntelligenceReports.id }).from(abiMarketIntelligenceReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiMarketIntelligenceReports)
         .where(and(eq(abiMarketIntelligenceReports.tenantId, session.tenantId), isNull(abiMarketIntelligenceReports.deletedAt), eq(abiMarketIntelligenceReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiOperationalEfficiencies.id }).from(abiOperationalEfficiencies)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiOperationalEfficiencies)
         .where(and(eq(abiOperationalEfficiencies.tenantId, session.tenantId), isNull(abiOperationalEfficiencies.deletedAt), eq(abiOperationalEfficiencies.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: abiBiReports.id }).from(abiBiReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(abiBiReports)
         .where(and(eq(abiBiReports.tenantId, session.tenantId), isNull(abiBiReports.deletedAt), eq(abiBiReports.status, "scheduled")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function AnalyticsBusinessIntelligencePage({
   if (search) {
     conditions.push(
       or(
-        ilike(abiExecutiveKpiDashboards.dashboardRef, `%${search}%`),
-        ilike(abiExecutiveKpiDashboards.dashboardType, `%${search}%`)
+        ilike(abiExecutiveKpiDashboards.dashboardRef, `%${escapeIlike(search)}%`),
+        ilike(abiExecutiveKpiDashboards.dashboardType, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(abiExecutiveKpiDashboards.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(abiExecutiveKpiDashboards.createdAt, abiExecutiveKpiDashboards.id, parsedCursor));
 
   const data = await db.select().from(abiExecutiveKpiDashboards)
     .where(and(...conditions))
-    .orderBy(desc(abiExecutiveKpiDashboards.createdAt))
+    .orderBy(desc(abiExecutiveKpiDashboards.createdAt), desc(abiExecutiveKpiDashboards.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { vtmDryDockPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const PAGE_SIZE = 50;
 
 function statusBadge(status: string) {
@@ -47,9 +49,9 @@ export default async function DryDockPlansPage({
   if (search) {
     conditions.push(
       or(
-        ilike(vtmDryDockPlans.planRef, `%${search}%`),
-        ilike(vtmDryDockPlans.vesselName, `%${search}%`),
-        ilike(vtmDryDockPlans.dockYardName, `%${search}%`)
+        ilike(vtmDryDockPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(vtmDryDockPlans.vesselName, `%${escapeIlike(search)}%`),
+        ilike(vtmDryDockPlans.dockYardName, `%${escapeIlike(search)}%`)
       )!
     );
   }
@@ -58,15 +60,16 @@ export default async function DryDockPlansPage({
     conditions.push(eq(vtmDryDockPlans.status, status));
   }
 
-  if (cursor) {
-    conditions.push(lt(vtmDryDockPlans.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(vtmDryDockPlans.createdAt, vtmDryDockPlans.id, parsedCursor));
+    }
 
   const plans = await db
     .select()
     .from(vtmDryDockPlans)
     .where(and(...conditions))
-    .orderBy(desc(vtmDryDockPlans.createdAt))
+    .orderBy(desc(vtmDryDockPlans.createdAt), desc(vtmDryDockPlans.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = plans.length > PAGE_SIZE;

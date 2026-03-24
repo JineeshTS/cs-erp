@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { odmRegulatoryFilings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString();
@@ -41,16 +43,16 @@ export default async function RegulatoryFilingsPage({
   ];
   if (status) conditions.push(eq(odmRegulatoryFilings.status, status));
   if (search) {
-    conditions.push(ilike(odmRegulatoryFilings.filingReference, `%${search}%`));
+    conditions.push(ilike(odmRegulatoryFilings.filingReference, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(odmRegulatoryFilings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmRegulatoryFilings.createdAt, odmRegulatoryFilings.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmRegulatoryFilings)
     .where(and(...conditions))
-    .orderBy(desc(odmRegulatoryFilings.createdAt))
+    .orderBy(desc(odmRegulatoryFilings.createdAt), desc(odmRegulatoryFilings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

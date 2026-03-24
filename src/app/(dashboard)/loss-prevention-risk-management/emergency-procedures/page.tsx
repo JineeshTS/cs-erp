@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprEmergencyProcedures } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function EmergencyProceduresListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function EmergencyProceduresListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprEmergencyProcedures.procedureRef, `%${search}%`),
-        ilike(lprEmergencyProcedures.title, `%${search}%`)
+        ilike(lprEmergencyProcedures.procedureRef, `%${escapeIlike(search)}%`),
+        ilike(lprEmergencyProcedures.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprEmergencyProcedures.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprEmergencyProcedures.createdAt, lprEmergencyProcedures.id, parsedCursor));
 
   const data = await db.select().from(lprEmergencyProcedures)
     .where(and(...conditions))
-    .orderBy(desc(lprEmergencyProcedures.createdAt))
+    .orderBy(desc(lprEmergencyProcedures.createdAt), desc(lprEmergencyProcedures.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

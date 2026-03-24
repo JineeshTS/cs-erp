@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { cvmTcContracts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function TcContractsListPage({
   searchParams,
 }: {
@@ -40,20 +42,20 @@ export default async function TcContractsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(cvmTcContracts.contractReference, `%${search}%`),
-        ilike(cvmTcContracts.counterpartyName, `%${search}%`),
-        ilike(cvmTcContracts.vesselName, `%${search}%`)
+        ilike(cvmTcContracts.contractReference, `%${escapeIlike(search)}%`),
+        ilike(cvmTcContracts.counterpartyName, `%${escapeIlike(search)}%`),
+        ilike(cvmTcContracts.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(cvmTcContracts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmTcContracts.createdAt, cvmTcContracts.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cvmTcContracts)
     .where(and(...conditions))
-    .orderBy(desc(cvmTcContracts.createdAt))
+    .orderBy(desc(cvmTcContracts.createdAt), desc(cvmTcContracts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

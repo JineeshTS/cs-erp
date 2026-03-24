@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   pscPurchaseRequisitions,
   pscVendorSourcings,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ProcurementSupplyChainPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function ProcurementSupplyChainPage({
 
   const [pendingRequisitions, openSourcings, activePOs, activeContracts, activeInventory, pendingReceipts, draftAnalytics, draftScorecards] =
     await Promise.all([
-      db.select({ id: pscPurchaseRequisitions.id }).from(pscPurchaseRequisitions)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscPurchaseRequisitions)
         .where(and(eq(pscPurchaseRequisitions.tenantId, session.tenantId), isNull(pscPurchaseRequisitions.deletedAt), eq(pscPurchaseRequisitions.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pscVendorSourcings.id }).from(pscVendorSourcings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscVendorSourcings)
         .where(and(eq(pscVendorSourcings.tenantId, session.tenantId), isNull(pscVendorSourcings.deletedAt), eq(pscVendorSourcings.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: pscPurchaseOrders.id }).from(pscPurchaseOrders)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscPurchaseOrders)
         .where(and(eq(pscPurchaseOrders.tenantId, session.tenantId), isNull(pscPurchaseOrders.deletedAt), eq(pscPurchaseOrders.status, "approved")))
-        .then((r) => r.length),
-      db.select({ id: pscProcurementContracts.id }).from(pscProcurementContracts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscProcurementContracts)
         .where(and(eq(pscProcurementContracts.tenantId, session.tenantId), isNull(pscProcurementContracts.deletedAt), eq(pscProcurementContracts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: pscInventoryStockControls.id }).from(pscInventoryStockControls)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscInventoryStockControls)
         .where(and(eq(pscInventoryStockControls.tenantId, session.tenantId), isNull(pscInventoryStockControls.deletedAt), eq(pscInventoryStockControls.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: pscGoodsReceiptInspections.id }).from(pscGoodsReceiptInspections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscGoodsReceiptInspections)
         .where(and(eq(pscGoodsReceiptInspections.tenantId, session.tenantId), isNull(pscGoodsReceiptInspections.deletedAt), eq(pscGoodsReceiptInspections.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pscSpendAnalytics.id }).from(pscSpendAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscSpendAnalytics)
         .where(and(eq(pscSpendAnalytics.tenantId, session.tenantId), isNull(pscSpendAnalytics.deletedAt), eq(pscSpendAnalytics.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pscSupplierScorecards.id }).from(pscSupplierScorecards)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pscSupplierScorecards)
         .where(and(eq(pscSupplierScorecards.tenantId, session.tenantId), isNull(pscSupplierScorecards.deletedAt), eq(pscSupplierScorecards.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function ProcurementSupplyChainPage({
   if (search) {
     conditions.push(
       or(
-        ilike(pscPurchaseRequisitions.requisitionRef, `%${search}%`),
-        ilike(pscPurchaseRequisitions.title, `%${search}%`)
+        ilike(pscPurchaseRequisitions.requisitionRef, `%${escapeIlike(search)}%`),
+        ilike(pscPurchaseRequisitions.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(pscPurchaseRequisitions.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pscPurchaseRequisitions.createdAt, pscPurchaseRequisitions.id, parsedCursor));
 
   const data = await db.select().from(pscPurchaseRequisitions)
     .where(and(...conditions))
-    .orderBy(desc(pscPurchaseRequisitions.createdAt))
+    .orderBy(desc(pscPurchaseRequisitions.createdAt), desc(pscPurchaseRequisitions.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

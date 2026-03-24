@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsDocuments } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDocumentSchema } from "@/lib/document-management-system/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -20,11 +22,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(dmsDocuments.tenantId, user.tenantId), isNull(dmsDocuments.deletedAt)];
-    if (search) conditions.push(ilike(dmsDocuments.title, `%${search}%`));
-    if (cursor) conditions.push(lt(dmsDocuments.createdAt, new Date(cursor)));
+    if (search) conditions.push(ilike(dmsDocuments.title, `%${escapeIlike(search)}%`));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(dmsDocuments.createdAt, dmsDocuments.id, parsedCursor));
 
     const results = await db.select().from(dmsDocuments).where(and(...conditions))
-      .orderBy(desc(dmsDocuments.createdAt)).limit(limit + 1);
+      .orderBy(desc(dmsDocuments.createdAt), desc(dmsDocuments.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -46,8 +49,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createDocumentSchema.safeParse(body);
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
       expiresAt: expiresAt ? new Date(expiresAt) : undefined,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "documents", entityId: created?.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "documents", entityId: created.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

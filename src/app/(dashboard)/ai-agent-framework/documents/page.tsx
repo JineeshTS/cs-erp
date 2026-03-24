@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { aafDocumentProcessingJobs } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const STATUS_VARIANTS: Record<string, "success" | "warning" | "destructive" | "secondary" | "default"> = {
   queued: "secondary",
   processing: "warning",
@@ -57,16 +59,17 @@ export default async function DocumentProcessingJobsPage({
   if (status) conditions.push(eq(aafDocumentProcessingJobs.status, status));
   if (search) {
     conditions.push(
-      ilike(aafDocumentProcessingJobs.jobReference, `%${search}%`)
+      ilike(aafDocumentProcessingJobs.jobReference, `%${escapeIlike(search)}%`)
     );
   }
-  if (cursor) conditions.push(lt(aafDocumentProcessingJobs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(aafDocumentProcessingJobs.createdAt, aafDocumentProcessingJobs.id, parsedCursor));
 
   const data = await db
     .select()
     .from(aafDocumentProcessingJobs)
     .where(and(...conditions))
-    .orderBy(desc(aafDocumentProcessingJobs.createdAt))
+    .orderBy(desc(aafDocumentProcessingJobs.createdAt), desc(aafDocumentProcessingJobs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

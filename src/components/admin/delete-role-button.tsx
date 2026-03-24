@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 interface DeleteRoleButtonProps {
   roleId: string;
@@ -22,7 +23,7 @@ export function DeleteRoleButton({ roleId, roleName, hasUsers }: DeleteRoleButto
     try {
       const res = await fetch(`/api/v1/admin/roles/${roleId}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": "1" },
+        headers: { "x-csrf-token": getCsrfToken() },
       });
       const json = await res.json();
       if (!res.ok) {

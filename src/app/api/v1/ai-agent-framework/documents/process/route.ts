@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { aafDocumentProcessingJobs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -13,8 +14,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ai:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createDocumentProcessingJobSchema.safeParse(body);
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "process", entityId: created?.id, module: "ai-agent-framework", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "process", entityId: created.id, module: "ai-agent-framework", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

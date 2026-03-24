@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmCustomers } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SalesCrmCustomersPage({
   searchParams,
 }: {
@@ -33,16 +35,16 @@ export default async function SalesCrmCustomersPage({
   if (customerType)
     conditions.push(eq(scmCustomers.customerType, customerType));
   if (search) {
-    conditions.push(ilike(scmCustomers.companyName, `%${search}%`));
+    conditions.push(ilike(scmCustomers.companyName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmCustomers.createdAt, scmCustomers.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmCustomers)
     .where(and(...conditions))
-    .orderBy(desc(scmCustomers.createdAt))
+    .orderBy(desc(scmCustomers.createdAt), desc(scmCustomers.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

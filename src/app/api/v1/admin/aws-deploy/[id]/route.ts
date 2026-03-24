@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getDeploymentStatus, deleteDeployment } from "@/lib/admin-portal/aws-deploy-service";
@@ -47,13 +48,8 @@ export async function DELETE(
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const result = await deleteDeployment(user.tenantId, id);

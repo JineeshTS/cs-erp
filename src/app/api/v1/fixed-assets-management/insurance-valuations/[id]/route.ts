@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { famInsuranceValuations } from "@/db/schema";
@@ -58,8 +59,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -88,8 +89,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "insurance-valuations", entityId: updated?.id, module: "fixed-assets-management", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated)
       return NextResponse.json(
         {
@@ -101,6 +100,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "insurance-valuations", entityId: updated.id, module: "fixed-assets-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update insurance valuation:", error);
@@ -123,8 +123,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [record] = await db
@@ -138,8 +138,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "insurance-valuations", entityId: record?.id, module: "fixed-assets-management", previousData: null, request });
-
     if (!record)
       return NextResponse.json(
         {
@@ -151,6 +149,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "insurance-valuations", entityId: record.id, module: "fixed-assets-management", previousData: null, request });
     return NextResponse.json({ data: { success: true } });
   } catch (error) {
     console.error("Failed to delete insurance valuation:", error);

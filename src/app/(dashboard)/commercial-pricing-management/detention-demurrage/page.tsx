@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmDetentionDemurrage } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DetentionDemurrageListPage({
   searchParams,
 }: {
@@ -26,18 +28,19 @@ export default async function DetentionDemurrageListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmDetentionDemurrage.tariffName, `%${search}%`));
+    conditions.push(ilike(cpmDetentionDemurrage.tariffName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmDetentionDemurrage.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmDetentionDemurrage.createdAt, cpmDetentionDemurrage.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmDetentionDemurrage)
     .where(and(...conditions))
-    .orderBy(desc(cpmDetentionDemurrage.createdAt))
+    .orderBy(desc(cpmDetentionDemurrage.createdAt), desc(cpmDetentionDemurrage.id))
     .limit(limit + 1);
 
   const hasMore = records.length > limit;

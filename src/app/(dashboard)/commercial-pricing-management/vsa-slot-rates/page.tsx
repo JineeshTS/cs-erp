@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmVsaSlotRates } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VsaSlotRatesListPage({
   searchParams,
 }: {
@@ -26,18 +28,19 @@ export default async function VsaSlotRatesListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmVsaSlotRates.vsaPartner, `%${search}%`));
+    conditions.push(ilike(cpmVsaSlotRates.vsaPartner, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmVsaSlotRates.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmVsaSlotRates.createdAt, cpmVsaSlotRates.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmVsaSlotRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmVsaSlotRates.createdAt))
+    .orderBy(desc(cpmVsaSlotRates.createdAt), desc(cpmVsaSlotRates.id))
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;

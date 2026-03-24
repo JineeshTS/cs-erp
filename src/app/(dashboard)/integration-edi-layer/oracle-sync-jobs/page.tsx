@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { ielOracleSyncJobs } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function statusVariant(status: string) {
   switch (status) {
     case "completed":
@@ -61,19 +63,19 @@ export default async function OracleSyncJobsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ielOracleSyncJobs.jobCode, `%${search}%`),
-        ilike(ielOracleSyncJobs.entityType, `%${search}%`)
+        ilike(ielOracleSyncJobs.jobCode, `%${escapeIlike(search)}%`),
+        ilike(ielOracleSyncJobs.entityType, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(ielOracleSyncJobs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ielOracleSyncJobs.createdAt, ielOracleSyncJobs.id, parsedCursor));
 
   const data = await db
     .select()
     .from(ielOracleSyncJobs)
     .where(and(...conditions))
-    .orderBy(desc(ielOracleSyncJobs.createdAt))
+    .orderBy(desc(ielOracleSyncJobs.createdAt), desc(ielOracleSyncJobs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

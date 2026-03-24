@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   oogCargoAcceptances,
   oogStowagePlans,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OogSpecialCargoManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function OogSpecialCargoManagementPage({
 
   const [pendingAcceptances, draftStowagePlans, availableEquipment, planningHeavyLifts, pendingApprovals] =
     await Promise.all([
-      db.select({ id: oogCargoAcceptances.id }).from(oogCargoAcceptances)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(oogCargoAcceptances)
         .where(and(eq(oogCargoAcceptances.tenantId, session.tenantId), isNull(oogCargoAcceptances.deletedAt), eq(oogCargoAcceptances.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: oogStowagePlans.id }).from(oogStowagePlans)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(oogStowagePlans)
         .where(and(eq(oogStowagePlans.tenantId, session.tenantId), isNull(oogStowagePlans.deletedAt), eq(oogStowagePlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: oogSpecialEquipment.id }).from(oogSpecialEquipment)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(oogSpecialEquipment)
         .where(and(eq(oogSpecialEquipment.tenantId, session.tenantId), isNull(oogSpecialEquipment.deletedAt), eq(oogSpecialEquipment.status, "available")))
-        .then((r) => r.length),
-      db.select({ id: oogHeavyLifts.id }).from(oogHeavyLifts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(oogHeavyLifts)
         .where(and(eq(oogHeavyLifts.tenantId, session.tenantId), isNull(oogHeavyLifts.deletedAt), eq(oogHeavyLifts.status, "planning")))
-        .then((r) => r.length),
-      db.select({ id: oogPortApprovals.id }).from(oogPortApprovals)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(oogPortApprovals)
         .where(and(eq(oogPortApprovals.tenantId, session.tenantId), isNull(oogPortApprovals.deletedAt), eq(oogPortApprovals.status, "pending")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function OogSpecialCargoManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(oogCargoAcceptances.acceptanceRef, `%${search}%`),
-        ilike(oogCargoAcceptances.customerName, `%${search}%`),
-        ilike(oogCargoAcceptances.containerNumber, `%${search}%`)
+        ilike(oogCargoAcceptances.acceptanceRef, `%${escapeIlike(search)}%`),
+        ilike(oogCargoAcceptances.customerName, `%${escapeIlike(search)}%`),
+        ilike(oogCargoAcceptances.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(oogCargoAcceptances.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(oogCargoAcceptances.createdAt, oogCargoAcceptances.id, parsedCursor));
 
   const data = await db.select().from(oogCargoAcceptances)
     .where(and(...conditions))
-    .orderBy(desc(oogCargoAcceptances.createdAt))
+    .orderBy(desc(oogCargoAcceptances.createdAt), desc(oogCargoAcceptances.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

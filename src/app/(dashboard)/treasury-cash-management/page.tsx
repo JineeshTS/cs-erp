@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   tcmBankAccounts,
   tcmCashPositions,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function TreasuryCashManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function TreasuryCashManagementPage({
 
   const [activeBankAccounts, draftCashPositions, draftReconciliations, activeSweeps, activeHedges, draftLCs, draftBGs, activeLoans] =
     await Promise.all([
-      db.select({ id: tcmBankAccounts.id }).from(tcmBankAccounts)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmBankAccounts)
         .where(and(eq(tcmBankAccounts.tenantId, session.tenantId), isNull(tcmBankAccounts.deletedAt), eq(tcmBankAccounts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmCashPositions.id }).from(tcmCashPositions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmCashPositions)
         .where(and(eq(tcmCashPositions.tenantId, session.tenantId), isNull(tcmCashPositions.deletedAt), eq(tcmCashPositions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmBankReconciliations.id }).from(tcmBankReconciliations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmBankReconciliations)
         .where(and(eq(tcmBankReconciliations.tenantId, session.tenantId), isNull(tcmBankReconciliations.deletedAt), eq(tcmBankReconciliations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmCashPoolingSweeps.id }).from(tcmCashPoolingSweeps)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmCashPoolingSweeps)
         .where(and(eq(tcmCashPoolingSweeps.tenantId, session.tenantId), isNull(tcmCashPoolingSweeps.deletedAt), eq(tcmCashPoolingSweeps.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmFxHedgingExposures.id }).from(tcmFxHedgingExposures)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmFxHedgingExposures)
         .where(and(eq(tcmFxHedgingExposures.tenantId, session.tenantId), isNull(tcmFxHedgingExposures.deletedAt), eq(tcmFxHedgingExposures.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: tcmLettersOfCredit.id }).from(tcmLettersOfCredit)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmLettersOfCredit)
         .where(and(eq(tcmLettersOfCredit.tenantId, session.tenantId), isNull(tcmLettersOfCredit.deletedAt), eq(tcmLettersOfCredit.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmBankGuarantees.id }).from(tcmBankGuarantees)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmBankGuarantees)
         .where(and(eq(tcmBankGuarantees.tenantId, session.tenantId), isNull(tcmBankGuarantees.deletedAt), eq(tcmBankGuarantees.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: tcmIntercompanyLoans.id }).from(tcmIntercompanyLoans)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(tcmIntercompanyLoans)
         .where(and(eq(tcmIntercompanyLoans.tenantId, session.tenantId), isNull(tcmIntercompanyLoans.deletedAt), eq(tcmIntercompanyLoans.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function TreasuryCashManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(tcmBankAccounts.accountRef, `%${search}%`),
-        ilike(tcmBankAccounts.bankName, `%${search}%`)
+        ilike(tcmBankAccounts.accountRef, `%${escapeIlike(search)}%`),
+        ilike(tcmBankAccounts.bankName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(tcmBankAccounts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(tcmBankAccounts.createdAt, tcmBankAccounts.id, parsedCursor));
 
   const data = await db.select().from(tcmBankAccounts)
     .where(and(...conditions))
-    .orderBy(desc(tcmBankAccounts.createdAt))
+    .orderBy(desc(tcmBankAccounts.createdAt), desc(tcmBankAccounts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

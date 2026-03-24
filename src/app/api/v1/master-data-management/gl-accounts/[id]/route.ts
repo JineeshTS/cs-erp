@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { glAccounts } from "@/db/schema";
@@ -37,8 +38,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -50,9 +51,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(glAccounts).set(parsed.data)
       .where(and(eq(glAccounts.id, id), eq(glAccounts.tenantId, user.tenantId), isNull(glAccounts.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "gl-accounts", entityId: updated?.id, module: "master-data-management", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "GL account not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "gl-accounts", entityId: updated.id, module: "master-data-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update GL account:", error);
@@ -69,16 +70,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(glAccounts).set({ deletedAt: new Date() })
       .where(and(eq(glAccounts.id, id), eq(glAccounts.tenantId, user.tenantId), isNull(glAccounts.deletedAt))).returning({ id: glAccounts.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "gl-accounts", entityId: deleted?.id, module: "master-data-management", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "GL account not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "gl-accounts", entityId: deleted.id, module: "master-data-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete GL account:", error);

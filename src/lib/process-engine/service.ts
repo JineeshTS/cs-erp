@@ -110,40 +110,43 @@ interface CreateProcessInstanceParams {
 }
 
 export async function createProcessInstance(params: CreateProcessInstanceParams) {
-  const [instance] = await db
-    .insert(peProcessInstances)
-    .values({
-      tenantId: params.tenantId,
-      processId: params.processId,
-      processName: params.processName,
-      status: "pending",
-      currentStep: 0,
-      totalSteps: params.steps.length,
-      triggerType: params.triggerType,
-      triggeredBy: params.triggeredBy,
-      entityType: params.entityType,
-      entityId: params.entityId,
-      contextJson: params.contextJson,
-      slaDeadline: params.slaDeadline,
-    })
-    .returning();
-
-  // Create step instances
-  if (params.steps.length > 0) {
-    await db.insert(peStepInstances).values(
-      params.steps.map((step) => ({
+  // Wrap in transaction — process instance + step instances must be atomic
+  return db.transaction(async (tx) => {
+    const [instance] = await tx
+      .insert(peProcessInstances)
+      .values({
         tenantId: params.tenantId,
-        processInstanceId: instance.id,
-        stepNumber: step.stepNumber,
-        stepName: step.stepName,
-        executorType: step.executorType,
-        executorId: step.executorId,
+        processId: params.processId,
+        processName: params.processName,
         status: "pending",
-      }))
-    );
-  }
+        currentStep: 0,
+        totalSteps: params.steps.length,
+        triggerType: params.triggerType,
+        triggeredBy: params.triggeredBy,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        contextJson: params.contextJson,
+        slaDeadline: params.slaDeadline,
+      })
+      .returning();
 
-  return instance;
+    // Create step instances
+    if (params.steps.length > 0) {
+      await tx.insert(peStepInstances).values(
+        params.steps.map((step) => ({
+          tenantId: params.tenantId,
+          processInstanceId: instance.id,
+          stepNumber: step.stepNumber,
+          stepName: step.stepName,
+          executorType: step.executorType,
+          executorId: step.executorId,
+          status: "pending",
+        }))
+      );
+    }
+
+    return instance;
+  });
 }
 
 // ── Step Lifecycle ──

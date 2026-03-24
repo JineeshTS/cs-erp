@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   vrsVoyageCloses,
   vrsTcSettlements,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VoyageResultsSettlementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function VoyageResultsSettlementPage({
 
   const [draftVoyageCloses, draftTcSettlements, draftVoyagePnls, draftHireReconciliations, draftResultWorkflows, draftIntercoSettlements, draftProfitBenchmarks, draftVoyageAnalytics] =
     await Promise.all([
-      db.select({ id: vrsVoyageCloses.id }).from(vrsVoyageCloses)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsVoyageCloses)
         .where(and(eq(vrsVoyageCloses.tenantId, session.tenantId), isNull(vrsVoyageCloses.deletedAt), eq(vrsVoyageCloses.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsTcSettlements.id }).from(vrsTcSettlements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsTcSettlements)
         .where(and(eq(vrsTcSettlements.tenantId, session.tenantId), isNull(vrsTcSettlements.deletedAt), eq(vrsTcSettlements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsVoyagePnls.id }).from(vrsVoyagePnls)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsVoyagePnls)
         .where(and(eq(vrsVoyagePnls.tenantId, session.tenantId), isNull(vrsVoyagePnls.deletedAt), eq(vrsVoyagePnls.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsHireReconciliations.id }).from(vrsHireReconciliations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsHireReconciliations)
         .where(and(eq(vrsHireReconciliations.tenantId, session.tenantId), isNull(vrsHireReconciliations.deletedAt), eq(vrsHireReconciliations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsResultWorkflows.id }).from(vrsResultWorkflows)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsResultWorkflows)
         .where(and(eq(vrsResultWorkflows.tenantId, session.tenantId), isNull(vrsResultWorkflows.deletedAt), eq(vrsResultWorkflows.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsIntercoSettlements.id }).from(vrsIntercoSettlements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsIntercoSettlements)
         .where(and(eq(vrsIntercoSettlements.tenantId, session.tenantId), isNull(vrsIntercoSettlements.deletedAt), eq(vrsIntercoSettlements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsProfitBenchmarks.id }).from(vrsProfitBenchmarks)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsProfitBenchmarks)
         .where(and(eq(vrsProfitBenchmarks.tenantId, session.tenantId), isNull(vrsProfitBenchmarks.deletedAt), eq(vrsProfitBenchmarks.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vrsVoyageAnalytics.id }).from(vrsVoyageAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vrsVoyageAnalytics)
         .where(and(eq(vrsVoyageAnalytics.tenantId, session.tenantId), isNull(vrsVoyageAnalytics.deletedAt), eq(vrsVoyageAnalytics.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function VoyageResultsSettlementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(vrsVoyageCloses.closeRef, `%${search}%`),
-        ilike(vrsVoyageCloses.title, `%${search}%`)
+        ilike(vrsVoyageCloses.closeRef, `%${escapeIlike(search)}%`),
+        ilike(vrsVoyageCloses.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(vrsVoyageCloses.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(vrsVoyageCloses.createdAt, vrsVoyageCloses.id, parsedCursor));
 
   const data = await db.select().from(vrsVoyageCloses)
     .where(and(...conditions))
-    .orderBy(desc(vrsVoyageCloses.createdAt))
+    .orderBy(desc(vrsVoyageCloses.createdAt), desc(vrsVoyageCloses.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

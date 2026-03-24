@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, Settings, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +47,7 @@ export function Topbar({ userName, userEmail }: TopbarProps) {
   }));
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() } });
     router.push("/login");
     router.refresh();
   }

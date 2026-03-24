@@ -5,6 +5,7 @@ import { wneWorkflowStepInstances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(wneWorkflowStepInstances)
       .where(and(...conditions))
-      .orderBy(desc(wneWorkflowStepInstances.createdAt))
+      .orderBy(desc(wneWorkflowStepInstances.createdAt), desc(wneWorkflowStepInstances.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;

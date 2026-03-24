@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { verifyAccessToken, type AccessTokenPayload } from "@/lib/jwt";
+import { setTenantRLS } from "@/lib/db";
 
 export interface SessionUser {
   id: string;
@@ -15,12 +16,17 @@ export async function getSession(): Promise<SessionUser | null> {
 
   try {
     const payload = await verifyAccessToken(token);
-    return {
+    const user: SessionUser = {
       id: payload.sub,
       tenantId: payload.tid,
       email: payload.email,
       role: payload.role,
     };
+
+    // Set PostgreSQL RLS context for this request
+    await setTenantRLS(user.tenantId);
+
+    return user;
   } catch {
     return null;
   }

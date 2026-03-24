@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpWeatherRoutings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function WeatherRoutingsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function WeatherRoutingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpWeatherRoutings.routingRef, `%${search}%`),
-        ilike(svpWeatherRoutings.vesselName, `%${search}%`)
+        ilike(svpWeatherRoutings.routingRef, `%${escapeIlike(search)}%`),
+        ilike(svpWeatherRoutings.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpWeatherRoutings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpWeatherRoutings.createdAt, svpWeatherRoutings.id, parsedCursor));
 
   const data = await db.select().from(svpWeatherRoutings)
     .where(and(...conditions))
-    .orderBy(desc(svpWeatherRoutings.createdAt))
+    .orderBy(desc(svpWeatherRoutings.createdAt), desc(svpWeatherRoutings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtSopLibraries } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SopLibrariesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function SopLibrariesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtSopLibraries.sopRef, `%${search}%`),
-        ilike(kmtSopLibraries.title, `%${search}%`)
+        ilike(kmtSopLibraries.sopRef, `%${escapeIlike(search)}%`),
+        ilike(kmtSopLibraries.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtSopLibraries.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtSopLibraries.createdAt, kmtSopLibraries.id, parsedCursor));
 
   const data = await db.select().from(kmtSopLibraries)
     .where(and(...conditions))
-    .orderBy(desc(kmtSopLibraries.createdAt))
+    .orderBy(desc(kmtSopLibraries.createdAt), desc(kmtSopLibraries.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

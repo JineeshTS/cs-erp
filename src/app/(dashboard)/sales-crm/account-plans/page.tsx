@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmAccountPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AccountPlansPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function AccountPlansPage({
   ];
   if (status) conditions.push(eq(scmAccountPlans.status, status));
   if (search) {
-    conditions.push(ilike(scmAccountPlans.planName, `%${search}%`));
+    conditions.push(ilike(scmAccountPlans.planName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmAccountPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmAccountPlans.createdAt, scmAccountPlans.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmAccountPlans)
     .where(and(...conditions))
-    .orderBy(desc(scmAccountPlans.createdAt))
+    .orderBy(desc(scmAccountPlans.createdAt), desc(scmAccountPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

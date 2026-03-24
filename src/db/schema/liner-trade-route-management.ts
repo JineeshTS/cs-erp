@@ -50,7 +50,7 @@ export const ltrServiceLoops = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_service_loops_tenant_idx").on(t.tenantId),
@@ -101,7 +101,7 @@ export const ltrPortPairTradeLanes = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_port_pair_tl_tenant_idx").on(t.tenantId),
@@ -157,7 +157,7 @@ export const ltrTradeLanePnl = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_trade_lane_pnl_tenant_idx").on(t.tenantId),
@@ -210,7 +210,7 @@ export const ltrSlotAgreements = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_slot_agreements_tenant_idx").on(t.tenantId),
@@ -260,7 +260,7 @@ export const ltrAllianceAgreements = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_alliance_agmt_tenant_idx").on(t.tenantId),
@@ -315,7 +315,7 @@ export const ltrPortStayAnalyses = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_port_stay_tenant_idx").on(t.tenantId),
@@ -369,7 +369,7 @@ export const ltrRouteOptimizations = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_route_opt_tenant_idx").on(t.tenantId),
@@ -422,7 +422,7 @@ export const ltrMarketIntelligence = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ltr_market_intel_tenant_idx").on(t.tenantId),

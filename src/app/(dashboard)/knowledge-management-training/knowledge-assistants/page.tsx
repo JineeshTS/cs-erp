@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtKnowledgeAssistants } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function KnowledgeAssistantsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function KnowledgeAssistantsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtKnowledgeAssistants.assistantRef, `%${search}%`),
-        ilike(kmtKnowledgeAssistants.query, `%${search}%`)
+        ilike(kmtKnowledgeAssistants.assistantRef, `%${escapeIlike(search)}%`),
+        ilike(kmtKnowledgeAssistants.query, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtKnowledgeAssistants.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtKnowledgeAssistants.createdAt, kmtKnowledgeAssistants.id, parsedCursor));
 
   const data = await db.select().from(kmtKnowledgeAssistants)
     .where(and(...conditions))
-    .orderBy(desc(kmtKnowledgeAssistants.createdAt))
+    .orderBy(desc(kmtKnowledgeAssistants.createdAt), desc(kmtKnowledgeAssistants.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

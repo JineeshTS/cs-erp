@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { eqyEquipmentInterchanges } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createEquipmentInterchangeSchema } from "@/lib/equipment-control-yard-managem/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -23,14 +25,15 @@ export async function GET(request: NextRequest) {
       eq(eqyEquipmentInterchanges.tenantId, user.tenantId),
       isNull(eqyEquipmentInterchanges.deletedAt),
     ];
-    if (search) conditions.push(ilike(eqyEquipmentInterchanges.interchangeReference, `%${search}%`));
-    if (cursor) conditions.push(lt(eqyEquipmentInterchanges.createdAt, new Date(cursor)));
+    if (search) conditions.push(ilike(eqyEquipmentInterchanges.interchangeReference, `%${escapeIlike(search)}%`));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyEquipmentInterchanges.createdAt, eqyEquipmentInterchanges.id, parsedCursor));
 
     const results = await db
       .select()
       .from(eqyEquipmentInterchanges)
       .where(and(...conditions))
-      .orderBy(desc(eqyEquipmentInterchanges.createdAt))
+      .orderBy(desc(eqyEquipmentInterchanges.createdAt), desc(eqyEquipmentInterchanges.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -53,8 +56,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createEquipmentInterchangeSchema.safeParse(body);
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "equipment-interchanges", entityId: created?.id, module: "equipment-control-yard-managem", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "equipment-interchanges", entityId: created.id, module: "equipment-control-yard-managem", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

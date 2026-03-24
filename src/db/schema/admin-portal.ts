@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-036-1-002: Module & Feature Configuration
@@ -284,7 +285,7 @@ export const adminAuditLogs = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
-    userId: uuid("user_id"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     userEmail: varchar("user_email", { length: 255 }),
     action: varchar("action", { length: 100 }).notNull(),
     entityType: varchar("entity_type", { length: 100 }).notNull(),

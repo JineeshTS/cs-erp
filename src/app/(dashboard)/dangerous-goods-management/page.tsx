@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   dgmImdgCompliance,
   dgmBookingScreenings,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DangerousGoodsManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function DangerousGoodsManagementPage({
 
   const [activeCompliance, pendingScreenings, activeRules, draftManifests, openIncidents] =
     await Promise.all([
-      db.select({ id: dgmImdgCompliance.id }).from(dgmImdgCompliance)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(dgmImdgCompliance)
         .where(and(eq(dgmImdgCompliance.tenantId, session.tenantId), isNull(dgmImdgCompliance.deletedAt), eq(dgmImdgCompliance.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: dgmBookingScreenings.id }).from(dgmBookingScreenings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(dgmBookingScreenings)
         .where(and(eq(dgmBookingScreenings.tenantId, session.tenantId), isNull(dgmBookingScreenings.deletedAt), eq(dgmBookingScreenings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: dgmSegregationRules.id }).from(dgmSegregationRules)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(dgmSegregationRules)
         .where(and(eq(dgmSegregationRules.tenantId, session.tenantId), isNull(dgmSegregationRules.deletedAt), eq(dgmSegregationRules.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: dgmManifests.id }).from(dgmManifests)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(dgmManifests)
         .where(and(eq(dgmManifests.tenantId, session.tenantId), isNull(dgmManifests.deletedAt), eq(dgmManifests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: dgmIncidentReports.id }).from(dgmIncidentReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(dgmIncidentReports)
         .where(and(eq(dgmIncidentReports.tenantId, session.tenantId), isNull(dgmIncidentReports.deletedAt), eq(dgmIncidentReports.status, "reported")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function DangerousGoodsManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(dgmImdgCompliance.complianceRef, `%${search}%`),
-        ilike(dgmImdgCompliance.unNumber, `%${search}%`),
-        ilike(dgmImdgCompliance.properShippingName, `%${search}%`)
+        ilike(dgmImdgCompliance.complianceRef, `%${escapeIlike(search)}%`),
+        ilike(dgmImdgCompliance.unNumber, `%${escapeIlike(search)}%`),
+        ilike(dgmImdgCompliance.properShippingName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(dgmImdgCompliance.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(dgmImdgCompliance.createdAt, dgmImdgCompliance.id, parsedCursor));
 
   const data = await db.select().from(dgmImdgCompliance)
     .where(and(...conditions))
-    .orderBy(desc(dgmImdgCompliance.createdAt))
+    .orderBy(desc(dgmImdgCompliance.createdAt), desc(dgmImdgCompliance.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

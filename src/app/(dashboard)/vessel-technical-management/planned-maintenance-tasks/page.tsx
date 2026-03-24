@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { vtmPlannedMaintenanceTasks } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const PAGE_SIZE = 50;
 
 function statusBadge(status: string) {
@@ -47,9 +49,9 @@ export default async function PlannedMaintenanceTasksPage({
   if (search) {
     conditions.push(
       or(
-        ilike(vtmPlannedMaintenanceTasks.taskRef, `%${search}%`),
-        ilike(vtmPlannedMaintenanceTasks.vesselName, `%${search}%`),
-        ilike(vtmPlannedMaintenanceTasks.equipmentName, `%${search}%`)
+        ilike(vtmPlannedMaintenanceTasks.taskRef, `%${escapeIlike(search)}%`),
+        ilike(vtmPlannedMaintenanceTasks.vesselName, `%${escapeIlike(search)}%`),
+        ilike(vtmPlannedMaintenanceTasks.equipmentName, `%${escapeIlike(search)}%`)
       )!
     );
   }
@@ -58,15 +60,16 @@ export default async function PlannedMaintenanceTasksPage({
     conditions.push(eq(vtmPlannedMaintenanceTasks.status, status));
   }
 
-  if (cursor) {
-    conditions.push(lt(vtmPlannedMaintenanceTasks.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(vtmPlannedMaintenanceTasks.createdAt, vtmPlannedMaintenanceTasks.id, parsedCursor));
+    }
 
   const tasks = await db
     .select()
     .from(vtmPlannedMaintenanceTasks)
     .where(and(...conditions))
-    .orderBy(desc(vtmPlannedMaintenanceTasks.createdAt))
+    .orderBy(desc(vtmPlannedMaintenanceTasks.createdAt), desc(vtmPlannedMaintenanceTasks.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = tasks.length > PAGE_SIZE;

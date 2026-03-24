@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsOcrResults } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -8,6 +9,7 @@ import { createOcrResultSchema } from "@/lib/document-management-system/validati
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   const user = await getApiUser(request);
   if (!user) return unauthorizedResponse();
@@ -21,11 +23,12 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsOcrResults.tenantId, user.tenantId), isNull(dmsOcrResults.deletedAt)];
     if (documentId) conditions.push(eq(dmsOcrResults.documentId, documentId));
-    if (cursor) conditions.push(lt(dmsOcrResults.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(dmsOcrResults.createdAt, dmsOcrResults.id, parsedCursor));
 
     const results = await db.select().from(dmsOcrResults)
       .where(and(...conditions))
-      .orderBy(desc(dmsOcrResults.createdAt))
+      .orderBy(desc(dmsOcrResults.createdAt), desc(dmsOcrResults.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -47,8 +50,8 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorizedResponse();
   if (!(await hasPermission(user.id, user.tenantId, "documents:read"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
   try {
     const body = await request.json();
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "ocr-results", entityId: created?.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "ocr-results", entityId: created.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (err) {

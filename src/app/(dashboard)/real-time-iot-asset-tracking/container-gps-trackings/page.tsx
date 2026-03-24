@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { iotContainerGpsTrackings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ContainerGpsTrackingsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function ContainerGpsTrackingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(iotContainerGpsTrackings.trackingRef, `%${search}%`),
-        ilike(iotContainerGpsTrackings.containerNumber, `%${search}%`)
+        ilike(iotContainerGpsTrackings.trackingRef, `%${escapeIlike(search)}%`),
+        ilike(iotContainerGpsTrackings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(iotContainerGpsTrackings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(iotContainerGpsTrackings.createdAt, iotContainerGpsTrackings.id, parsedCursor));
 
   const data = await db.select().from(iotContainerGpsTrackings)
     .where(and(...conditions))
-    .orderBy(desc(iotContainerGpsTrackings.createdAt))
+    .orderBy(desc(iotContainerGpsTrackings.createdAt), desc(iotContainerGpsTrackings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

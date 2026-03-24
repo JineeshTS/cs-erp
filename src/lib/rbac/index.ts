@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, roles } from "@/db/schema";
 import { rolePermissions, permissions } from "@/db/schema/permissions";
@@ -37,7 +37,10 @@ export async function getUserPermissions(
   const [role] = await db
     .select({ permissions: roles.permissions })
     .from(roles)
-    .where(eq(roles.id, user.roleId))
+    .where(and(
+      eq(roles.id, user.roleId),
+      or(eq(roles.tenantId, tenantId), isNull(roles.tenantId))
+    ))
     .limit(1);
 
   if (
@@ -59,7 +62,10 @@ export async function getUserPermissions(
     .select({ name: permissions.name })
     .from(rolePermissions)
     .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-    .where(eq(rolePermissions.roleId, user.roleId));
+    .where(and(
+      eq(rolePermissions.roleId, user.roleId),
+      or(eq(rolePermissions.tenantId, tenantId), isNull(rolePermissions.tenantId))
+    ));
 
   const permNames = result.map((r) => r.name);
   await cachePermissions(userId, tenantId, permNames);
@@ -128,7 +134,10 @@ export async function getUserRole(
   const [role] = await db
     .select({ id: roles.id, name: roles.name })
     .from(roles)
-    .where(eq(roles.id, user.roleId))
+    .where(and(
+      eq(roles.id, user.roleId),
+      or(eq(roles.tenantId, tenantId), isNull(roles.tenantId))
+    ))
     .limit(1);
 
   return role ?? null;

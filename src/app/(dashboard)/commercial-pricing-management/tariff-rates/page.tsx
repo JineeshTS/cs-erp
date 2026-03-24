@@ -7,6 +7,8 @@ import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { cpmTariffRates } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const PAGE_SIZE = 50;
 
 export default async function TariffRatesPage({
@@ -28,18 +30,19 @@ export default async function TariffRatesPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmTariffRates.chargeName, `%${search}%`));
+    conditions.push(ilike(cpmTariffRates.chargeName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmTariffRates.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmTariffRates.createdAt, cpmTariffRates.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmTariffRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmTariffRates.createdAt))
+    .orderBy(desc(cpmTariffRates.createdAt), desc(cpmTariffRates.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = rows.length > PAGE_SIZE;

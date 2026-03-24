@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsOcrResults } from "@/db/schema";
@@ -46,8 +47,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!user) return unauthorizedResponse();
   if (!(await hasPermission(user.id, user.tenantId, "documents:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
   try {
     const { id } = await params;
@@ -75,8 +76,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         isNull(dmsOcrResults.deletedAt)
       )).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ocr-results", entityId: updated?.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "OCR result not found" } },
@@ -84,6 +83,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ocr-results", entityId: updated.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Update OCR result error:", err);

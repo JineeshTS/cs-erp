@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { isfDeploymentConfigs } from "@/db/schema";
@@ -17,8 +18,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "infra:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -38,8 +39,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .where(and(eq(isfDeploymentConfigs.id, id), eq(isfDeploymentConfigs.tenantId, user.tenantId), isNull(isfDeploymentConfigs.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rollback", entityId: updated?.id, module: "infrastructure-security", newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Deployment not found" } },
@@ -47,6 +46,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rollback", entityId: updated.id, module: "infrastructure-security", newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to rollback deployment:", error);

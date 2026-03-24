@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { oogStowagePlans } from "@/db/schema";
@@ -38,8 +39,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "oog_special:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createStowagePlanSchema.safeParse(body);
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "stowage-plans", entityId: created?.id, module: "oog-special-cargo-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "stowage-plans", entityId: created.id, module: "oog-special-cargo-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

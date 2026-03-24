@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprHsseRecords } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function HsseRecordsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function HsseRecordsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprHsseRecords.hsseRef, `%${search}%`),
-        ilike(lprHsseRecords.title, `%${search}%`)
+        ilike(lprHsseRecords.hsseRef, `%${escapeIlike(search)}%`),
+        ilike(lprHsseRecords.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprHsseRecords.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprHsseRecords.createdAt, lprHsseRecords.id, parsedCursor));
 
   const data = await db.select().from(lprHsseRecords)
     .where(and(...conditions))
-    .orderBy(desc(lprHsseRecords.createdAt))
+    .orderBy(desc(lprHsseRecords.createdAt), desc(lprHsseRecords.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

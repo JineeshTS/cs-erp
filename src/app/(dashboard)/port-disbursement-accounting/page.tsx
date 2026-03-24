@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   pdaProformaEstimates,
   pdaFinalDas,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PortDisbursementAccountingPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function PortDisbursementAccountingPage({
 
   const [draftProformas, pendingFinals, activeCosts, openStatements, pendingAllocations] =
     await Promise.all([
-      db.select({ id: pdaProformaEstimates.id }).from(pdaProformaEstimates)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pdaProformaEstimates)
         .where(and(eq(pdaProformaEstimates.tenantId, session.tenantId), isNull(pdaProformaEstimates.deletedAt), eq(pdaProformaEstimates.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pdaFinalDas.id }).from(pdaFinalDas)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pdaFinalDas)
         .where(and(eq(pdaFinalDas.tenantId, session.tenantId), isNull(pdaFinalDas.deletedAt), eq(pdaFinalDas.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pdaPortCosts.id }).from(pdaPortCosts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pdaPortCosts)
         .where(and(eq(pdaPortCosts.tenantId, session.tenantId), isNull(pdaPortCosts.deletedAt), eq(pdaPortCosts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: pdaAgentStatements.id }).from(pdaAgentStatements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pdaAgentStatements)
         .where(and(eq(pdaAgentStatements.tenantId, session.tenantId), isNull(pdaAgentStatements.deletedAt), eq(pdaAgentStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pdaExpenseAllocations.id }).from(pdaExpenseAllocations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pdaExpenseAllocations)
         .where(and(eq(pdaExpenseAllocations.tenantId, session.tenantId), isNull(pdaExpenseAllocations.deletedAt), eq(pdaExpenseAllocations.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,16 +69,17 @@ export default async function PortDisbursementAccountingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(pdaProformaEstimates.estimateRef, `%${search}%`),
-        ilike(pdaProformaEstimates.vesselName, `%${search}%`)
+        ilike(pdaProformaEstimates.estimateRef, `%${escapeIlike(search)}%`),
+        ilike(pdaProformaEstimates.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(pdaProformaEstimates.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pdaProformaEstimates.createdAt, pdaProformaEstimates.id, parsedCursor));
 
   const data = await db.select().from(pdaProformaEstimates)
     .where(and(...conditions))
-    .orderBy(desc(pdaProformaEstimates.createdAt))
+    .orderBy(desc(pdaProformaEstimates.createdAt), desc(pdaProformaEstimates.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

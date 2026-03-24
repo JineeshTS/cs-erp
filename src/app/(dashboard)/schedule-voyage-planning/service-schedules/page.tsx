@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpServiceSchedules } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ServiceSchedulesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function ServiceSchedulesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpServiceSchedules.scheduleRef, `%${search}%`),
-        ilike(svpServiceSchedules.serviceName, `%${search}%`)
+        ilike(svpServiceSchedules.scheduleRef, `%${escapeIlike(search)}%`),
+        ilike(svpServiceSchedules.serviceName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpServiceSchedules.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpServiceSchedules.createdAt, svpServiceSchedules.id, parsedCursor));
 
   const data = await db.select().from(svpServiceSchedules)
     .where(and(...conditions))
-    .orderBy(desc(svpServiceSchedules.createdAt))
+    .orderBy(desc(svpServiceSchedules.createdAt), desc(svpServiceSchedules.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

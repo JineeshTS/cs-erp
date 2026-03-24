@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-019-1-001: Planned Maintenance System PMS
@@ -37,7 +38,7 @@ export const vtmPlannedMaintenanceTasks = pgTable(
     nextDueDate: timestamp("next_due_date", { withTimezone: true }),
     nextDueHours: integer("next_due_hours"),
     priority: varchar("priority", { length: 20 }).notNull().default("medium"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedToName: varchar("assigned_to_name", { length: 255 }),
     department: varchar("department", { length: 100 }),
     estimatedHours: integer("estimated_hours"),

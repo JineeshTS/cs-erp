@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmOnboardingChecklists } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OnboardingChecklistsPage({
   searchParams,
 }: {
@@ -38,16 +40,16 @@ export default async function OnboardingChecklistsPage({
   if (status) conditions.push(eq(scmOnboardingChecklists.status, status));
   if (customerId) conditions.push(eq(scmOnboardingChecklists.customerId, customerId));
   if (search) {
-    conditions.push(ilike(scmOnboardingChecklists.taskName, `%${search}%`));
+    conditions.push(ilike(scmOnboardingChecklists.taskName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmOnboardingChecklists.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmOnboardingChecklists.createdAt, scmOnboardingChecklists.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmOnboardingChecklists)
     .where(and(...conditions))
-    .orderBy(desc(scmOnboardingChecklists.createdAt))
+    .orderBy(desc(scmOnboardingChecklists.createdAt), desc(scmOnboardingChecklists.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

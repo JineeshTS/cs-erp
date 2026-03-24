@@ -202,8 +202,8 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 3000
-          ToPort: 3000
+          FromPort: 3100
+          ToPort: 3100
           SourceSecurityGroupId: !Ref AlbSecurityGroup
       Tags:
         - Key: Name
@@ -360,7 +360,7 @@ Resources:
           Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/cs-erp:latest'
           Essential: true
           PortMappings:
-            - ContainerPort: 3000
+            - ContainerPort: 3100
               Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs
@@ -372,7 +372,7 @@ Resources:
             - Name: NODE_ENV
               Value: production
             - Name: PORT
-              Value: '3000'
+              Value: '3100'
 
   EcsService:
     Type: AWS::ECS::Service
@@ -393,7 +393,7 @@ Resources:
             - !Ref AppSecurityGroup
       LoadBalancers:
         - ContainerName: cs-erp-web
-          ContainerPort: 3000
+          ContainerPort: 3100
           TargetGroupArn: !Ref TargetGroup
       HealthCheckGracePeriodSeconds: 120
 
@@ -419,7 +419,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub 'cs-erp-${TenantId}-tg'
-      Port: 3000
+      Port: 3100
       Protocol: HTTP
       VpcId: !Ref VPC
       TargetType: ip

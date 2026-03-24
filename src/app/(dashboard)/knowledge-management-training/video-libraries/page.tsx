@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtVideoLibraries } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VideoLibrariesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function VideoLibrariesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtVideoLibraries.videoRef, `%${search}%`),
-        ilike(kmtVideoLibraries.title, `%${search}%`)
+        ilike(kmtVideoLibraries.videoRef, `%${escapeIlike(search)}%`),
+        ilike(kmtVideoLibraries.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtVideoLibraries.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtVideoLibraries.createdAt, kmtVideoLibraries.id, parsedCursor));
 
   const data = await db.select().from(kmtVideoLibraries)
     .where(and(...conditions))
-    .orderBy(desc(kmtVideoLibraries.createdAt))
+    .orderBy(desc(kmtVideoLibraries.createdAt), desc(kmtVideoLibraries.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

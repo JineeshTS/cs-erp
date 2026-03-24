@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmCargoTrackings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CargoTrackingsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function CargoTrackingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmCargoTrackings.trackingRef, `%${search}%`),
-        ilike(thmCargoTrackings.containerNumber, `%${search}%`)
+        ilike(thmCargoTrackings.trackingRef, `%${escapeIlike(search)}%`),
+        ilike(thmCargoTrackings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmCargoTrackings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmCargoTrackings.createdAt, thmCargoTrackings.id, parsedCursor));
 
   const data = await db.select().from(thmCargoTrackings)
     .where(and(...conditions))
-    .orderBy(desc(thmCargoTrackings.createdAt))
+    .orderBy(desc(thmCargoTrackings.createdAt), desc(thmCargoTrackings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

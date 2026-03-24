@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   rcmReeferBookings,
   rcmTempMonitorings,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ReeferContainerManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function ReeferContainerManagementPage({
 
   const [pendingBookings, activeMonitorings, scheduledInspections, openBreakdowns, activeAlerts] =
     await Promise.all([
-      db.select({ id: rcmReeferBookings.id }).from(rcmReeferBookings)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(rcmReeferBookings)
         .where(and(eq(rcmReeferBookings.tenantId, session.tenantId), isNull(rcmReeferBookings.deletedAt), eq(rcmReeferBookings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: rcmTempMonitorings.id }).from(rcmTempMonitorings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(rcmTempMonitorings)
         .where(and(eq(rcmTempMonitorings.tenantId, session.tenantId), isNull(rcmTempMonitorings.deletedAt), eq(rcmTempMonitorings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: rcmPtiInspections.id }).from(rcmPtiInspections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(rcmPtiInspections)
         .where(and(eq(rcmPtiInspections.tenantId, session.tenantId), isNull(rcmPtiInspections.deletedAt), eq(rcmPtiInspections.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: rcmBreakdownResponses.id }).from(rcmBreakdownResponses)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(rcmBreakdownResponses)
         .where(and(eq(rcmBreakdownResponses.tenantId, session.tenantId), isNull(rcmBreakdownResponses.deletedAt), eq(rcmBreakdownResponses.status, "reported")))
-        .then((r) => r.length),
-      db.select({ id: rcmTempAlerts.id }).from(rcmTempAlerts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(rcmTempAlerts)
         .where(and(eq(rcmTempAlerts.tenantId, session.tenantId), isNull(rcmTempAlerts.deletedAt), eq(rcmTempAlerts.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function ReeferContainerManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(rcmReeferBookings.bookingRef, `%${search}%`),
-        ilike(rcmReeferBookings.customerName, `%${search}%`),
-        ilike(rcmReeferBookings.containerNumber, `%${search}%`)
+        ilike(rcmReeferBookings.bookingRef, `%${escapeIlike(search)}%`),
+        ilike(rcmReeferBookings.customerName, `%${escapeIlike(search)}%`),
+        ilike(rcmReeferBookings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(rcmReeferBookings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(rcmReeferBookings.createdAt, rcmReeferBookings.id, parsedCursor));
 
   const data = await db.select().from(rcmReeferBookings)
     .where(and(...conditions))
-    .orderBy(desc(rcmReeferBookings.createdAt))
+    .orderBy(desc(rcmReeferBookings.createdAt), desc(rcmReeferBookings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

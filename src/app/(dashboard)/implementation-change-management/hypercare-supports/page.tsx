@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { icmHypercareSupports } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = {
   draft: "secondary",
   in_progress: "warning",
@@ -42,16 +44,17 @@ export default async function HypercareSupportsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmHypercareSupports.supportRef, `%${search}%`),
-        ilike(icmHypercareSupports.title, `%${search}%`)
+        ilike(icmHypercareSupports.supportRef, `%${escapeIlike(search)}%`),
+        ilike(icmHypercareSupports.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmHypercareSupports.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmHypercareSupports.createdAt, icmHypercareSupports.id, parsedCursor));
 
   const data = await db.select().from(icmHypercareSupports)
     .where(and(...conditions))
-    .orderBy(desc(icmHypercareSupports.createdAt))
+    .orderBy(desc(icmHypercareSupports.createdAt), desc(icmHypercareSupports.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

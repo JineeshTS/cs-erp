@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { odmBlCharges } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function BlChargesListPage({
   searchParams,
 }: {
@@ -33,15 +35,16 @@ export default async function BlChargesListPage({
     isNull(odmBlCharges.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(odmBlCharges.chargeName, `%${search}%`));
+    conditions.push(ilike(odmBlCharges.chargeName, `%${escapeIlike(search)}%`));
   }
-  if (cursor) conditions.push(lt(odmBlCharges.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmBlCharges.createdAt, odmBlCharges.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmBlCharges)
     .where(and(...conditions))
-    .orderBy(desc(odmBlCharges.createdAt))
+    .orderBy(desc(odmBlCharges.createdAt), desc(odmBlCharges.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

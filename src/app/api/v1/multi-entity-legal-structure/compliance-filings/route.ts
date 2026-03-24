@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsComplianceFilings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -8,6 +9,7 @@ import { createComplianceFilingSchema } from "@/lib/multi-entity-legal-structure
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -25,10 +27,11 @@ export async function GET(request: NextRequest) {
     if (complianceRuleId) conditions.push(eq(melsComplianceFilings.complianceRuleId, complianceRuleId));
     if (legalEntityId) conditions.push(eq(melsComplianceFilings.legalEntityId, legalEntityId));
     if (status) conditions.push(eq(melsComplianceFilings.status, status));
-    if (cursor) conditions.push(lt(melsComplianceFilings.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(melsComplianceFilings.createdAt, melsComplianceFilings.id, parsedCursor));
 
     const results = await db.select().from(melsComplianceFilings).where(and(...conditions))
-      .orderBy(desc(melsComplianceFilings.createdAt)).limit(limit + 1);
+      .orderBy(desc(melsComplianceFilings.createdAt), desc(melsComplianceFilings.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -50,8 +53,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createComplianceFilingSchema.safeParse(body);
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
       ...(filedAt ? { filedAt: new Date(filedAt) } : {}),
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "compliance-filings", entityId: created?.id, module: "multi-entity-legal-structure", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "compliance-filings", entityId: created.id, module: "multi-entity-legal-structure", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

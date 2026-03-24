@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { eqyContainerFleet } from "@/db/schema";
@@ -31,8 +32,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const body = await request.json();
     const parsed = updateContainerFleetSchema.safeParse(body);
@@ -47,8 +48,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...(capacityCbm !== undefined && { capacityCbm: capacityCbm !== null ? capacityCbm.toString() : null }),
     }).where(and(eq(eqyContainerFleet.id, id), eq(eqyContainerFleet.tenantId, user.tenantId), isNull(eqyContainerFleet.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "container-fleet", entityId: updated?.id, module: "equipment-control-yard-managem", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Container fleet record not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "container-fleet", entityId: updated.id, module: "equipment-control-yard-managem", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update container fleet record:", error);
@@ -62,13 +64,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const [deleted] = await db.update(eqyContainerFleet).set({ deletedAt: new Date() }).where(and(eq(eqyContainerFleet.id, id), eq(eqyContainerFleet.tenantId, user.tenantId), isNull(eqyContainerFleet.deletedAt))).returning({ id: eqyContainerFleet.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "container-fleet", entityId: deleted?.id, module: "equipment-control-yard-managem", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Container fleet record not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "container-fleet", entityId: deleted.id, module: "equipment-control-yard-managem", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete container fleet record:", error);

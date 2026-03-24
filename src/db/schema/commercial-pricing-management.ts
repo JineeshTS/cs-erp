@@ -12,6 +12,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-007-1-001: Tariff Management
@@ -568,7 +569,7 @@ export const cpmRevenueLeakages = pgTable(
     rootCause: varchar("root_cause", { length: 255 }),
     correctionAction: text("correction_action"),
     recoveredAmount: integer("recovered_amount").default(0),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     status: varchar("status", { length: 20 }).notNull().default("detected"),
     notes: text("notes"),

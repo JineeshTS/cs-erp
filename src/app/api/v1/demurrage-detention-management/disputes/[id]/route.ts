@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ddmDisputes } from "@/db/schema";
@@ -64,8 +65,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "demurrage:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -95,8 +96,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "disputes", entityId: updated?.id, module: "demurrage-detention-management", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated)
       return NextResponse.json(
         {
@@ -108,6 +107,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "disputes", entityId: updated.id, module: "demurrage-detention-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update D&D dispute:", error);
@@ -130,8 +130,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "demurrage:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -147,8 +147,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "disputes", entityId: deleted?.id, module: "demurrage-detention-management", previousData: null, request });
-
     if (!deleted)
       return NextResponse.json(
         {
@@ -160,6 +158,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "disputes", entityId: deleted.id, module: "demurrage-detention-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id } });
   } catch (error) {
     console.error("Failed to delete D&D dispute:", error);

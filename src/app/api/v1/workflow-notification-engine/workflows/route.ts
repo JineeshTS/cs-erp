@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneWorkflows } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createWorkflowSchema } from "@/lib/workflow-notification-engine/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,13 +24,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(wneWorkflows.tenantId, user.tenantId), isNull(wneWorkflows.deletedAt)];
-    if (search) conditions.push(ilike(wneWorkflows.name, `%${search}%`));
+    if (search) conditions.push(ilike(wneWorkflows.name, `%${escapeIlike(search)}%`));
     if (entityType) conditions.push(eq(wneWorkflows.entityType, entityType));
     if (isActive !== null && isActive !== "") conditions.push(eq(wneWorkflows.isActive, isActive === "true"));
-    if (cursor) conditions.push(lt(wneWorkflows.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(wneWorkflows.createdAt, wneWorkflows.id, parsedCursor));
 
     const results = await db.select().from(wneWorkflows).where(and(...conditions))
-      .orderBy(desc(wneWorkflows.createdAt)).limit(limit + 1);
+      .orderBy(desc(wneWorkflows.createdAt), desc(wneWorkflows.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -50,8 +53,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createWorkflowSchema.safeParse(body);
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "workflows", entityId: created?.id, module: "workflow-notification-engine", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "workflows", entityId: created.id, module: "workflow-notification-engine", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

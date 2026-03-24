@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprNearMissReports } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function NearMissReportsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function NearMissReportsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprNearMissReports.nearMissRef, `%${search}%`),
-        ilike(lprNearMissReports.title, `%${search}%`)
+        ilike(lprNearMissReports.nearMissRef, `%${escapeIlike(search)}%`),
+        ilike(lprNearMissReports.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprNearMissReports.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprNearMissReports.createdAt, lprNearMissReports.id, parsedCursor));
 
   const data = await db.select().from(lprNearMissReports)
     .where(and(...conditions))
-    .orderBy(desc(lprNearMissReports.createdAt))
+    .orderBy(desc(lprNearMissReports.createdAt), desc(lprNearMissReports.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

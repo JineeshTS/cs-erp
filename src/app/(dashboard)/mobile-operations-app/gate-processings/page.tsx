@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { mobGateProcessings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function GateProcessingsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function GateProcessingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(mobGateProcessings.gateRef, `%${search}%`),
-        ilike(mobGateProcessings.containerNumber, `%${search}%`)
+        ilike(mobGateProcessings.gateRef, `%${escapeIlike(search)}%`),
+        ilike(mobGateProcessings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(mobGateProcessings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(mobGateProcessings.createdAt, mobGateProcessings.id, parsedCursor));
 
   const data = await db.select().from(mobGateProcessings)
     .where(and(...conditions))
-    .orderBy(desc(mobGateProcessings.createdAt))
+    .orderBy(desc(mobGateProcessings.createdAt), desc(mobGateProcessings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

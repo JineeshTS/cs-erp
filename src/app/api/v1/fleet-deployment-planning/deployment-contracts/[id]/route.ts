@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getDeploymentContract } from "@/lib/fleet-deployment-planning/service";
@@ -37,13 +38,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "fdp:edit"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const existing = await getDeploymentContract(id, user.tenantId);
     if (!existing) {
@@ -66,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .where(and(eq(fdpDeploymentContracts.id, id), eq(fdpDeploymentContracts.tenantId, user.tenantId), isNull(fdpDeploymentContracts.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "deployment-contracts", entityId: updated?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "deployment-contracts", entityId: updated.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update deployment contract:", error);
@@ -82,13 +78,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "fdp:delete"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const existing = await getDeploymentContract(id, user.tenantId);
     if (!existing) {
@@ -103,7 +94,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       .where(and(eq(fdpDeploymentContracts.id, id), eq(fdpDeploymentContracts.tenantId, user.tenantId), isNull(fdpDeploymentContracts.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "deployment-contracts", entityId: deleted?.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "deployment-contracts", entityId: deleted.id, module: "fleet-deployment-planning", previousData: existing as Record<string, unknown>, request });
     return NextResponse.json({ data: deleted });
   } catch (error) {
     console.error("Failed to delete deployment contract:", error);

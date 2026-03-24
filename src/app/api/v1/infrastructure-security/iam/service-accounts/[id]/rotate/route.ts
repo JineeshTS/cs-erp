@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { isfServiceAccounts } from "@/db/schema";
@@ -17,8 +18,8 @@ export async function POST(
     if (!(await hasPermission(user.id, user.tenantId, "infra:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -60,7 +61,7 @@ export async function POST(
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: existing?.id, module: "infrastructure-security", newData: existing as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: existing.id, module: "infrastructure-security", newData: existing as Record<string, unknown>, request });
 
     // Exclude credentialHash from response
     const { credentialHash: _excluded, ...safeRecord } = updated;

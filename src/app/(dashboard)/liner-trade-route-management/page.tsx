@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ltrServiceLoops,
   ltrPortPairTradeLanes,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LinerTradeRouteManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function LinerTradeRouteManagementPage({
 
   const [activeLoops, activeTradeLanes, activeSlotAgreements, activeAlliances, pendingOptimizations] =
     await Promise.all([
-      db.select({ id: ltrServiceLoops.id }).from(ltrServiceLoops)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ltrServiceLoops)
         .where(and(eq(ltrServiceLoops.tenantId, session.tenantId), isNull(ltrServiceLoops.deletedAt), eq(ltrServiceLoops.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrPortPairTradeLanes.id }).from(ltrPortPairTradeLanes)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ltrPortPairTradeLanes)
         .where(and(eq(ltrPortPairTradeLanes.tenantId, session.tenantId), isNull(ltrPortPairTradeLanes.deletedAt), eq(ltrPortPairTradeLanes.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrSlotAgreements.id }).from(ltrSlotAgreements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ltrSlotAgreements)
         .where(and(eq(ltrSlotAgreements.tenantId, session.tenantId), isNull(ltrSlotAgreements.deletedAt), eq(ltrSlotAgreements.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrAllianceAgreements.id }).from(ltrAllianceAgreements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ltrAllianceAgreements)
         .where(and(eq(ltrAllianceAgreements.tenantId, session.tenantId), isNull(ltrAllianceAgreements.deletedAt), eq(ltrAllianceAgreements.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ltrRouteOptimizations.id }).from(ltrRouteOptimizations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ltrRouteOptimizations)
         .where(and(eq(ltrRouteOptimizations.tenantId, session.tenantId), isNull(ltrRouteOptimizations.deletedAt), eq(ltrRouteOptimizations.status, "pending")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,16 +70,17 @@ export default async function LinerTradeRouteManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ltrServiceLoops.loopRef, `%${search}%`),
-        ilike(ltrServiceLoops.loopName, `%${search}%`)
+        ilike(ltrServiceLoops.loopRef, `%${escapeIlike(search)}%`),
+        ilike(ltrServiceLoops.loopName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ltrServiceLoops.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ltrServiceLoops.createdAt, ltrServiceLoops.id, parsedCursor));
 
   const data = await db.select().from(ltrServiceLoops)
     .where(and(...conditions))
-    .orderBy(desc(ltrServiceLoops.createdAt))
+    .orderBy(desc(ltrServiceLoops.createdAt), desc(ltrServiceLoops.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

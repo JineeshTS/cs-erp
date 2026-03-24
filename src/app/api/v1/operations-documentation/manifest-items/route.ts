@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { odmManifestItems } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createManifestItemSchema } from "@/lib/operations-documentation/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -20,10 +22,11 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(odmManifestItems.tenantId, user.tenantId), isNull(odmManifestItems.deletedAt)];
-    if (search) conditions.push(ilike(odmManifestItems.blNumber, `%${search}%`));
-    if (cursor) conditions.push(lt(odmManifestItems.createdAt, new Date(cursor)));
+    if (search) conditions.push(ilike(odmManifestItems.blNumber, `%${escapeIlike(search)}%`));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmManifestItems.createdAt, odmManifestItems.id, parsedCursor));
 
-    const results = await db.select().from(odmManifestItems).where(and(...conditions)).orderBy(desc(odmManifestItems.createdAt)).limit(limit + 1);
+    const results = await db.select().from(odmManifestItems).where(and(...conditions)).orderBy(desc(odmManifestItems.createdAt), desc(odmManifestItems.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -42,8 +45,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "operations:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createManifestItemSchema.safeParse(body);
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const [created] = await db.insert(odmManifestItems).values({ tenantId: user.tenantId, ...parsed.data }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "manifest-items", entityId: created?.id, module: "operations-documentation", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "manifest-items", entityId: created.id, module: "operations-documentation", newData: created as Record<string, unknown>, request });
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     console.error("Failed to create manifest item:", error);

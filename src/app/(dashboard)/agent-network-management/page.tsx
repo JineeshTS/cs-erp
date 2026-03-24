@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   anmGaAgreements,
   anmSubAgentConfigs,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AgentNetworkManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function AgentNetworkManagementPage({
 
   const [draftGaAgreements, draftSubAgentConfigs, draftAgentCommissions, draftAgencyDocuments, draftPerformanceKpis, draftPortalConfigs, draftBookingAuthorities, draftAgentIncentives] =
     await Promise.all([
-      db.select({ id: anmGaAgreements.id }).from(anmGaAgreements)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmGaAgreements)
         .where(and(eq(anmGaAgreements.tenantId, session.tenantId), isNull(anmGaAgreements.deletedAt), eq(anmGaAgreements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmSubAgentConfigs.id }).from(anmSubAgentConfigs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmSubAgentConfigs)
         .where(and(eq(anmSubAgentConfigs.tenantId, session.tenantId), isNull(anmSubAgentConfigs.deletedAt), eq(anmSubAgentConfigs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmAgentCommissions.id }).from(anmAgentCommissions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmAgentCommissions)
         .where(and(eq(anmAgentCommissions.tenantId, session.tenantId), isNull(anmAgentCommissions.deletedAt), eq(anmAgentCommissions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmAgencyDocuments.id }).from(anmAgencyDocuments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmAgencyDocuments)
         .where(and(eq(anmAgencyDocuments.tenantId, session.tenantId), isNull(anmAgencyDocuments.deletedAt), eq(anmAgencyDocuments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmPerformanceKpis.id }).from(anmPerformanceKpis)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmPerformanceKpis)
         .where(and(eq(anmPerformanceKpis.tenantId, session.tenantId), isNull(anmPerformanceKpis.deletedAt), eq(anmPerformanceKpis.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmPortalConfigs.id }).from(anmPortalConfigs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmPortalConfigs)
         .where(and(eq(anmPortalConfigs.tenantId, session.tenantId), isNull(anmPortalConfigs.deletedAt), eq(anmPortalConfigs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmBookingAuthorities.id }).from(anmBookingAuthorities)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmBookingAuthorities)
         .where(and(eq(anmBookingAuthorities.tenantId, session.tenantId), isNull(anmBookingAuthorities.deletedAt), eq(anmBookingAuthorities.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: anmAgentIncentives.id }).from(anmAgentIncentives)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(anmAgentIncentives)
         .where(and(eq(anmAgentIncentives.tenantId, session.tenantId), isNull(anmAgentIncentives.deletedAt), eq(anmAgentIncentives.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function AgentNetworkManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(anmGaAgreements.agreementRef, `%${search}%`),
-        ilike(anmGaAgreements.agentName, `%${search}%`)
+        ilike(anmGaAgreements.agreementRef, `%${escapeIlike(search)}%`),
+        ilike(anmGaAgreements.agentName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(anmGaAgreements.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(anmGaAgreements.createdAt, anmGaAgreements.id, parsedCursor));
 
   const data = await db.select().from(anmGaAgreements)
     .where(and(...conditions))
-    .orderBy(desc(anmGaAgreements.createdAt))
+    .orderBy(desc(anmGaAgreements.createdAt), desc(anmGaAgreements.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

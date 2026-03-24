@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { eqyYardSlots } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function YardSlotsListPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function YardSlotsListPage({
   ];
 
   if (search)
-    conditions.push(ilike(eqyYardSlots.yardName, `%${search}%`));
+    conditions.push(ilike(eqyYardSlots.yardName, `%${escapeIlike(search)}%`));
   if (status) conditions.push(eq(eqyYardSlots.status, status));
-  if (cursor)
-    conditions.push(lt(eqyYardSlots.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyYardSlots.createdAt, eqyYardSlots.id, parsedCursor));
 
   const data = await db
     .select()
     .from(eqyYardSlots)
     .where(and(...conditions))
-    .orderBy(desc(eqyYardSlots.createdAt))
+    .orderBy(desc(eqyYardSlots.createdAt), desc(eqyYardSlots.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

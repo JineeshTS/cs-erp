@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtCompetencyAssessments } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CompetencyAssessmentsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function CompetencyAssessmentsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtCompetencyAssessments.assessmentRef, `%${search}%`),
-        ilike(kmtCompetencyAssessments.employeeName, `%${search}%`)
+        ilike(kmtCompetencyAssessments.assessmentRef, `%${escapeIlike(search)}%`),
+        ilike(kmtCompetencyAssessments.employeeName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtCompetencyAssessments.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtCompetencyAssessments.createdAt, kmtCompetencyAssessments.id, parsedCursor));
 
   const data = await db.select().from(kmtCompetencyAssessments)
     .where(and(...conditions))
-    .orderBy(desc(kmtCompetencyAssessments.createdAt))
+    .orderBy(desc(kmtCompetencyAssessments.createdAt), desc(kmtCompetencyAssessments.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

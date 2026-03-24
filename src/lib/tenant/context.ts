@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, setTenantRLS } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -18,7 +18,7 @@ export async function getCurrentTenantId(): Promise<string> {
  * Call this at the start of any DB operation that needs tenant scoping.
  */
 export async function setTenantContext(tenantId: string): Promise<void> {
-  await db.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
+  await setTenantRLS(tenantId);
 }
 
 /**

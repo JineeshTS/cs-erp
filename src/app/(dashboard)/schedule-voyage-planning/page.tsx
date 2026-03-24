@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   svpServiceSchedules,
   svpPortSequences,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ScheduleVoyagePlanningPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function ScheduleVoyagePlanningPage({
 
   const [draftServiceSchedules, draftPortSequences, draftCanalTransits, draftEtaManagements, draftVoyageOptimizations, draftSpeedFuelAnalyses, draftWeatherRoutings, draftDeploymentPlans] =
     await Promise.all([
-      db.select({ id: svpServiceSchedules.id }).from(svpServiceSchedules)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpServiceSchedules)
         .where(and(eq(svpServiceSchedules.tenantId, session.tenantId), isNull(svpServiceSchedules.deletedAt), eq(svpServiceSchedules.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpPortSequences.id }).from(svpPortSequences)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpPortSequences)
         .where(and(eq(svpPortSequences.tenantId, session.tenantId), isNull(svpPortSequences.deletedAt), eq(svpPortSequences.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpCanalTransits.id }).from(svpCanalTransits)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpCanalTransits)
         .where(and(eq(svpCanalTransits.tenantId, session.tenantId), isNull(svpCanalTransits.deletedAt), eq(svpCanalTransits.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpEtaManagements.id }).from(svpEtaManagements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpEtaManagements)
         .where(and(eq(svpEtaManagements.tenantId, session.tenantId), isNull(svpEtaManagements.deletedAt), eq(svpEtaManagements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpVoyageOptimizations.id }).from(svpVoyageOptimizations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpVoyageOptimizations)
         .where(and(eq(svpVoyageOptimizations.tenantId, session.tenantId), isNull(svpVoyageOptimizations.deletedAt), eq(svpVoyageOptimizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpSpeedFuelAnalyses.id }).from(svpSpeedFuelAnalyses)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpSpeedFuelAnalyses)
         .where(and(eq(svpSpeedFuelAnalyses.tenantId, session.tenantId), isNull(svpSpeedFuelAnalyses.deletedAt), eq(svpSpeedFuelAnalyses.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpWeatherRoutings.id }).from(svpWeatherRoutings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpWeatherRoutings)
         .where(and(eq(svpWeatherRoutings.tenantId, session.tenantId), isNull(svpWeatherRoutings.deletedAt), eq(svpWeatherRoutings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: svpDeploymentPlans.id }).from(svpDeploymentPlans)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(svpDeploymentPlans)
         .where(and(eq(svpDeploymentPlans.tenantId, session.tenantId), isNull(svpDeploymentPlans.deletedAt), eq(svpDeploymentPlans.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function ScheduleVoyagePlanningPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpServiceSchedules.scheduleRef, `%${search}%`),
-        ilike(svpServiceSchedules.serviceName, `%${search}%`)
+        ilike(svpServiceSchedules.scheduleRef, `%${escapeIlike(search)}%`),
+        ilike(svpServiceSchedules.serviceName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpServiceSchedules.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpServiceSchedules.createdAt, svpServiceSchedules.id, parsedCursor));
 
   const data = await db.select().from(svpServiceSchedules)
     .where(and(...conditions))
-    .orderBy(desc(svpServiceSchedules.createdAt))
+    .orderBy(desc(svpServiceSchedules.createdAt), desc(svpServiceSchedules.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { icmDataMigrations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = { draft: "secondary", in_progress: "warning", completed: "success", verified: "success", rejected: "destructive" } as const;
 
 export default async function DataMigrationsListPage({
@@ -36,16 +38,17 @@ export default async function DataMigrationsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmDataMigrations.migrationRef, `%${search}%`),
-        ilike(icmDataMigrations.title, `%${search}%`)
+        ilike(icmDataMigrations.migrationRef, `%${escapeIlike(search)}%`),
+        ilike(icmDataMigrations.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmDataMigrations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmDataMigrations.createdAt, icmDataMigrations.id, parsedCursor));
 
   const data = await db.select().from(icmDataMigrations)
     .where(and(...conditions))
-    .orderBy(desc(icmDataMigrations.createdAt))
+    .orderBy(desc(icmDataMigrations.createdAt), desc(icmDataMigrations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

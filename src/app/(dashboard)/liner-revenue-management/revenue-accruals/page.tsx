@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmRevenueAccruals } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RevenueAccrualsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RevenueAccrualsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmRevenueAccruals.accrualRef, `%${search}%`),
-        ilike(lrmRevenueAccruals.voyageRef, `%${search}%`)
+        ilike(lrmRevenueAccruals.accrualRef, `%${escapeIlike(search)}%`),
+        ilike(lrmRevenueAccruals.voyageRef, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmRevenueAccruals.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmRevenueAccruals.createdAt, lrmRevenueAccruals.id, parsedCursor));
 
   const data = await db.select().from(lrmRevenueAccruals)
     .where(and(...conditions))
-    .orderBy(desc(lrmRevenueAccruals.createdAt))
+    .orderBy(desc(lrmRevenueAccruals.createdAt), desc(lrmRevenueAccruals.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

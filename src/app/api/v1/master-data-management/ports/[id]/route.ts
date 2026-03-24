@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ports } from "@/db/schema";
@@ -37,8 +38,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -54,9 +55,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(ports).set(updateData)
       .where(and(eq(ports.id, id), eq(ports.tenantId, user.tenantId), isNull(ports.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ports", entityId: updated?.id, module: "master-data-management", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Port not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "ports", entityId: updated.id, module: "master-data-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update port:", error);
@@ -73,16 +74,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "masterdata:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(ports).set({ deletedAt: new Date() })
       .where(and(eq(ports.id, id), eq(ports.tenantId, user.tenantId), isNull(ports.deletedAt))).returning({ id: ports.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ports", entityId: deleted?.id, module: "master-data-management", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Port not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "ports", entityId: deleted.id, module: "master-data-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete port:", error);

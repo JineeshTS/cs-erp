@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { aafEscalations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString();
@@ -72,16 +74,17 @@ export default async function EscalationsListPage({
     isNull(aafEscalations.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(aafEscalations.escalationRef, `%${search}%`));
+    conditions.push(ilike(aafEscalations.escalationRef, `%${escapeIlike(search)}%`));
   }
   if (status) conditions.push(eq(aafEscalations.status, status));
-  if (cursor) conditions.push(lt(aafEscalations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(aafEscalations.createdAt, aafEscalations.id, parsedCursor));
 
   const data = await db
     .select()
     .from(aafEscalations)
     .where(and(...conditions))
-    .orderBy(desc(aafEscalations.createdAt))
+    .orderBy(desc(aafEscalations.createdAt), desc(aafEscalations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

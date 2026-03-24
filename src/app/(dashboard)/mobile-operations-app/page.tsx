@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   mobGateProcessings,
   mobYardInspections,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function MobileOperationsAppPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function MobileOperationsAppPage({
 
   const [draftGateProcessings, draftYardInspections, draftContainerSurveys, draftOfflineSyncs, draftDamageAssessments, draftDriverDeliveries, draftExecutiveDashboards, draftPushNotifications] =
     await Promise.all([
-      db.select({ id: mobGateProcessings.id }).from(mobGateProcessings)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobGateProcessings)
         .where(and(eq(mobGateProcessings.tenantId, session.tenantId), isNull(mobGateProcessings.deletedAt), eq(mobGateProcessings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobYardInspections.id }).from(mobYardInspections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobYardInspections)
         .where(and(eq(mobYardInspections.tenantId, session.tenantId), isNull(mobYardInspections.deletedAt), eq(mobYardInspections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobContainerSurveys.id }).from(mobContainerSurveys)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobContainerSurveys)
         .where(and(eq(mobContainerSurveys.tenantId, session.tenantId), isNull(mobContainerSurveys.deletedAt), eq(mobContainerSurveys.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobOfflineSyncs.id }).from(mobOfflineSyncs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobOfflineSyncs)
         .where(and(eq(mobOfflineSyncs.tenantId, session.tenantId), isNull(mobOfflineSyncs.deletedAt), eq(mobOfflineSyncs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobDamageAssessments.id }).from(mobDamageAssessments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobDamageAssessments)
         .where(and(eq(mobDamageAssessments.tenantId, session.tenantId), isNull(mobDamageAssessments.deletedAt), eq(mobDamageAssessments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobDriverDeliveries.id }).from(mobDriverDeliveries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobDriverDeliveries)
         .where(and(eq(mobDriverDeliveries.tenantId, session.tenantId), isNull(mobDriverDeliveries.deletedAt), eq(mobDriverDeliveries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobExecutiveDashboards.id }).from(mobExecutiveDashboards)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobExecutiveDashboards)
         .where(and(eq(mobExecutiveDashboards.tenantId, session.tenantId), isNull(mobExecutiveDashboards.deletedAt), eq(mobExecutiveDashboards.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: mobPushNotifications.id }).from(mobPushNotifications)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(mobPushNotifications)
         .where(and(eq(mobPushNotifications.tenantId, session.tenantId), isNull(mobPushNotifications.deletedAt), eq(mobPushNotifications.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function MobileOperationsAppPage({
   if (search) {
     conditions.push(
       or(
-        ilike(mobGateProcessings.gateRef, `%${search}%`),
-        ilike(mobGateProcessings.containerNumber, `%${search}%`)
+        ilike(mobGateProcessings.gateRef, `%${escapeIlike(search)}%`),
+        ilike(mobGateProcessings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(mobGateProcessings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(mobGateProcessings.createdAt, mobGateProcessings.id, parsedCursor));
 
   const data = await db.select().from(mobGateProcessings)
     .where(and(...conditions))
-    .orderBy(desc(mobGateProcessings.createdAt))
+    .orderBy(desc(mobGateProcessings.createdAt), desc(mobGateProcessings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

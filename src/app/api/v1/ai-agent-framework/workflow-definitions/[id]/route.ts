@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aafWorkflowDefinitions } from "@/db/schema";
@@ -37,8 +38,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ai:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -50,9 +51,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(aafWorkflowDefinitions).set(parsed.data)
       .where(and(eq(aafWorkflowDefinitions.id, id), eq(aafWorkflowDefinitions.tenantId, user.tenantId), isNull(aafWorkflowDefinitions.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "workflow-definitions", entityId: updated?.id, module: "ai-agent-framework", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Workflow definition not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "workflow-definitions", entityId: updated.id, module: "ai-agent-framework", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update workflow definition:", error);
@@ -69,16 +70,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "ai:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(aafWorkflowDefinitions).set({ deletedAt: new Date() })
       .where(and(eq(aafWorkflowDefinitions.id, id), eq(aafWorkflowDefinitions.tenantId, user.tenantId), isNull(aafWorkflowDefinitions.deletedAt))).returning({ id: aafWorkflowDefinitions.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "workflow-definitions", entityId: deleted?.id, module: "ai-agent-framework", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Workflow definition not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "workflow-definitions", entityId: deleted.id, module: "ai-agent-framework", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete workflow definition:", error);

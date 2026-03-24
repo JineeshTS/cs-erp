@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmPenaltyTrackings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PenaltyTrackingsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function PenaltyTrackingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmPenaltyTrackings.penaltyRef, `%${search}%`),
-        ilike(thmPenaltyTrackings.containerNumber, `%${search}%`)
+        ilike(thmPenaltyTrackings.penaltyRef, `%${escapeIlike(search)}%`),
+        ilike(thmPenaltyTrackings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmPenaltyTrackings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmPenaltyTrackings.createdAt, thmPenaltyTrackings.id, parsedCursor));
 
   const data = await db.select().from(thmPenaltyTrackings)
     .where(and(...conditions))
-    .orderBy(desc(thmPenaltyTrackings.createdAt))
+    .orderBy(desc(thmPenaltyTrackings.createdAt), desc(thmPenaltyTrackings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

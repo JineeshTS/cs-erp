@@ -9,6 +9,8 @@ import { db } from "@/lib/db";
 import { cpmPricingApprovals } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   approved: "bg-green-100 text-green-800",
@@ -33,20 +35,21 @@ export default async function PricingApprovalsPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmPricingApprovals.approvalReference, `%${search}%`));
+    conditions.push(ilike(cpmPricingApprovals.approvalReference, `%${escapeIlike(search)}%`));
   }
   if (status) {
     conditions.push(eq(cpmPricingApprovals.status, status));
   }
-  if (cursor) {
-    conditions.push(lt(cpmPricingApprovals.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmPricingApprovals.createdAt, cpmPricingApprovals.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmPricingApprovals)
     .where(and(...conditions))
-    .orderBy(desc(cpmPricingApprovals.createdAt))
+    .orderBy(desc(cpmPricingApprovals.createdAt), desc(cpmPricingApprovals.id))
     .limit(51);
 
   const hasMore = records.length > 50;

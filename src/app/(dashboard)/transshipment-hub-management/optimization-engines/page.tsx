@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmOptimizationEngines } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OptimizationEnginesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function OptimizationEnginesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmOptimizationEngines.engineRef, `%${search}%`),
-        ilike(thmOptimizationEngines.scenarioName, `%${search}%`)
+        ilike(thmOptimizationEngines.engineRef, `%${escapeIlike(search)}%`),
+        ilike(thmOptimizationEngines.scenarioName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmOptimizationEngines.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmOptimizationEngines.createdAt, thmOptimizationEngines.id, parsedCursor));
 
   const data = await db.select().from(thmOptimizationEngines)
     .where(and(...conditions))
-    .orderBy(desc(thmOptimizationEngines.createdAt))
+    .orderBy(desc(thmOptimizationEngines.createdAt), desc(thmOptimizationEngines.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

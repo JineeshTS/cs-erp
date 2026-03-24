@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { listContinuityPlans } from "@/lib/loss-prevention-risk-management/service";
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       search: searchParams.get("search") ?? undefined,
       status: searchParams.get("status") ?? undefined,
       cursor: searchParams.get("cursor") ?? undefined,
-      limit: searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined,
+      limit: searchParams.get("limit") ? Math.min(parseInt(searchParams.get("limit")!), 100) : undefined,
     });
 
     return NextResponse.json({ data: result.data, meta: result.meta });
@@ -40,13 +41,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "lpr:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createContinuityPlanSchema.safeParse(body);
@@ -67,7 +63,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "continuity-plans", entityId: record?.id, module: "loss-prevention-risk-management", newData: record as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "continuity-plans", entityId: record.id, module: "loss-prevention-risk-management", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

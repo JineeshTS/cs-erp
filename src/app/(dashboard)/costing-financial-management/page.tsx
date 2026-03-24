@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   cfmVoyageBudgets,
   cfmPortDisbursements,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CostingFinancialManagementPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function CostingFinancialManagementPage({
 
   const [activeBudgets, pendingDisbursements, draftCommissions, detectedAnomalies, draftReports] =
     await Promise.all([
-      db.select({ id: cfmVoyageBudgets.id }).from(cfmVoyageBudgets)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cfmVoyageBudgets)
         .where(and(eq(cfmVoyageBudgets.tenantId, session.tenantId), isNull(cfmVoyageBudgets.deletedAt), eq(cfmVoyageBudgets.status, "approved")))
-        .then((r) => r.length),
-      db.select({ id: cfmPortDisbursements.id }).from(cfmPortDisbursements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cfmPortDisbursements)
         .where(and(eq(cfmPortDisbursements.tenantId, session.tenantId), isNull(cfmPortDisbursements.deletedAt), eq(cfmPortDisbursements.status, "submitted")))
-        .then((r) => r.length),
-      db.select({ id: cfmAgencyCommissions.id }).from(cfmAgencyCommissions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cfmAgencyCommissions)
         .where(and(eq(cfmAgencyCommissions.tenantId, session.tenantId), isNull(cfmAgencyCommissions.deletedAt), eq(cfmAgencyCommissions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: cfmAnomalyDetections.id }).from(cfmAnomalyDetections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cfmAnomalyDetections)
         .where(and(eq(cfmAnomalyDetections.tenantId, session.tenantId), isNull(cfmAnomalyDetections.deletedAt), eq(cfmAnomalyDetections.status, "detected")))
-        .then((r) => r.length),
-      db.select({ id: cfmKpiReports.id }).from(cfmKpiReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cfmKpiReports)
         .where(and(eq(cfmKpiReports.tenantId, session.tenantId), isNull(cfmKpiReports.deletedAt), eq(cfmKpiReports.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,17 +69,18 @@ export default async function CostingFinancialManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(cfmVoyageBudgets.budgetRef, `%${search}%`),
-        ilike(cfmVoyageBudgets.vesselName, `%${search}%`),
-        ilike(cfmVoyageBudgets.voyageRef, `%${search}%`)
+        ilike(cfmVoyageBudgets.budgetRef, `%${escapeIlike(search)}%`),
+        ilike(cfmVoyageBudgets.vesselName, `%${escapeIlike(search)}%`),
+        ilike(cfmVoyageBudgets.voyageRef, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(cfmVoyageBudgets.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cfmVoyageBudgets.createdAt, cfmVoyageBudgets.id, parsedCursor));
 
   const data = await db.select().from(cfmVoyageBudgets)
     .where(and(...conditions))
-    .orderBy(desc(cfmVoyageBudgets.createdAt))
+    .orderBy(desc(cfmVoyageBudgets.createdAt), desc(cfmVoyageBudgets.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

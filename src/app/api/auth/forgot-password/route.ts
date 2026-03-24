@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { eq, and, isNull } from "drizzle-orm";
+import { db, clearTenantRLS } from "@/lib/db";
 import { users } from "@/db/schema";
 import { generateSecureToken, hashToken } from "@/lib/tokens";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -10,24 +10,43 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import { createHash } from "crypto";
 
 const GENERIC_RESPONSE = {
-  message:
-    "If an account with that email exists, a password reset link has been sent.",
+  data: {
+    message:
+      "If an account with that email exists, a password reset link has been sent.",
+  },
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const ip = getClientIp(request);
+
+    // Secondary rate limit by IP (prevents enumeration across emails)
+    const ipRlKey = `forgot-ip:${createHash("sha256").update(ip).digest("hex")}`;
+    const ipRl = await checkRateLimit(ipRlKey, 10, 60 * 60 * 1000);
+    if (!ipRl.allowed) {
+      // Still return generic response to not leak info
+      return NextResponse.json(GENERIC_RESPONSE);
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
+        { status: 400 }
+      );
+    }
     const parsed = forgotPasswordSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatZodErrors(parsed.error) },
+        { error: { code: "VALIDATION_ERROR", message: "Validation failed", details: formatZodErrors(parsed.error) } },
         { status: 422 }
       );
     }
 
     const { email } = parsed.data;
-    const ip = getClientIp(request);
 
     // Rate limit: 3 requests per hour per email
     const rateLimitKey = `forgot:${createHash("sha256")
@@ -40,11 +59,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(GENERIC_RESPONSE);
     }
 
-    // Find user — always return same response regardless
+    // Clear stale tenant context from pooled connection (prevents RLS filtering)
+    await clearTenantRLS();
+
+    // Find user — always return same response regardless (exclude soft-deleted)
     const [user] = await db
       .select({ id: users.id, tenantId: users.tenantId })
       .from(users)
-      .where(eq(users.email, email))
+      .where(
+        and(
+          eq(users.email, email),
+          isNull(users.deletedAt)
+        )
+      )
       .limit(1);
 
     if (user) {

@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   pamPortCallPlans,
   pamHusbandryServices,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PortAgencyManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function PortAgencyManagementPage({
 
   const [plannedPortCalls, pendingServices, pendingChecklists, activeCommunications, plannedCrewChanges, pendingCash, pendingClearances, draftDisbursements] =
     await Promise.all([
-      db.select({ id: pamPortCallPlans.id }).from(pamPortCallPlans)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamPortCallPlans)
         .where(and(eq(pamPortCallPlans.tenantId, session.tenantId), isNull(pamPortCallPlans.deletedAt), eq(pamPortCallPlans.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: pamHusbandryServices.id }).from(pamHusbandryServices)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamHusbandryServices)
         .where(and(eq(pamHusbandryServices.tenantId, session.tenantId), isNull(pamHusbandryServices.deletedAt), eq(pamHusbandryServices.status, "requested")))
-        .then((r) => r.length),
-      db.select({ id: pamPreArrivalChecklists.id }).from(pamPreArrivalChecklists)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamPreArrivalChecklists)
         .where(and(eq(pamPreArrivalChecklists.tenantId, session.tenantId), isNull(pamPreArrivalChecklists.deletedAt), eq(pamPreArrivalChecklists.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pamPortAuthorityCommunications.id }).from(pamPortAuthorityCommunications)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamPortAuthorityCommunications)
         .where(and(eq(pamPortAuthorityCommunications.tenantId, session.tenantId), isNull(pamPortAuthorityCommunications.deletedAt), eq(pamPortAuthorityCommunications.status, "sent")))
-        .then((r) => r.length),
-      db.select({ id: pamCrewChangeCoordinations.id }).from(pamCrewChangeCoordinations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamCrewChangeCoordinations)
         .where(and(eq(pamCrewChangeCoordinations.tenantId, session.tenantId), isNull(pamCrewChangeCoordinations.deletedAt), eq(pamCrewChangeCoordinations.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: pamCashToMasters.id }).from(pamCashToMasters)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamCashToMasters)
         .where(and(eq(pamCashToMasters.tenantId, session.tenantId), isNull(pamCashToMasters.deletedAt), eq(pamCashToMasters.status, "requested")))
-        .then((r) => r.length),
-      db.select({ id: pamVesselClearances.id }).from(pamVesselClearances)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamVesselClearances)
         .where(and(eq(pamVesselClearances.tenantId, session.tenantId), isNull(pamVesselClearances.deletedAt), eq(pamVesselClearances.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: pamDisbursementAccounts.id }).from(pamDisbursementAccounts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pamDisbursementAccounts)
         .where(and(eq(pamDisbursementAccounts.tenantId, session.tenantId), isNull(pamDisbursementAccounts.deletedAt), eq(pamDisbursementAccounts.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,17 +85,18 @@ export default async function PortAgencyManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(pamPortCallPlans.planRef, `%${search}%`),
-        ilike(pamPortCallPlans.vesselName, `%${search}%`),
-        ilike(pamPortCallPlans.portName, `%${search}%`)
+        ilike(pamPortCallPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(pamPortCallPlans.vesselName, `%${escapeIlike(search)}%`),
+        ilike(pamPortCallPlans.portName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(pamPortCallPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pamPortCallPlans.createdAt, pamPortCallPlans.id, parsedCursor));
 
   const data = await db.select().from(pamPortCallPlans)
     .where(and(...conditions))
-    .orderBy(desc(pamPortCallPlans.createdAt))
+    .orderBy(desc(pamPortCallPlans.createdAt), desc(pamPortCallPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

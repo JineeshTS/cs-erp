@@ -11,6 +11,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -245,7 +246,7 @@ export const customers = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
-    parentId: uuid("parent_id"),
+    parentId: uuid("parent_id").references((): AnyPgColumn => customers.id, { onDelete: "set null" }),
     customerType: varchar("customer_type", { length: 30 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
     shortName: varchar("short_name", { length: 100 }),
@@ -385,7 +386,7 @@ export const glAccounts = pgTable(
     accountCode: varchar("account_code", { length: 20 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
     accountType: varchar("account_type", { length: 20 }).notNull(),
-    parentId: uuid("parent_id"),
+    parentId: uuid("parent_id").references((): AnyPgColumn => glAccounts.id, { onDelete: "set null" }),
     description: text("description"),
     isActive: boolean("is_active").notNull().default(true),
     normalBalance: varchar("normal_balance", { length: 10 })
@@ -423,7 +424,7 @@ export const costCentres = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     department: varchar("department", { length: 100 }),
     description: text("description"),
-    parentId: uuid("parent_id"),
+    parentId: uuid("parent_id").references((): AnyPgColumn => costCentres.id, { onDelete: "set null" }),
     isActive: boolean("is_active").notNull().default(true),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),

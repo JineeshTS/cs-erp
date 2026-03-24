@@ -8,7 +8,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen">
       {/* Left panel — brand */}
-      <div className="hidden w-[480px] flex-col justify-between bg-[#0f1d32] p-10 text-white lg:flex">
+      <div className="hidden w-[480px] flex-col justify-between bg-sidebar-bg p-10 text-white lg:flex">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
             <Ship className="h-5 w-5" />
@@ -33,12 +33,12 @@ export default function AuthLayout({
       </div>
 
       {/* Right panel — form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#f8fafc] px-4">
+      <div className="flex flex-1 flex-col items-center justify-center bg-background px-4">
         <div className="mb-8 text-center lg:hidden">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#0f1d32] text-white">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sidebar-bg text-white">
             <Ship className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
             CS ERP
           </h1>
           <p className="mt-1 text-sm text-slate-500">

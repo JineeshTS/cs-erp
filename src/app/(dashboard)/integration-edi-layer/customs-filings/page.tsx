@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { ielCustomsFilings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CustomsFilingsListPage({
   searchParams,
 }: {
@@ -40,19 +42,19 @@ export default async function CustomsFilingsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ielCustomsFilings.filingRef, `%${search}%`),
-        ilike(ielCustomsFilings.hsCode, `%${search}%`)
+        ilike(ielCustomsFilings.filingRef, `%${escapeIlike(search)}%`),
+        ilike(ielCustomsFilings.hsCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(ielCustomsFilings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ielCustomsFilings.createdAt, ielCustomsFilings.id, parsedCursor));
 
   const data = await db
     .select()
     .from(ielCustomsFilings)
     .where(and(...conditions))
-    .orderBy(desc(ielCustomsFilings.createdAt))
+    .orderBy(desc(ielCustomsFilings.createdAt), desc(ielCustomsFilings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

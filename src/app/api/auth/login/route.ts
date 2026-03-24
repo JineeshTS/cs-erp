@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { eq, and, isNull, desc, inArray } from "drizzle-orm";
+import { db, clearTenantRLS } from "@/lib/db";
 import { users, roles, sessions } from "@/db/schema";
 import { verifyPassword } from "@/lib/password";
 import { signAccessToken } from "@/lib/jwt";
@@ -8,7 +8,8 @@ import { generateRefreshToken, hashToken } from "@/lib/tokens";
 import { loginSchema, formatZodErrors } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logAuditEvent } from "@/lib/audit";
-import { setAuthCookies } from "@/lib/cookies";
+import { setAuthCookies, setCsrfCookie } from "@/lib/cookies";
+import { generateCsrfToken } from "@/lib/csrf";
 import { getClientIp, getUserAgent } from "@/lib/request";
 import { createHash } from "crypto";
 
@@ -69,8 +70,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Clear stale tenant context from pooled connection (prevents RLS filtering)
+    await clearTenantRLS();
+
     // Fetch user
-    // SECURITY: unique(tenant_id, email) enforced via DB migration
+    // SECURITY: globally unique email enforced via DB migration 0078
     const [user] = await db
       .select({
         id: users.id,
@@ -84,7 +88,12 @@ export async function POST(request: NextRequest) {
         roleId: users.roleId,
       })
       .from(users)
-      .where(eq(users.email, email))
+      .where(
+        and(
+          eq(users.email, email),
+          isNull(users.deletedAt)
+        )
+      )
       .limit(1);
 
     // Verify password (runs bcrypt even if user not found — timing attack prevention)
@@ -208,6 +217,21 @@ export async function POST(request: NextRequest) {
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
 
+    // Enforce max 10 concurrent sessions — revoke oldest beyond limit
+    const activeSessions = await db
+      .select({ id: sessions.id, createdAt: sessions.createdAt })
+      .from(sessions)
+      .where(and(eq(sessions.userId, user.id), isNull(sessions.revokedAt)))
+      .orderBy(desc(sessions.createdAt));
+
+    if (activeSessions.length > 10) {
+      const toRevoke = activeSessions.slice(10).map(s => s.id);
+      await db
+        .update(sessions)
+        .set({ revokedAt: new Date(), revokedReason: "session_limit" })
+        .where(inArray(sessions.id, toRevoke));
+    }
+
     // Reset failed login attempts
     await db
       .update(users)
@@ -230,16 +254,19 @@ export async function POST(request: NextRequest) {
 
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const response = NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: roleName,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: roleName,
+        },
+        expiresAt,
       },
-      expiresAt,
     });
 
     setAuthCookies(response, accessToken, refreshToken);
+    setCsrfCookie(response, generateCsrfToken());
     return response;
   } catch (error) {
     console.error("[login]", error);

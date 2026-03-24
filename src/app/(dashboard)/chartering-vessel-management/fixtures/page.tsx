@@ -8,6 +8,7 @@ import { eq, and, isNull, desc, lt } from "drizzle-orm";
 import { cvmFixtures } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FixturesPage({
   searchParams,
 }: {
@@ -32,14 +33,14 @@ export default async function FixturesPage({
     eq(cvmFixtures.tenantId, session.tenantId),
     isNull(cvmFixtures.deletedAt),
   ];
-  if (cursor)
-    conditions.push(lt(cvmFixtures.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmFixtures.createdAt, cvmFixtures.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cvmFixtures)
     .where(and(...conditions))
-    .orderBy(desc(cvmFixtures.createdAt))
+    .orderBy(desc(cvmFixtures.createdAt), desc(cvmFixtures.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

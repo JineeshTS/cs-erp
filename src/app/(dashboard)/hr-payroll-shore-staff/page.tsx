@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   hpsEmployeeProfiles,
   hpsLeaveAbsences,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function HrPayrollShoreStaffPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function HrPayrollShoreStaffPage({
 
   const [activeEmployees, pendingLeaves, todayAttendance, draftAppraisals, draftPayrolls, draftInsurance, draftGratuities, pendingVisas] =
     await Promise.all([
-      db.select({ id: hpsEmployeeProfiles.id }).from(hpsEmployeeProfiles)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsEmployeeProfiles)
         .where(and(eq(hpsEmployeeProfiles.tenantId, session.tenantId), isNull(hpsEmployeeProfiles.deletedAt), eq(hpsEmployeeProfiles.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: hpsLeaveAbsences.id }).from(hpsLeaveAbsences)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsLeaveAbsences)
         .where(and(eq(hpsLeaveAbsences.tenantId, session.tenantId), isNull(hpsLeaveAbsences.deletedAt), eq(hpsLeaveAbsences.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: hpsAttendanceTimeTrackings.id }).from(hpsAttendanceTimeTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsAttendanceTimeTrackings)
         .where(and(eq(hpsAttendanceTimeTrackings.tenantId, session.tenantId), isNull(hpsAttendanceTimeTrackings.deletedAt), eq(hpsAttendanceTimeTrackings.status, "present")))
-        .then((r) => r.length),
-      db.select({ id: hpsPerformanceAppraisals.id }).from(hpsPerformanceAppraisals)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsPerformanceAppraisals)
         .where(and(eq(hpsPerformanceAppraisals.tenantId, session.tenantId), isNull(hpsPerformanceAppraisals.deletedAt), eq(hpsPerformanceAppraisals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsPayrollProcessings.id }).from(hpsPayrollProcessings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsPayrollProcessings)
         .where(and(eq(hpsPayrollProcessings.tenantId, session.tenantId), isNull(hpsPayrollProcessings.deletedAt), eq(hpsPayrollProcessings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsSocialInsuranceRecords.id }).from(hpsSocialInsuranceRecords)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsSocialInsuranceRecords)
         .where(and(eq(hpsSocialInsuranceRecords.tenantId, session.tenantId), isNull(hpsSocialInsuranceRecords.deletedAt), eq(hpsSocialInsuranceRecords.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsGratuityCalculations.id }).from(hpsGratuityCalculations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsGratuityCalculations)
         .where(and(eq(hpsGratuityCalculations.tenantId, session.tenantId), isNull(hpsGratuityCalculations.deletedAt), eq(hpsGratuityCalculations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: hpsVisaResidencyRecords.id }).from(hpsVisaResidencyRecords)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(hpsVisaResidencyRecords)
         .where(and(eq(hpsVisaResidencyRecords.tenantId, session.tenantId), isNull(hpsVisaResidencyRecords.deletedAt), eq(hpsVisaResidencyRecords.status, "pending")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,17 +85,18 @@ export default async function HrPayrollShoreStaffPage({
   if (search) {
     conditions.push(
       or(
-        ilike(hpsEmployeeProfiles.employeeRef, `%${search}%`),
-        ilike(hpsEmployeeProfiles.firstName, `%${search}%`),
-        ilike(hpsEmployeeProfiles.lastName, `%${search}%`)
+        ilike(hpsEmployeeProfiles.employeeRef, `%${escapeIlike(search)}%`),
+        ilike(hpsEmployeeProfiles.firstName, `%${escapeIlike(search)}%`),
+        ilike(hpsEmployeeProfiles.lastName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(hpsEmployeeProfiles.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(hpsEmployeeProfiles.createdAt, hpsEmployeeProfiles.id, parsedCursor));
 
   const data = await db.select().from(hpsEmployeeProfiles)
     .where(and(...conditions))
-    .orderBy(desc(hpsEmployeeProfiles.createdAt))
+    .orderBy(desc(hpsEmployeeProfiles.createdAt), desc(hpsEmployeeProfiles.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

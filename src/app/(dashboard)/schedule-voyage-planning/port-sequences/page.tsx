@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpPortSequences } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PortSequencesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function PortSequencesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpPortSequences.sequenceRef, `%${search}%`),
-        ilike(svpPortSequences.portName, `%${search}%`)
+        ilike(svpPortSequences.sequenceRef, `%${escapeIlike(search)}%`),
+        ilike(svpPortSequences.portName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpPortSequences.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpPortSequences.createdAt, svpPortSequences.id, parsedCursor));
 
   const data = await db.select().from(svpPortSequences)
     .where(and(...conditions))
-    .orderBy(desc(svpPortSequences.createdAt))
+    .orderBy(desc(svpPortSequences.createdAt), desc(svpPortSequences.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cvmLaytimeCalculations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createLaytimeCalculationSchema } from "@/lib/chartering-vessel-management/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -25,16 +27,17 @@ export async function GET(request: NextRequest) {
       eq(cvmLaytimeCalculations.tenantId, user.tenantId),
       isNull(cvmLaytimeCalculations.deletedAt),
     ];
-    if (search) conditions.push(ilike(cvmLaytimeCalculations.portName, `%${search}%`));
+    if (search) conditions.push(ilike(cvmLaytimeCalculations.portName, `%${escapeIlike(search)}%`));
     if (operationType) conditions.push(eq(cvmLaytimeCalculations.operationType, operationType));
     if (status) conditions.push(eq(cvmLaytimeCalculations.status, status));
-    if (cursor) conditions.push(lt(cvmLaytimeCalculations.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmLaytimeCalculations.createdAt, cvmLaytimeCalculations.id, parsedCursor));
 
     const results = await db
       .select()
       .from(cvmLaytimeCalculations)
       .where(and(...conditions))
-      .orderBy(desc(cvmLaytimeCalculations.createdAt))
+      .orderBy(desc(cvmLaytimeCalculations.createdAt), desc(cvmLaytimeCalculations.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -57,8 +60,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "chartering:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createLaytimeCalculationSchema.safeParse(body);
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "laytime-calculations", entityId: created?.id, module: "chartering-vessel-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "laytime-calculations", entityId: created.id, module: "chartering-vessel-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpCanalTransits } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CanalTransitsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function CanalTransitsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpCanalTransits.transitRef, `%${search}%`),
-        ilike(svpCanalTransits.canalName, `%${search}%`)
+        ilike(svpCanalTransits.transitRef, `%${escapeIlike(search)}%`),
+        ilike(svpCanalTransits.canalName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpCanalTransits.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpCanalTransits.createdAt, svpCanalTransits.id, parsedCursor));
 
   const data = await db.select().from(svpCanalTransits)
     .where(and(...conditions))
-    .orderBy(desc(svpCanalTransits.createdAt))
+    .orderBy(desc(svpCanalTransits.createdAt), desc(svpCanalTransits.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

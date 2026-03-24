@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   serCarbonFootprints,
   serGhgReports,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SustainabilityEsgReportingPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function SustainabilityEsgReportingPage({
 
   const [draftCarbonFootprints, draftGhgReports, draftSeaCargoCharters, draftPoseidonAlignments, draftDecarbRoadmaps, draftAltFuelTrackings, draftEsgKpis, draftTcfdReports] =
     await Promise.all([
-      db.select({ id: serCarbonFootprints.id }).from(serCarbonFootprints)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serCarbonFootprints)
         .where(and(eq(serCarbonFootprints.tenantId, session.tenantId), isNull(serCarbonFootprints.deletedAt), eq(serCarbonFootprints.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serGhgReports.id }).from(serGhgReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serGhgReports)
         .where(and(eq(serGhgReports.tenantId, session.tenantId), isNull(serGhgReports.deletedAt), eq(serGhgReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serSeaCargoCharters.id }).from(serSeaCargoCharters)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serSeaCargoCharters)
         .where(and(eq(serSeaCargoCharters.tenantId, session.tenantId), isNull(serSeaCargoCharters.deletedAt), eq(serSeaCargoCharters.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serPoseidonAlignments.id }).from(serPoseidonAlignments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serPoseidonAlignments)
         .where(and(eq(serPoseidonAlignments.tenantId, session.tenantId), isNull(serPoseidonAlignments.deletedAt), eq(serPoseidonAlignments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serDecarbRoadmaps.id }).from(serDecarbRoadmaps)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serDecarbRoadmaps)
         .where(and(eq(serDecarbRoadmaps.tenantId, session.tenantId), isNull(serDecarbRoadmaps.deletedAt), eq(serDecarbRoadmaps.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serAltFuelTrackings.id }).from(serAltFuelTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serAltFuelTrackings)
         .where(and(eq(serAltFuelTrackings.tenantId, session.tenantId), isNull(serAltFuelTrackings.deletedAt), eq(serAltFuelTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serEsgKpis.id }).from(serEsgKpis)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serEsgKpis)
         .where(and(eq(serEsgKpis.tenantId, session.tenantId), isNull(serEsgKpis.deletedAt), eq(serEsgKpis.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: serTcfdReports.id }).from(serTcfdReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(serTcfdReports)
         .where(and(eq(serTcfdReports.tenantId, session.tenantId), isNull(serTcfdReports.deletedAt), eq(serTcfdReports.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function SustainabilityEsgReportingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(serCarbonFootprints.footprintRef, `%${search}%`),
-        ilike(serCarbonFootprints.vesselName, `%${search}%`)
+        ilike(serCarbonFootprints.footprintRef, `%${escapeIlike(search)}%`),
+        ilike(serCarbonFootprints.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(serCarbonFootprints.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(serCarbonFootprints.createdAt, serCarbonFootprints.id, parsedCursor));
 
   const data = await db.select().from(serCarbonFootprints)
     .where(and(...conditions))
-    .orderBy(desc(serCarbonFootprints.createdAt))
+    .orderBy(desc(serCarbonFootprints.createdAt), desc(serCarbonFootprints.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

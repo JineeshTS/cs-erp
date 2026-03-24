@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmAiPricingModels } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AiPricingModelsListPage({
   searchParams,
 }: {
@@ -26,18 +28,19 @@ export default async function AiPricingModelsListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmAiPricingModels.modelName, `%${search}%`));
+    conditions.push(ilike(cpmAiPricingModels.modelName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmAiPricingModels.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmAiPricingModels.createdAt, cpmAiPricingModels.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmAiPricingModels)
     .where(and(...conditions))
-    .orderBy(desc(cpmAiPricingModels.createdAt))
+    .orderBy(desc(cpmAiPricingModels.createdAt), desc(cpmAiPricingModels.id))
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;

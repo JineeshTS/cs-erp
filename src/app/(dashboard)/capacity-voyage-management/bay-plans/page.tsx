@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { capBayPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function BayPlansListPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function BayPlansListPage({
   ];
 
   if (search)
-    conditions.push(ilike(capBayPlans.fileReference, `%${search}%`));
+    conditions.push(ilike(capBayPlans.fileReference, `%${escapeIlike(search)}%`));
   if (status) conditions.push(eq(capBayPlans.status, status));
-  if (cursor)
-    conditions.push(lt(capBayPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capBayPlans.createdAt, capBayPlans.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capBayPlans)
     .where(and(...conditions))
-    .orderBy(desc(capBayPlans.createdAt))
+    .orderBy(desc(capBayPlans.createdAt), desc(capBayPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

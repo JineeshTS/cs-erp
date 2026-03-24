@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpEtaManagements } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function EtaManagementsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function EtaManagementsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpEtaManagements.etaRef, `%${search}%`),
-        ilike(svpEtaManagements.vesselName, `%${search}%`)
+        ilike(svpEtaManagements.etaRef, `%${escapeIlike(search)}%`),
+        ilike(svpEtaManagements.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpEtaManagements.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpEtaManagements.createdAt, svpEtaManagements.id, parsedCursor));
 
   const data = await db.select().from(svpEtaManagements)
     .where(and(...conditions))
-    .orderBy(desc(svpEtaManagements.createdAt))
+    .orderBy(desc(svpEtaManagements.createdAt), desc(svpEtaManagements.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

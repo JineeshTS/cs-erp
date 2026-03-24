@@ -23,7 +23,7 @@ This is an AI-First Container Shipping ERP for Qatar, UAE, KSA, and India.
 - N+1 queries are FORBIDDEN — use JOIN or batch fetch
 - Heavy operations (PDF, email, exports) go to BullMQ background jobs — never in request/response
 - Use PgBouncer connection pooling (host: 06-build-pgbouncer-1:5432) for all production queries
-- Database URL for app: postgresql://codilla:lBpBckhQr0XyD8VRLg1PMOPRelvZhkXx@06-build-pgbouncer-1:5432/cs_erp
+- Database URL for app: $DATABASE_URL (via environment variable — never hardcode credentials)
 - React Suspense + loading.tsx on every route segment
 - Images: Next.js Image component only, never <img>
 - Bundle size: no barrel imports from large libs — import directly (e.g., lodash/get not lodash)

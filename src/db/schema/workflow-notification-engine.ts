@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-033-1-001: Approval Workflow Builder & Management
@@ -145,7 +146,7 @@ export const wneWorkflowStepInstances = pgTable(
     stepId: uuid("step_id")
       .notNull()
       .references(() => wneWorkflowSteps.id, { onDelete: "cascade" }),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     status: varchar("status", { length: 30 })
       .notNull()
       .default("pending"),
@@ -233,7 +234,7 @@ export const wneSlaInstances = pgTable(
     warningAt: timestamp("warning_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     breachedAt: timestamp("breached_at", { withTimezone: true }),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -269,7 +270,7 @@ export const wneDoaMatrix = pgTable(
     entityType: varchar("entity_type", { length: 50 }).notNull(),
     actionType: varchar("action_type", { length: 50 }).notNull(),
     roleId: uuid("role_id"),
-    userId: uuid("user_id"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     minAmount: integer("min_amount"),
     maxAmount: integer("max_amount"),
     currency: varchar("currency", { length: 3 }).default("USD"),
@@ -399,7 +400,7 @@ export const wneNotifications = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
-    userId: uuid("user_id").notNull(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     templateId: uuid("template_id").references(
       () => wneNotificationTemplates.id
     ),
@@ -450,7 +451,7 @@ export const wneNotificationPreferences = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
-    userId: uuid("user_id").notNull(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     channel: varchar("channel", { length: 20 }).notNull(),
     eventType: varchar("event_type", { length: 100 }).notNull(),
     isEnabled: boolean("is_enabled").notNull().default(true),

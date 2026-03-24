@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { getMessages, getSession, chat } from "@/lib/ai-chat/service";
@@ -41,7 +42,7 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get("cursor") ?? undefined;
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
     const result = await getMessages(id, user.tenantId, cursor, limit);
 
@@ -65,8 +66,8 @@ export async function POST(
     if (!(await hasPermission(user.id, user.tenantId, "ai:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 

@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { pamDisbursementAccounts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDisbursementAccountSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
-import { formatZodErrors } from "@/lib/validation";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,15 +24,16 @@ export async function GET(request: NextRequest) {
     const limit = 50;
 
     const conditions = [eq(pamDisbursementAccounts.tenantId, user.tenantId), isNull(pamDisbursementAccounts.deletedAt)];
-    if (search) conditions.push(or(ilike(pamDisbursementAccounts.accountRef, `%${search}%`), ilike(pamDisbursementAccounts.vesselName, `%${search}%`), ilike(pamDisbursementAccounts.principalName, `%${search}%`))!);
+    if (search) conditions.push(or(ilike(pamDisbursementAccounts.accountRef, `%${escapeIlike(search)}%`), ilike(pamDisbursementAccounts.vesselName, `%${escapeIlike(search)}%`), ilike(pamDisbursementAccounts.principalName, `%${escapeIlike(search)}%`))!);
     if (status) conditions.push(eq(pamDisbursementAccounts.status, status));
-    if (cursor) conditions.push(lt(pamDisbursementAccounts.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pamDisbursementAccounts.createdAt, pamDisbursementAccounts.id, parsedCursor));
 
-    const results = await db.select().from(pamDisbursementAccounts).where(and(...conditions)).orderBy(desc(pamDisbursementAccounts.createdAt)).limit(limit + 1);
+    const results = await db.select().from(pamDisbursementAccounts).where(and(...conditions)).orderBy(desc(pamDisbursementAccounts.createdAt), desc(pamDisbursementAccounts.id)).limit(limit + 1);
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
 
-    return NextResponse.json({ data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } });
+    return NextResponse.json({ data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } });
   } catch (error) {
     console.error("Failed to list disbursement accounts:", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } }, { status: 500 });
@@ -43,8 +46,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "port_agency:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createDisbursementAccountSchema.safeParse(body);
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     const accountRef = `PDA-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(pamDisbursementAccounts).values({ ...parsed.data, accountRef, tenantId: user.tenantId }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "disbursement-accounts", entityId: created?.id, module: "port-agency-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "disbursement-accounts", entityId: created.id, module: "port-agency-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

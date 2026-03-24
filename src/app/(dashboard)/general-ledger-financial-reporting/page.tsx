@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   glfrChartOfAccounts,
   glfrJournalEntries,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function GeneralLedgerFinancialReportingPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function GeneralLedgerFinancialReportingPage({
 
   const [activeAccounts, draftJournalEntries, openPeriods, draftStatements, draftSegmentReports, draftConsolidations, draftBudgets, draftVarianceAnalyses] =
     await Promise.all([
-      db.select({ id: glfrChartOfAccounts.id }).from(glfrChartOfAccounts)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrChartOfAccounts)
         .where(and(eq(glfrChartOfAccounts.tenantId, session.tenantId), isNull(glfrChartOfAccounts.deletedAt), eq(glfrChartOfAccounts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: glfrJournalEntries.id }).from(glfrJournalEntries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrJournalEntries)
         .where(and(eq(glfrJournalEntries.tenantId, session.tenantId), isNull(glfrJournalEntries.deletedAt), eq(glfrJournalEntries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrPeriodClosures.id }).from(glfrPeriodClosures)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrPeriodClosures)
         .where(and(eq(glfrPeriodClosures.tenantId, session.tenantId), isNull(glfrPeriodClosures.deletedAt), eq(glfrPeriodClosures.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: glfrFinancialStatements.id }).from(glfrFinancialStatements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrFinancialStatements)
         .where(and(eq(glfrFinancialStatements.tenantId, session.tenantId), isNull(glfrFinancialStatements.deletedAt), eq(glfrFinancialStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrSegmentReports.id }).from(glfrSegmentReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrSegmentReports)
         .where(and(eq(glfrSegmentReports.tenantId, session.tenantId), isNull(glfrSegmentReports.deletedAt), eq(glfrSegmentReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrConsolidatedStatements.id }).from(glfrConsolidatedStatements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrConsolidatedStatements)
         .where(and(eq(glfrConsolidatedStatements.tenantId, session.tenantId), isNull(glfrConsolidatedStatements.deletedAt), eq(glfrConsolidatedStatements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrBudgets.id }).from(glfrBudgets)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrBudgets)
         .where(and(eq(glfrBudgets.tenantId, session.tenantId), isNull(glfrBudgets.deletedAt), eq(glfrBudgets.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: glfrVarianceAnalyses.id }).from(glfrVarianceAnalyses)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(glfrVarianceAnalyses)
         .where(and(eq(glfrVarianceAnalyses.tenantId, session.tenantId), isNull(glfrVarianceAnalyses.deletedAt), eq(glfrVarianceAnalyses.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function GeneralLedgerFinancialReportingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(glfrChartOfAccounts.accountCode, `%${search}%`),
-        ilike(glfrChartOfAccounts.accountName, `%${search}%`)
+        ilike(glfrChartOfAccounts.accountCode, `%${escapeIlike(search)}%`),
+        ilike(glfrChartOfAccounts.accountName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(glfrChartOfAccounts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(glfrChartOfAccounts.createdAt, glfrChartOfAccounts.id, parsedCursor));
 
   const data = await db.select().from(glfrChartOfAccounts)
     .where(and(...conditions))
-    .orderBy(desc(glfrChartOfAccounts.createdAt))
+    .orderBy(desc(glfrChartOfAccounts.createdAt), desc(glfrChartOfAccounts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

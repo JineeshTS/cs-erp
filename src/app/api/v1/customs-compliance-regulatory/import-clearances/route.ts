@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { ccrImportClearances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createImportClearanceSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -30,9 +32,9 @@ export async function GET(request: NextRequest) {
     if (search) {
       conditions.push(
         or(
-          ilike(ccrImportClearances.clearanceRef, `%${search}%`),
-          ilike(ccrImportClearances.importerName, `%${search}%`),
-          ilike(ccrImportClearances.blNumber, `%${search}%`)
+          ilike(ccrImportClearances.clearanceRef, `%${escapeIlike(search)}%`),
+          ilike(ccrImportClearances.importerName, `%${escapeIlike(search)}%`),
+          ilike(ccrImportClearances.blNumber, `%${escapeIlike(search)}%`)
         )!
       );
     }
@@ -41,15 +43,16 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(ccrImportClearances.status, status));
     }
 
-    if (cursor) {
-      conditions.push(lt(ccrImportClearances.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(ccrImportClearances.createdAt, ccrImportClearances.id, parsedCursor));
     }
 
     const results = await db
       .select()
       .from(ccrImportClearances)
       .where(and(...conditions))
-      .orderBy(desc(ccrImportClearances.createdAt))
+      .orderBy(desc(ccrImportClearances.createdAt), desc(ccrImportClearances.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data,
       meta: {
-        cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined,
+        cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined,
         hasMore,
       },
     });
@@ -77,8 +80,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "customs:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createImportClearanceSchema.safeParse(body);
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "import-clearances", entityId: created?.id, module: "customs-compliance-regulatory", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "import-clearances", entityId: created.id, module: "customs-compliance-regulatory", newData: created as Record<string, unknown>, request });
 
     // Emit CUSTOMS_HELD if inspection required or status indicates hold; otherwise CUSTOMS_CLEARED
     if (created.inspectionRequired || created.status === "held" || created.status === "inspection") {

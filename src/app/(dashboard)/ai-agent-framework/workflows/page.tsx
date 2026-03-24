@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { aafWorkflowDefinitions } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString();
@@ -40,18 +42,19 @@ export default async function WorkflowDefinitionsPage({
   ];
   if (search) {
     conditions.push(
-      ilike(aafWorkflowDefinitions.workflowName, `%${search}%`)
+      ilike(aafWorkflowDefinitions.workflowName, `%${escapeIlike(search)}%`)
     );
   }
-  if (cursor) {
-    conditions.push(lt(aafWorkflowDefinitions.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(aafWorkflowDefinitions.createdAt, aafWorkflowDefinitions.id, parsedCursor));
+    }
 
   const data = await db
     .select()
     .from(aafWorkflowDefinitions)
     .where(and(...conditions))
-    .orderBy(desc(aafWorkflowDefinitions.createdAt))
+    .orderBy(desc(aafWorkflowDefinitions.createdAt), desc(aafWorkflowDefinitions.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

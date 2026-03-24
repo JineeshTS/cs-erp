@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { adminLicenses } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -8,6 +9,7 @@ import { createLicenseSchema } from "@/lib/admin-portal/validation";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -19,10 +21,11 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(adminLicenses.tenantId, user.tenantId), isNull(adminLicenses.deletedAt)];
-    if (cursor) conditions.push(lt(adminLicenses.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(adminLicenses.createdAt, adminLicenses.id, parsedCursor));
 
     const results = await db.select().from(adminLicenses).where(and(...conditions))
-      .orderBy(desc(adminLicenses.createdAt)).limit(limit + 1);
+      .orderBy(desc(adminLicenses.createdAt), desc(adminLicenses.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -44,8 +47,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "admin:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createLicenseSchema.safeParse(body);
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       ...(expiresAt ? { expiresAt: new Date(expiresAt) } : {}),
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "licenses", entityId: created?.id, module: "admin-portal", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "licenses", entityId: created.id, module: "admin-portal", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

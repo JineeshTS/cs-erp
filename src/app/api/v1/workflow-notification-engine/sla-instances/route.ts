@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneSlaInstances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -20,10 +21,11 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(wneSlaInstances.tenantId, user.tenantId), isNull(wneSlaInstances.deletedAt)];
     if (status) conditions.push(eq(wneSlaInstances.status, status));
     if (entityType) conditions.push(eq(wneSlaInstances.entityType, entityType));
-    if (cursor) conditions.push(lt(wneSlaInstances.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(wneSlaInstances.createdAt, wneSlaInstances.id, parsedCursor));
 
     const results = await db.select().from(wneSlaInstances).where(and(...conditions))
-      .orderBy(desc(wneSlaInstances.createdAt)).limit(limit + 1);
+      .orderBy(desc(wneSlaInstances.createdAt), desc(wneSlaInstances.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;

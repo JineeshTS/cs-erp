@@ -5,6 +5,8 @@ import { users, roles } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 type RouteParams = { params: Promise<{ tenantId: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -39,11 +41,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .where(
         and(
           eq(users.tenantId, tenantId),
-          search ? ilike(users.email, `%${search}%`) : undefined,
+          search ? ilike(users.email, `%${escapeIlike(search)}%`) : undefined,
           cursor ? lt(users.createdAt, new Date(cursor)) : undefined
         )
       )
-      .orderBy(desc(users.createdAt))
+      .orderBy(desc(users.createdAt), desc(users.id))
       .limit(limit + 1);
 
     const results = await query;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
@@ -46,8 +47,8 @@ export async function PATCH(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "clm:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -65,8 +66,6 @@ export async function PATCH(
       .where(and(eq(clmLeaseAgreements.id, id), eq(clmLeaseAgreements.tenantId, user.tenantId), isNull(clmLeaseAgreements.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "lease-agreements", entityId: record?.id, module: "container-leasing-management", previousData: null, newData: record as Record<string, unknown>, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Lease agreement not found" } },
@@ -74,6 +73,7 @@ export async function PATCH(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "lease-agreements", entityId: record.id, module: "container-leasing-management", previousData: null, newData: record as Record<string, unknown>, request });
     return NextResponse.json({ data: record });
   } catch (error) {
     console.error("Failed to update lease agreement:", error);
@@ -93,8 +93,8 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "clm:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [record] = await db
@@ -103,8 +103,6 @@ export async function DELETE(
       .where(and(eq(clmLeaseAgreements.id, id), eq(clmLeaseAgreements.tenantId, user.tenantId), isNull(clmLeaseAgreements.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "lease-agreements", entityId: record?.id, module: "container-leasing-management", previousData: null, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Lease agreement not found" } },
@@ -112,6 +110,7 @@ export async function DELETE(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "lease-agreements", entityId: record.id, module: "container-leasing-management", previousData: null, request });
     return NextResponse.json({ data: { success: true } });
   } catch (error) {
     console.error("Failed to delete lease agreement:", error);

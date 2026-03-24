@@ -7,6 +7,8 @@ import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { cpmRateBenchmarks } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RateBenchmarksListPage({
   searchParams,
 }: {
@@ -25,18 +27,19 @@ export default async function RateBenchmarksListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmRateBenchmarks.benchmarkName, `%${search}%`));
+    conditions.push(ilike(cpmRateBenchmarks.benchmarkName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmRateBenchmarks.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmRateBenchmarks.createdAt, cpmRateBenchmarks.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmRateBenchmarks)
     .where(and(...conditions))
-    .orderBy(desc(cpmRateBenchmarks.createdAt))
+    .orderBy(desc(cpmRateBenchmarks.createdAt), desc(cpmRateBenchmarks.id))
     .limit(limit + 1);
 
   const hasMore = records.length > limit;

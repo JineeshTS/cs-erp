@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-008-1-001: Service Categories
@@ -73,7 +74,7 @@ export const csoInquiries = pgTable(
     channel: varchar("channel", { length: 30 }).notNull().default("email"),
     priority: varchar("priority", { length: 20 }).notNull().default("normal"),
     status: varchar("status", { length: 30 }).notNull().default("open"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
     firstResponseAt: timestamp("first_response_at", { withTimezone: true }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
@@ -128,7 +129,7 @@ export const csoComplaints = pgTable(
     complaintType: varchar("complaint_type", { length: 30 }).notNull().default("service"),
     severity: varchar("severity", { length: 20 }).notNull().default("medium"),
     status: varchar("status", { length: 30 }).notNull().default("open"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
     rootCause: text("root_cause"),
     correctionAction: text("correction_action"),
@@ -186,7 +187,7 @@ export const csoServiceRequests = pgTable(
     description: text("description"),
     priority: varchar("priority", { length: 20 }).notNull().default("normal"),
     status: varchar("status", { length: 30 }).notNull().default("open"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
     dueDate: timestamp("due_date", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }),
@@ -491,7 +492,7 @@ export const csoAgentAssignments = pgTable(
     agentId: uuid("agent_id").notNull(),
     entityType: varchar("entity_type", { length: 30 }).notNull(),
     entityId: uuid("entity_id").notNull(),
-    assignedBy: uuid("assigned_by").notNull(),
+    assignedBy: uuid("assigned_by").notNull().references(() => users.id),
     status: varchar("status", { length: 20 }).notNull().default("active"),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -531,7 +532,7 @@ export const csoResolutionNotes = pgTable(
     entityId: uuid("entity_id").notNull(),
     noteType: varchar("note_type", { length: 30 }).notNull().default("internal"),
     content: text("content").notNull(),
-    createdBy: uuid("created_by").notNull(),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
     isInternal: boolean("is_internal").notNull().default(true),
     attachments: jsonb("attachments"),
     metadata: jsonb("metadata"),

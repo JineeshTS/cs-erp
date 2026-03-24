@@ -8,6 +8,7 @@ import { eq, and, isNull, desc, lt } from "drizzle-orm";
 import { cvmVesselPerformances } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VesselPerformancesPage({
   searchParams,
 }: {
@@ -41,7 +42,7 @@ export default async function VesselPerformancesPage({
     .select()
     .from(cvmVesselPerformances)
     .where(and(...conditions))
-    .orderBy(desc(cvmVesselPerformances.createdAt))
+    .orderBy(desc(cvmVesselPerformances.createdAt), desc(cvmVesselPerformances.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { icdRouteOptimizations } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -59,8 +60,8 @@ export async function PATCH(
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -84,8 +85,6 @@ export async function PATCH(
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "route-optimizations", entityId: record?.id, module: "intermodal-icd-operations", previousData: null, newData: record as Record<string, unknown>, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Route optimization not found" } },
@@ -93,6 +92,7 @@ export async function PATCH(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "route-optimizations", entityId: record.id, module: "intermodal-icd-operations", previousData: null, newData: record as Record<string, unknown>, request });
     return NextResponse.json({ data: record });
   } catch (error) {
     console.error("Failed to update route optimization:", error);
@@ -113,8 +113,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -130,8 +130,6 @@ export async function DELETE(
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "route-optimizations", entityId: record?.id, module: "intermodal-icd-operations", previousData: null, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Route optimization not found" } },
@@ -139,6 +137,7 @@ export async function DELETE(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "route-optimizations", entityId: record.id, module: "intermodal-icd-operations", previousData: null, request });
     return NextResponse.json({ data: { id: record.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete route optimization:", error);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -31,13 +32,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) {
-    return NextResponse.json(
-      { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-      { status: 403 }
-    );
-  }
+  const csrfError = validateCsrfToken(request);
+  if (csrfError) return csrfError;
 
   let body: unknown;
   try {

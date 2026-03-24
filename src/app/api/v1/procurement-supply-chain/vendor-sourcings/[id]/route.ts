@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pscVendorSourcings } from "@/db/schema";
@@ -31,16 +32,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "procurement:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const body = await request.json();
     const parsed = updateVendorSourcingSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(pscVendorSourcings).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(pscVendorSourcings.id, id), eq(pscVendorSourcings.tenantId, user.tenantId), isNull(pscVendorSourcings.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vendor-sourcings", entityId: updated?.id, module: "procurement-supply-chain", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Vendor sourcing not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vendor-sourcings", entityId: updated.id, module: "procurement-supply-chain", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update vendor sourcing:", error);
@@ -54,13 +56,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "procurement:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const [deleted] = await db.update(pscVendorSourcings).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(eq(pscVendorSourcings.id, id), eq(pscVendorSourcings.tenantId, user.tenantId), isNull(pscVendorSourcings.deletedAt))).returning({ id: pscVendorSourcings.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vendor-sourcings", entityId: deleted?.id, module: "procurement-supply-chain", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Vendor sourcing not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vendor-sourcings", entityId: deleted.id, module: "procurement-supply-chain", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete vendor sourcing:", error);

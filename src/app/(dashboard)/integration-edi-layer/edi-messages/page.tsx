@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { ielEdiMessages } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = (status: string) => {
   switch (status) {
     case "parsed":
@@ -61,18 +63,19 @@ export default async function EdiMessagesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ielEdiMessages.messageRef, `%${search}%`),
-        ilike(ielEdiMessages.senderCode, `%${search}%`)
+        ilike(ielEdiMessages.messageRef, `%${escapeIlike(search)}%`),
+        ilike(ielEdiMessages.senderCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ielEdiMessages.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ielEdiMessages.createdAt, ielEdiMessages.id, parsedCursor));
 
   const data = await db
     .select()
     .from(ielEdiMessages)
     .where(and(...conditions))
-    .orderBy(desc(ielEdiMessages.createdAt))
+    .orderBy(desc(ielEdiMessages.createdAt), desc(ielEdiMessages.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

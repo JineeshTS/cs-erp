@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsDocumentTemplates } from "@/db/schema";
@@ -46,8 +47,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!user) return unauthorizedResponse();
   if (!(await hasPermission(user.id, user.tenantId, "templates:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
   try {
     const { id } = await params;
@@ -67,8 +68,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         isNull(dmsDocumentTemplates.deletedAt)
       )).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "templates", entityId: updated?.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Document template not found" } },
@@ -76,6 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "templates", entityId: updated.id, module: "document-management-system", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("Update document template error:", err);
@@ -91,8 +91,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   if (!user) return unauthorizedResponse();
   if (!(await hasPermission(user.id, user.tenantId, "templates:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
   try {
     const { id } = await params;
@@ -103,8 +103,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         isNull(dmsDocumentTemplates.deletedAt)
       )).returning({ id: dmsDocumentTemplates.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "templates", entityId: deleted?.id, module: "document-management-system", previousData: null, request });
-
     if (!deleted) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Document template not found" } },
@@ -112,6 +110,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "templates", entityId: deleted.id, module: "document-management-system", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (err) {
     console.error("Delete document template error:", err);

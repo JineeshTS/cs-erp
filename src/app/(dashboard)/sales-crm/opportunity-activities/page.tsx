@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmOpportunityActivities } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OpportunityActivitiesPage({
   searchParams,
 }: {
@@ -39,16 +41,16 @@ export default async function OpportunityActivitiesPage({
   if (opportunityId)
     conditions.push(eq(scmOpportunityActivities.opportunityId, opportunityId));
   if (search) {
-    conditions.push(ilike(scmOpportunityActivities.subject, `%${search}%`));
+    conditions.push(ilike(scmOpportunityActivities.subject, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmOpportunityActivities.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmOpportunityActivities.createdAt, scmOpportunityActivities.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmOpportunityActivities)
     .where(and(...conditions))
-    .orderBy(desc(scmOpportunityActivities.createdAt))
+    .orderBy(desc(scmOpportunityActivities.createdAt), desc(scmOpportunityActivities.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

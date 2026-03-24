@@ -15,14 +15,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useCallback, Suspense } from "react";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 // ── Helpers ──
-
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match?.[1] ?? "csrf-placeholder";
-}
 
 const STEP_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   pending: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", label: "Pending" },
@@ -87,7 +82,7 @@ function FlowContextBannerInner() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken(),
+            "x-csrf-token": getCsrfToken(),
           },
           body: JSON.stringify({
             stepNumber: parseInt(stepNumber, 10),
@@ -110,7 +105,7 @@ function FlowContextBannerInner() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": getCsrfToken(),
+          "x-csrf-token": getCsrfToken(),
         },
         body: JSON.stringify({
           output: { completedManually: true, completedAt: new Date().toISOString(), completedFromModule: true },

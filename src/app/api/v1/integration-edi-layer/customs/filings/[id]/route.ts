@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { ielCustomsFilings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -43,8 +44,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "integration:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -81,8 +82,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "filings", entityId: updated?.id, module: "integration-edi-layer", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Customs filing not found" } },
@@ -90,6 +89,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "filings", entityId: updated.id, module: "integration-edi-layer", previousData: existing as Record<string, unknown>, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update customs filing:", error);

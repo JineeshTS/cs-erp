@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -74,8 +75,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { userId } = await params;
     const body = await request.json();
@@ -106,8 +107,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       status: users.status,
       roleId: users.roleId,
     });
-
-    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "users", entityId: updated?.id, module: "admin", previousData: currentUser as unknown as Record<string, unknown>, newData: updated as unknown as Record<string, unknown>, request });
 
   if (!updated) {
     return NextResponse.json(
@@ -140,6 +139,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   }
 
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "users", entityId: updated.id, module: "admin", previousData: currentUser as unknown as Record<string, unknown>, newData: updated as unknown as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("[admin/users/[userId]] PATCH error:", error);

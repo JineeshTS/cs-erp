@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { iotPredictiveAlerts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = {
   draft: "secondary",
   active: "success",
@@ -46,19 +48,19 @@ export default async function PredictiveAlertsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(iotPredictiveAlerts.alertRef, `%${search}%`),
-        ilike(iotPredictiveAlerts.assetIdentifier, `%${search}%`)
+        ilike(iotPredictiveAlerts.alertRef, `%${escapeIlike(search)}%`),
+        ilike(iotPredictiveAlerts.assetIdentifier, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(iotPredictiveAlerts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(iotPredictiveAlerts.createdAt, iotPredictiveAlerts.id, parsedCursor));
 
   const data = await db
     .select()
     .from(iotPredictiveAlerts)
     .where(and(...conditions))
-    .orderBy(desc(iotPredictiveAlerts.createdAt))
+    .orderBy(desc(iotPredictiveAlerts.createdAt), desc(iotPredictiveAlerts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfIamPolicies } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function IamPoliciesPage({
   searchParams,
 }: {
@@ -34,18 +36,19 @@ export default async function IamPoliciesPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfIamPolicies.policyName, `%${search}%`),
-        ilike(isfIamPolicies.policyCode, `%${search}%`)
+        ilike(isfIamPolicies.policyName, `%${escapeIlike(search)}%`),
+        ilike(isfIamPolicies.policyCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(isfIamPolicies.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfIamPolicies.createdAt, isfIamPolicies.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfIamPolicies)
     .where(and(...conditions))
-    .orderBy(desc(isfIamPolicies.createdAt))
+    .orderBy(desc(isfIamPolicies.createdAt), desc(isfIamPolicies.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

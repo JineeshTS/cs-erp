@@ -9,8 +9,10 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-034-1-001: Document Repository & Classification
@@ -26,7 +28,7 @@ export const dmsDocumentCategories = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     slug: varchar("slug", { length: 100 }).notNull(),
     description: text("description"),
-    parentId: uuid("parent_id"),
+    parentId: uuid("parent_id").references((): AnyPgColumn => dmsDocumentCategories.id, { onDelete: "set null" }),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
     metadata: jsonb("metadata"),
@@ -81,7 +83,7 @@ export const dmsDocuments = pgTable(
       .notNull()
       .default("internal"),
     tags: jsonb("tags"),
-    uploadedBy: uuid("uploaded_by").notNull(),
+    uploadedBy: uuid("uploaded_by").notNull().references(() => users.id),
     isArchived: boolean("is_archived").notNull().default(false),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
@@ -129,7 +131,7 @@ export const dmsDocumentVersions = pgTable(
     mimeType: varchar("mime_type", { length: 100 }).notNull(),
     storagePath: varchar("storage_path", { length: 1000 }).notNull(),
     changeNotes: text("change_notes"),
-    uploadedBy: uuid("uploaded_by").notNull(),
+    uploadedBy: uuid("uploaded_by").notNull().references(() => users.id),
     checksum: varchar("checksum", { length: 128 }),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -333,7 +335,7 @@ export const dmsExpiryAlerts = pgTable(
     acknowledgedBy: uuid("acknowledged_by"),
     renewalDate: timestamp("renewal_date", { withTimezone: true }),
     renewalDocumentId: uuid("renewal_document_id"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),

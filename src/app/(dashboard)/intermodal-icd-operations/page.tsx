@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   icdDryPorts,
   icdRailPlans,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function IntermodalIcdOperationsPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function IntermodalIcdOperationsPage({
 
   const [activePorts, planningRailPlans, pendingTruckBookings, pendingDeliveries, pendingOptimizations] =
     await Promise.all([
-      db.select({ id: icdDryPorts.id }).from(icdDryPorts)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icdDryPorts)
         .where(and(eq(icdDryPorts.tenantId, session.tenantId), isNull(icdDryPorts.deletedAt), eq(icdDryPorts.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: icdRailPlans.id }).from(icdRailPlans)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icdRailPlans)
         .where(and(eq(icdRailPlans.tenantId, session.tenantId), isNull(icdRailPlans.deletedAt), eq(icdRailPlans.status, "planning")))
-        .then((r) => r.length),
-      db.select({ id: icdTruckBookings.id }).from(icdTruckBookings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icdTruckBookings)
         .where(and(eq(icdTruckBookings.tenantId, session.tenantId), isNull(icdTruckBookings.deletedAt), eq(icdTruckBookings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: icdLastMileDeliveries.id }).from(icdLastMileDeliveries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icdLastMileDeliveries)
         .where(and(eq(icdLastMileDeliveries.tenantId, session.tenantId), isNull(icdLastMileDeliveries.deletedAt), eq(icdLastMileDeliveries.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: icdRouteOptimizations.id }).from(icdRouteOptimizations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icdRouteOptimizations)
         .where(and(eq(icdRouteOptimizations.tenantId, session.tenantId), isNull(icdRouteOptimizations.deletedAt), eq(icdRouteOptimizations.status, "pending")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function IntermodalIcdOperationsPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icdDryPorts.portRef, `%${search}%`),
-        ilike(icdDryPorts.portName, `%${search}%`),
-        ilike(icdDryPorts.portCode, `%${search}%`)
+        ilike(icdDryPorts.portRef, `%${escapeIlike(search)}%`),
+        ilike(icdDryPorts.portName, `%${escapeIlike(search)}%`),
+        ilike(icdDryPorts.portCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icdDryPorts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icdDryPorts.createdAt, icdDryPorts.id, parsedCursor));
 
   const data = await db.select().from(icdDryPorts)
     .where(and(...conditions))
-    .orderBy(desc(icdDryPorts.createdAt))
+    .orderBy(desc(icdDryPorts.createdAt), desc(icdDryPorts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

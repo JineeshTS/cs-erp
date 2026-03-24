@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   odmBillsOfLading,
   odmManifests,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OperationsDocumentationPage({
   searchParams,
 }: {
@@ -45,7 +47,7 @@ export default async function OperationsDocumentationPage({
   const [draftBls, pendingManifests, pendingFilings, pendingVgms] =
     await Promise.all([
       db
-        .select({ id: odmBillsOfLading.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(odmBillsOfLading)
         .where(
           and(
@@ -54,9 +56,9 @@ export default async function OperationsDocumentationPage({
             eq(odmBillsOfLading.blStatus, "draft")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: odmManifests.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(odmManifests)
         .where(
           and(
@@ -65,9 +67,9 @@ export default async function OperationsDocumentationPage({
             eq(odmManifests.status, "draft")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: odmRegulatoryFilings.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(odmRegulatoryFilings)
         .where(
           and(
@@ -76,9 +78,9 @@ export default async function OperationsDocumentationPage({
             eq(odmRegulatoryFilings.status, "pending")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: odmVgmRecords.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(odmVgmRecords)
         .where(
           and(
@@ -87,7 +89,7 @@ export default async function OperationsDocumentationPage({
             eq(odmVgmRecords.status, "pending")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -98,19 +100,20 @@ export default async function OperationsDocumentationPage({
   if (search) {
     conditions.push(
       or(
-        ilike(odmBillsOfLading.blNumber, `%${search}%`),
-        ilike(odmBillsOfLading.shipperName, `%${search}%`),
-        ilike(odmBillsOfLading.consigneeName, `%${search}%`)
+        ilike(odmBillsOfLading.blNumber, `%${escapeIlike(search)}%`),
+        ilike(odmBillsOfLading.shipperName, `%${escapeIlike(search)}%`),
+        ilike(odmBillsOfLading.consigneeName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(odmBillsOfLading.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmBillsOfLading.createdAt, odmBillsOfLading.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmBillsOfLading)
     .where(and(...conditions))
-    .orderBy(desc(odmBillsOfLading.createdAt))
+    .orderBy(desc(odmBillsOfLading.createdAt), desc(odmBillsOfLading.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

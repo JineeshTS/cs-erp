@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmIncentiveRules } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function IncentiveRulesPage({
   searchParams,
 }: {
@@ -33,16 +35,16 @@ export default async function IncentiveRulesPage({
     isNull(scmIncentiveRules.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(scmIncentiveRules.ruleName, `%${search}%`));
+    conditions.push(ilike(scmIncentiveRules.ruleName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmIncentiveRules.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmIncentiveRules.createdAt, scmIncentiveRules.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmIncentiveRules)
     .where(and(...conditions))
-    .orderBy(desc(scmIncentiveRules.createdAt))
+    .orderBy(desc(scmIncentiveRules.createdAt), desc(scmIncentiveRules.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, clearTenantRLS } from "@/lib/db";
 import { sessions, users, roles } from "@/db/schema";
 import { signAccessToken } from "@/lib/jwt";
 import { generateRefreshToken, hashToken } from "@/lib/tokens";
 import { logAuditEvent } from "@/lib/audit";
-import { setAuthCookies } from "@/lib/cookies";
+import { setAuthCookies, setCsrfCookie } from "@/lib/cookies";
+import { generateCsrfToken } from "@/lib/csrf";
 import { getClientIp, getUserAgent } from "@/lib/request";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createHash } from "crypto";
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest) {
 
     const tokenHash = hashToken(refreshTokenCookie);
     const ua = getUserAgent(request);
+
+    // Clear stale tenant context from pooled connection (prevents RLS filtering)
+    await clearTenantRLS();
 
     // Find the session by token hash
     const [session] = await db
@@ -135,6 +139,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const response = NextResponse.json({ expiresAt });
     setAuthCookies(response, accessToken, newRefreshToken);
+    setCsrfCookie(response, generateCsrfToken());
     return response;
   } catch (error) {
     console.error("[refresh]", error);

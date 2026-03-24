@@ -9,6 +9,8 @@ import { db } from "@/lib/db";
 import { cpmDeadFreightRecords } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const STATUS_COLORS: Record<string, string> = {
   calculated: "bg-blue-100 text-blue-800",
   invoiced: "bg-yellow-100 text-yellow-800",
@@ -34,20 +36,21 @@ export default async function DeadFreightRecordsPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmDeadFreightRecords.recordReference, `%${search}%`));
+    conditions.push(ilike(cpmDeadFreightRecords.recordReference, `%${escapeIlike(search)}%`));
   }
   if (status) {
     conditions.push(eq(cpmDeadFreightRecords.status, status));
   }
-  if (cursor) {
-    conditions.push(lt(cpmDeadFreightRecords.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmDeadFreightRecords.createdAt, cpmDeadFreightRecords.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmDeadFreightRecords)
     .where(and(...conditions))
-    .orderBy(desc(cpmDeadFreightRecords.createdAt))
+    .orderBy(desc(cpmDeadFreightRecords.createdAt), desc(cpmDeadFreightRecords.id))
     .limit(51);
 
   const hasMore = records.length > 50;

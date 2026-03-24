@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmRateQuotations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RateQuotationsPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function RateQuotationsPage({
   ];
   if (status) conditions.push(eq(scmRateQuotations.status, status));
   if (search) {
-    conditions.push(ilike(scmRateQuotations.quotationNumber, `%${search}%`));
+    conditions.push(ilike(scmRateQuotations.quotationNumber, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmRateQuotations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmRateQuotations.createdAt, scmRateQuotations.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmRateQuotations)
     .where(and(...conditions))
-    .orderBy(desc(scmRateQuotations.createdAt))
+    .orderBy(desc(scmRateQuotations.createdAt), desc(scmRateQuotations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

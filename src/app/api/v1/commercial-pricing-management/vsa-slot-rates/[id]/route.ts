@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cpmVsaSlotRates } from "@/db/schema";
@@ -33,8 +34,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "commercial:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -45,9 +46,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const [updated] = await db.update(cpmVsaSlotRates).set({ ...parsed.data }).where(and(eq(cpmVsaSlotRates.id, id), eq(cpmVsaSlotRates.tenantId, user.tenantId), isNull(cpmVsaSlotRates.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vsa-slot-rates", entityId: updated?.id, module: "commercial-pricing-management", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "VSA slot rate not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "vsa-slot-rates", entityId: updated.id, module: "commercial-pricing-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update VSA slot rate:", error);
@@ -61,15 +62,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "commercial:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(cpmVsaSlotRates).set({ deletedAt: new Date() }).where(and(eq(cpmVsaSlotRates.id, id), eq(cpmVsaSlotRates.tenantId, user.tenantId), isNull(cpmVsaSlotRates.deletedAt))).returning({ id: cpmVsaSlotRates.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vsa-slot-rates", entityId: deleted?.id, module: "commercial-pricing-management", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "VSA slot rate not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "vsa-slot-rates", entityId: deleted.id, module: "commercial-pricing-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete VSA slot rate:", error);

@@ -8,7 +8,7 @@ import {
   Mail,
   Bell,
 } from "lucide-react";
-import { eq, and, isNull } from "drizzle-orm";
+import { sql, eq, and, isNull } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
@@ -49,7 +49,7 @@ export default async function WorkflowNotificationEnginePage() {
     notificationCount,
   ] = await Promise.all([
     db
-      .select({ id: wneWorkflows.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneWorkflows)
       .where(
         and(
@@ -57,9 +57,9 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneWorkflows.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
     db
-      .select({ id: wneSlaDefinitions.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneSlaDefinitions)
       .where(
         and(
@@ -67,9 +67,9 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneSlaDefinitions.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
     db
-      .select({ id: wneDoaMatrix.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneDoaMatrix)
       .where(
         and(
@@ -77,9 +77,9 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneDoaMatrix.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
     db
-      .select({ id: wneRoutingRules.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneRoutingRules)
       .where(
         and(
@@ -87,9 +87,9 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneRoutingRules.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
     db
-      .select({ id: wneNotificationTemplates.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneNotificationTemplates)
       .where(
         and(
@@ -97,9 +97,9 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneNotificationTemplates.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
     db
-      .select({ id: wneNotifications.id })
+      .select({ value: sql<number>`cast(count(*) as int)` })
       .from(wneNotifications)
       .where(
         and(
@@ -107,7 +107,7 @@ export default async function WorkflowNotificationEnginePage() {
           isNull(wneNotifications.deletedAt)
         )
       )
-      .then((r) => r.length),
+      .then((r) => r[0]?.value ?? 0),
   ]);
 
   const sections = [

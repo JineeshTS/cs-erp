@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { icmProjectPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = { draft: "secondary", in_progress: "warning", completed: "success", verified: "success", rejected: "destructive" } as const;
 
 export default async function ProjectPlansListPage({
@@ -36,16 +38,17 @@ export default async function ProjectPlansListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmProjectPlans.planRef, `%${search}%`),
-        ilike(icmProjectPlans.title, `%${search}%`)
+        ilike(icmProjectPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(icmProjectPlans.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmProjectPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmProjectPlans.createdAt, icmProjectPlans.id, parsedCursor));
 
   const data = await db.select().from(icmProjectPlans)
     .where(and(...conditions))
-    .orderBy(desc(icmProjectPlans.createdAt))
+    .orderBy(desc(icmProjectPlans.createdAt), desc(icmProjectPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

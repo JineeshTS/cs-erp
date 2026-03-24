@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmPipelineStages } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PipelineStagesPage({
   searchParams,
 }: {
@@ -34,16 +36,16 @@ export default async function PipelineStagesPage({
     isNull(scmPipelineStages.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(scmPipelineStages.stageName, `%${search}%`));
+    conditions.push(ilike(scmPipelineStages.stageName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmPipelineStages.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmPipelineStages.createdAt, scmPipelineStages.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmPipelineStages)
     .where(and(...conditions))
-    .orderBy(desc(scmPipelineStages.createdAt))
+    .orderBy(desc(scmPipelineStages.createdAt), desc(scmPipelineStages.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

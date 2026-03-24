@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { odmVgmRecords } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VgmRecordsPage({
   searchParams,
 }: {
@@ -36,15 +38,16 @@ export default async function VgmRecordsPage({
   ];
   if (status) conditions.push(eq(odmVgmRecords.status, status));
   if (search) {
-    conditions.push(ilike(odmVgmRecords.vgmReference, `%${search}%`));
+    conditions.push(ilike(odmVgmRecords.vgmReference, `%${escapeIlike(search)}%`));
   }
-  if (cursor) conditions.push(lt(odmVgmRecords.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmVgmRecords.createdAt, odmVgmRecords.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmVgmRecords)
     .where(and(...conditions))
-    .orderBy(desc(odmVgmRecords.createdAt))
+    .orderBy(desc(odmVgmRecords.createdAt), desc(odmVgmRecords.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

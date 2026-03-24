@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   clmLeaseAgreements,
   clmOnhireOffhires,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ContainerLeasingManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function ContainerLeasingManagementPage({
 
   const [draftLeaseAgreements, draftOnhireOffhires, draftMnrDamageBillings, draftLeaseCostAllocations, draftLessorReconciliations, draftContainerRedeliveries, draftLeaseVsBuyAnalyses, draftFleetOptimizers] =
     await Promise.all([
-      db.select({ id: clmLeaseAgreements.id }).from(clmLeaseAgreements)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmLeaseAgreements)
         .where(and(eq(clmLeaseAgreements.tenantId, session.tenantId), isNull(clmLeaseAgreements.deletedAt), eq(clmLeaseAgreements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmOnhireOffhires.id }).from(clmOnhireOffhires)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmOnhireOffhires)
         .where(and(eq(clmOnhireOffhires.tenantId, session.tenantId), isNull(clmOnhireOffhires.deletedAt), eq(clmOnhireOffhires.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmMnrDamageBillings.id }).from(clmMnrDamageBillings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmMnrDamageBillings)
         .where(and(eq(clmMnrDamageBillings.tenantId, session.tenantId), isNull(clmMnrDamageBillings.deletedAt), eq(clmMnrDamageBillings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmLeaseCostAllocations.id }).from(clmLeaseCostAllocations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmLeaseCostAllocations)
         .where(and(eq(clmLeaseCostAllocations.tenantId, session.tenantId), isNull(clmLeaseCostAllocations.deletedAt), eq(clmLeaseCostAllocations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmLessorReconciliations.id }).from(clmLessorReconciliations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmLessorReconciliations)
         .where(and(eq(clmLessorReconciliations.tenantId, session.tenantId), isNull(clmLessorReconciliations.deletedAt), eq(clmLessorReconciliations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmContainerRedeliveries.id }).from(clmContainerRedeliveries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmContainerRedeliveries)
         .where(and(eq(clmContainerRedeliveries.tenantId, session.tenantId), isNull(clmContainerRedeliveries.deletedAt), eq(clmContainerRedeliveries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmLeaseVsBuyAnalyses.id }).from(clmLeaseVsBuyAnalyses)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmLeaseVsBuyAnalyses)
         .where(and(eq(clmLeaseVsBuyAnalyses.tenantId, session.tenantId), isNull(clmLeaseVsBuyAnalyses.deletedAt), eq(clmLeaseVsBuyAnalyses.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: clmFleetOptimizers.id }).from(clmFleetOptimizers)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(clmFleetOptimizers)
         .where(and(eq(clmFleetOptimizers.tenantId, session.tenantId), isNull(clmFleetOptimizers.deletedAt), eq(clmFleetOptimizers.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function ContainerLeasingManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(clmLeaseAgreements.agreementRef, `%${search}%`),
-        ilike(clmLeaseAgreements.lessorName, `%${search}%`)
+        ilike(clmLeaseAgreements.agreementRef, `%${escapeIlike(search)}%`),
+        ilike(clmLeaseAgreements.lessorName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(clmLeaseAgreements.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(clmLeaseAgreements.createdAt, clmLeaseAgreements.id, parsedCursor));
 
   const data = await db.select().from(clmLeaseAgreements)
     .where(and(...conditions))
-    .orderBy(desc(clmLeaseAgreements.createdAt))
+    .orderBy(desc(clmLeaseAgreements.createdAt), desc(clmLeaseAgreements.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

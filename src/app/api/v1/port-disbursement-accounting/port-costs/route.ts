@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { pdaPortCosts } from "@/db/schema";
@@ -33,8 +34,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "disbursement:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const body = await request.json();
     const parsed = createPortCostSchema.safeParse(body);
     if (!parsed.success) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     const costRef = `PCR-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(pdaPortCosts).values({ tenantId: user.tenantId, costRef, ...parsed.data }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "port-costs", entityId: created?.id, module: "port-disbursement-accounting", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "port-costs", entityId: created.id, module: "port-disbursement-accounting", newData: created as Record<string, unknown>, request });
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     console.error("Failed to create port cost:", error);

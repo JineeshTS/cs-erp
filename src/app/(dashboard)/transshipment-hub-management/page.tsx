@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   thmCargoPlans,
   thmFeederCoordinations,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function TransshipmentHubManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function TransshipmentHubManagementPage({
 
   const [draftCargoPlans, draftFeederCoordinations, draftCargoTrackings, draftMissedConnections, draftRevenueAttributions, draftHubEfficiencies, draftOptimizationEngines, draftPenaltyTrackings] =
     await Promise.all([
-      db.select({ id: thmCargoPlans.id }).from(thmCargoPlans)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmCargoPlans)
         .where(and(eq(thmCargoPlans.tenantId, session.tenantId), isNull(thmCargoPlans.deletedAt), eq(thmCargoPlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmFeederCoordinations.id }).from(thmFeederCoordinations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmFeederCoordinations)
         .where(and(eq(thmFeederCoordinations.tenantId, session.tenantId), isNull(thmFeederCoordinations.deletedAt), eq(thmFeederCoordinations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmCargoTrackings.id }).from(thmCargoTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmCargoTrackings)
         .where(and(eq(thmCargoTrackings.tenantId, session.tenantId), isNull(thmCargoTrackings.deletedAt), eq(thmCargoTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmMissedConnections.id }).from(thmMissedConnections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmMissedConnections)
         .where(and(eq(thmMissedConnections.tenantId, session.tenantId), isNull(thmMissedConnections.deletedAt), eq(thmMissedConnections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmRevenueAttributions.id }).from(thmRevenueAttributions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmRevenueAttributions)
         .where(and(eq(thmRevenueAttributions.tenantId, session.tenantId), isNull(thmRevenueAttributions.deletedAt), eq(thmRevenueAttributions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmHubEfficiencies.id }).from(thmHubEfficiencies)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmHubEfficiencies)
         .where(and(eq(thmHubEfficiencies.tenantId, session.tenantId), isNull(thmHubEfficiencies.deletedAt), eq(thmHubEfficiencies.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmOptimizationEngines.id }).from(thmOptimizationEngines)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmOptimizationEngines)
         .where(and(eq(thmOptimizationEngines.tenantId, session.tenantId), isNull(thmOptimizationEngines.deletedAt), eq(thmOptimizationEngines.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: thmPenaltyTrackings.id }).from(thmPenaltyTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(thmPenaltyTrackings)
         .where(and(eq(thmPenaltyTrackings.tenantId, session.tenantId), isNull(thmPenaltyTrackings.deletedAt), eq(thmPenaltyTrackings.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function TransshipmentHubManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmCargoPlans.planRef, `%${search}%`),
-        ilike(thmCargoPlans.hubPort, `%${search}%`)
+        ilike(thmCargoPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(thmCargoPlans.hubPort, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmCargoPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmCargoPlans.createdAt, thmCargoPlans.id, parsedCursor));
 
   const data = await db.select().from(thmCargoPlans)
     .where(and(...conditions))
-    .orderBy(desc(thmCargoPlans.createdAt))
+    .orderBy(desc(thmCargoPlans.createdAt), desc(thmCargoPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

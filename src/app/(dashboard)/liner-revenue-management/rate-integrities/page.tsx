@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmRateIntegrities } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RateIntegritiesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RateIntegritiesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmRateIntegrities.integrityRef, `%${search}%`),
-        ilike(lrmRateIntegrities.customerName, `%${search}%`)
+        ilike(lrmRateIntegrities.integrityRef, `%${escapeIlike(search)}%`),
+        ilike(lrmRateIntegrities.customerName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmRateIntegrities.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmRateIntegrities.createdAt, lrmRateIntegrities.id, parsedCursor));
 
   const data = await db.select().from(lrmRateIntegrities)
     .where(and(...conditions))
-    .orderBy(desc(lrmRateIntegrities.createdAt))
+    .orderBy(desc(lrmRateIntegrities.createdAt), desc(lrmRateIntegrities.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

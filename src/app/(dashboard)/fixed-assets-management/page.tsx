@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   famAssetRegistries,
   famDepreciationSchedules,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FixedAssetsManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function FixedAssetsManagementPage({
 
   const [activeAssets, activeSchedules, draftDisposals, activeInsurance, scheduledMaintenance, draftClassifications, draftImpairments, activeLeases] =
     await Promise.all([
-      db.select({ id: famAssetRegistries.id }).from(famAssetRegistries)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famAssetRegistries)
         .where(and(eq(famAssetRegistries.tenantId, session.tenantId), isNull(famAssetRegistries.deletedAt), eq(famAssetRegistries.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famDepreciationSchedules.id }).from(famDepreciationSchedules)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famDepreciationSchedules)
         .where(and(eq(famDepreciationSchedules.tenantId, session.tenantId), isNull(famDepreciationSchedules.deletedAt), eq(famDepreciationSchedules.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famAssetDisposals.id }).from(famAssetDisposals)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famAssetDisposals)
         .where(and(eq(famAssetDisposals.tenantId, session.tenantId), isNull(famAssetDisposals.deletedAt), eq(famAssetDisposals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famInsuranceValuations.id }).from(famInsuranceValuations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famInsuranceValuations)
         .where(and(eq(famInsuranceValuations.tenantId, session.tenantId), isNull(famInsuranceValuations.deletedAt), eq(famInsuranceValuations.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: famMaintenanceSchedules.id }).from(famMaintenanceSchedules)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famMaintenanceSchedules)
         .where(and(eq(famMaintenanceSchedules.tenantId, session.tenantId), isNull(famMaintenanceSchedules.deletedAt), eq(famMaintenanceSchedules.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: famCapexOpexClassifications.id }).from(famCapexOpexClassifications)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famCapexOpexClassifications)
         .where(and(eq(famCapexOpexClassifications.tenantId, session.tenantId), isNull(famCapexOpexClassifications.deletedAt), eq(famCapexOpexClassifications.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famImpairmentTests.id }).from(famImpairmentTests)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famImpairmentTests)
         .where(and(eq(famImpairmentTests.tenantId, session.tenantId), isNull(famImpairmentTests.deletedAt), eq(famImpairmentTests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: famLeaseAccounting.id }).from(famLeaseAccounting)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(famLeaseAccounting)
         .where(and(eq(famLeaseAccounting.tenantId, session.tenantId), isNull(famLeaseAccounting.deletedAt), eq(famLeaseAccounting.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function FixedAssetsManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(famAssetRegistries.assetRef, `%${search}%`),
-        ilike(famAssetRegistries.assetName, `%${search}%`)
+        ilike(famAssetRegistries.assetRef, `%${escapeIlike(search)}%`),
+        ilike(famAssetRegistries.assetName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(famAssetRegistries.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(famAssetRegistries.createdAt, famAssetRegistries.id, parsedCursor));
 
   const data = await db.select().from(famAssetRegistries)
     .where(and(...conditions))
-    .orderBy(desc(famAssetRegistries.createdAt))
+    .orderBy(desc(famAssetRegistries.createdAt), desc(famAssetRegistries.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

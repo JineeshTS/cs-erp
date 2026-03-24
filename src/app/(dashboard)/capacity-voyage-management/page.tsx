@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, gt, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, gt, or } from "drizzle-orm";
 import {
   capVesselSchedules,
   capTradeAllocations,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CapacityVoyageManagementPage({
   searchParams,
 }: {
@@ -46,7 +48,7 @@ export default async function CapacityVoyageManagementPage({
   const [activeSchedules, pendingBookings, allocatedTeu, optimizationRuns] =
     await Promise.all([
       db
-        .select({ id: capVesselSchedules.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(capVesselSchedules)
         .where(
           and(
@@ -55,9 +57,9 @@ export default async function CapacityVoyageManagementPage({
             eq(capVesselSchedules.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: capSpaceControls.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(capSpaceControls)
         .where(
           and(
@@ -66,7 +68,7 @@ export default async function CapacityVoyageManagementPage({
             eq(capSpaceControls.status, "pending")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
         .select({ teu: capTradeAllocations.allocatedTeu })
         .from(capTradeAllocations)
@@ -79,7 +81,7 @@ export default async function CapacityVoyageManagementPage({
         )
         .then((rows) => rows.reduce((sum, r) => sum + (r.teu ?? 0), 0)),
       db
-        .select({ id: capLoadOptimizations.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(capLoadOptimizations)
         .where(
           and(
@@ -88,7 +90,7 @@ export default async function CapacityVoyageManagementPage({
             eq(capLoadOptimizations.status, "completed")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -101,20 +103,20 @@ export default async function CapacityVoyageManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(capVesselSchedules.vesselName, `%${search}%`),
-        ilike(capVesselSchedules.serviceName, `%${search}%`),
-        ilike(capVesselSchedules.tradeLane, `%${search}%`)
+        ilike(capVesselSchedules.vesselName, `%${escapeIlike(search)}%`),
+        ilike(capVesselSchedules.serviceName, `%${escapeIlike(search)}%`),
+        ilike(capVesselSchedules.tradeLane, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(capVesselSchedules.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capVesselSchedules.createdAt, capVesselSchedules.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capVesselSchedules)
     .where(and(...conditions))
-    .orderBy(desc(capVesselSchedules.createdAt))
+    .orderBy(desc(capVesselSchedules.createdAt), desc(capVesselSchedules.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsSettlementItems } from "@/db/schema";
@@ -37,8 +38,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -50,9 +51,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(melsSettlementItems).set(parsed.data)
       .where(and(eq(melsSettlementItems.id, id), eq(melsSettlementItems.tenantId, user.tenantId), isNull(melsSettlementItems.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "settlement-items", entityId: updated?.id, module: "multi-entity-legal-structure", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Settlement item not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "settlement-items", entityId: updated.id, module: "multi-entity-legal-structure", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update settlement item:", error);
@@ -69,16 +70,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(melsSettlementItems).set({ deletedAt: new Date() })
       .where(and(eq(melsSettlementItems.id, id), eq(melsSettlementItems.tenantId, user.tenantId), isNull(melsSettlementItems.deletedAt))).returning({ id: melsSettlementItems.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "settlement-items", entityId: deleted?.id, module: "multi-entity-legal-structure", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Settlement item not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "settlement-items", entityId: deleted.id, module: "multi-entity-legal-structure", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete settlement item:", error);

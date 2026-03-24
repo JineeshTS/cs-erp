@@ -8,6 +8,7 @@ import { eq, and, isNull, desc, lt } from "drizzle-orm";
 import { cvmHireStatements } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function HireStatementsPage({
   searchParams,
 }: {
@@ -32,14 +33,14 @@ export default async function HireStatementsPage({
     eq(cvmHireStatements.tenantId, session.tenantId),
     isNull(cvmHireStatements.deletedAt),
   ];
-  if (cursor)
-    conditions.push(lt(cvmHireStatements.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmHireStatements.createdAt, cvmHireStatements.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cvmHireStatements)
     .where(and(...conditions))
-    .orderBy(desc(cvmHireStatements.createdAt))
+    .orderBy(desc(cvmHireStatements.createdAt), desc(cvmHireStatements.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

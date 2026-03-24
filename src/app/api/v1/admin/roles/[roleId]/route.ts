@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -27,8 +28,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { roleId } = await params;
     const body = await request.json();
@@ -101,8 +102,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { roleId } = await params;
 

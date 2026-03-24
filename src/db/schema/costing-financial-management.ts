@@ -9,6 +9,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -430,7 +431,7 @@ export const cfmCostCentres = pgTable(
       .references(() => tenants.id, { onDelete: "cascade" }),
     centreCode: varchar("centre_code", { length: 30 }).notNull(),
     centreName: varchar("centre_name", { length: 255 }).notNull(),
-    parentId: uuid("parent_id"),
+    parentId: uuid("parent_id").references((): AnyPgColumn => cfmCostCentres.id, { onDelete: "set null" }),
     centreType: varchar("centre_type", { length: 30 }).notNull(),
     department: varchar("department", { length: 100 }),
     managerId: uuid("manager_id"),

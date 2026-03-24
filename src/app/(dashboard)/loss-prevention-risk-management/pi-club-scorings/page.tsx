@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprPiClubScorings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PiClubScoringsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function PiClubScoringsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprPiClubScorings.scoringRef, `%${search}%`),
-        ilike(lprPiClubScorings.title, `%${search}%`)
+        ilike(lprPiClubScorings.scoringRef, `%${escapeIlike(search)}%`),
+        ilike(lprPiClubScorings.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprPiClubScorings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprPiClubScorings.createdAt, lprPiClubScorings.id, parsedCursor));
 
   const data = await db.select().from(lprPiClubScorings)
     .where(and(...conditions))
-    .orderBy(desc(lprPiClubScorings.createdAt))
+    .orderBy(desc(lprPiClubScorings.createdAt), desc(lprPiClubScorings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { isfIamPolicies } from "@/db/schema";
@@ -99,8 +100,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "infra:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const existing = await getIamPolicy(id, user.tenantId);

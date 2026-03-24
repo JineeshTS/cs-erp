@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { capDemandForecasts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DemandForecastsListPage({
   searchParams,
 }: {
@@ -37,16 +39,16 @@ export default async function DemandForecastsListPage({
 
   if (status) conditions.push(eq(capDemandForecasts.status, status));
   if (search) {
-    conditions.push(ilike(capDemandForecasts.tradeLane, `%${search}%`));
+    conditions.push(ilike(capDemandForecasts.tradeLane, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(capDemandForecasts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capDemandForecasts.createdAt, capDemandForecasts.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capDemandForecasts)
     .where(and(...conditions))
-    .orderBy(desc(capDemandForecasts.createdAt))
+    .orderBy(desc(capDemandForecasts.createdAt), desc(capDemandForecasts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

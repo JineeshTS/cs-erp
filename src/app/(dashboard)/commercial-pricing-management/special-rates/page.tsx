@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmSpecialRates } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const PAGE_SIZE = 50;
 
 const statusVariant: Record<string, string> = {
@@ -37,22 +39,23 @@ export default async function SpecialRatesPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmSpecialRates.rateName, `%${search}%`));
+    conditions.push(ilike(cpmSpecialRates.rateName, `%${escapeIlike(search)}%`));
   }
 
   if (status) {
     conditions.push(eq(cpmSpecialRates.status, status));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmSpecialRates.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmSpecialRates.createdAt, cpmSpecialRates.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmSpecialRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmSpecialRates.createdAt))
+    .orderBy(desc(cpmSpecialRates.createdAt), desc(cpmSpecialRates.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = rows.length > PAGE_SIZE;

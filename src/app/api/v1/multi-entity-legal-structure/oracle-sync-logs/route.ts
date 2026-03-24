@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { melsOracleSyncLogs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -8,6 +9,7 @@ import { createOracleSyncLogSchema } from "@/lib/multi-entity-legal-structure/va
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -25,10 +27,11 @@ export async function GET(request: NextRequest) {
     if (integrationConfigId) conditions.push(eq(melsOracleSyncLogs.integrationConfigId, integrationConfigId));
     if (syncType) conditions.push(eq(melsOracleSyncLogs.syncType, syncType));
     if (status) conditions.push(eq(melsOracleSyncLogs.status, status));
-    if (cursor) conditions.push(lt(melsOracleSyncLogs.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(melsOracleSyncLogs.createdAt, melsOracleSyncLogs.id, parsedCursor));
 
     const results = await db.select().from(melsOracleSyncLogs).where(and(...conditions))
-      .orderBy(desc(melsOracleSyncLogs.createdAt)).limit(limit + 1);
+      .orderBy(desc(melsOracleSyncLogs.createdAt), desc(melsOracleSyncLogs.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -50,8 +53,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "entities:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createOracleSyncLogSchema.safeParse(body);
@@ -71,7 +74,7 @@ export async function POST(request: NextRequest) {
       ...(completedAt ? { completedAt: new Date(completedAt) } : {}),
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "oracle-sync-logs", entityId: created?.id, module: "multi-entity-legal-structure", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "oracle-sync-logs", entityId: created.id, module: "multi-entity-legal-structure", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

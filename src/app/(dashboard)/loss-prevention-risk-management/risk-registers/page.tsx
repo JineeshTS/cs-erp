@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprRiskRegisters } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RiskRegistersListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RiskRegistersListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprRiskRegisters.riskRef, `%${search}%`),
-        ilike(lprRiskRegisters.title, `%${search}%`)
+        ilike(lprRiskRegisters.riskRef, `%${escapeIlike(search)}%`),
+        ilike(lprRiskRegisters.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprRiskRegisters.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprRiskRegisters.createdAt, lprRiskRegisters.id, parsedCursor));
 
   const data = await db.select().from(lprRiskRegisters)
     .where(and(...conditions))
-    .orderBy(desc(lprRiskRegisters.createdAt))
+    .orderBy(desc(lprRiskRegisters.createdAt), desc(lprRiskRegisters.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

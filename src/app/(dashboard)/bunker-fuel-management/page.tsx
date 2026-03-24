@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   bfmBunkerOrders,
   bfmBunkerStems,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function BunkerFuelManagementPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function BunkerFuelManagementPage({
 
   const [activeOrders, plannedStems, openClaims, pendingEmissions, runningOptimizations] =
     await Promise.all([
-      db.select({ id: bfmBunkerOrders.id }).from(bfmBunkerOrders)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(bfmBunkerOrders)
         .where(and(eq(bfmBunkerOrders.tenantId, session.tenantId), isNull(bfmBunkerOrders.deletedAt), eq(bfmBunkerOrders.status, "confirmed")))
-        .then((r) => r.length),
-      db.select({ id: bfmBunkerStems.id }).from(bfmBunkerStems)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(bfmBunkerStems)
         .where(and(eq(bfmBunkerStems.tenantId, session.tenantId), isNull(bfmBunkerStems.deletedAt), eq(bfmBunkerStems.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: bfmQualityClaims.id }).from(bfmQualityClaims)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(bfmQualityClaims)
         .where(and(eq(bfmQualityClaims.tenantId, session.tenantId), isNull(bfmQualityClaims.deletedAt), eq(bfmQualityClaims.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: bfmEmissionsRecords.id }).from(bfmEmissionsRecords)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(bfmEmissionsRecords)
         .where(and(eq(bfmEmissionsRecords.tenantId, session.tenantId), isNull(bfmEmissionsRecords.deletedAt), eq(bfmEmissionsRecords.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: bfmOptimizationRuns.id }).from(bfmOptimizationRuns)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(bfmOptimizationRuns)
         .where(and(eq(bfmOptimizationRuns.tenantId, session.tenantId), isNull(bfmOptimizationRuns.deletedAt), eq(bfmOptimizationRuns.status, "running")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,17 +69,18 @@ export default async function BunkerFuelManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(bfmBunkerOrders.orderRef, `%${search}%`),
-        ilike(bfmBunkerOrders.vesselName, `%${search}%`),
-        ilike(bfmBunkerOrders.supplierName, `%${search}%`)
+        ilike(bfmBunkerOrders.orderRef, `%${escapeIlike(search)}%`),
+        ilike(bfmBunkerOrders.vesselName, `%${escapeIlike(search)}%`),
+        ilike(bfmBunkerOrders.supplierName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(bfmBunkerOrders.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(bfmBunkerOrders.createdAt, bfmBunkerOrders.id, parsedCursor));
 
   const data = await db.select().from(bfmBunkerOrders)
     .where(and(...conditions))
-    .orderBy(desc(bfmBunkerOrders.createdAt))
+    .orderBy(desc(bfmBunkerOrders.createdAt), desc(bfmBunkerOrders.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

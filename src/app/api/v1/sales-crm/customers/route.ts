@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { scmCustomers } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createCustomerSchema } from "@/lib/sales-crm/validation";
 import { eventBus } from "@/lib/events/event-bus";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,11 +24,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(scmCustomers.tenantId, user.tenantId), isNull(scmCustomers.deletedAt)];
-    if (search) conditions.push(ilike(scmCustomers.companyName, `%${search}%`));
+    if (search) conditions.push(ilike(scmCustomers.companyName, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(scmCustomers.status, status));
-    if (cursor) conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmCustomers.createdAt, scmCustomers.id, parsedCursor));
 
-    const results = await db.select().from(scmCustomers).where(and(...conditions)).orderBy(desc(scmCustomers.createdAt)).limit(limit + 1);
+    const results = await db.select().from(scmCustomers).where(and(...conditions)).orderBy(desc(scmCustomers.createdAt), desc(scmCustomers.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -45,8 +48,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "sales:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createCustomerSchema.safeParse(body);
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const [created] = await db.insert(scmCustomers).values({ tenantId: user.tenantId, ...parsed.data }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "customers", entityId: created?.id, module: "sales-crm", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "customers", entityId: created.id, module: "sales-crm", newData: created as Record<string, unknown>, request });
 
     eventBus.emit({
       type: "CUSTOMER_CREATED",

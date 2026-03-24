@@ -53,7 +53,7 @@ export const dgmImdgCompliance = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_imdg_compliance_tenant_idx").on(t.tenantId),
@@ -114,7 +114,7 @@ export const dgmBookingScreenings = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_booking_screen_tenant_idx").on(t.tenantId),
@@ -169,7 +169,7 @@ export const dgmSegregationRules = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_seg_rules_tenant_idx").on(t.tenantId),
@@ -223,7 +223,7 @@ export const dgmPlacardRequirements = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_placard_req_tenant_idx").on(t.tenantId),
@@ -279,7 +279,7 @@ export const dgmManifests = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_manifests_tenant_idx").on(t.tenantId),
@@ -332,7 +332,7 @@ export const dgmEmergencyProcedures = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_emerg_proc_tenant_idx").on(t.tenantId),
@@ -390,7 +390,7 @@ export const dgmChemicalSafetyData = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_chem_safety_tenant_idx").on(t.tenantId),
@@ -455,7 +455,7 @@ export const dgmIncidentReports = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("dgm_incident_rpt_tenant_idx").on(t.tenantId),

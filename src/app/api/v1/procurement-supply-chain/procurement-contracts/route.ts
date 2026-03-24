@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { pscProcurementContracts } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createProcurementContractSchema } from "@/lib/procurement-supply-chain/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
-import { formatZodErrors } from "@/lib/validation";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,15 +24,16 @@ export async function GET(request: NextRequest) {
     const limit = 50;
 
     const conditions = [eq(pscProcurementContracts.tenantId, user.tenantId), isNull(pscProcurementContracts.deletedAt)];
-    if (search) conditions.push(or(ilike(pscProcurementContracts.contractRef, `%${search}%`), ilike(pscProcurementContracts.title, `%${search}%`))!);
+    if (search) conditions.push(or(ilike(pscProcurementContracts.contractRef, `%${escapeIlike(search)}%`), ilike(pscProcurementContracts.title, `%${escapeIlike(search)}%`))!);
     if (status) conditions.push(eq(pscProcurementContracts.status, status));
-    if (cursor) conditions.push(lt(pscProcurementContracts.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pscProcurementContracts.createdAt, pscProcurementContracts.id, parsedCursor));
 
-    const results = await db.select().from(pscProcurementContracts).where(and(...conditions)).orderBy(desc(pscProcurementContracts.createdAt)).limit(limit + 1);
+    const results = await db.select().from(pscProcurementContracts).where(and(...conditions)).orderBy(desc(pscProcurementContracts.createdAt), desc(pscProcurementContracts.id)).limit(limit + 1);
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
 
-    return NextResponse.json({ data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } });
+    return NextResponse.json({ data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } });
   } catch (error) {
     console.error("Failed to list procurement contracts:", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } }, { status: 500 });
@@ -43,8 +46,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "procurement:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createProcurementContractSchema.safeParse(body);
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     const contractRef = `PPC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(pscProcurementContracts).values({ ...parsed.data, contractRef, tenantId: user.tenantId }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "procurement-contracts", entityId: created?.id, module: "procurement-supply-chain", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "procurement-contracts", entityId: created.id, module: "procurement-supply-chain", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

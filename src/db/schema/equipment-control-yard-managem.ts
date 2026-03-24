@@ -9,6 +9,7 @@ import {
   timestamp,
   jsonb,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -58,6 +59,7 @@ export const eqyContainerFleet = pgTable(
   },
   (table) => [
     index("eqy_container_fleet_tenant_id_idx").on(table.tenantId),
+    uniqueIndex("eqy_container_fleet_tenant_container_idx").on(table.tenantId, table.containerNumber),
     index("eqy_container_fleet_container_number_idx").on(table.containerNumber),
     index("eqy_container_fleet_current_port_idx").on(table.currentPort),
     index("eqy_container_fleet_current_status_idx").on(table.currentStatus),

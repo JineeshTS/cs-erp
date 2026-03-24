@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { acmSanctionsScreenings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SanctionsScreeningPage({
   searchParams,
 }: {
@@ -38,7 +40,7 @@ export default async function SanctionsScreeningPage({
     conditions.push(eq(acmSanctionsScreenings.matchStatus, matchStatus));
   if (search) {
     conditions.push(
-      ilike(acmSanctionsScreenings.entityName, `%${search}%`)
+      ilike(acmSanctionsScreenings.entityName, `%${escapeIlike(search)}%`)
     );
   }
   if (cursor)
@@ -50,7 +52,7 @@ export default async function SanctionsScreeningPage({
     .select()
     .from(acmSanctionsScreenings)
     .where(and(...conditions))
-    .orderBy(desc(acmSanctionsScreenings.createdAt))
+    .orderBy(desc(acmSanctionsScreenings.createdAt), desc(acmSanctionsScreenings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

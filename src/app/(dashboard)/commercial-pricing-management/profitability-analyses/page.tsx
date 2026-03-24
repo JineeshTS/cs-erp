@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmProfitabilityAnalyses } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ProfitabilityAnalysesListPage({
   searchParams,
 }: {
@@ -26,18 +28,19 @@ export default async function ProfitabilityAnalysesListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmProfitabilityAnalyses.analysisName, `%${search}%`));
+    conditions.push(ilike(cpmProfitabilityAnalyses.analysisName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmProfitabilityAnalyses.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmProfitabilityAnalyses.createdAt, cpmProfitabilityAnalyses.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmProfitabilityAnalyses)
     .where(and(...conditions))
-    .orderBy(desc(cpmProfitabilityAnalyses.createdAt))
+    .orderBy(desc(cpmProfitabilityAnalyses.createdAt), desc(cpmProfitabilityAnalyses.id))
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;

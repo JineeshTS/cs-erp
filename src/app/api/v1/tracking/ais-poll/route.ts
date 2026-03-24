@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import {
   capVesselSchedules,
@@ -24,8 +25,8 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "iot:read")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     // Rate limiting: 1 poll per 5 minutes per tenant
     const cooldownKey = `ais_poll:${user.tenantId}`;

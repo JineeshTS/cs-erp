@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   isfK8sClusters,
   isfDeploymentConfigs,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function InfrastructureSecurityPage({
   searchParams,
 }: {
@@ -40,18 +42,18 @@ export default async function InfrastructureSecurityPage({
 
   const [clusterCount, deploymentCount, policyCount, auditCount] =
     await Promise.all([
-      db.select({ id: isfK8sClusters.id }).from(isfK8sClusters)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(isfK8sClusters)
         .where(and(eq(isfK8sClusters.tenantId, session.tenantId), isNull(isfK8sClusters.deletedAt), eq(isfK8sClusters.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: isfDeploymentConfigs.id }).from(isfDeploymentConfigs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(isfDeploymentConfigs)
         .where(and(eq(isfDeploymentConfigs.tenantId, session.tenantId), isNull(isfDeploymentConfigs.deletedAt), eq(isfDeploymentConfigs.status, "running")))
-        .then((r) => r.length),
-      db.select({ id: isfIamPolicies.id }).from(isfIamPolicies)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(isfIamPolicies)
         .where(and(eq(isfIamPolicies.tenantId, session.tenantId), isNull(isfIamPolicies.deletedAt), eq(isfIamPolicies.isActive, true)))
-        .then((r) => r.length),
-      db.select({ id: isfAuditEvents.id }).from(isfAuditEvents)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(isfAuditEvents)
         .where(and(eq(isfAuditEvents.tenantId, session.tenantId), isNull(isfAuditEvents.deletedAt), eq(isfAuditEvents.severity, "critical")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -62,17 +64,18 @@ export default async function InfrastructureSecurityPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfK8sClusters.clusterName, `%${search}%`),
-        ilike(isfK8sClusters.clusterCode, `%${search}%`),
-        ilike(isfK8sClusters.provider, `%${search}%`)
+        ilike(isfK8sClusters.clusterName, `%${escapeIlike(search)}%`),
+        ilike(isfK8sClusters.clusterCode, `%${escapeIlike(search)}%`),
+        ilike(isfK8sClusters.provider, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(isfK8sClusters.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfK8sClusters.createdAt, isfK8sClusters.id, parsedCursor));
 
   const data = await db.select().from(isfK8sClusters)
     .where(and(...conditions))
-    .orderBy(desc(isfK8sClusters.createdAt))
+    .orderBy(desc(isfK8sClusters.createdAt), desc(isfK8sClusters.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

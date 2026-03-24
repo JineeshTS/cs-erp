@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfApiKeys } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function statusVariant(status: string) {
   switch (status) {
     case "active":
@@ -57,18 +59,19 @@ export default async function ApiKeysListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfApiKeys.keyName, `%${search}%`),
-        ilike(isfApiKeys.keyPrefix, `%${search}%`)
+        ilike(isfApiKeys.keyName, `%${escapeIlike(search)}%`),
+        ilike(isfApiKeys.keyPrefix, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(isfApiKeys.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfApiKeys.createdAt, isfApiKeys.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfApiKeys)
     .where(and(...conditions))
-    .orderBy(desc(isfApiKeys.createdAt))
+    .orderBy(desc(isfApiKeys.createdAt), desc(isfApiKeys.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

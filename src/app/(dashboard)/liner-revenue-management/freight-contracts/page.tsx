@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmFreightContracts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FreightContractsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function FreightContractsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmFreightContracts.contractRef, `%${search}%`),
-        ilike(lrmFreightContracts.counterparty, `%${search}%`)
+        ilike(lrmFreightContracts.contractRef, `%${escapeIlike(search)}%`),
+        ilike(lrmFreightContracts.counterparty, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmFreightContracts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmFreightContracts.createdAt, lrmFreightContracts.id, parsedCursor));
 
   const data = await db.select().from(lrmFreightContracts)
     .where(and(...conditions))
-    .orderBy(desc(lrmFreightContracts.createdAt))
+    .orderBy(desc(lrmFreightContracts.createdAt), desc(lrmFreightContracts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

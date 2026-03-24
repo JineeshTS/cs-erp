@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { hpsPerformanceAppraisals } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPerformanceAppraisalSchema } from "@/lib/hr-payroll-shore-staff/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
-import { formatZodErrors } from "@/lib/validation";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -29,8 +31,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       conditions.push(
         or(
-          ilike(hpsPerformanceAppraisals.appraisalRef, `%${search}%`),
-          ilike(hpsPerformanceAppraisals.employeeName, `%${search}%`)
+          ilike(hpsPerformanceAppraisals.appraisalRef, `%${escapeIlike(search)}%`),
+          ilike(hpsPerformanceAppraisals.employeeName, `%${escapeIlike(search)}%`)
         )!
       );
     }
@@ -39,15 +41,16 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(hpsPerformanceAppraisals.status, status));
     }
 
-    if (cursor) {
-      conditions.push(lt(hpsPerformanceAppraisals.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(hpsPerformanceAppraisals.createdAt, hpsPerformanceAppraisals.id, parsedCursor));
     }
 
     const results = await db
       .select()
       .from(hpsPerformanceAppraisals)
       .where(and(...conditions))
-      .orderBy(desc(hpsPerformanceAppraisals.createdAt))
+      .orderBy(desc(hpsPerformanceAppraisals.createdAt), desc(hpsPerformanceAppraisals.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data,
       meta: {
-        cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined,
+        cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined,
         hasMore,
       },
     });
@@ -75,8 +78,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "hr:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createPerformanceAppraisalSchema.safeParse(body);
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
       .values({ ...parsed.data, appraisalRef, tenantId: user.tenantId })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "performance-appraisals", entityId: created?.id, module: "hr-payroll-shore-staff", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "performance-appraisals", entityId: created.id, module: "hr-payroll-shore-staff", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   locCargoCutoffs,
   locOverbookingRollovers,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LinerOperationsControlPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function LinerOperationsControlPage({
 
   const [draftCargoCutoffs, draftOverbookingRollovers, draftRollingUpgrades, draftRevenueIntegrityAudits, draftSlotSwapCoordinations, draftScheduleDeviations, draftCargoMixOptimizations, draftLoadFactorReports] =
     await Promise.all([
-      db.select({ id: locCargoCutoffs.id }).from(locCargoCutoffs)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locCargoCutoffs)
         .where(and(eq(locCargoCutoffs.tenantId, session.tenantId), isNull(locCargoCutoffs.deletedAt), eq(locCargoCutoffs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locOverbookingRollovers.id }).from(locOverbookingRollovers)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locOverbookingRollovers)
         .where(and(eq(locOverbookingRollovers.tenantId, session.tenantId), isNull(locOverbookingRollovers.deletedAt), eq(locOverbookingRollovers.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locRollingUpgrades.id }).from(locRollingUpgrades)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locRollingUpgrades)
         .where(and(eq(locRollingUpgrades.tenantId, session.tenantId), isNull(locRollingUpgrades.deletedAt), eq(locRollingUpgrades.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locRevenueIntegrityAudits.id }).from(locRevenueIntegrityAudits)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locRevenueIntegrityAudits)
         .where(and(eq(locRevenueIntegrityAudits.tenantId, session.tenantId), isNull(locRevenueIntegrityAudits.deletedAt), eq(locRevenueIntegrityAudits.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locSlotSwapCoordinations.id }).from(locSlotSwapCoordinations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locSlotSwapCoordinations)
         .where(and(eq(locSlotSwapCoordinations.tenantId, session.tenantId), isNull(locSlotSwapCoordinations.deletedAt), eq(locSlotSwapCoordinations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locScheduleDeviations.id }).from(locScheduleDeviations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locScheduleDeviations)
         .where(and(eq(locScheduleDeviations.tenantId, session.tenantId), isNull(locScheduleDeviations.deletedAt), eq(locScheduleDeviations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locCargoMixOptimizations.id }).from(locCargoMixOptimizations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locCargoMixOptimizations)
         .where(and(eq(locCargoMixOptimizations.tenantId, session.tenantId), isNull(locCargoMixOptimizations.deletedAt), eq(locCargoMixOptimizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: locLoadFactorReports.id }).from(locLoadFactorReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(locLoadFactorReports)
         .where(and(eq(locLoadFactorReports.tenantId, session.tenantId), isNull(locLoadFactorReports.deletedAt), eq(locLoadFactorReports.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function LinerOperationsControlPage({
   if (search) {
     conditions.push(
       or(
-        ilike(locCargoCutoffs.cutoffRef, `%${search}%`),
-        ilike(locCargoCutoffs.portName, `%${search}%`)
+        ilike(locCargoCutoffs.cutoffRef, `%${escapeIlike(search)}%`),
+        ilike(locCargoCutoffs.portName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(locCargoCutoffs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(locCargoCutoffs.createdAt, locCargoCutoffs.id, parsedCursor));
 
   const data = await db.select().from(locCargoCutoffs)
     .where(and(...conditions))
-    .orderBy(desc(locCargoCutoffs.createdAt))
+    .orderBy(desc(locCargoCutoffs.createdAt), desc(locCargoCutoffs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

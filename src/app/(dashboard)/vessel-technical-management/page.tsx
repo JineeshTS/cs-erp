@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   vtmPlannedMaintenanceTasks,
   vtmDryDockPlans,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VesselTechnicalManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function VesselTechnicalManagementPage({
 
   const [overdueTasks, activeDryDocks, upcomingSurveys, openDefects, lowStockParts] =
     await Promise.all([
-      db.select({ id: vtmPlannedMaintenanceTasks.id }).from(vtmPlannedMaintenanceTasks)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vtmPlannedMaintenanceTasks)
         .where(and(eq(vtmPlannedMaintenanceTasks.tenantId, session.tenantId), isNull(vtmPlannedMaintenanceTasks.deletedAt), eq(vtmPlannedMaintenanceTasks.status, "overdue")))
-        .then((r) => r.length),
-      db.select({ id: vtmDryDockPlans.id }).from(vtmDryDockPlans)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vtmDryDockPlans)
         .where(and(eq(vtmDryDockPlans.tenantId, session.tenantId), isNull(vtmDryDockPlans.deletedAt), eq(vtmDryDockPlans.status, "in_progress")))
-        .then((r) => r.length),
-      db.select({ id: vtmSurveyTrackings.id }).from(vtmSurveyTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vtmSurveyTrackings)
         .where(and(eq(vtmSurveyTrackings.tenantId, session.tenantId), isNull(vtmSurveyTrackings.deletedAt), eq(vtmSurveyTrackings.status, "upcoming")))
-        .then((r) => r.length),
-      db.select({ id: vtmDefectRepairs.id }).from(vtmDefectRepairs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vtmDefectRepairs)
         .where(and(eq(vtmDefectRepairs.tenantId, session.tenantId), isNull(vtmDefectRepairs.deletedAt), eq(vtmDefectRepairs.status, "reported")))
-        .then((r) => r.length),
-      db.select({ id: vtmSpareParts.id }).from(vtmSpareParts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vtmSpareParts)
         .where(and(eq(vtmSpareParts.tenantId, session.tenantId), isNull(vtmSpareParts.deletedAt), eq(vtmSpareParts.status, "low_stock")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,16 +70,17 @@ export default async function VesselTechnicalManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(vtmPlannedMaintenanceTasks.taskRef, `%${search}%`),
-        ilike(vtmPlannedMaintenanceTasks.vesselName, `%${search}%`)
+        ilike(vtmPlannedMaintenanceTasks.taskRef, `%${escapeIlike(search)}%`),
+        ilike(vtmPlannedMaintenanceTasks.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(vtmPlannedMaintenanceTasks.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(vtmPlannedMaintenanceTasks.createdAt, vtmPlannedMaintenanceTasks.id, parsedCursor));
 
   const data = await db.select().from(vtmPlannedMaintenanceTasks)
     .where(and(...conditions))
-    .orderBy(desc(vtmPlannedMaintenanceTasks.createdAt))
+    .orderBy(desc(vtmPlannedMaintenanceTasks.createdAt), desc(vtmPlannedMaintenanceTasks.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

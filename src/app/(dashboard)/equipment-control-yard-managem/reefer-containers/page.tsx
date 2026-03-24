@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { eqyReeferContainers } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ReeferContainersPage({
   searchParams,
 }: {
@@ -37,17 +39,17 @@ export default async function ReeferContainersPage({
   if (status) conditions.push(eq(eqyReeferContainers.status, status));
   if (search) {
     conditions.push(
-      ilike(eqyReeferContainers.containerNumber, `%${search}%`)
+      ilike(eqyReeferContainers.containerNumber, `%${escapeIlike(search)}%`)
     );
   }
-  if (cursor)
-    conditions.push(lt(eqyReeferContainers.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyReeferContainers.createdAt, eqyReeferContainers.id, parsedCursor));
 
   const data = await db
     .select()
     .from(eqyReeferContainers)
     .where(and(...conditions))
-    .orderBy(desc(eqyReeferContainers.createdAt))
+    .orderBy(desc(eqyReeferContainers.createdAt), desc(eqyReeferContainers.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

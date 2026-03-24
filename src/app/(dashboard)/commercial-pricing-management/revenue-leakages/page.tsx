@@ -9,6 +9,8 @@ import { db } from "@/lib/db";
 import { cpmRevenueLeakages } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const STATUS_COLORS: Record<string, string> = {
   detected: "bg-red-100 text-red-800",
   investigating: "bg-yellow-100 text-yellow-800",
@@ -34,20 +36,21 @@ export default async function RevenueLeakagesPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmRevenueLeakages.leakageReference, `%${search}%`));
+    conditions.push(ilike(cpmRevenueLeakages.leakageReference, `%${escapeIlike(search)}%`));
   }
   if (status) {
     conditions.push(eq(cpmRevenueLeakages.status, status));
   }
-  if (cursor) {
-    conditions.push(lt(cpmRevenueLeakages.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmRevenueLeakages.createdAt, cpmRevenueLeakages.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmRevenueLeakages)
     .where(and(...conditions))
-    .orderBy(desc(cpmRevenueLeakages.createdAt))
+    .orderBy(desc(cpmRevenueLeakages.createdAt), desc(cpmRevenueLeakages.id))
     .limit(51);
 
   const hasMore = records.length > 50;

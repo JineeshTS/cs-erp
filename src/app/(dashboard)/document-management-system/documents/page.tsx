@@ -8,6 +8,7 @@ import { eq, and, ilike, isNull, desc } from "drizzle-orm";
 import { dmsDocuments } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
 const statusVariant = {
   active: "success",
   draft: "secondary",
@@ -49,7 +50,7 @@ export default async function DocumentsListPage({
   ];
 
   if (searchTerm) {
-    conditions.push(ilike(dmsDocuments.title, `%${searchTerm}%`));
+    conditions.push(ilike(dmsDocuments.title, `%${escapeIlike(searchTerm)}%`));
   }
 
   const data = await db

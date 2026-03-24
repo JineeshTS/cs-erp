@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { ielIntegrationConnections } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ConnectionsPage({
   searchParams,
 }: {
@@ -39,19 +41,19 @@ export default async function ConnectionsPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ielIntegrationConnections.connectionName, `%${search}%`),
-        ilike(ielIntegrationConnections.connectionCode, `%${search}%`)
+        ilike(ielIntegrationConnections.connectionName, `%${escapeIlike(search)}%`),
+        ilike(ielIntegrationConnections.connectionCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(ielIntegrationConnections.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ielIntegrationConnections.createdAt, ielIntegrationConnections.id, parsedCursor));
 
   const data = await db
     .select()
     .from(ielIntegrationConnections)
     .where(and(...conditions))
-    .orderBy(desc(ielIntegrationConnections.createdAt))
+    .orderBy(desc(ielIntegrationConnections.createdAt), desc(ielIntegrationConnections.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

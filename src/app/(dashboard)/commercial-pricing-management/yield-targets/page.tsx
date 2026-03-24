@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmYieldTargets } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function YieldTargetsListPage({
   searchParams,
 }: {
@@ -26,18 +28,19 @@ export default async function YieldTargetsListPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmYieldTargets.targetName, `%${search}%`));
+    conditions.push(ilike(cpmYieldTargets.targetName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmYieldTargets.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmYieldTargets.createdAt, cpmYieldTargets.id, parsedCursor));
+    }
 
   const records = await db
     .select()
     .from(cpmYieldTargets)
     .where(and(...conditions))
-    .orderBy(desc(cpmYieldTargets.createdAt))
+    .orderBy(desc(cpmYieldTargets.createdAt), desc(cpmYieldTargets.id))
     .limit(limit + 1);
 
   const hasMore = records.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { capLoadingLists } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LoadingListsListPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function LoadingListsListPage({
   ];
 
   if (search)
-    conditions.push(ilike(capLoadingLists.listReference, `%${search}%`));
+    conditions.push(ilike(capLoadingLists.listReference, `%${escapeIlike(search)}%`));
   if (status) conditions.push(eq(capLoadingLists.status, status));
-  if (cursor)
-    conditions.push(lt(capLoadingLists.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capLoadingLists.createdAt, capLoadingLists.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capLoadingLists)
     .where(and(...conditions))
-    .orderBy(desc(capLoadingLists.createdAt))
+    .orderBy(desc(capLoadingLists.createdAt), desc(capLoadingLists.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

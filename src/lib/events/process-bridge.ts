@@ -11,7 +11,7 @@
  */
 
 import { eventBus } from "./event-bus";
-import { createProcessInstance, logEvent } from "../process-engine/service";
+import { createProcessInstance, logEvent, listProcessInstances } from "../process-engine/service";
 import type { EventType, EventOfType } from "./event-types";
 
 interface ProcessMapping {
@@ -422,6 +422,21 @@ export function registerProcessBridge(): void {
 
       for (const mapping of mappings) {
         try {
+          // Idempotency check: skip if active process already exists for this entity + processId
+          const existing = await listProcessInstances({
+            tenantId: event.tenantId,
+            processId: mapping.processId,
+            entityType: mapping.entityType,
+            status: "in_progress",
+            limit: 1,
+          });
+          if (existing.data.length > 0 && existing.data.some((p) => p.entityId === event.entityId)) {
+            console.log(
+              `[ProcessBridge] Skipping duplicate ${mapping.processId} for entity ${event.entityId}`
+            );
+            continue;
+          }
+
           // Create process instance
           await createProcessInstance({
             tenantId: event.tenantId,

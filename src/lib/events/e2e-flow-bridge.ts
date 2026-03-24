@@ -19,6 +19,7 @@ import { E2E_PROCESS_FLOWS } from "@/data/e2e-process-flows";
 import {
   createFlowInstance,
   getActiveTriggersForEvent,
+  listFlowInstances,
 } from "@/lib/process-engine/e2e-flow-service";
 import { executeCurrentStep } from "@/lib/process-engine/step-executor";
 import type { E2EProcessFlow, E2EFlowStep } from "@/types/processes";
@@ -158,6 +159,21 @@ async function handleDomainEvent(event: EventOfType<EventType>): Promise<void> {
 
   for (const flow of staticFlows) {
     try {
+      // Idempotency check: skip if active flow already exists for this entity + flow
+      const existing = await listFlowInstances({
+        tenantId: event.tenantId,
+        e2eFlowId: flow.id,
+        entityId: event.entityId,
+        status: "active",
+        limit: 1,
+      });
+      if (existing.data.length > 0) {
+        console.log(
+          `[E2EFlowBridge] Skipping duplicate ${flow.id} for entity ${event.entityId} — active flow ${existing.data[0].id} exists`
+        );
+        continue;
+      }
+
       const instance = await createFlowInstance({
         tenantId: event.tenantId,
         e2eFlowId: flow.id,

@@ -30,7 +30,7 @@ export default async function DashboardLayout({
   const userName = session.email.split("@")[0];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar tenantName={tenant?.name || "CS ERP"} permissions={permissions} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar userName={userName} userEmail={session.email} />

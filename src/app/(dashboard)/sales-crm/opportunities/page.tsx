@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmOpportunities } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OpportunitiesPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function OpportunitiesPage({
   ];
   if (status) conditions.push(eq(scmOpportunities.status, status));
   if (search) {
-    conditions.push(ilike(scmOpportunities.opportunityName, `%${search}%`));
+    conditions.push(ilike(scmOpportunities.opportunityName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmOpportunities.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmOpportunities.createdAt, scmOpportunities.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmOpportunities)
     .where(and(...conditions))
-    .orderBy(desc(scmOpportunities.createdAt))
+    .orderBy(desc(scmOpportunities.createdAt), desc(scmOpportunities.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

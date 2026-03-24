@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   Cloud,
   Server,
@@ -75,12 +76,6 @@ type CredentialInfo = {
 
 interface AwsDeployPanelProps {
   tenantId: string;
-}
-
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : "csrf-token";
 }
 
 export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {

@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   icmProjectPlans,
   icmDataMigrations,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ImplementationChangeManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function ImplementationChangeManagementPage({
 
   const [draftProjectPlans, draftDataMigrations, draftUatManagements, draftGoLiveChecklists, draftChangeRequests, draftSystemConfigs, draftTrainingCompletions, draftHypercareSupports] =
     await Promise.all([
-      db.select({ id: icmProjectPlans.id }).from(icmProjectPlans)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmProjectPlans)
         .where(and(eq(icmProjectPlans.tenantId, session.tenantId), isNull(icmProjectPlans.deletedAt), eq(icmProjectPlans.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmDataMigrations.id }).from(icmDataMigrations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmDataMigrations)
         .where(and(eq(icmDataMigrations.tenantId, session.tenantId), isNull(icmDataMigrations.deletedAt), eq(icmDataMigrations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmUatManagements.id }).from(icmUatManagements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmUatManagements)
         .where(and(eq(icmUatManagements.tenantId, session.tenantId), isNull(icmUatManagements.deletedAt), eq(icmUatManagements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmGoLiveChecklists.id }).from(icmGoLiveChecklists)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmGoLiveChecklists)
         .where(and(eq(icmGoLiveChecklists.tenantId, session.tenantId), isNull(icmGoLiveChecklists.deletedAt), eq(icmGoLiveChecklists.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmChangeRequests.id }).from(icmChangeRequests)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmChangeRequests)
         .where(and(eq(icmChangeRequests.tenantId, session.tenantId), isNull(icmChangeRequests.deletedAt), eq(icmChangeRequests.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmSystemConfigs.id }).from(icmSystemConfigs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmSystemConfigs)
         .where(and(eq(icmSystemConfigs.tenantId, session.tenantId), isNull(icmSystemConfigs.deletedAt), eq(icmSystemConfigs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmTrainingCompletions.id }).from(icmTrainingCompletions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmTrainingCompletions)
         .where(and(eq(icmTrainingCompletions.tenantId, session.tenantId), isNull(icmTrainingCompletions.deletedAt), eq(icmTrainingCompletions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: icmHypercareSupports.id }).from(icmHypercareSupports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(icmHypercareSupports)
         .where(and(eq(icmHypercareSupports.tenantId, session.tenantId), isNull(icmHypercareSupports.deletedAt), eq(icmHypercareSupports.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function ImplementationChangeManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmProjectPlans.planRef, `%${search}%`),
-        ilike(icmProjectPlans.title, `%${search}%`)
+        ilike(icmProjectPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(icmProjectPlans.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmProjectPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmProjectPlans.createdAt, icmProjectPlans.id, parsedCursor));
 
   const data = await db.select().from(icmProjectPlans)
     .where(and(...conditions))
-    .orderBy(desc(icmProjectPlans.createdAt))
+    .orderBy(desc(icmProjectPlans.createdAt), desc(icmProjectPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

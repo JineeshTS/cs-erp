@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoCustomerFeedback } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString();
@@ -38,15 +40,16 @@ export default async function CustomerFeedbackPage({
     isNull(csoCustomerFeedback.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(csoCustomerFeedback.feedbackText, `%${search}%`));
+    conditions.push(ilike(csoCustomerFeedback.feedbackText, `%${escapeIlike(search)}%`));
   }
-  if (cursor) conditions.push(lt(csoCustomerFeedback.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoCustomerFeedback.createdAt, csoCustomerFeedback.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoCustomerFeedback)
     .where(and(...conditions))
-    .orderBy(desc(csoCustomerFeedback.createdAt))
+    .orderBy(desc(csoCustomerFeedback.createdAt), desc(csoCustomerFeedback.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

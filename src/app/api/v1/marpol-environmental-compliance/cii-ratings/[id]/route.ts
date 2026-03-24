@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { mecCiiRatings } from "@/db/schema";
@@ -32,8 +33,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "mec:edit"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -43,9 +44,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updated] = await db.update(mecCiiRatings).set(parsed.data)
       .where(and(eq(mecCiiRatings.id, id), eq(mecCiiRatings.tenantId, user.tenantId), isNull(mecCiiRatings.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cii-ratings", entityId: updated?.id, module: "marpol-environmental-compliance", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "CII rating not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "cii-ratings", entityId: updated.id, module: "marpol-environmental-compliance", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update CII rating:", error);
@@ -58,16 +59,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const user = await getApiUser(request);
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "mec:delete"))) return forbiddenResponse();
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(mecCiiRatings).set({ deletedAt: new Date() })
       .where(and(eq(mecCiiRatings.id, id), eq(mecCiiRatings.tenantId, user.tenantId), isNull(mecCiiRatings.deletedAt))).returning({ id: mecCiiRatings.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cii-ratings", entityId: deleted?.id, module: "marpol-environmental-compliance", previousData: null, request });
-
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "CII rating not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "cii-ratings", entityId: deleted.id, module: "marpol-environmental-compliance", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete CII rating:", error);

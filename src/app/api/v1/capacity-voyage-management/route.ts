@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { capVesselSchedules } from "@/db/schema";
 import {
@@ -9,6 +9,8 @@ import {
 } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -30,16 +32,16 @@ export async function GET(request: NextRequest) {
       isNull(capVesselSchedules.deletedAt),
     ];
     if (search)
-      conditions.push(ilike(capVesselSchedules.vesselName, `%${search}%`));
+      conditions.push(ilike(capVesselSchedules.vesselName, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(capVesselSchedules.status, status));
-    if (cursor)
-      conditions.push(lt(capVesselSchedules.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capVesselSchedules.createdAt, capVesselSchedules.id, parsedCursor));
 
     const results = await db
       .select()
       .from(capVesselSchedules)
       .where(and(...conditions))
-      .orderBy(desc(capVesselSchedules.createdAt))
+      .orderBy(desc(capVesselSchedules.createdAt), desc(capVesselSchedules.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;

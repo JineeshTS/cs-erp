@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   acmInternalAudits,
   acmRegulatoryComplianceCalendars,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AuditComplianceManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function AuditComplianceManagementPage({
 
   const [activeAudits, pendingCompliance, highRisks, activePolicies, pendingSubmissions, activeControls, activeCertifications, activeDetections] =
     await Promise.all([
-      db.select({ id: acmInternalAudits.id }).from(acmInternalAudits)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmInternalAudits)
         .where(and(eq(acmInternalAudits.tenantId, session.tenantId), isNull(acmInternalAudits.deletedAt), eq(acmInternalAudits.status, "in_progress")))
-        .then((r) => r.length),
-      db.select({ id: acmRegulatoryComplianceCalendars.id }).from(acmRegulatoryComplianceCalendars)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmRegulatoryComplianceCalendars)
         .where(and(eq(acmRegulatoryComplianceCalendars.tenantId, session.tenantId), isNull(acmRegulatoryComplianceCalendars.deletedAt), eq(acmRegulatoryComplianceCalendars.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: acmRiskRegisters.id }).from(acmRiskRegisters)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmRiskRegisters)
         .where(and(eq(acmRiskRegisters.tenantId, session.tenantId), isNull(acmRiskRegisters.deletedAt), eq(acmRiskRegisters.riskLevel, "high")))
-        .then((r) => r.length),
-      db.select({ id: acmPolicyProcedures.id }).from(acmPolicyProcedures)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmPolicyProcedures)
         .where(and(eq(acmPolicyProcedures.tenantId, session.tenantId), isNull(acmPolicyProcedures.deletedAt), eq(acmPolicyProcedures.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmRegulatoryReportingSubmissions.id }).from(acmRegulatoryReportingSubmissions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmRegulatoryReportingSubmissions)
         .where(and(eq(acmRegulatoryReportingSubmissions.tenantId, session.tenantId), isNull(acmRegulatoryReportingSubmissions.deletedAt), eq(acmRegulatoryReportingSubmissions.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: acmSoxFinancialControls.id }).from(acmSoxFinancialControls)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmSoxFinancialControls)
         .where(and(eq(acmSoxFinancialControls.tenantId, session.tenantId), isNull(acmSoxFinancialControls.deletedAt), eq(acmSoxFinancialControls.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmIsoCertificationTrackings.id }).from(acmIsoCertificationTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmIsoCertificationTrackings)
         .where(and(eq(acmIsoCertificationTrackings.tenantId, session.tenantId), isNull(acmIsoCertificationTrackings.deletedAt), eq(acmIsoCertificationTrackings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: acmAiRiskDetections.id }).from(acmAiRiskDetections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(acmAiRiskDetections)
         .where(and(eq(acmAiRiskDetections.tenantId, session.tenantId), isNull(acmAiRiskDetections.deletedAt), eq(acmAiRiskDetections.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function AuditComplianceManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(acmInternalAudits.auditRef, `%${search}%`),
-        ilike(acmInternalAudits.title, `%${search}%`)
+        ilike(acmInternalAudits.auditRef, `%${escapeIlike(search)}%`),
+        ilike(acmInternalAudits.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(acmInternalAudits.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(acmInternalAudits.createdAt, acmInternalAudits.id, parsedCursor));
 
   const data = await db.select().from(acmInternalAudits)
     .where(and(...conditions))
-    .orderBy(desc(acmInternalAudits.createdAt))
+    .orderBy(desc(acmInternalAudits.createdAt), desc(acmInternalAudits.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

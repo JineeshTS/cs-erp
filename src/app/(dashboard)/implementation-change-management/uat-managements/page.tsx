@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { icmUatManagements } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = { draft: "secondary", in_progress: "warning", completed: "success", verified: "success", rejected: "destructive" } as const;
 
 export default async function UatManagementsListPage({
@@ -36,16 +38,17 @@ export default async function UatManagementsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmUatManagements.uatRef, `%${search}%`),
-        ilike(icmUatManagements.title, `%${search}%`)
+        ilike(icmUatManagements.uatRef, `%${escapeIlike(search)}%`),
+        ilike(icmUatManagements.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmUatManagements.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmUatManagements.createdAt, icmUatManagements.id, parsedCursor));
 
   const data = await db.select().from(icmUatManagements)
     .where(and(...conditions))
-    .orderBy(desc(icmUatManagements.createdAt))
+    .orderBy(desc(icmUatManagements.createdAt), desc(icmUatManagements.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

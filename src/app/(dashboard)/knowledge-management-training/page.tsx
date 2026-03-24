@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   kmtSopLibraries,
   kmtTrainingModules,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function KnowledgeManagementTrainingPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function KnowledgeManagementTrainingPage({
 
   const [draftSopLibraries, draftTrainingModules, draftCompetencyAssessments, draftOnboardingWorkflows, draftKnowledgeAssistants, draftRegulatoryAlerts, draftLessonsLearned, draftVideoLibraries] =
     await Promise.all([
-      db.select({ id: kmtSopLibraries.id }).from(kmtSopLibraries)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtSopLibraries)
         .where(and(eq(kmtSopLibraries.tenantId, session.tenantId), isNull(kmtSopLibraries.deletedAt), eq(kmtSopLibraries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtTrainingModules.id }).from(kmtTrainingModules)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtTrainingModules)
         .where(and(eq(kmtTrainingModules.tenantId, session.tenantId), isNull(kmtTrainingModules.deletedAt), eq(kmtTrainingModules.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtCompetencyAssessments.id }).from(kmtCompetencyAssessments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtCompetencyAssessments)
         .where(and(eq(kmtCompetencyAssessments.tenantId, session.tenantId), isNull(kmtCompetencyAssessments.deletedAt), eq(kmtCompetencyAssessments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtOnboardingWorkflows.id }).from(kmtOnboardingWorkflows)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtOnboardingWorkflows)
         .where(and(eq(kmtOnboardingWorkflows.tenantId, session.tenantId), isNull(kmtOnboardingWorkflows.deletedAt), eq(kmtOnboardingWorkflows.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtKnowledgeAssistants.id }).from(kmtKnowledgeAssistants)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtKnowledgeAssistants)
         .where(and(eq(kmtKnowledgeAssistants.tenantId, session.tenantId), isNull(kmtKnowledgeAssistants.deletedAt), eq(kmtKnowledgeAssistants.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtRegulatoryAlerts.id }).from(kmtRegulatoryAlerts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtRegulatoryAlerts)
         .where(and(eq(kmtRegulatoryAlerts.tenantId, session.tenantId), isNull(kmtRegulatoryAlerts.deletedAt), eq(kmtRegulatoryAlerts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtLessonsLearned.id }).from(kmtLessonsLearned)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtLessonsLearned)
         .where(and(eq(kmtLessonsLearned.tenantId, session.tenantId), isNull(kmtLessonsLearned.deletedAt), eq(kmtLessonsLearned.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: kmtVideoLibraries.id }).from(kmtVideoLibraries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(kmtVideoLibraries)
         .where(and(eq(kmtVideoLibraries.tenantId, session.tenantId), isNull(kmtVideoLibraries.deletedAt), eq(kmtVideoLibraries.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function KnowledgeManagementTrainingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtSopLibraries.sopRef, `%${search}%`),
-        ilike(kmtSopLibraries.title, `%${search}%`)
+        ilike(kmtSopLibraries.sopRef, `%${escapeIlike(search)}%`),
+        ilike(kmtSopLibraries.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtSopLibraries.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtSopLibraries.createdAt, kmtSopLibraries.id, parsedCursor));
 
   const data = await db.select().from(kmtSopLibraries)
     .where(and(...conditions))
-    .orderBy(desc(kmtSopLibraries.createdAt))
+    .orderBy(desc(kmtSopLibraries.createdAt), desc(kmtSopLibraries.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

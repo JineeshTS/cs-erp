@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { scmQuotationLineItems } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function QuotationLineItemsPage({
   searchParams,
 }: {
@@ -36,16 +38,16 @@ export default async function QuotationLineItemsPage({
   if (quotationId)
     conditions.push(eq(scmQuotationLineItems.quotationId, quotationId));
   if (search) {
-    conditions.push(ilike(scmQuotationLineItems.chargeName, `%${search}%`));
+    conditions.push(ilike(scmQuotationLineItems.chargeName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(scmQuotationLineItems.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmQuotationLineItems.createdAt, scmQuotationLineItems.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmQuotationLineItems)
     .where(and(...conditions))
-    .orderBy(desc(scmQuotationLineItems.createdAt))
+    .orderBy(desc(scmQuotationLineItems.createdAt), desc(scmQuotationLineItems.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

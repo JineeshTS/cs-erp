@@ -55,7 +55,7 @@ export const ddmDemurrageCalculations = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_demurrage_calc_tenant_idx").on(t.tenantId),
@@ -108,7 +108,7 @@ export const ddmFreeTimeRules = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_free_time_rules_tenant_idx").on(t.tenantId),
@@ -160,7 +160,7 @@ export const ddmDetentionTrackings = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_detention_track_tenant_idx").on(t.tenantId),
@@ -216,7 +216,7 @@ export const ddmInvoices = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_invoices_tenant_idx").on(t.tenantId),
@@ -270,7 +270,7 @@ export const ddmDisputes = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_disputes_tenant_idx").on(t.tenantId),
@@ -323,7 +323,7 @@ export const ddmWaivers = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_waivers_tenant_idx").on(t.tenantId),
@@ -377,7 +377,7 @@ export const ddmPredictions = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_predictions_tenant_idx").on(t.tenantId),
@@ -431,7 +431,7 @@ export const ddmNotifications = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("ddm_notifications_tenant_idx").on(t.tenantId),

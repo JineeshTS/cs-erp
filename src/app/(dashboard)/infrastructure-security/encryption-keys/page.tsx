@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfEncryptionKeys } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function statusVariant(status: string) {
   switch (status) {
     case "active":
@@ -55,19 +57,19 @@ export default async function EncryptionKeysListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfEncryptionKeys.keyName, `%${search}%`),
-        ilike(isfEncryptionKeys.keyCode, `%${search}%`)
+        ilike(isfEncryptionKeys.keyName, `%${escapeIlike(search)}%`),
+        ilike(isfEncryptionKeys.keyCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(isfEncryptionKeys.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfEncryptionKeys.createdAt, isfEncryptionKeys.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfEncryptionKeys)
     .where(and(...conditions))
-    .orderBy(desc(isfEncryptionKeys.createdAt))
+    .orderBy(desc(isfEncryptionKeys.createdAt), desc(isfEncryptionKeys.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

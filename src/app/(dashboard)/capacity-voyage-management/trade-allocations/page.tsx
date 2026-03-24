@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { capTradeAllocations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function TradeAllocationsListPage({
   searchParams,
 }: {
@@ -39,20 +41,20 @@ export default async function TradeAllocationsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(capTradeAllocations.tradeLane, `%${search}%`),
-        ilike(capTradeAllocations.originRegion, `%${search}%`),
-        ilike(capTradeAllocations.destinationRegion, `%${search}%`)
+        ilike(capTradeAllocations.tradeLane, `%${escapeIlike(search)}%`),
+        ilike(capTradeAllocations.originRegion, `%${escapeIlike(search)}%`),
+        ilike(capTradeAllocations.destinationRegion, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(capTradeAllocations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capTradeAllocations.createdAt, capTradeAllocations.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capTradeAllocations)
     .where(and(...conditions))
-    .orderBy(desc(capTradeAllocations.createdAt))
+    .orderBy(desc(capTradeAllocations.createdAt), desc(capTradeAllocations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

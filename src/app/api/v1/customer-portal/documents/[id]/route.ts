@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { cspPortalDocuments } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -45,8 +46,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "portal:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -69,8 +70,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     ).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "documents", entityId: updated?.id, module: "customer-portal", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Document not found" } },
@@ -78,6 +77,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "documents", entityId: updated.id, module: "customer-portal", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update portal document:", error);
@@ -95,8 +95,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "portal:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(cspPortalDocuments).set({
@@ -109,8 +109,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     ).returning({ id: cspPortalDocuments.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "documents", entityId: deleted?.id, module: "customer-portal", previousData: null, request });
-
     if (!deleted) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Document not found" } },
@@ -118,6 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "documents", entityId: deleted.id, module: "customer-portal", previousData: null, request });
     return NextResponse.json({ data: { success: true } });
   } catch (error) {
     console.error("Failed to delete portal document:", error);

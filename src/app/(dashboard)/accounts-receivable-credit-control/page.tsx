@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   arccCustomerAccounts,
   arccCreditLimits,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AccountsReceivableCreditControlPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function AccountsReceivableCreditControlPage({
 
   const [activeAccounts, highRiskCredits, pendingApplications, openCollections, draftProvisions] =
     await Promise.all([
-      db.select({ id: arccCustomerAccounts.id }).from(arccCustomerAccounts)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(arccCustomerAccounts)
         .where(and(eq(arccCustomerAccounts.tenantId, session.tenantId), isNull(arccCustomerAccounts.deletedAt), eq(arccCustomerAccounts.accountStatus, "active")))
-        .then((r) => r.length),
-      db.select({ id: arccCreditLimits.id }).from(arccCreditLimits)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(arccCreditLimits)
         .where(and(eq(arccCreditLimits.tenantId, session.tenantId), isNull(arccCreditLimits.deletedAt), eq(arccCreditLimits.riskCategory, "high")))
-        .then((r) => r.length),
-      db.select({ id: arccCashApplications.id }).from(arccCashApplications)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(arccCashApplications)
         .where(and(eq(arccCashApplications.tenantId, session.tenantId), isNull(arccCashApplications.deletedAt), eq(arccCashApplications.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: arccCollectionWorkflows.id }).from(arccCollectionWorkflows)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(arccCollectionWorkflows)
         .where(and(eq(arccCollectionWorkflows.tenantId, session.tenantId), isNull(arccCollectionWorkflows.deletedAt), eq(arccCollectionWorkflows.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: arccBadDebtProvisions.id }).from(arccBadDebtProvisions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(arccBadDebtProvisions)
         .where(and(eq(arccBadDebtProvisions.tenantId, session.tenantId), isNull(arccBadDebtProvisions.deletedAt), eq(arccBadDebtProvisions.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,17 +69,18 @@ export default async function AccountsReceivableCreditControlPage({
   if (search) {
     conditions.push(
       or(
-        ilike(arccCustomerAccounts.customerName, `%${search}%`),
-        ilike(arccCustomerAccounts.accountNumber, `%${search}%`),
-        ilike(arccCustomerAccounts.customerCode ?? "", `%${search}%`)
+        ilike(arccCustomerAccounts.customerName, `%${escapeIlike(search)}%`),
+        ilike(arccCustomerAccounts.accountNumber, `%${escapeIlike(search)}%`),
+        ilike(arccCustomerAccounts.customerCode ?? "", `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(arccCustomerAccounts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(arccCustomerAccounts.createdAt, arccCustomerAccounts.id, parsedCursor));
 
   const data = await db.select().from(arccCustomerAccounts)
     .where(and(...conditions))
-    .orderBy(desc(arccCustomerAccounts.createdAt))
+    .orderBy(desc(arccCustomerAccounts.createdAt), desc(arccCustomerAccounts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

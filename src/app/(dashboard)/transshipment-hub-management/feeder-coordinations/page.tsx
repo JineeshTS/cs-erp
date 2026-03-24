@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmFeederCoordinations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FeederCoordinationsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function FeederCoordinationsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmFeederCoordinations.coordinationRef, `%${search}%`),
-        ilike(thmFeederCoordinations.feederVessel, `%${search}%`)
+        ilike(thmFeederCoordinations.coordinationRef, `%${escapeIlike(search)}%`),
+        ilike(thmFeederCoordinations.feederVessel, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmFeederCoordinations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmFeederCoordinations.createdAt, thmFeederCoordinations.id, parsedCursor));
 
   const data = await db.select().from(thmFeederCoordinations)
     .where(and(...conditions))
-    .orderBy(desc(thmFeederCoordinations.createdAt))
+    .orderBy(desc(thmFeederCoordinations.createdAt), desc(thmFeederCoordinations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

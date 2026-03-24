@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   cpmTariffs,
   cpmSpecialRates,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CommercialPricingPage({
   searchParams,
 }: {
@@ -46,7 +48,7 @@ export default async function CommercialPricingPage({
   const [activeTariffs, activeSpecialRates, detectedLeakages, pendingApprovals] =
     await Promise.all([
       db
-        .select({ id: cpmTariffs.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cpmTariffs)
         .where(
           and(
@@ -55,9 +57,9 @@ export default async function CommercialPricingPage({
             eq(cpmTariffs.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: cpmSpecialRates.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cpmSpecialRates)
         .where(
           and(
@@ -66,9 +68,9 @@ export default async function CommercialPricingPage({
             eq(cpmSpecialRates.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: cpmRevenueLeakages.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cpmRevenueLeakages)
         .where(
           and(
@@ -77,9 +79,9 @@ export default async function CommercialPricingPage({
             eq(cpmRevenueLeakages.status, "detected")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: cpmPricingApprovals.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(cpmPricingApprovals)
         .where(
           and(
@@ -88,7 +90,7 @@ export default async function CommercialPricingPage({
             eq(cpmPricingApprovals.status, "pending")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -100,18 +102,19 @@ export default async function CommercialPricingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(cpmTariffs.tariffName, `%${search}%`),
-        ilike(cpmTariffs.tariffCode, `%${search}%`)
+        ilike(cpmTariffs.tariffName, `%${escapeIlike(search)}%`),
+        ilike(cpmTariffs.tariffCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(cpmTariffs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cpmTariffs.createdAt, cpmTariffs.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cpmTariffs)
     .where(and(...conditions))
-    .orderBy(desc(cpmTariffs.createdAt))
+    .orderBy(desc(cpmTariffs.createdAt), desc(cpmTariffs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

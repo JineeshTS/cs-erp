@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoSlaPolicies } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SLAPoliciesPage({
   searchParams,
 }: {
@@ -40,17 +42,18 @@ export default async function SLAPoliciesPage({
     isNull(csoSlaPolicies.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(csoSlaPolicies.policyName, `%${search}%`));
+    conditions.push(ilike(csoSlaPolicies.policyName, `%${escapeIlike(search)}%`));
   }
-  if (cursor) {
-    conditions.push(lt(csoSlaPolicies.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(csoSlaPolicies.createdAt, csoSlaPolicies.id, parsedCursor));
+    }
 
   const data = await db
     .select()
     .from(csoSlaPolicies)
     .where(and(...conditions))
-    .orderBy(desc(csoSlaPolicies.createdAt))
+    .orderBy(desc(csoSlaPolicies.createdAt), desc(csoSlaPolicies.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

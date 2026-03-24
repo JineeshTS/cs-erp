@@ -8,6 +8,7 @@ import { eq, and, isNull, desc, lt } from "drizzle-orm";
 import { cvmLaytimeCalculations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LaytimeCalculationsPage({
   searchParams,
 }: {
@@ -32,14 +33,14 @@ export default async function LaytimeCalculationsPage({
     eq(cvmLaytimeCalculations.tenantId, session.tenantId),
     isNull(cvmLaytimeCalculations.deletedAt),
   ];
-  if (cursor)
-    conditions.push(lt(cvmLaytimeCalculations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmLaytimeCalculations.createdAt, cvmLaytimeCalculations.id, parsedCursor));
 
   const data = await db
     .select()
     .from(cvmLaytimeCalculations)
     .where(and(...conditions))
-    .orderBy(desc(cvmLaytimeCalculations.createdAt))
+    .orderBy(desc(cvmLaytimeCalculations.createdAt), desc(cvmLaytimeCalculations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

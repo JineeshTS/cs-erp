@@ -145,9 +145,14 @@ export const aiUsageLogs = pgTable(
     status: varchar("status", { length: 30 }).notNull().default("success"),
     errorMessage: text("error_message"),
     metadata: jsonb("metadata"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("ai_usage_logs_tenant_id_idx").on(table.tenantId),

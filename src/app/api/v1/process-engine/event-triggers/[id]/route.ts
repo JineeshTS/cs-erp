@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { peEventTriggers } from "@/db/schema";
@@ -58,13 +59,8 @@ export async function PATCH(
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -104,13 +100,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) {
-      return NextResponse.json(
-        { error: { code: "CSRF_MISSING", message: "CSRF token required" } },
-        { status: 403 }
-      );
-    }
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const deleted = await deleteEventTrigger(id, user.tenantId);

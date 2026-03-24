@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pamCrewChangeCoordinations } from "@/db/schema";
@@ -31,16 +32,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "port_agency:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const body = await request.json();
     const parsed = updateCrewChangeCoordinationSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(pamCrewChangeCoordinations).set({ ...parsed.data, updatedAt: new Date() }).where(and(eq(pamCrewChangeCoordinations.id, id), eq(pamCrewChangeCoordinations.tenantId, user.tenantId), isNull(pamCrewChangeCoordinations.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "crew-change-coordinations", entityId: updated?.id, module: "port-agency-management", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Crew change coordination not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "crew-change-coordinations", entityId: updated.id, module: "port-agency-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update crew change coordination:", error);
@@ -54,13 +56,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "port_agency:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const [deleted] = await db.update(pamCrewChangeCoordinations).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(eq(pamCrewChangeCoordinations.id, id), eq(pamCrewChangeCoordinations.tenantId, user.tenantId), isNull(pamCrewChangeCoordinations.deletedAt))).returning({ id: pamCrewChangeCoordinations.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "crew-change-coordinations", entityId: deleted?.id, module: "port-agency-management", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Crew change coordination not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "crew-change-coordinations", entityId: deleted.id, module: "port-agency-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete crew change coordination:", error);

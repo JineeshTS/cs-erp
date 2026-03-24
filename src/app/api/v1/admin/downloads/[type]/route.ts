@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
-import { execSync } from "child_process";
-import { readFileSync, existsSync, readdirSync } from "fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { createGzip } from "zlib";
 import path from "path";
+import { db } from "@/lib/db";
+import { sql } from "drizzle-orm";
 
 const PROJECT_ROOT = process.cwd();
 
@@ -14,16 +16,6 @@ async function checkAdmin(request: NextRequest) {
     return { error: forbiddenResponse() };
   }
   return { user };
-}
-
-function tarResponse(buffer: Buffer, filename: string) {
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/gzip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Content-Length": String(buffer.length),
-    },
-  });
 }
 
 function sqlResponse(content: string, filename: string) {
@@ -44,6 +36,93 @@ function textResponse(content: string, filename: string, contentType = "text/pla
   });
 }
 
+/**
+ * Recursively collect all files under a directory, returning relative paths.
+ */
+function collectFiles(dir: string, base: string): string[] {
+  const results: string[] = [];
+  if (!existsSync(dir)) return results;
+
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    const relPath = path.join(base, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...collectFiles(fullPath, relPath));
+    } else {
+      results.push(relPath);
+    }
+  }
+  return results;
+}
+
+/**
+ * Create a tar.gz archive from a list of files using pure Node.js (no shell).
+ * Uses the USTAR tar format with gzip compression.
+ */
+function createTarGzBuffer(rootDir: string, files: string[]): Buffer {
+  const chunks: Buffer[] = [];
+
+  for (const relPath of files) {
+    const fullPath = path.join(rootDir, relPath);
+    if (!existsSync(fullPath)) continue;
+
+    const stat = statSync(fullPath);
+    if (!stat.isFile()) continue;
+
+    const content = readFileSync(fullPath);
+
+    // Create tar header (512 bytes)
+    const header = Buffer.alloc(512);
+    // name (100 bytes)
+    header.write(relPath.slice(0, 100), 0, 100, "utf-8");
+    // mode (8 bytes)
+    header.write("0000644\0", 100, 8, "utf-8");
+    // uid (8 bytes)
+    header.write("0001000\0", 108, 8, "utf-8");
+    // gid (8 bytes)
+    header.write("0001000\0", 116, 8, "utf-8");
+    // size (12 bytes, octal)
+    header.write(stat.size.toString(8).padStart(11, "0") + "\0", 124, 12, "utf-8");
+    // mtime (12 bytes, octal)
+    const mtime = Math.floor(stat.mtimeMs / 1000);
+    header.write(mtime.toString(8).padStart(11, "0") + "\0", 136, 12, "utf-8");
+    // checksum placeholder (8 bytes of spaces)
+    header.write("        ", 148, 8, "utf-8");
+    // typeflag: regular file
+    header.write("0", 156, 1, "utf-8");
+    // magic
+    header.write("ustar\0", 257, 6, "utf-8");
+    // version
+    header.write("00", 263, 2, "utf-8");
+
+    // Calculate checksum
+    let checksum = 0;
+    for (let i = 0; i < 512; i++) {
+      checksum += header[i];
+    }
+    header.write(checksum.toString(8).padStart(6, "0") + "\0 ", 148, 8, "utf-8");
+
+    chunks.push(header);
+    chunks.push(content);
+
+    // Pad to 512-byte boundary
+    const remainder = content.length % 512;
+    if (remainder > 0) {
+      chunks.push(Buffer.alloc(512 - remainder));
+    }
+  }
+
+  // End-of-archive: two 512-byte blocks of zeros
+  chunks.push(Buffer.alloc(1024));
+
+  const tarBuffer = Buffer.concat(chunks);
+
+  // Gzip compress synchronously
+  const { gzipSync } = require("zlib");
+  return gzipSync(tarBuffer);
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ type: string }> }
@@ -57,7 +136,7 @@ export async function GET(
       case "source-code":
         return handleSourceCode();
       case "db-schema":
-        return handleDbSchema();
+        return await handleDbSchema();
       case "seed-data":
         return handleSeedData();
       case "docs":
@@ -86,46 +165,133 @@ export async function GET(
 }
 
 function handleSourceCode() {
-  const files = [
-    "src/",
+  const dirs = ["src/", "drizzle/"];
+  const singleFiles = [
     "package.json",
     "tsconfig.json",
     "next.config.ts",
     "drizzle.config.ts",
-    "drizzle/",
     "tailwind.config.ts",
     "postcss.config.mjs",
-  ].filter((f) => existsSync(path.join(PROJECT_ROOT, f)));
+  ];
 
-  const buffer = execSync(
-    `tar czf - ${files.join(" ")}`,
-    { cwd: PROJECT_ROOT, maxBuffer: 200 * 1024 * 1024 }
-  );
+  const allFiles: string[] = [];
 
-  return tarResponse(buffer, "cs-erp-source.tar.gz");
-}
-
-function handleDbSchema() {
-  const dbUrl = process.env.DATABASE_URL || "";
-  const match = dbUrl.match(
-    /postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/
-  );
-
-  if (!match) {
-    return sqlResponse(
-      "-- DATABASE_URL not configured for schema export\n",
-      "cs-erp-schema.sql"
-    );
+  // Collect files from directories
+  for (const dir of dirs) {
+    const fullDir = path.join(PROJECT_ROOT, dir);
+    if (existsSync(fullDir)) {
+      allFiles.push(...collectFiles(fullDir, dir));
+    }
   }
 
-  const [, user, password, host, port, database] = match;
+  // Add single files
+  for (const f of singleFiles) {
+    if (existsSync(path.join(PROJECT_ROOT, f))) {
+      allFiles.push(f);
+    }
+  }
 
+  const buffer = createTarGzBuffer(PROJECT_ROOT, allFiles);
+
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/gzip",
+      "Content-Disposition": `attachment; filename="cs-erp-source.tar.gz"`,
+      "Content-Length": String(buffer.length),
+    },
+  });
+}
+
+async function handleDbSchema() {
   try {
-    const schema = execSync(
-      `PGPASSWORD=${password} pg_dump --schema-only -h ${host} -p ${port} -U ${user} ${database}`,
-      { maxBuffer: 50 * 1024 * 1024 }
-    ).toString();
-    return sqlResponse(schema, "cs-erp-schema.sql");
+    // Query information_schema for table and column definitions (no shell, no pg_dump)
+    const columns = await db.execute(sql`
+      SELECT
+        c.table_name,
+        c.column_name,
+        c.data_type,
+        c.is_nullable,
+        c.column_default,
+        c.character_maximum_length,
+        c.udt_name
+      FROM information_schema.columns c
+      JOIN information_schema.tables t
+        ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+      WHERE c.table_schema = 'public'
+        AND t.table_type = 'BASE TABLE'
+      ORDER BY c.table_name, c.ordinal_position
+    `);
+
+    // Build SQL DDL from information_schema
+    const tableMap = new Map<string, Array<Record<string, unknown>>>();
+    for (const row of columns) {
+      const tableName = row.table_name as string;
+      if (!tableMap.has(tableName)) tableMap.set(tableName, []);
+      tableMap.get(tableName)!.push(row);
+    }
+
+    // Get indexes
+    const indexes = await db.execute(sql`
+      SELECT
+        indexname,
+        tablename,
+        indexdef
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+      ORDER BY tablename, indexname
+    `);
+
+    // Get constraints
+    const constraints = await db.execute(sql`
+      SELECT
+        tc.table_name,
+        tc.constraint_name,
+        tc.constraint_type,
+        kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.key_column_usage kcu
+        ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+      LEFT JOIN information_schema.constraint_column_usage ccu
+        ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+      WHERE tc.table_schema = 'public'
+      ORDER BY tc.table_name, tc.constraint_name
+    `);
+
+    let schemaSql = "-- CS-ERP Database Schema (generated from information_schema)\n";
+    schemaSql += `-- Generated at: ${new Date().toISOString()}\n\n`;
+
+    for (const [tableName, cols] of tableMap) {
+      schemaSql += `CREATE TABLE ${tableName} (\n`;
+      const colDefs = cols.map((col) => {
+        let def = `  ${col.column_name} ${col.udt_name}`;
+        if (col.character_maximum_length) def += `(${col.character_maximum_length})`;
+        if (col.is_nullable === "NO") def += " NOT NULL";
+        if (col.column_default) def += ` DEFAULT ${col.column_default}`;
+        return def;
+      });
+      schemaSql += colDefs.join(",\n");
+      schemaSql += "\n);\n\n";
+    }
+
+    // Add indexes
+    schemaSql += "-- Indexes\n";
+    for (const idx of indexes) {
+      schemaSql += `${idx.indexdef};\n`;
+    }
+    schemaSql += "\n";
+
+    // Add constraints summary
+    schemaSql += "-- Constraints\n";
+    for (const con of constraints) {
+      if (con.constraint_type === "FOREIGN KEY") {
+        schemaSql += `-- FK: ${con.table_name}.${con.column_name} -> ${con.foreign_table_name}.${con.foreign_column_name}\n`;
+      }
+    }
+
+    return sqlResponse(schemaSql, "cs-erp-schema.sql");
   } catch {
     // Fallback: collect migration files
     const drizzleDir = path.join(PROJECT_ROOT, "drizzle");
@@ -190,12 +356,16 @@ function handleDocs() {
     );
   }
 
-  const buffer = execSync(`tar czf - docs/`, {
-    cwd: PROJECT_ROOT,
-    maxBuffer: 50 * 1024 * 1024,
-  });
+  const files = collectFiles(docsDir, "docs/");
+  const buffer = createTarGzBuffer(PROJECT_ROOT, files);
 
-  return tarResponse(buffer, "cs-erp-docs.tar.gz");
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/gzip",
+      "Content-Disposition": `attachment; filename="cs-erp-docs.tar.gz"`,
+      "Content-Length": String(buffer.length),
+    },
+  });
 }
 
 function handleDocFile(request: NextRequest) {

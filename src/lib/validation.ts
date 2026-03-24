@@ -36,6 +36,15 @@ export const resetPasswordSchema = z.object({
   password: passwordSchema,
 });
 
+/**
+ * Escape LIKE/ILIKE metacharacters (%, _) in user input to prevent
+ * broader-than-intended pattern matching. Backslash is the default
+ * escape character in PostgreSQL LIKE expressions.
+ */
+export function escapeIlike(input: string): string {
+  return input.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export function formatZodErrors(error: z.ZodError): Record<string, string[]> {
   const errors: Record<string, string[]> = {};
   for (const issue of error.issues) {

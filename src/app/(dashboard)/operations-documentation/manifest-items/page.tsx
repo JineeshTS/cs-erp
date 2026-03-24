@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { odmManifestItems } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ManifestItemsPage({
   searchParams,
 }: {
@@ -34,16 +36,16 @@ export default async function ManifestItemsPage({
     isNull(odmManifestItems.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(odmManifestItems.blNumber, `%${search}%`));
+    conditions.push(ilike(odmManifestItems.blNumber, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(odmManifestItems.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmManifestItems.createdAt, odmManifestItems.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmManifestItems)
     .where(and(...conditions))
-    .orderBy(desc(odmManifestItems.createdAt))
+    .orderBy(desc(odmManifestItems.createdAt), desc(odmManifestItems.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

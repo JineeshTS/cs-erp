@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { odmDocumentAmendments } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DocumentAmendmentsListPage({
   searchParams,
 }: {
@@ -38,17 +40,17 @@ export default async function DocumentAmendmentsListPage({
   if (status) conditions.push(eq(odmDocumentAmendments.status, status));
   if (search) {
     conditions.push(
-      ilike(odmDocumentAmendments.amendmentNumber, `%${search}%`)
+      ilike(odmDocumentAmendments.amendmentNumber, `%${escapeIlike(search)}%`)
     );
   }
-  if (cursor)
-    conditions.push(lt(odmDocumentAmendments.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(odmDocumentAmendments.createdAt, odmDocumentAmendments.id, parsedCursor));
 
   const data = await db
     .select()
     .from(odmDocumentAmendments)
     .where(and(...conditions))
-    .orderBy(desc(odmDocumentAmendments.createdAt))
+    .orderBy(desc(odmDocumentAmendments.createdAt), desc(odmDocumentAmendments.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

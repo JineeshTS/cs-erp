@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoServiceCategories } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ServiceCategoriesListPage({
   searchParams,
 }: {
@@ -33,14 +35,15 @@ export default async function ServiceCategoriesListPage({
     eq(csoServiceCategories.tenantId, session.tenantId),
     isNull(csoServiceCategories.deletedAt),
   ];
-  if (search) conditions.push(ilike(csoServiceCategories.categoryName, `%${search}%`));
-  if (cursor) conditions.push(lt(csoServiceCategories.createdAt, new Date(cursor)));
+  if (search) conditions.push(ilike(csoServiceCategories.categoryName, `%${escapeIlike(search)}%`));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoServiceCategories.createdAt, csoServiceCategories.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoServiceCategories)
     .where(and(...conditions))
-    .orderBy(desc(csoServiceCategories.createdAt))
+    .orderBy(desc(csoServiceCategories.createdAt), desc(csoServiceCategories.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

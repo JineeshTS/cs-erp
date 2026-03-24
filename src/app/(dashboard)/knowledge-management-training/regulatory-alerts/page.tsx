@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtRegulatoryAlerts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RegulatoryAlertsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RegulatoryAlertsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtRegulatoryAlerts.alertRef, `%${search}%`),
-        ilike(kmtRegulatoryAlerts.title, `%${search}%`)
+        ilike(kmtRegulatoryAlerts.alertRef, `%${escapeIlike(search)}%`),
+        ilike(kmtRegulatoryAlerts.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtRegulatoryAlerts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtRegulatoryAlerts.createdAt, kmtRegulatoryAlerts.id, parsedCursor));
 
   const data = await db.select().from(kmtRegulatoryAlerts)
     .where(and(...conditions))
-    .orderBy(desc(kmtRegulatoryAlerts.createdAt))
+    .orderBy(desc(kmtRegulatoryAlerts.createdAt), desc(kmtRegulatoryAlerts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

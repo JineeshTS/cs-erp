@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, clearTenantRLS, setTenantRLS } from "@/lib/db";
 import { users, roles, tenants } from "@/db/schema";
 import { verifyAccessToken } from "@/lib/jwt";
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: { code: "UNAUTHORIZED", message: "Authentication required" } },
         {
           status: 401,
           headers: { "WWW-Authenticate": 'Bearer realm="cs-erp"' },
@@ -30,13 +30,17 @@ export async function GET(request: NextRequest) {
       payload = await verifyAccessToken(token);
     } catch {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } },
         {
           status: 401,
           headers: { "WWW-Authenticate": 'Bearer realm="cs-erp", error="invalid_token"' },
         }
       );
     }
+
+    // Clear stale tenant context, then set correct RLS scope from JWT
+    await clearTenantRLS();
+    await setTenantRLS(payload.tid);
 
     // Fetch user data
     const [user] = await db
@@ -58,7 +62,15 @@ export async function GET(request: NextRequest) {
 
     if (!user || user.status === "inactive") {
       return NextResponse.json(
-        { error: "User not found" },
+        { error: { code: "UNAUTHORIZED", message: "User not found" } },
+        { status: 401 }
+      );
+    }
+
+    // Verify JWT tenant matches user's actual tenant
+    if (user.tenantId !== payload.tid) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Token tenant mismatch" } },
         { status: 401 }
       );
     }
@@ -89,7 +101,7 @@ export async function GET(request: NextRequest) {
       .where(eq(tenants.id, user.tenantId))
       .limit(1);
 
-    return NextResponse.json({
+    return NextResponse.json({ data: {
       user: {
         id: user.id,
         email: user.email,
@@ -106,11 +118,11 @@ export async function GET(request: NextRequest) {
       tenant: tenant
         ? { id: tenant.id, name: tenant.name, slug: tenant.slug, plan: tenant.plan }
         : null,
-    });
+    } });
   } catch (error) {
     console.error("[me]", error);
     return NextResponse.json(
-      { error: "Failed to fetch profile" },
+      { error: { code: "INTERNAL_ERROR", message: "Failed to fetch profile" } },
       { status: 500 }
     );
   }

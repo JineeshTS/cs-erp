@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { pamPortCallPlans } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createPortCallPlanSchema } from "@/lib/port-agency-management/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
-import { formatZodErrors } from "@/lib/validation";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,15 +24,16 @@ export async function GET(request: NextRequest) {
     const limit = 50;
 
     const conditions = [eq(pamPortCallPlans.tenantId, user.tenantId), isNull(pamPortCallPlans.deletedAt)];
-    if (search) conditions.push(or(ilike(pamPortCallPlans.planRef, `%${search}%`), ilike(pamPortCallPlans.vesselName, `%${search}%`), ilike(pamPortCallPlans.portName, `%${search}%`))!);
+    if (search) conditions.push(or(ilike(pamPortCallPlans.planRef, `%${escapeIlike(search)}%`), ilike(pamPortCallPlans.vesselName, `%${escapeIlike(search)}%`), ilike(pamPortCallPlans.portName, `%${escapeIlike(search)}%`))!);
     if (status) conditions.push(eq(pamPortCallPlans.status, status));
-    if (cursor) conditions.push(lt(pamPortCallPlans.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pamPortCallPlans.createdAt, pamPortCallPlans.id, parsedCursor));
 
-    const results = await db.select().from(pamPortCallPlans).where(and(...conditions)).orderBy(desc(pamPortCallPlans.createdAt)).limit(limit + 1);
+    const results = await db.select().from(pamPortCallPlans).where(and(...conditions)).orderBy(desc(pamPortCallPlans.createdAt), desc(pamPortCallPlans.id)).limit(limit + 1);
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
 
-    return NextResponse.json({ data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } });
+    return NextResponse.json({ data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } });
   } catch (error) {
     console.error("Failed to list port call plans:", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } }, { status: 500 });
@@ -43,8 +46,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "port_agency:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createPortCallPlanSchema.safeParse(body);
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     const planRef = `PCP-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const [created] = await db.insert(pamPortCallPlans).values({ ...parsed.data, planRef, tenantId: user.tenantId }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "port-call-plans", entityId: created?.id, module: "port-agency-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "port-call-plans", entityId: created.id, module: "port-agency-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

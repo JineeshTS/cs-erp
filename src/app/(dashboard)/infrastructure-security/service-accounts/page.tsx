@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfServiceAccounts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ServiceAccountsPage({
   searchParams,
 }: {
@@ -35,19 +37,19 @@ export default async function ServiceAccountsPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfServiceAccounts.accountName, `%${search}%`),
-        ilike(isfServiceAccounts.accountCode, `%${search}%`)
+        ilike(isfServiceAccounts.accountName, `%${escapeIlike(search)}%`),
+        ilike(isfServiceAccounts.accountCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(isfServiceAccounts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfServiceAccounts.createdAt, isfServiceAccounts.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfServiceAccounts)
     .where(and(...conditions))
-    .orderBy(desc(isfServiceAccounts.createdAt))
+    .orderBy(desc(isfServiceAccounts.createdAt), desc(isfServiceAccounts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

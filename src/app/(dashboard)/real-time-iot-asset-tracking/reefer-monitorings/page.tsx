@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { iotReeferMonitorings } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ReeferMonitoringsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function ReeferMonitoringsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(iotReeferMonitorings.monitoringRef, `%${search}%`),
-        ilike(iotReeferMonitorings.containerNumber, `%${search}%`)
+        ilike(iotReeferMonitorings.monitoringRef, `%${escapeIlike(search)}%`),
+        ilike(iotReeferMonitorings.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(iotReeferMonitorings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(iotReeferMonitorings.createdAt, iotReeferMonitorings.id, parsedCursor));
 
   const data = await db.select().from(iotReeferMonitorings)
     .where(and(...conditions))
-    .orderBy(desc(iotReeferMonitorings.createdAt))
+    .orderBy(desc(iotReeferMonitorings.createdAt), desc(iotReeferMonitorings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

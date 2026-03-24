@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Zap, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 interface FlowStep {
   step: string;
@@ -33,7 +34,7 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
       // Step 1: Create E2E flow instance (steps are resolved server-side from flow definition)
       const res = await fetch("/api/v1/process-engine/e2e-flows", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({
           e2eFlowId: flowId,
           entityType: "manual",
@@ -55,7 +56,7 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
       if (instanceId) {
         await fetch(`/api/v1/process-engine/e2e-flows/${instanceId}/execute`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1" },
+          headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         }).catch(() => {}); // Fire-and-forget — flow still created even if execution fails
       }
 

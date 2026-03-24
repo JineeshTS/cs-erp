@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -30,8 +31,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+  const csrfError = validateCsrfToken(request);
+  if (csrfError) return csrfError;
 
   const body = await request.json();
   const parsed = updateMemberSchema.safeParse(body);
@@ -55,8 +56,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     .set(parsed.data)
     .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
     .returning({ id: users.id, email: users.email, status: users.status, roleId: users.roleId });
-
-    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "members", entityId: updated?.id, module: "tenants", previousData: { id: currentUser.id, email: currentUser.email, role: currentUser.role }, newData: updated as Record<string, unknown> ?? null, request });
 
   if (!updated) {
     return NextResponse.json(
@@ -89,6 +88,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   }
 
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "update", entityType: "members", entityId: updated.id, module: "tenants", previousData: { id: currentUser.id, email: currentUser.email, role: currentUser.role }, newData: updated as Record<string, unknown> ?? null, request });
   return NextResponse.json({ data: updated });
   } catch (err) {
     console.error("[API] PATCH /tenants/:id/members/:userId error:", err);
@@ -108,8 +108,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return forbiddenResponse();
   }
 
-  const csrf = request.headers.get("x-csrf-token");
-  if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+  const csrfError = validateCsrfToken(request);
+  if (csrfError) return csrfError;
 
   if (userId === currentUser.id) {
     return NextResponse.json(
@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
     .returning({ id: users.id });
 
-    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "delete", entityType: "members", entityId: removed?.id, module: "tenants", previousData: { id: userId, tenantId }, request });
+    void logBusinessAudit({ tenantId: currentUser.tenantId, userId: currentUser.id, userEmail: currentUser.email, action: "delete", entityType: "members", entityId: removed.id, module: "tenants", previousData: { id: userId, tenantId }, request });
 
   if (!removed) {
     return NextResponse.json(

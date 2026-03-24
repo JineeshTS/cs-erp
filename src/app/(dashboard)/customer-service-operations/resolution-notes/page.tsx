@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoResolutionNotes } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ResolutionNotesListPage({
   searchParams,
 }: {
@@ -33,14 +35,15 @@ export default async function ResolutionNotesListPage({
     eq(csoResolutionNotes.tenantId, session.tenantId),
     isNull(csoResolutionNotes.deletedAt),
   ];
-  if (search) conditions.push(ilike(csoResolutionNotes.content, `%${search}%`));
-  if (cursor) conditions.push(lt(csoResolutionNotes.createdAt, new Date(cursor)));
+  if (search) conditions.push(ilike(csoResolutionNotes.content, `%${escapeIlike(search)}%`));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoResolutionNotes.createdAt, csoResolutionNotes.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoResolutionNotes)
     .where(and(...conditions))
-    .orderBy(desc(csoResolutionNotes.createdAt))
+    .orderBy(desc(csoResolutionNotes.createdAt), desc(csoResolutionNotes.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

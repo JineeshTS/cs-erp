@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ddmDemurrageCalculations,
   ddmDetentionTrackings,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DemurrageDetentionManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function DemurrageDetentionManagementPage({
 
   const [pendingDemurrage, activeDetentions, unpaidInvoices, openDisputes, highRiskPredictions] =
     await Promise.all([
-      db.select({ id: ddmDemurrageCalculations.id }).from(ddmDemurrageCalculations)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ddmDemurrageCalculations)
         .where(and(eq(ddmDemurrageCalculations.tenantId, session.tenantId), isNull(ddmDemurrageCalculations.deletedAt), eq(ddmDemurrageCalculations.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: ddmDetentionTrackings.id }).from(ddmDetentionTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ddmDetentionTrackings)
         .where(and(eq(ddmDetentionTrackings.tenantId, session.tenantId), isNull(ddmDetentionTrackings.deletedAt), eq(ddmDetentionTrackings.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ddmInvoices.id }).from(ddmInvoices)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ddmInvoices)
         .where(and(eq(ddmInvoices.tenantId, session.tenantId), isNull(ddmInvoices.deletedAt), eq(ddmInvoices.status, "sent")))
-        .then((r) => r.length),
-      db.select({ id: ddmDisputes.id }).from(ddmDisputes)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ddmDisputes)
         .where(and(eq(ddmDisputes.tenantId, session.tenantId), isNull(ddmDisputes.deletedAt), eq(ddmDisputes.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: ddmPredictions.id }).from(ddmPredictions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ddmPredictions)
         .where(and(eq(ddmPredictions.tenantId, session.tenantId), isNull(ddmPredictions.deletedAt), eq(ddmPredictions.riskLevel, "high")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,16 +70,17 @@ export default async function DemurrageDetentionManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ddmDemurrageCalculations.calculationRef, `%${search}%`),
-        ilike(ddmDemurrageCalculations.containerNumber, `%${search}%`)
+        ilike(ddmDemurrageCalculations.calculationRef, `%${escapeIlike(search)}%`),
+        ilike(ddmDemurrageCalculations.containerNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ddmDemurrageCalculations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ddmDemurrageCalculations.createdAt, ddmDemurrageCalculations.id, parsedCursor));
 
   const data = await db.select().from(ddmDemurrageCalculations)
     .where(and(...conditions))
-    .orderBy(desc(ddmDemurrageCalculations.createdAt))
+    .orderBy(desc(ddmDemurrageCalculations.createdAt), desc(ddmDemurrageCalculations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { icmGoLiveChecklists } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const statusVariant = { draft: "secondary", in_progress: "warning", completed: "success", verified: "success", rejected: "destructive" } as const;
 
 export default async function GoLiveChecklistsListPage({
@@ -36,16 +38,17 @@ export default async function GoLiveChecklistsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(icmGoLiveChecklists.checklistRef, `%${search}%`),
-        ilike(icmGoLiveChecklists.title, `%${search}%`)
+        ilike(icmGoLiveChecklists.checklistRef, `%${escapeIlike(search)}%`),
+        ilike(icmGoLiveChecklists.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(icmGoLiveChecklists.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(icmGoLiveChecklists.createdAt, icmGoLiveChecklists.id, parsedCursor));
 
   const data = await db.select().from(icmGoLiveChecklists)
     .where(and(...conditions))
-    .orderBy(desc(icmGoLiveChecklists.createdAt))
+    .orderBy(desc(icmGoLiveChecklists.createdAt), desc(icmGoLiveChecklists.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

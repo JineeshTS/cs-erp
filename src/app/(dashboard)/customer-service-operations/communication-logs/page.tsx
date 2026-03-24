@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoCommunicationLogs } from "@/db/schema";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CommunicationLogsPage({
   searchParams,
 }: {
@@ -33,15 +35,16 @@ export default async function CommunicationLogsPage({
     isNull(csoCommunicationLogs.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(csoCommunicationLogs.subject, `%${search}%`));
+    conditions.push(ilike(csoCommunicationLogs.subject, `%${escapeIlike(search)}%`));
   }
-  if (cursor) conditions.push(lt(csoCommunicationLogs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoCommunicationLogs.createdAt, csoCommunicationLogs.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoCommunicationLogs)
     .where(and(...conditions))
-    .orderBy(desc(csoCommunicationLogs.createdAt))
+    .orderBy(desc(csoCommunicationLogs.createdAt), desc(csoCommunicationLogs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

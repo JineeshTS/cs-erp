@@ -58,7 +58,7 @@ export const oogCargoAcceptances = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_cargo_acc_tenant_idx").on(t.tenantId),
@@ -114,7 +114,7 @@ export const oogStowagePlans = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_stow_plan_tenant_idx").on(t.tenantId),
@@ -169,7 +169,7 @@ export const oogSpecialEquipment = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_spec_equip_tenant_idx").on(t.tenantId),
@@ -223,7 +223,7 @@ export const oogSecuringPlans = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_securing_tenant_idx").on(t.tenantId),
@@ -282,7 +282,7 @@ export const oogHeavyLifts = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_heavy_lift_tenant_idx").on(t.tenantId),
@@ -336,7 +336,7 @@ export const oogMultiModalLogistics = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_multi_modal_tenant_idx").on(t.tenantId),
@@ -388,7 +388,7 @@ export const oogDocPermits = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_doc_permit_tenant_idx").on(t.tenantId),
@@ -444,7 +444,7 @@ export const oogPortApprovals = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("oog_port_appr_tenant_idx").on(t.tenantId),

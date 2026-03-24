@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { eqyEquipmentInterchanges } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function EquipmentInterchangesListPage({
   searchParams,
 }: {
@@ -37,7 +39,7 @@ export default async function EquipmentInterchangesListPage({
 
   if (search)
     conditions.push(
-      ilike(eqyEquipmentInterchanges.interchangeReference, `%${search}%`)
+      ilike(eqyEquipmentInterchanges.interchangeReference, `%${escapeIlike(search)}%`)
     );
   if (status)
     conditions.push(eq(eqyEquipmentInterchanges.status, status));
@@ -50,7 +52,7 @@ export default async function EquipmentInterchangesListPage({
     .select()
     .from(eqyEquipmentInterchanges)
     .where(and(...conditions))
-    .orderBy(desc(eqyEquipmentInterchanges.createdAt))
+    .orderBy(desc(eqyEquipmentInterchanges.createdAt), desc(eqyEquipmentInterchanges.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

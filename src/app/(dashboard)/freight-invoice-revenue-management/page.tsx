@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   firmFreightInvoices,
   firmDebitCreditNotes,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function FreightInvoiceRevenueManagementPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function FreightInvoiceRevenueManagementPage({
 
   const [draftInvoices, pendingNotes, openDisputes, activeDunning, draftForecasts] =
     await Promise.all([
-      db.select({ id: firmFreightInvoices.id }).from(firmFreightInvoices)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(firmFreightInvoices)
         .where(and(eq(firmFreightInvoices.tenantId, session.tenantId), isNull(firmFreightInvoices.deletedAt), eq(firmFreightInvoices.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: firmDebitCreditNotes.id }).from(firmDebitCreditNotes)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(firmDebitCreditNotes)
         .where(and(eq(firmDebitCreditNotes.tenantId, session.tenantId), isNull(firmDebitCreditNotes.deletedAt), eq(firmDebitCreditNotes.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: firmInvoiceDisputes.id }).from(firmInvoiceDisputes)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(firmInvoiceDisputes)
         .where(and(eq(firmInvoiceDisputes.tenantId, session.tenantId), isNull(firmInvoiceDisputes.deletedAt), eq(firmInvoiceDisputes.status, "open")))
-        .then((r) => r.length),
-      db.select({ id: firmDunningRuns.id }).from(firmDunningRuns)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(firmDunningRuns)
         .where(and(eq(firmDunningRuns.tenantId, session.tenantId), isNull(firmDunningRuns.deletedAt), eq(firmDunningRuns.status, "running")))
-        .then((r) => r.length),
-      db.select({ id: firmRevenueForecastEntries.id }).from(firmRevenueForecastEntries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(firmRevenueForecastEntries)
         .where(and(eq(firmRevenueForecastEntries.tenantId, session.tenantId), isNull(firmRevenueForecastEntries.deletedAt), eq(firmRevenueForecastEntries.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,17 +69,18 @@ export default async function FreightInvoiceRevenueManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(firmFreightInvoices.invoiceNumber, `%${search}%`),
-        ilike(firmFreightInvoices.customerName, `%${search}%`),
-        ilike(firmFreightInvoices.blNumber ?? "", `%${search}%`)
+        ilike(firmFreightInvoices.invoiceNumber, `%${escapeIlike(search)}%`),
+        ilike(firmFreightInvoices.customerName, `%${escapeIlike(search)}%`),
+        ilike(firmFreightInvoices.blNumber ?? "", `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(firmFreightInvoices.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(firmFreightInvoices.createdAt, firmFreightInvoices.id, parsedCursor));
 
   const data = await db.select().from(firmFreightInvoices)
     .where(and(...conditions))
-    .orderBy(desc(firmFreightInvoices.createdAt))
+    .orderBy(desc(firmFreightInvoices.createdAt), desc(firmFreightInvoices.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

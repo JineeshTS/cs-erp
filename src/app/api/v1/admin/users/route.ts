@@ -5,6 +5,7 @@ import { users, roles } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { escapeIlike } from "@/lib/validation";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(users.tenantId, user.tenantId)];
-    if (search) conditions.push(ilike(users.email, `%${search}%`));
+    if (search) conditions.push(ilike(users.email, `%${escapeIlike(search)}%`));
     if (roleFilter) conditions.push(eq(users.roleId, roleFilter));
     if (cursor) {
       const cursorDate = new Date(cursor);

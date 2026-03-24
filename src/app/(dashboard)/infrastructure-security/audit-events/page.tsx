@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfAuditEvents } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function severityVariant(severity: string) {
   switch (severity) {
     case "critical":
@@ -72,18 +74,19 @@ export default async function AuditEventsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfAuditEvents.eventCode, `%${search}%`),
-        ilike(isfAuditEvents.action, `%${search}%`)
+        ilike(isfAuditEvents.eventCode, `%${escapeIlike(search)}%`),
+        ilike(isfAuditEvents.action, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(isfAuditEvents.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfAuditEvents.createdAt, isfAuditEvents.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfAuditEvents)
     .where(and(...conditions))
-    .orderBy(desc(isfAuditEvents.createdAt))
+    .orderBy(desc(isfAuditEvents.createdAt), desc(isfAuditEvents.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

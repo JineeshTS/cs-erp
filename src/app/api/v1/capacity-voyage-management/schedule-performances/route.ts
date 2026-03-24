@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { capSchedulePerformances } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createSchedulePerformanceSchema } from "@/lib/capacity-voyage-management/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -24,15 +26,16 @@ export async function GET(request: NextRequest) {
       eq(capSchedulePerformances.tenantId, user.tenantId),
       isNull(capSchedulePerformances.deletedAt),
     ];
-    if (search) conditions.push(ilike(capSchedulePerformances.portName, `%${search}%`));
+    if (search) conditions.push(ilike(capSchedulePerformances.portName, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(capSchedulePerformances.status, status));
-    if (cursor) conditions.push(lt(capSchedulePerformances.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capSchedulePerformances.createdAt, capSchedulePerformances.id, parsedCursor));
 
     const results = await db
       .select()
       .from(capSchedulePerformances)
       .where(and(...conditions))
-      .orderBy(desc(capSchedulePerformances.createdAt))
+      .orderBy(desc(capSchedulePerformances.createdAt), desc(capSchedulePerformances.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -55,8 +58,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "capacity:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createSchedulePerformanceSchema.safeParse(body);
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "schedule-performances", entityId: created?.id, module: "capacity-voyage-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "schedule-performances", entityId: created.id, module: "capacity-voyage-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

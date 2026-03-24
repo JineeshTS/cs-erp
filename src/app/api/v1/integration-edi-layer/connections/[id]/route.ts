@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ielIntegrationConnections } from "@/db/schema";
@@ -43,8 +44,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "integration:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -67,8 +68,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "connections", entityId: updated?.id, module: "integration-edi-layer", previousData: null, newData: updated as Record<string, unknown>, request });
-
     if (!updated) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Connection not found" } },
@@ -76,6 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "connections", entityId: updated.id, module: "integration-edi-layer", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update connection:", error);
@@ -92,8 +92,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "integration:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [deleted] = await db.update(ielIntegrationConnections)
@@ -107,8 +107,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
       .returning({ id: ielIntegrationConnections.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "connections", entityId: deleted?.id, module: "integration-edi-layer", previousData: null, request });
-
     if (!deleted) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Connection not found" } },
@@ -116,6 +114,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "connections", entityId: deleted.id, module: "integration-edi-layer", previousData: null, request });
     return NextResponse.json({ data: { success: true } });
   } catch (error) {
     console.error("Failed to delete connection:", error);

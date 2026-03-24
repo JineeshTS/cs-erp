@@ -8,6 +8,7 @@ import {
   jsonb,
   index,
   boolean,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -30,7 +31,7 @@ export const peProcessInstances = pgTable(
     currentStep: integer("current_step").notNull().default(0),
     totalSteps: integer("total_steps").notNull().default(0),
     triggerType: varchar("trigger_type", { length: 20 }).notNull(), // event | scheduled | manual | api
-    triggeredBy: uuid("triggered_by"), // user who triggered (null for system/scheduled)
+    triggeredBy: uuid("triggered_by").references(() => users.id, { onDelete: "set null" }), // user who triggered (null for system/scheduled)
     entityType: varchar("entity_type", { length: 50 }), // booking, vessel, invoice, etc.
     entityId: uuid("entity_id"), // FK to the entity being processed
     contextJson: jsonb("context_json"), // arbitrary context (booking_id, vessel_id, etc.)
@@ -117,7 +118,7 @@ export const peApprovals = pgTable(
     processInstanceId: uuid("process_instance_id")
       .notNull()
       .references(() => peProcessInstances.id, { onDelete: "cascade" }),
-    approverId: uuid("approver_id").notNull(), // user who needs to approve
+    approverId: uuid("approver_id").notNull().references(() => users.id), // user who needs to approve
     decision: varchar("decision", { length: 20 }), // approved | rejected | null (pending)
     comment: text("comment"),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
@@ -155,11 +156,16 @@ export const peEventLog = pgTable(
     entityType: varchar("entity_type", { length: 50 }).notNull(),
     entityId: varchar("entity_id", { length: 255 }).notNull(),
     processInstanceId: uuid("process_instance_id"), // null if event didn't trigger a process
-    userId: uuid("user_id"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     payload: jsonb("payload"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("pe_event_log_tenant_id_idx").on(table.tenantId),
@@ -194,7 +200,7 @@ export const peE2eFlowInstances = pgTable(
       .default("active"), // active | paused_at_gate | completed | failed | cancelled
     currentStepNumber: integer("current_step_number").notNull().default(1),
     totalSteps: integer("total_steps").notNull(),
-    parentFlowInstanceId: uuid("parent_flow_instance_id"), // self-ref for child flows
+    parentFlowInstanceId: uuid("parent_flow_instance_id").references((): AnyPgColumn => peE2eFlowInstances.id, { onDelete: "set null" }), // self-ref for child flows
     metadata: jsonb("metadata").default({}),
     startedAt: timestamp("started_at", { withTimezone: true })
       .notNull()
@@ -252,6 +258,7 @@ export const peE2eStepInstances = pgTable(
     entityId: uuid("entity_id"), // FK to the real entity created/updated by this step
     entityAction: varchar("entity_action", { length: 20 }), // create | update | read
     executorMode: varchar("executor_mode", { length: 20 }), // crud | ai_with_tools | gate | human_form
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -304,6 +311,7 @@ export const peHumanGates = pgTable(
     decidedBy: uuid("decided_by")
       .references(() => users.id),
     autoApproved: boolean("auto_approved").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -339,9 +347,14 @@ export const peFlowEvents = pgTable(
     eventType: varchar("event_type", { length: 50 }).notNull(), // flow_started | step_completed | gate_created | gate_resolved | flow_completed | error | escalation
     metadata: jsonb("metadata").default({}),
     cascadedFlowIds: jsonb("cascaded_flow_ids"), // IDs of child flows spawned by this event
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("pe_flow_event_tenant_idx").on(table.tenantId),
@@ -367,6 +380,7 @@ export const peEventTriggers = pgTable(
     entityType: varchar("entity_type", { length: 50 }).notNull(),
     isActive: boolean("is_active").notNull().default(true),
     priority: integer("priority").notNull().default(0), // higher = evaluated first
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -406,9 +420,14 @@ export const peStepEntityBindings = pgTable(
     entityId: uuid("entity_id").notNull(), // real entity PK
     entityAction: varchar("entity_action", { length: 20 }).notNull(), // create | update | read
     entityData: jsonb("entity_data"), // snapshot of entity at time of binding
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("pe_entity_bind_tenant_idx").on(table.tenantId),

@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ielIntegrationConnections,
   ielEdiMessages,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function IntegrationEdiLayerPage({
   searchParams,
 }: {
@@ -40,18 +42,18 @@ export default async function IntegrationEdiLayerPage({
 
   const [activeConnections, pendingEdi, pendingFilings, failedSyncs] =
     await Promise.all([
-      db.select({ id: ielIntegrationConnections.id }).from(ielIntegrationConnections)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ielIntegrationConnections)
         .where(and(eq(ielIntegrationConnections.tenantId, session.tenantId), isNull(ielIntegrationConnections.deletedAt), eq(ielIntegrationConnections.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ielEdiMessages.id }).from(ielEdiMessages)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ielEdiMessages)
         .where(and(eq(ielEdiMessages.tenantId, session.tenantId), isNull(ielEdiMessages.deletedAt), eq(ielEdiMessages.status, "received")))
-        .then((r) => r.length),
-      db.select({ id: ielCustomsFilings.id }).from(ielCustomsFilings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ielCustomsFilings)
         .where(and(eq(ielCustomsFilings.tenantId, session.tenantId), isNull(ielCustomsFilings.deletedAt), eq(ielCustomsFilings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ielOracleSyncJobs.id }).from(ielOracleSyncJobs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ielOracleSyncJobs)
         .where(and(eq(ielOracleSyncJobs.tenantId, session.tenantId), isNull(ielOracleSyncJobs.deletedAt), eq(ielOracleSyncJobs.status, "failed")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -62,17 +64,18 @@ export default async function IntegrationEdiLayerPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ielIntegrationConnections.connectionName, `%${search}%`),
-        ilike(ielIntegrationConnections.connectionCode, `%${search}%`),
-        ilike(ielIntegrationConnections.provider, `%${search}%`)
+        ilike(ielIntegrationConnections.connectionName, `%${escapeIlike(search)}%`),
+        ilike(ielIntegrationConnections.connectionCode, `%${escapeIlike(search)}%`),
+        ilike(ielIntegrationConnections.provider, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ielIntegrationConnections.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ielIntegrationConnections.createdAt, ielIntegrationConnections.id, parsedCursor));
 
   const data = await db.select().from(ielIntegrationConnections)
     .where(and(...conditions))
-    .orderBy(desc(ielIntegrationConnections.createdAt))
+    .orderBy(desc(ielIntegrationConnections.createdAt), desc(ielIntegrationConnections.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

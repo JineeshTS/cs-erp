@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Play, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 interface RunProcessButtonProps {
   processId: string;
@@ -91,7 +92,7 @@ export function RunProcessButton({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-csrf-token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? "1",
+          "x-csrf-token": getCsrfToken(),
         },
         body: JSON.stringify({
           processId,

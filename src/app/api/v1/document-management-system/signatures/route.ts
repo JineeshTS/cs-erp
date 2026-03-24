@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dmsDocumentSignatures } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -8,6 +9,7 @@ import { createDocumentSignatureSchema } from "@/lib/document-management-system/
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -21,10 +23,11 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsDocumentSignatures.tenantId, user.tenantId), isNull(dmsDocumentSignatures.deletedAt)];
     if (documentId) conditions.push(eq(dmsDocumentSignatures.documentId, documentId));
-    if (cursor) conditions.push(lt(dmsDocumentSignatures.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(dmsDocumentSignatures.createdAt, dmsDocumentSignatures.id, parsedCursor));
 
     const results = await db.select().from(dmsDocumentSignatures).where(and(...conditions))
-      .orderBy(desc(dmsDocumentSignatures.createdAt)).limit(limit + 1);
+      .orderBy(desc(dmsDocumentSignatures.createdAt), desc(dmsDocumentSignatures.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -46,8 +49,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:sign"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createDocumentSignatureSchema.safeParse(body);
@@ -63,7 +66,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "signatures", entityId: created?.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "signatures", entityId: created.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

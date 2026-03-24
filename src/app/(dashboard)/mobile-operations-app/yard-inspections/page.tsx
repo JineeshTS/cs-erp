@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { mobYardInspections } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function YardInspectionsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function YardInspectionsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(mobYardInspections.inspectionRef, `%${search}%`),
-        ilike(mobYardInspections.inspectorName, `%${search}%`)
+        ilike(mobYardInspections.inspectionRef, `%${escapeIlike(search)}%`),
+        ilike(mobYardInspections.inspectorName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(mobYardInspections.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(mobYardInspections.createdAt, mobYardInspections.id, parsedCursor));
 
   const data = await db.select().from(mobYardInspections)
     .where(and(...conditions))
-    .orderBy(desc(mobYardInspections.createdAt))
+    .orderBy(desc(mobYardInspections.createdAt), desc(mobYardInspections.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

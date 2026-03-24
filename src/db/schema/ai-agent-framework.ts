@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-001-1-001: Multi-Agent Orchestration Engine
@@ -129,7 +130,7 @@ export const aafOrchestrationTasks = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     durationMs: integer("duration_ms"),
-    triggeredBy: uuid("triggered_by"),
+    triggeredBy: uuid("triggered_by").references(() => users.id, { onDelete: "set null" }),
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -270,7 +271,7 @@ export const aafWorkflowInstances = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     durationMs: integer("duration_ms"),
-    triggeredBy: uuid("triggered_by"),
+    triggeredBy: uuid("triggered_by").references(() => users.id, { onDelete: "set null" }),
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -315,7 +316,7 @@ export const aafEscalations = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("open"),
     contextData: jsonb("context_data"),
     suggestedActions: jsonb("suggested_actions"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
     resolvedBy: uuid("resolved_by"),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),

@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ccmClaimRegistrations,
   ccmLiabilityAssessments,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CargoClaimsManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function CargoClaimsManagementPage({
 
   const [draftClaimRegistrations, draftLiabilityAssessments, draftDamageSurveys, draftTimeBarTrackings, draftClaimSettlements, draftSubrogationRecoveries, draftClaimPredictions, draftPortfolioAnalytics] =
     await Promise.all([
-      db.select({ id: ccmClaimRegistrations.id }).from(ccmClaimRegistrations)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmClaimRegistrations)
         .where(and(eq(ccmClaimRegistrations.tenantId, session.tenantId), isNull(ccmClaimRegistrations.deletedAt), eq(ccmClaimRegistrations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmLiabilityAssessments.id }).from(ccmLiabilityAssessments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmLiabilityAssessments)
         .where(and(eq(ccmLiabilityAssessments.tenantId, session.tenantId), isNull(ccmLiabilityAssessments.deletedAt), eq(ccmLiabilityAssessments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmDamageSurveys.id }).from(ccmDamageSurveys)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmDamageSurveys)
         .where(and(eq(ccmDamageSurveys.tenantId, session.tenantId), isNull(ccmDamageSurveys.deletedAt), eq(ccmDamageSurveys.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmTimeBarTrackings.id }).from(ccmTimeBarTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmTimeBarTrackings)
         .where(and(eq(ccmTimeBarTrackings.tenantId, session.tenantId), isNull(ccmTimeBarTrackings.deletedAt), eq(ccmTimeBarTrackings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmClaimSettlements.id }).from(ccmClaimSettlements)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmClaimSettlements)
         .where(and(eq(ccmClaimSettlements.tenantId, session.tenantId), isNull(ccmClaimSettlements.deletedAt), eq(ccmClaimSettlements.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmSubrogationRecoveries.id }).from(ccmSubrogationRecoveries)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmSubrogationRecoveries)
         .where(and(eq(ccmSubrogationRecoveries.tenantId, session.tenantId), isNull(ccmSubrogationRecoveries.deletedAt), eq(ccmSubrogationRecoveries.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmClaimPredictions.id }).from(ccmClaimPredictions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmClaimPredictions)
         .where(and(eq(ccmClaimPredictions.tenantId, session.tenantId), isNull(ccmClaimPredictions.deletedAt), eq(ccmClaimPredictions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: ccmPortfolioAnalytics.id }).from(ccmPortfolioAnalytics)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccmPortfolioAnalytics)
         .where(and(eq(ccmPortfolioAnalytics.tenantId, session.tenantId), isNull(ccmPortfolioAnalytics.deletedAt), eq(ccmPortfolioAnalytics.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function CargoClaimsManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ccmClaimRegistrations.claimRef, `%${search}%`),
-        ilike(ccmClaimRegistrations.vesselName, `%${search}%`)
+        ilike(ccmClaimRegistrations.claimRef, `%${escapeIlike(search)}%`),
+        ilike(ccmClaimRegistrations.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ccmClaimRegistrations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ccmClaimRegistrations.createdAt, ccmClaimRegistrations.id, parsedCursor));
 
   const data = await db.select().from(ccmClaimRegistrations)
     .where(and(...conditions))
-    .orderBy(desc(ccmClaimRegistrations.createdAt))
+    .orderBy(desc(ccmClaimRegistrations.createdAt), desc(ccmClaimRegistrations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

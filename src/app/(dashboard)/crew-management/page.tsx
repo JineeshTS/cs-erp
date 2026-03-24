@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   crmCrewRotations,
   crmCertificateTrackings,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CrewManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function CrewManagementPage({
 
   const [plannedRotations, expiringCertificates, pendingPayroll, scheduledInspections, activeAgencies] =
     await Promise.all([
-      db.select({ id: crmCrewRotations.id }).from(crmCrewRotations)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(crmCrewRotations)
         .where(and(eq(crmCrewRotations.tenantId, session.tenantId), isNull(crmCrewRotations.deletedAt), eq(crmCrewRotations.status, "planned")))
-        .then((r) => r.length),
-      db.select({ id: crmCertificateTrackings.id }).from(crmCertificateTrackings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(crmCertificateTrackings)
         .where(and(eq(crmCertificateTrackings.tenantId, session.tenantId), isNull(crmCertificateTrackings.deletedAt), eq(crmCertificateTrackings.status, "expiring_soon")))
-        .then((r) => r.length),
-      db.select({ id: crmPayrollAllotments.id }).from(crmPayrollAllotments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(crmPayrollAllotments)
         .where(and(eq(crmPayrollAllotments.tenantId, session.tenantId), isNull(crmPayrollAllotments.deletedAt), eq(crmPayrollAllotments.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: crmFlagStateCompliance.id }).from(crmFlagStateCompliance)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(crmFlagStateCompliance)
         .where(and(eq(crmFlagStateCompliance.tenantId, session.tenantId), isNull(crmFlagStateCompliance.deletedAt), eq(crmFlagStateCompliance.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: crmManningAgencies.id }).from(crmManningAgencies)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(crmManningAgencies)
         .where(and(eq(crmManningAgencies.tenantId, session.tenantId), isNull(crmManningAgencies.deletedAt), eq(crmManningAgencies.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,16 +70,17 @@ export default async function CrewManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(crmCrewRotations.rotationRef, `%${search}%`),
-        ilike(crmCrewRotations.crewMemberName, `%${search}%`)
+        ilike(crmCrewRotations.rotationRef, `%${escapeIlike(search)}%`),
+        ilike(crmCrewRotations.crewMemberName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(crmCrewRotations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(crmCrewRotations.createdAt, crmCrewRotations.id, parsedCursor));
 
   const data = await db.select().from(crmCrewRotations)
     .where(and(...conditions))
-    .orderBy(desc(crmCrewRotations.createdAt))
+    .orderBy(desc(crmCrewRotations.createdAt), desc(crmCrewRotations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

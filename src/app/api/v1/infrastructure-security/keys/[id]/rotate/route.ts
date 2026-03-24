@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { isfEncryptionKeys, isfKeyRotationLog } from "@/db/schema";
@@ -18,8 +19,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!(await hasPermission(user.id, user.tenantId, "infra:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .where(and(eq(isfEncryptionKeys.id, id), eq(isfEncryptionKeys.tenantId, user.tenantId)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: updatedKey?.id, module: "infrastructure-security", newData: updatedKey as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "rotate", entityId: updatedKey.id, module: "infrastructure-security", newData: updatedKey as Record<string, unknown>, request });
 
     // Insert rotation log entry
     await db.insert(isfKeyRotationLog).values({

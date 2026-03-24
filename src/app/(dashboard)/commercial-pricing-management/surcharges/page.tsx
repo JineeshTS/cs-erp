@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { cpmSurcharges } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 const PAGE_SIZE = 50;
 
 export default async function SurchargesPage({
@@ -29,18 +31,19 @@ export default async function SurchargesPage({
   ];
 
   if (search) {
-    conditions.push(ilike(cpmSurcharges.surchargeName, `%${search}%`));
+    conditions.push(ilike(cpmSurcharges.surchargeName, `%${escapeIlike(search)}%`));
   }
 
-  if (cursor) {
-    conditions.push(lt(cpmSurcharges.createdAt, new Date(cursor)));
-  }
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(cpmSurcharges.createdAt, cpmSurcharges.id, parsedCursor));
+    }
 
   const rows = await db
     .select()
     .from(cpmSurcharges)
     .where(and(...conditions))
-    .orderBy(desc(cpmSurcharges.createdAt))
+    .orderBy(desc(cpmSurcharges.createdAt), desc(cpmSurcharges.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = rows.length > PAGE_SIZE;

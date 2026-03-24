@@ -6,6 +6,7 @@ import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { SessionList } from "./session-list";
 import { cn } from "@/lib/utils";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 interface Message {
   id: string;
@@ -80,7 +81,7 @@ export function ChatPanel() {
     try {
       const res = await fetch("/api/v1/ai-chat/sessions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
       });
       if (res.ok) {
         const json = await res.json();
@@ -99,6 +100,7 @@ export function ChatPanel() {
       formData.append("file", file);
       const res = await fetch("/api/v1/ai-chat/upload", {
         method: "POST",
+        headers: { "x-csrf-token": getCsrfToken() },
         body: formData,
       });
       if (res.ok) {
@@ -149,7 +151,7 @@ export function ChatPanel() {
         `/api/v1/ai-chat/sessions/${sid}/messages`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
           body: JSON.stringify({
             content: message,
             files: uploadedFiles,

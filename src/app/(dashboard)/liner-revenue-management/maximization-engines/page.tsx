@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmMaximizationEngines } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function MaximizationEnginesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function MaximizationEnginesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmMaximizationEngines.engineRef, `%${search}%`),
-        ilike(lrmMaximizationEngines.tradeLane, `%${search}%`)
+        ilike(lrmMaximizationEngines.engineRef, `%${escapeIlike(search)}%`),
+        ilike(lrmMaximizationEngines.tradeLane, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmMaximizationEngines.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmMaximizationEngines.createdAt, lrmMaximizationEngines.id, parsedCursor));
 
   const data = await db.select().from(lrmMaximizationEngines)
     .where(and(...conditions))
-    .orderBy(desc(lrmMaximizationEngines.createdAt))
+    .orderBy(desc(lrmMaximizationEngines.createdAt), desc(lrmMaximizationEngines.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

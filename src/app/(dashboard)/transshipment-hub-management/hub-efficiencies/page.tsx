@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmHubEfficiencies } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function HubEfficienciesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function HubEfficienciesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmHubEfficiencies.efficiencyRef, `%${search}%`),
-        ilike(thmHubEfficiencies.hubPort, `%${search}%`)
+        ilike(thmHubEfficiencies.efficiencyRef, `%${escapeIlike(search)}%`),
+        ilike(thmHubEfficiencies.hubPort, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmHubEfficiencies.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmHubEfficiencies.createdAt, thmHubEfficiencies.id, parsedCursor));
 
   const data = await db.select().from(thmHubEfficiencies)
     .where(and(...conditions))
-    .orderBy(desc(thmHubEfficiencies.createdAt))
+    .orderBy(desc(thmHubEfficiencies.createdAt), desc(thmHubEfficiencies.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

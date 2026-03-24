@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { famCapexOpexClassifications } from "@/db/schema";
 import {
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "asset:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createCapexOpexClassificationSchema.safeParse(body);
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "capex-opex-classifications", entityId: record?.id, module: "fixed-assets-management", newData: record as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "capex-opex-classifications", entityId: record.id, module: "fixed-assets-management", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

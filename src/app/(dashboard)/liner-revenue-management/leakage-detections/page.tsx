@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmLeakageDetections } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LeakageDetectionsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function LeakageDetectionsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmLeakageDetections.leakageRef, `%${search}%`),
-        ilike(lrmLeakageDetections.customerName, `%${search}%`)
+        ilike(lrmLeakageDetections.leakageRef, `%${escapeIlike(search)}%`),
+        ilike(lrmLeakageDetections.customerName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmLeakageDetections.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmLeakageDetections.createdAt, lrmLeakageDetections.id, parsedCursor));
 
   const data = await db.select().from(lrmLeakageDetections)
     .where(and(...conditions))
-    .orderBy(desc(lrmLeakageDetections.createdAt))
+    .orderBy(desc(lrmLeakageDetections.createdAt), desc(lrmLeakageDetections.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

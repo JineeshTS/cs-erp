@@ -48,6 +48,15 @@ When you need to trigger an action, include a JSON block at the END of your resp
 5. When users upload files, acknowledge and analyze the content.
 6. Always respond in English unless the user writes in another language.`;
 
+// Safety constants
+const MAX_CONTEXT_MESSAGES = 10;
+const MAX_MESSAGE_CHARS = 4000;
+const SESSION_TOKEN_CAP = 100_000;
+const API_TIMEOUT_MS = 60_000;
+const RETRY_DELAY_MS = 2000;
+const MAX_RETRIES = 1;
+const VALID_ACTIONS = new Set(["fill_form", "navigate", "query"]);
+
 interface FileAttachment {
   name: string;
   url: string;
@@ -84,11 +93,91 @@ function parseActionFromResponse(content: string): {
 
   try {
     const agentAction = JSON.parse(match[1].trim()) as AgentAction;
+
+    // Validate action type against allowlist
+    if (!VALID_ACTIONS.has(agentAction.action)) {
+      console.warn(`[AI Chat] Unknown action type rejected: ${agentAction.action}`);
+      const cleanContent = content.replace(actionRegex, "").trim();
+      return { cleanContent };
+    }
+
     const cleanContent = content.replace(actionRegex, "").trim();
     return { cleanContent, agentAction };
   } catch {
     return { cleanContent: content };
   }
+}
+
+/**
+ * Truncate message content to prevent unbounded context.
+ */
+function truncateContent(content: string): string {
+  if (content.length <= MAX_MESSAGE_CHARS) return content;
+  return content.slice(0, MAX_MESSAGE_CHARS) + "\n[...truncated]";
+}
+
+/**
+ * Wrap user messages in XML tags to mitigate prompt injection.
+ */
+function wrapUserMessage(content: string): string {
+  return `<user_message>${content}</user_message>`;
+}
+
+/**
+ * Get total tokens used in a session.
+ */
+async function getSessionTokenCount(sessionId: string, tenantId: string): Promise<number> {
+  const result = await db
+    .select({ total: aiChatMessages.tokensUsed })
+    .from(aiChatMessages)
+    .where(
+      and(
+        eq(aiChatMessages.sessionId, sessionId),
+        eq(aiChatMessages.tenantId, tenantId)
+      )
+    );
+
+  return result.reduce((sum, r) => sum + (r.total ?? 0), 0);
+}
+
+/**
+ * Call Claude API with timeout and retry logic.
+ */
+async function callClaudeWithRetry(
+  messages: Anthropic.MessageParam[],
+  retries = MAX_RETRIES
+): Promise<Anthropic.Message> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    try {
+      const response = await anthropic.messages.create(
+        {
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          messages,
+        },
+        { signal: controller.signal }
+      );
+      clearTimeout(timeout);
+      return response;
+    } catch (err: unknown) {
+      clearTimeout(timeout);
+      const isRetryable =
+        (err instanceof Error && err.name === "AbortError") ||
+        (err instanceof Anthropic.APIError && err.status >= 500);
+
+      if (isRetryable && attempt < retries) {
+        console.warn(`[AI Chat] Retry ${attempt + 1}/${retries} after error:`, err instanceof Error ? err.message : err);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Unexpected: exhausted retries without response");
 }
 
 export async function createSession(
@@ -218,6 +307,15 @@ export async function chat(
   userMessage: string,
   files?: FileAttachment[]
 ): Promise<ChatResult> {
+  // Check per-session token cap
+  const sessionTokens = await getSessionTokenCount(sessionId, tenantId);
+  if (sessionTokens >= SESSION_TOKEN_CAP) {
+    return {
+      content: "This chat session has reached its token limit. Please start a new chat session.",
+      tokensUsed: 0,
+    };
+  }
+
   // Save user message
   await db.insert(aiChatMessages).values({
     tenantId,
@@ -242,7 +340,7 @@ export async function chat(
       .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)));
   }
 
-  // Load recent messages for context
+  // Load recent messages for context (capped at MAX_CONTEXT_MESSAGES)
   const recentMessages = await db
     .select({
       role: aiChatMessages.role,
@@ -256,14 +354,16 @@ export async function chat(
       )
     )
     .orderBy(desc(aiChatMessages.createdAt))
-    .limit(20);
+    .limit(MAX_CONTEXT_MESSAGES);
 
-  // Build messages array for Claude (reversed to chronological order)
+  // Build messages array for Claude (reversed to chronological, truncated, XML-wrapped)
   const messages: Anthropic.MessageParam[] = recentMessages
     .reverse()
     .map((msg) => ({
       role: msg.role as "user" | "assistant",
-      content: msg.content,
+      content: msg.role === "user"
+        ? wrapUserMessage(truncateContent(msg.content))
+        : truncateContent(msg.content),
     }));
 
   // Add file context to the last user message if files attached
@@ -277,13 +377,8 @@ export async function chat(
     }
   }
 
-  // Call Claude
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages,
-  });
+  // Call Claude with timeout + retry
+  const response = await callClaudeWithRetry(messages);
 
   const rawContent =
     response.content[0].type === "text" ? response.content[0].text : "";
@@ -320,6 +415,19 @@ export async function chatStream(
   stream: AsyncIterable<string>;
   done: Promise<ChatResult>;
 }> {
+  // Check per-session token cap
+  const sessionTokens = await getSessionTokenCount(sessionId, tenantId);
+  if (sessionTokens >= SESSION_TOKEN_CAP) {
+    const result: ChatResult = {
+      content: "This chat session has reached its token limit. Please start a new chat session.",
+      tokensUsed: 0,
+    };
+    return {
+      stream: (async function* () { yield result.content; })(),
+      done: Promise.resolve(result),
+    };
+  }
+
   // Save user message
   await db.insert(aiChatMessages).values({
     tenantId,
@@ -344,7 +452,7 @@ export async function chatStream(
       .where(and(eq(aiChatSessions.id, sessionId), eq(aiChatSessions.tenantId, tenantId)));
   }
 
-  // Load recent messages for context
+  // Load recent messages for context (capped at MAX_CONTEXT_MESSAGES)
   const recentMessages = await db
     .select({
       role: aiChatMessages.role,
@@ -358,13 +466,15 @@ export async function chatStream(
       )
     )
     .orderBy(desc(aiChatMessages.createdAt))
-    .limit(20);
+    .limit(MAX_CONTEXT_MESSAGES);
 
   const messages: Anthropic.MessageParam[] = recentMessages
     .reverse()
     .map((msg) => ({
       role: msg.role as "user" | "assistant",
-      content: msg.content,
+      content: msg.role === "user"
+        ? wrapUserMessage(truncateContent(msg.content))
+        : truncateContent(msg.content),
     }));
 
   if (files && files.length > 0) {
@@ -377,12 +487,19 @@ export async function chatStream(
     }
   }
 
-  const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages,
-  });
+  // Stream with 60s timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  const stream = anthropic.messages.stream(
+    {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages,
+    },
+    { signal: controller.signal }
+  );
 
   let fullContent = "";
 
@@ -409,6 +526,8 @@ export async function chatStream(
   };
 
   const done = stream.finalMessage().then(async (finalMessage) => {
+    clearTimeout(timeout);
+
     const { cleanContent, agentAction } =
       parseActionFromResponse(fullContent);
 

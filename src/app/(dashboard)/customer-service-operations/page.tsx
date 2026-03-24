@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   csoInquiries,
   csoComplaints,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CustomerServicePage({
   searchParams,
 }: {
@@ -46,7 +48,7 @@ export default async function CustomerServicePage({
   const [openInquiries, openComplaints, activeRequests, slaBreaches] =
     await Promise.all([
       db
-        .select({ id: csoInquiries.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(csoInquiries)
         .where(
           and(
@@ -55,9 +57,9 @@ export default async function CustomerServicePage({
             eq(csoInquiries.status, "open")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: csoComplaints.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(csoComplaints)
         .where(
           and(
@@ -66,9 +68,9 @@ export default async function CustomerServicePage({
             eq(csoComplaints.status, "open")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: csoServiceRequests.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(csoServiceRequests)
         .where(
           and(
@@ -77,9 +79,9 @@ export default async function CustomerServicePage({
             eq(csoServiceRequests.status, "in_progress")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: csoSlaBreaches.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(csoSlaBreaches)
         .where(
           and(
@@ -88,7 +90,7 @@ export default async function CustomerServicePage({
             eq(csoSlaBreaches.acknowledged, false)
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -100,18 +102,19 @@ export default async function CustomerServicePage({
   if (search) {
     conditions.push(
       or(
-        ilike(csoInquiries.subject, `%${search}%`),
-        ilike(csoInquiries.customerName, `%${search}%`)
+        ilike(csoInquiries.subject, `%${escapeIlike(search)}%`),
+        ilike(csoInquiries.customerName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(csoInquiries.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoInquiries.createdAt, csoInquiries.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoInquiries)
     .where(and(...conditions))
-    .orderBy(desc(csoInquiries.createdAt))
+    .orderBy(desc(csoInquiries.createdAt), desc(csoInquiries.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

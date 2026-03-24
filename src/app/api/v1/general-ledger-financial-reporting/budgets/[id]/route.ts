@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
@@ -48,8 +49,8 @@ export async function PATCH(
     if (!(await hasPermission(user.id, user.tenantId, "gl:edit")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const body = await request.json();
@@ -67,8 +68,6 @@ export async function PATCH(
       .where(and(eq(glfrBudgets.id, id), eq(glfrBudgets.tenantId, user.tenantId), isNull(glfrBudgets.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "budgets", entityId: record?.id, module: "general-ledger-financial-reporting", previousData: null, newData: record as Record<string, unknown>, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Budget not found" } },
@@ -76,6 +75,7 @@ export async function PATCH(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "budgets", entityId: record.id, module: "general-ledger-financial-reporting", previousData: null, newData: record as Record<string, unknown>, request });
     return NextResponse.json({ data: record });
   } catch (error) {
     console.error("Failed to update budget:", error);
@@ -96,8 +96,8 @@ export async function DELETE(
     if (!(await hasPermission(user.id, user.tenantId, "gl:delete")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const { id } = await params;
     const [record] = await db
@@ -106,8 +106,6 @@ export async function DELETE(
       .where(and(eq(glfrBudgets.id, id), eq(glfrBudgets.tenantId, user.tenantId), isNull(glfrBudgets.deletedAt)))
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "budgets", entityId: record?.id, module: "general-ledger-financial-reporting", previousData: null, request });
-
     if (!record) {
       return NextResponse.json(
         { error: { code: "NOT_FOUND", message: "Budget not found" } },
@@ -115,6 +113,7 @@ export async function DELETE(
       );
     }
 
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "budgets", entityId: record.id, module: "general-ledger-financial-reporting", previousData: null, request });
     return NextResponse.json({ data: { success: true } });
   } catch (error) {
     console.error("Failed to delete budget:", error);

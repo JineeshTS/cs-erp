@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aafDocumentProcessingJobs } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -18,12 +20,13 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(aafDocumentProcessingJobs.tenantId, user.tenantId), isNull(aafDocumentProcessingJobs.deletedAt)];
-    if (search) conditions.push(ilike(aafDocumentProcessingJobs.jobReference, `%${search}%`));
+    if (search) conditions.push(ilike(aafDocumentProcessingJobs.jobReference, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(aafDocumentProcessingJobs.status, status));
-    if (cursor) conditions.push(lt(aafDocumentProcessingJobs.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(aafDocumentProcessingJobs.createdAt, aafDocumentProcessingJobs.id, parsedCursor));
 
     const results = await db.select().from(aafDocumentProcessingJobs).where(and(...conditions))
-      .orderBy(desc(aafDocumentProcessingJobs.createdAt)).limit(limit + 1);
+      .orderBy(desc(aafDocumentProcessingJobs.createdAt), desc(aafDocumentProcessingJobs.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;

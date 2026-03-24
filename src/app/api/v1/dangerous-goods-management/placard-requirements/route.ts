@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dgmPlacardRequirements } from "@/db/schema";
@@ -48,8 +49,8 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "dangerous_goods:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createPlacardRequirementSchema.safeParse(body);
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "placard-requirements", entityId: created?.id, module: "dangerous-goods-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "placard-requirements", entityId: created.id, module: "dangerous-goods-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

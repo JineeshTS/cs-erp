@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprRiskKpiDashboards } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RiskKpiDashboardsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RiskKpiDashboardsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprRiskKpiDashboards.dashboardRef, `%${search}%`),
-        ilike(lprRiskKpiDashboards.title, `%${search}%`)
+        ilike(lprRiskKpiDashboards.dashboardRef, `%${escapeIlike(search)}%`),
+        ilike(lprRiskKpiDashboards.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprRiskKpiDashboards.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprRiskKpiDashboards.createdAt, lprRiskKpiDashboards.id, parsedCursor));
 
   const data = await db.select().from(lprRiskKpiDashboards)
     .where(and(...conditions))
-    .orderBy(desc(lprRiskKpiDashboards.createdAt))
+    .orderBy(desc(lprRiskKpiDashboards.createdAt), desc(lprRiskKpiDashboards.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

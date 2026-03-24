@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfComplianceReports } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function statusVariant(status: string) {
   switch (status) {
     case "published":
@@ -64,19 +66,19 @@ export default async function ComplianceReportsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfComplianceReports.reportName, `%${search}%`),
-        ilike(isfComplianceReports.reportCode, `%${search}%`)
+        ilike(isfComplianceReports.reportName, `%${escapeIlike(search)}%`),
+        ilike(isfComplianceReports.reportCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(isfComplianceReports.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfComplianceReports.createdAt, isfComplianceReports.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfComplianceReports)
     .where(and(...conditions))
-    .orderBy(desc(isfComplianceReports.createdAt))
+    .orderBy(desc(isfComplianceReports.createdAt), desc(isfComplianceReports.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

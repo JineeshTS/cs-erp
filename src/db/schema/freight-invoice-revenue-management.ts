@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-015-1-001: Freight Invoice Generation & Dispatch
@@ -333,7 +334,7 @@ export const firmInvoiceDisputes = pgTable(
     currency: varchar("currency", { length: 3 }).notNull().default("USD"),
     reason: text("reason").notNull(),
     customerEvidence: jsonb("customer_evidence"),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedToName: varchar("assigned_to_name", { length: 255 }),
     resolutionType: varchar("resolution_type", { length: 30 }),
     resolvedAmount: integer("resolved_amount"),

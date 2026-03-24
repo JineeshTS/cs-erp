@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   aafAgents,
   aafAgentRuns,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AiAgentFrameworkPage({
   searchParams,
 }: {
@@ -45,7 +47,7 @@ export default async function AiAgentFrameworkPage({
   const [activeAgents, runningTasks, pendingEscalations, processingJobs] =
     await Promise.all([
       db
-        .select({ id: aafAgents.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(aafAgents)
         .where(
           and(
@@ -54,9 +56,9 @@ export default async function AiAgentFrameworkPage({
             eq(aafAgents.isActive, true)
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: aafAgentRuns.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(aafAgentRuns)
         .where(
           and(
@@ -65,9 +67,9 @@ export default async function AiAgentFrameworkPage({
             eq(aafAgentRuns.status, "running")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: aafEscalations.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(aafEscalations)
         .where(
           and(
@@ -76,9 +78,9 @@ export default async function AiAgentFrameworkPage({
             eq(aafEscalations.status, "open")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: aafDocumentProcessingJobs.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(aafDocumentProcessingJobs)
         .where(
           and(
@@ -87,7 +89,7 @@ export default async function AiAgentFrameworkPage({
             eq(aafDocumentProcessingJobs.status, "processing")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -98,19 +100,20 @@ export default async function AiAgentFrameworkPage({
   if (search) {
     conditions.push(
       or(
-        ilike(aafAgents.agentName, `%${search}%`),
-        ilike(aafAgents.agentCode, `%${search}%`),
-        ilike(aafAgents.agentType, `%${search}%`)
+        ilike(aafAgents.agentName, `%${escapeIlike(search)}%`),
+        ilike(aafAgents.agentCode, `%${escapeIlike(search)}%`),
+        ilike(aafAgents.agentType, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(aafAgents.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(aafAgents.createdAt, aafAgents.id, parsedCursor));
 
   const data = await db
     .select()
     .from(aafAgents)
     .where(and(...conditions))
-    .orderBy(desc(aafAgents.createdAt))
+    .orderBy(desc(aafAgents.createdAt), desc(aafAgents.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

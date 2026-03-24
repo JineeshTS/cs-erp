@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { capRevenueAnalytics } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RevenueAnalyticsListPage({
   searchParams,
 }: {
@@ -37,16 +39,16 @@ export default async function RevenueAnalyticsListPage({
 
   if (status) conditions.push(eq(capRevenueAnalytics.status, status));
   if (search) {
-    conditions.push(ilike(capRevenueAnalytics.tradeLane, `%${search}%`));
+    conditions.push(ilike(capRevenueAnalytics.tradeLane, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(capRevenueAnalytics.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capRevenueAnalytics.createdAt, capRevenueAnalytics.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capRevenueAnalytics)
     .where(and(...conditions))
-    .orderBy(desc(capRevenueAnalytics.createdAt))
+    .orderBy(desc(capRevenueAnalytics.createdAt), desc(capRevenueAnalytics.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

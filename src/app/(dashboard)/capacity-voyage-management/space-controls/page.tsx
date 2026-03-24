@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { capSpaceControls } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SpaceControlsListPage({
   searchParams,
 }: {
@@ -39,20 +41,20 @@ export default async function SpaceControlsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(capSpaceControls.bookingReference, `%${search}%`),
-        ilike(capSpaceControls.shipperName, `%${search}%`),
-        ilike(capSpaceControls.commodity, `%${search}%`)
+        ilike(capSpaceControls.bookingReference, `%${escapeIlike(search)}%`),
+        ilike(capSpaceControls.shipperName, `%${escapeIlike(search)}%`),
+        ilike(capSpaceControls.commodity, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(capSpaceControls.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(capSpaceControls.createdAt, capSpaceControls.id, parsedCursor));
 
   const data = await db
     .select()
     .from(capSpaceControls)
     .where(and(...conditions))
-    .orderBy(desc(capSpaceControls.createdAt))
+    .orderBy(desc(capSpaceControls.createdAt), desc(capSpaceControls.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

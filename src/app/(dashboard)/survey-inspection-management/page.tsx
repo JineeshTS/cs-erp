@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   simCargoSurveys,
   simContainerSurveys,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SurveyInspectionManagementPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function SurveyInspectionManagementPage({
 
   const [scheduledCargo, scheduledContainer, scheduledDraft, scheduledHire, scheduledHatch] =
     await Promise.all([
-      db.select({ id: simCargoSurveys.id }).from(simCargoSurveys)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(simCargoSurveys)
         .where(and(eq(simCargoSurveys.tenantId, session.tenantId), isNull(simCargoSurveys.deletedAt), eq(simCargoSurveys.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: simContainerSurveys.id }).from(simContainerSurveys)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(simContainerSurveys)
         .where(and(eq(simContainerSurveys.tenantId, session.tenantId), isNull(simContainerSurveys.deletedAt), eq(simContainerSurveys.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: simDraftSurveys.id }).from(simDraftSurveys)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(simDraftSurveys)
         .where(and(eq(simDraftSurveys.tenantId, session.tenantId), isNull(simDraftSurveys.deletedAt), eq(simDraftSurveys.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: simHireSurveys.id }).from(simHireSurveys)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(simHireSurveys)
         .where(and(eq(simHireSurveys.tenantId, session.tenantId), isNull(simHireSurveys.deletedAt), eq(simHireSurveys.status, "scheduled")))
-        .then((r) => r.length),
-      db.select({ id: simHatchInspections.id }).from(simHatchInspections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(simHatchInspections)
         .where(and(eq(simHatchInspections.tenantId, session.tenantId), isNull(simHatchInspections.deletedAt), eq(simHatchInspections.status, "scheduled")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function SurveyInspectionManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(simCargoSurveys.surveyRef, `%${search}%`),
-        ilike(simCargoSurveys.vesselName, `%${search}%`),
-        ilike(simCargoSurveys.clientName, `%${search}%`)
+        ilike(simCargoSurveys.surveyRef, `%${escapeIlike(search)}%`),
+        ilike(simCargoSurveys.vesselName, `%${escapeIlike(search)}%`),
+        ilike(simCargoSurveys.clientName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(simCargoSurveys.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(simCargoSurveys.createdAt, simCargoSurveys.id, parsedCursor));
 
   const data = await db.select().from(simCargoSurveys)
     .where(and(...conditions))
-    .orderBy(desc(simCargoSurveys.createdAt))
+    .orderBy(desc(simCargoSurveys.createdAt), desc(simCargoSurveys.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

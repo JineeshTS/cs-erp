@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt } from "drizzle-orm";
+import { eq, and, isNull, desc } from "drizzle-orm";
 import { dmsSearchIndex } from "@/db/schema";
 import { createSearchIndexSchema } from "@/lib/document-management-system/validation";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -21,10 +23,11 @@ export async function GET(request: NextRequest) {
 
     const conditions = [eq(dmsSearchIndex.tenantId, user.tenantId), isNull(dmsSearchIndex.deletedAt)];
     if (documentId) conditions.push(eq(dmsSearchIndex.documentId, documentId));
-    if (cursor) conditions.push(lt(dmsSearchIndex.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(dmsSearchIndex.createdAt, dmsSearchIndex.id, parsedCursor));
 
     const results = await db.select().from(dmsSearchIndex).where(and(...conditions))
-      .orderBy(desc(dmsSearchIndex.createdAt)).limit(limit + 1);
+      .orderBy(desc(dmsSearchIndex.createdAt), desc(dmsSearchIndex.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -46,8 +49,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "documents:read"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createSearchIndexSchema.safeParse(body);
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "search-index", entityId: created?.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "search-index", entityId: created.id, module: "document-management-system", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

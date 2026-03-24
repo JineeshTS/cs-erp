@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { thmRevenueAttributions } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function RevenueAttributionsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function RevenueAttributionsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(thmRevenueAttributions.attributionRef, `%${search}%`),
-        ilike(thmRevenueAttributions.hubPort, `%${search}%`)
+        ilike(thmRevenueAttributions.attributionRef, `%${escapeIlike(search)}%`),
+        ilike(thmRevenueAttributions.hubPort, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(thmRevenueAttributions.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(thmRevenueAttributions.createdAt, thmRevenueAttributions.id, parsedCursor));
 
   const data = await db.select().from(thmRevenueAttributions)
     .where(and(...conditions))
-    .orderBy(desc(thmRevenueAttributions.createdAt))
+    .orderBy(desc(thmRevenueAttributions.createdAt), desc(thmRevenueAttributions.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

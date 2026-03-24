@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   scmCustomers,
   scmOpportunities,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function SalesCrmPage({
   searchParams,
 }: {
@@ -46,7 +48,7 @@ export default async function SalesCrmPage({
   const [activeCustomers, openOpportunities, activeContracts, newLeads] =
     await Promise.all([
       db
-        .select({ id: scmCustomers.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(scmCustomers)
         .where(
           and(
@@ -55,9 +57,9 @@ export default async function SalesCrmPage({
             eq(scmCustomers.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: scmOpportunities.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(scmOpportunities)
         .where(
           and(
@@ -66,9 +68,9 @@ export default async function SalesCrmPage({
             eq(scmOpportunities.status, "open")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: scmContracts.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(scmContracts)
         .where(
           and(
@@ -77,9 +79,9 @@ export default async function SalesCrmPage({
             eq(scmContracts.status, "active")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
       db
-        .select({ id: scmLeads.id })
+        .select({ value: sql<number>`cast(count(*) as int)` })
         .from(scmLeads)
         .where(
           and(
@@ -88,7 +90,7 @@ export default async function SalesCrmPage({
             eq(scmLeads.status, "new")
           )
         )
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -101,20 +103,20 @@ export default async function SalesCrmPage({
   if (search) {
     conditions.push(
       or(
-        ilike(scmCustomers.companyName, `%${search}%`),
-        ilike(scmCustomers.customerCode, `%${search}%`),
-        ilike(scmCustomers.email, `%${search}%`)
+        ilike(scmCustomers.companyName, `%${escapeIlike(search)}%`),
+        ilike(scmCustomers.customerCode, `%${escapeIlike(search)}%`),
+        ilike(scmCustomers.email, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor)
-    conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(scmCustomers.createdAt, scmCustomers.id, parsedCursor));
 
   const data = await db
     .select()
     .from(scmCustomers)
     .where(and(...conditions))
-    .orderBy(desc(scmCustomers.createdAt))
+    .orderBy(desc(scmCustomers.createdAt), desc(scmCustomers.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmCargoMixes } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CargoMixesListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function CargoMixesListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmCargoMixes.mixRef, `%${search}%`),
-        ilike(lrmCargoMixes.commodityGroup, `%${search}%`)
+        ilike(lrmCargoMixes.mixRef, `%${escapeIlike(search)}%`),
+        ilike(lrmCargoMixes.commodityGroup, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmCargoMixes.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmCargoMixes.createdAt, lrmCargoMixes.id, parsedCursor));
 
   const data = await db.select().from(lrmCargoMixes)
     .where(and(...conditions))
-    .orderBy(desc(lrmCargoMixes.createdAt))
+    .orderBy(desc(lrmCargoMixes.createdAt), desc(lrmCargoMixes.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

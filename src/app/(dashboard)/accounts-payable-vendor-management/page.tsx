@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   apvmVendorMasters,
   apvmPurchaseOrders,
@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AccountsPayableVendorManagementPage({
   searchParams,
 }: {
@@ -42,21 +44,21 @@ export default async function AccountsPayableVendorManagementPage({
 
   const [activeVendors, openPOs, pendingInvoices, unmatchedItems, scheduledPayments] =
     await Promise.all([
-      db.select({ id: apvmVendorMasters.id }).from(apvmVendorMasters)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(apvmVendorMasters)
         .where(and(eq(apvmVendorMasters.tenantId, session.tenantId), isNull(apvmVendorMasters.deletedAt), eq(apvmVendorMasters.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: apvmPurchaseOrders.id }).from(apvmPurchaseOrders)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(apvmPurchaseOrders)
         .where(and(eq(apvmPurchaseOrders.tenantId, session.tenantId), isNull(apvmPurchaseOrders.deletedAt), eq(apvmPurchaseOrders.status, "approved")))
-        .then((r) => r.length),
-      db.select({ id: apvmVendorInvoices.id }).from(apvmVendorInvoices)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(apvmVendorInvoices)
         .where(and(eq(apvmVendorInvoices.tenantId, session.tenantId), isNull(apvmVendorInvoices.deletedAt), eq(apvmVendorInvoices.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: apvmThreeWayMatches.id }).from(apvmThreeWayMatches)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(apvmThreeWayMatches)
         .where(and(eq(apvmThreeWayMatches.tenantId, session.tenantId), isNull(apvmThreeWayMatches.deletedAt), eq(apvmThreeWayMatches.status, "exception")))
-        .then((r) => r.length),
-      db.select({ id: apvmPaymentSchedules.id }).from(apvmPaymentSchedules)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(apvmPaymentSchedules)
         .where(and(eq(apvmPaymentSchedules.tenantId, session.tenantId), isNull(apvmPaymentSchedules.deletedAt), eq(apvmPaymentSchedules.status, "scheduled")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -67,16 +69,17 @@ export default async function AccountsPayableVendorManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(apvmVendorMasters.vendorName, `%${search}%`),
-        ilike(apvmVendorMasters.vendorCode, `%${search}%`)
+        ilike(apvmVendorMasters.vendorName, `%${escapeIlike(search)}%`),
+        ilike(apvmVendorMasters.vendorCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(apvmVendorMasters.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(apvmVendorMasters.createdAt, apvmVendorMasters.id, parsedCursor));
 
   const data = await db.select().from(apvmVendorMasters)
     .where(and(...conditions))
-    .orderBy(desc(apvmVendorMasters.createdAt))
+    .orderBy(desc(apvmVendorMasters.createdAt), desc(apvmVendorMasters.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

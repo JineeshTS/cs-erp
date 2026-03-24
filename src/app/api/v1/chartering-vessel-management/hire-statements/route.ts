@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cvmHireStatements } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createHireStatementSchema } from "@/lib/chartering-vessel-management/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -25,16 +27,17 @@ export async function GET(request: NextRequest) {
       eq(cvmHireStatements.tenantId, user.tenantId),
       isNull(cvmHireStatements.deletedAt),
     ];
-    if (search) conditions.push(ilike(cvmHireStatements.statementNumber, `%${search}%`));
+    if (search) conditions.push(ilike(cvmHireStatements.statementNumber, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(cvmHireStatements.status, status));
     if (charterPartyId) conditions.push(eq(cvmHireStatements.charterPartyId, charterPartyId));
-    if (cursor) conditions.push(lt(cvmHireStatements.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cvmHireStatements.createdAt, cvmHireStatements.id, parsedCursor));
 
     const results = await db
       .select()
       .from(cvmHireStatements)
       .where(and(...conditions))
-      .orderBy(desc(cvmHireStatements.createdAt))
+      .orderBy(desc(cvmHireStatements.createdAt), desc(cvmHireStatements.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -57,8 +60,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "chartering:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createHireStatementSchema.safeParse(body);
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "hire-statements", entityId: created?.id, module: "chartering-vessel-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "hire-statements", entityId: created.id, module: "chartering-vessel-management", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

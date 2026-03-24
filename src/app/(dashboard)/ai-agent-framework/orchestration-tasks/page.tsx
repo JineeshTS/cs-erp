@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { aafOrchestrationTasks } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function fmtDate(d: Date | string | null): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString();
@@ -63,16 +65,16 @@ export default async function OrchestrationTasksListPage({
   ];
   if (status) conditions.push(eq(aafOrchestrationTasks.status, status));
   if (search) {
-    conditions.push(ilike(aafOrchestrationTasks.taskName, `%${search}%`));
+    conditions.push(ilike(aafOrchestrationTasks.taskName, `%${escapeIlike(search)}%`));
   }
-  if (cursor)
-    conditions.push(lt(aafOrchestrationTasks.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(aafOrchestrationTasks.createdAt, aafOrchestrationTasks.id, parsedCursor));
 
   const data = await db
     .select()
     .from(aafOrchestrationTasks)
     .where(and(...conditions))
-    .orderBy(desc(aafOrchestrationTasks.createdAt))
+    .orderBy(desc(aafOrchestrationTasks.createdAt), desc(aafOrchestrationTasks.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

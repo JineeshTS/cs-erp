@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { eqyContainerFleet } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createContainerFleetSchema } from "@/lib/equipment-control-yard-managem/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -24,15 +26,16 @@ export async function GET(request: NextRequest) {
       eq(eqyContainerFleet.tenantId, user.tenantId),
       isNull(eqyContainerFleet.deletedAt),
     ];
-    if (search) conditions.push(ilike(eqyContainerFleet.containerNumber, `%${search}%`));
+    if (search) conditions.push(ilike(eqyContainerFleet.containerNumber, `%${escapeIlike(search)}%`));
     if (status) conditions.push(eq(eqyContainerFleet.status, status));
-    if (cursor) conditions.push(lt(eqyContainerFleet.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyContainerFleet.createdAt, eqyContainerFleet.id, parsedCursor));
 
     const results = await db
       .select()
       .from(eqyContainerFleet)
       .where(and(...conditions))
-      .orderBy(desc(eqyContainerFleet.createdAt))
+      .orderBy(desc(eqyContainerFleet.createdAt), desc(eqyContainerFleet.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -55,8 +58,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "equipment:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createContainerFleetSchema.safeParse(body);
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "equipment-control-yard-managem", entityId: created?.id, module: "equipment-control-yard-managem", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "equipment-control-yard-managem", entityId: created.id, module: "equipment-control-yard-managem", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

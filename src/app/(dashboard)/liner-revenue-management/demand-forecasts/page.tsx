@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lrmDemandForecasts } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DemandForecastsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function DemandForecastsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmDemandForecasts.forecastRef, `%${search}%`),
-        ilike(lrmDemandForecasts.tradeLane, `%${search}%`)
+        ilike(lrmDemandForecasts.forecastRef, `%${escapeIlike(search)}%`),
+        ilike(lrmDemandForecasts.tradeLane, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmDemandForecasts.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmDemandForecasts.createdAt, lrmDemandForecasts.id, parsedCursor));
 
   const data = await db.select().from(lrmDemandForecasts)
     .where(and(...conditions))
-    .orderBy(desc(lrmDemandForecasts.createdAt))
+    .orderBy(desc(lrmDemandForecasts.createdAt), desc(lrmDemandForecasts.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

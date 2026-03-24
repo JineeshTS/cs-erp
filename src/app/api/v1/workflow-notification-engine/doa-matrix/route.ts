@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ilike, lt, desc, isNull } from "drizzle-orm";
+import { validateCsrfToken } from "@/lib/csrf";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wneDoaMatrix } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createDoaMatrixSchema } from "@/lib/workflow-notification-engine/validation";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -23,16 +25,17 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 50);
 
     const conditions = [eq(wneDoaMatrix.tenantId, user.tenantId), isNull(wneDoaMatrix.deletedAt)];
-    if (search) conditions.push(ilike(wneDoaMatrix.name, `%${search}%`));
+    if (search) conditions.push(ilike(wneDoaMatrix.name, `%${escapeIlike(search)}%`));
     if (entityType) conditions.push(eq(wneDoaMatrix.entityType, entityType));
     if (actionType) conditions.push(eq(wneDoaMatrix.actionType, actionType));
     if (isActive !== null && isActive !== undefined && isActive !== "") {
       conditions.push(eq(wneDoaMatrix.isActive, isActive === "true"));
     }
-    if (cursor) conditions.push(lt(wneDoaMatrix.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(wneDoaMatrix.createdAt, wneDoaMatrix.id, parsedCursor));
 
     const results = await db.select().from(wneDoaMatrix).where(and(...conditions))
-      .orderBy(desc(wneDoaMatrix.createdAt)).limit(limit + 1);
+      .orderBy(desc(wneDoaMatrix.createdAt), desc(wneDoaMatrix.id)).limit(limit + 1);
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
@@ -54,8 +57,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "workflows:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createDoaMatrixSchema.safeParse(body);
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
       ...(delegatedUntil ? { delegatedUntil: new Date(delegatedUntil) } : {}),
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "doa-matrix", entityId: created?.id, module: "workflow-notification-engine", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "doa-matrix", entityId: created.id, module: "workflow-notification-engine", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

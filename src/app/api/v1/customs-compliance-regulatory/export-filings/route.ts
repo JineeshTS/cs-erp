@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { ccrExportFilings } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createExportFilingSchema } from "@/lib/customs-compliance-regulatory/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
-import { formatZodErrors } from "@/lib/validation";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -29,9 +31,9 @@ export async function GET(request: NextRequest) {
     if (search) {
       conditions.push(
         or(
-          ilike(ccrExportFilings.filingRef, `%${search}%`),
-          ilike(ccrExportFilings.exporterName, `%${search}%`),
-          ilike(ccrExportFilings.blNumber, `%${search}%`)
+          ilike(ccrExportFilings.filingRef, `%${escapeIlike(search)}%`),
+          ilike(ccrExportFilings.exporterName, `%${escapeIlike(search)}%`),
+          ilike(ccrExportFilings.blNumber, `%${escapeIlike(search)}%`)
         )!
       );
     }
@@ -40,15 +42,16 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(ccrExportFilings.status, status));
     }
 
-    if (cursor) {
-      conditions.push(lt(ccrExportFilings.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(ccrExportFilings.createdAt, ccrExportFilings.id, parsedCursor));
     }
 
     const results = await db
       .select()
       .from(ccrExportFilings)
       .where(and(...conditions))
-      .orderBy(desc(ccrExportFilings.createdAt))
+      .orderBy(desc(ccrExportFilings.createdAt), desc(ccrExportFilings.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data,
       meta: {
-        cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined,
+        cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined,
         hasMore,
       },
     });
@@ -76,8 +79,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "customs:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createExportFilingSchema.safeParse(body);
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "export-filings", entityId: created?.id, module: "customs-compliance-regulatory", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "export-filings", entityId: created.id, module: "customs-compliance-regulatory", newData: created as Record<string, unknown>, request });
 
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {

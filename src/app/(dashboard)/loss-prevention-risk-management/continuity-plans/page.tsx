@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { lprContinuityPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function ContinuityPlansListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function ContinuityPlansListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lprContinuityPlans.planRef, `%${search}%`),
-        ilike(lprContinuityPlans.title, `%${search}%`)
+        ilike(lprContinuityPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(lprContinuityPlans.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lprContinuityPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprContinuityPlans.createdAt, lprContinuityPlans.id, parsedCursor));
 
   const data = await db.select().from(lprContinuityPlans)
     .where(and(...conditions))
-    .orderBy(desc(lprContinuityPlans.createdAt))
+    .orderBy(desc(lprContinuityPlans.createdAt), desc(lprContinuityPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

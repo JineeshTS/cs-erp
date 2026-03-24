@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   pttTerminalHandlingCharges,
   pttPortDuesWharfages,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function PortTariffTerminalBillingPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function PortTariffTerminalBillingPage({
 
   const [draftTerminalHandlingCharges, draftPortDuesWharfages, draftPilotageTowageCharges, draftStorageDemurrageTariffs, draftTariffComparisons, draftInvoiceValidations, draftCostOptimizations, draftBudgetPlannings] =
     await Promise.all([
-      db.select({ id: pttTerminalHandlingCharges.id }).from(pttTerminalHandlingCharges)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttTerminalHandlingCharges)
         .where(and(eq(pttTerminalHandlingCharges.tenantId, session.tenantId), isNull(pttTerminalHandlingCharges.deletedAt), eq(pttTerminalHandlingCharges.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttPortDuesWharfages.id }).from(pttPortDuesWharfages)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttPortDuesWharfages)
         .where(and(eq(pttPortDuesWharfages.tenantId, session.tenantId), isNull(pttPortDuesWharfages.deletedAt), eq(pttPortDuesWharfages.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttPilotageTowageCharges.id }).from(pttPilotageTowageCharges)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttPilotageTowageCharges)
         .where(and(eq(pttPilotageTowageCharges.tenantId, session.tenantId), isNull(pttPilotageTowageCharges.deletedAt), eq(pttPilotageTowageCharges.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttStorageDemurrageTariffs.id }).from(pttStorageDemurrageTariffs)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttStorageDemurrageTariffs)
         .where(and(eq(pttStorageDemurrageTariffs.tenantId, session.tenantId), isNull(pttStorageDemurrageTariffs.deletedAt), eq(pttStorageDemurrageTariffs.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttTariffComparisons.id }).from(pttTariffComparisons)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttTariffComparisons)
         .where(and(eq(pttTariffComparisons.tenantId, session.tenantId), isNull(pttTariffComparisons.deletedAt), eq(pttTariffComparisons.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttInvoiceValidations.id }).from(pttInvoiceValidations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttInvoiceValidations)
         .where(and(eq(pttInvoiceValidations.tenantId, session.tenantId), isNull(pttInvoiceValidations.deletedAt), eq(pttInvoiceValidations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttCostOptimizations.id }).from(pttCostOptimizations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttCostOptimizations)
         .where(and(eq(pttCostOptimizations.tenantId, session.tenantId), isNull(pttCostOptimizations.deletedAt), eq(pttCostOptimizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: pttBudgetPlannings.id }).from(pttBudgetPlannings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(pttBudgetPlannings)
         .where(and(eq(pttBudgetPlannings.tenantId, session.tenantId), isNull(pttBudgetPlannings.deletedAt), eq(pttBudgetPlannings.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function PortTariffTerminalBillingPage({
   if (search) {
     conditions.push(
       or(
-        ilike(pttTerminalHandlingCharges.chargeRef, `%${search}%`),
-        ilike(pttTerminalHandlingCharges.portName, `%${search}%`)
+        ilike(pttTerminalHandlingCharges.chargeRef, `%${escapeIlike(search)}%`),
+        ilike(pttTerminalHandlingCharges.portName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(pttTerminalHandlingCharges.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(pttTerminalHandlingCharges.createdAt, pttTerminalHandlingCharges.id, parsedCursor));
 
   const data = await db.select().from(pttTerminalHandlingCharges)
     .where(and(...conditions))
-    .orderBy(desc(pttTerminalHandlingCharges.createdAt))
+    .orderBy(desc(pttTerminalHandlingCharges.createdAt), desc(pttTerminalHandlingCharges.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -13,7 +13,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   ccrImportClearances,
   ccrExportFilings,
@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CustomsComplianceRegulatoryPage({
   searchParams,
 }: {
@@ -43,21 +45,21 @@ export default async function CustomsComplianceRegulatoryPage({
 
   const [pendingClearances, pendingFilings, activeTransits, pendingCalculations, activeAeoCompliances] =
     await Promise.all([
-      db.select({ id: ccrImportClearances.id }).from(ccrImportClearances)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccrImportClearances)
         .where(and(eq(ccrImportClearances.tenantId, session.tenantId), isNull(ccrImportClearances.deletedAt), eq(ccrImportClearances.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: ccrExportFilings.id }).from(ccrExportFilings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccrExportFilings)
         .where(and(eq(ccrExportFilings.tenantId, session.tenantId), isNull(ccrExportFilings.deletedAt), eq(ccrExportFilings.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: ccrTransitProcedures.id }).from(ccrTransitProcedures)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccrTransitProcedures)
         .where(and(eq(ccrTransitProcedures.tenantId, session.tenantId), isNull(ccrTransitProcedures.deletedAt), eq(ccrTransitProcedures.status, "active")))
-        .then((r) => r.length),
-      db.select({ id: ccrDutyCalculations.id }).from(ccrDutyCalculations)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccrDutyCalculations)
         .where(and(eq(ccrDutyCalculations.tenantId, session.tenantId), isNull(ccrDutyCalculations.deletedAt), eq(ccrDutyCalculations.status, "pending")))
-        .then((r) => r.length),
-      db.select({ id: ccrAeoCompliances.id }).from(ccrAeoCompliances)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(ccrAeoCompliances)
         .where(and(eq(ccrAeoCompliances.tenantId, session.tenantId), isNull(ccrAeoCompliances.deletedAt), eq(ccrAeoCompliances.status, "active")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -68,17 +70,18 @@ export default async function CustomsComplianceRegulatoryPage({
   if (search) {
     conditions.push(
       or(
-        ilike(ccrImportClearances.clearanceRef, `%${search}%`),
-        ilike(ccrImportClearances.importerName, `%${search}%`),
-        ilike(ccrImportClearances.blNumber, `%${search}%`)
+        ilike(ccrImportClearances.clearanceRef, `%${escapeIlike(search)}%`),
+        ilike(ccrImportClearances.importerName, `%${escapeIlike(search)}%`),
+        ilike(ccrImportClearances.blNumber, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(ccrImportClearances.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(ccrImportClearances.createdAt, ccrImportClearances.id, parsedCursor));
 
   const data = await db.select().from(ccrImportClearances)
     .where(and(...conditions))
-    .orderBy(desc(ccrImportClearances.createdAt))
+    .orderBy(desc(ccrImportClearances.createdAt), desc(ccrImportClearances.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

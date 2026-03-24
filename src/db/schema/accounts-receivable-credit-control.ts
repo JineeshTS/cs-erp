@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
+import { users } from "./users";
 
 // ==========================================
 // FEAT-016-1-001: Customer Account Maintenance
@@ -256,7 +257,7 @@ export const arccCollectionWorkflows = pgTable(
     invoiceCount: integer("invoice_count").notNull().default(0),
     escalationLevel: integer("escalation_level").notNull().default(1),
     escalationType: varchar("escalation_type", { length: 30 }).notNull(),
-    assignedTo: uuid("assigned_to"),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
     assignedToName: varchar("assigned_to_name", { length: 255 }),
     lastContactDate: timestamp("last_contact_date", { withTimezone: true }),
     lastContactMethod: varchar("last_contact_method", { length: 30 }),

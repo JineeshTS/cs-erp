@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { isfDeploymentConfigs } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 function statusVariant(status: string) {
   switch (status) {
     case "running":
@@ -63,18 +65,19 @@ export default async function DeploymentsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(isfDeploymentConfigs.deploymentName, `%${search}%`),
-        ilike(isfDeploymentConfigs.deploymentCode, `%${search}%`)
+        ilike(isfDeploymentConfigs.deploymentName, `%${escapeIlike(search)}%`),
+        ilike(isfDeploymentConfigs.deploymentCode, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(isfDeploymentConfigs.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(isfDeploymentConfigs.createdAt, isfDeploymentConfigs.id, parsedCursor));
 
   const data = await db
     .select()
     .from(isfDeploymentConfigs)
     .where(and(...conditions))
-    .orderBy(desc(isfDeploymentConfigs.createdAt))
+    .orderBy(desc(isfDeploymentConfigs.createdAt), desc(isfDeploymentConfigs.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

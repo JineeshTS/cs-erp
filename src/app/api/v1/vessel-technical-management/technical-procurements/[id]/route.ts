@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { vtmTechnicalProcurements } from "@/db/schema";
@@ -31,16 +32,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "technical:edit"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const body = await request.json();
     const parsed = updateTechnicalProcurementSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     const [updated] = await db.update(vtmTechnicalProcurements).set(parsed.data).where(and(eq(vtmTechnicalProcurements.id, id), eq(vtmTechnicalProcurements.tenantId, user.tenantId), isNull(vtmTechnicalProcurements.deletedAt))).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "technical-procurements", entityId: updated?.id, module: "vessel-technical-management", previousData: null, newData: updated as Record<string, unknown>, request });
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Technical procurement not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "technical-procurements", entityId: updated.id, module: "vessel-technical-management", previousData: null, newData: updated as Record<string, unknown>, request });
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("Failed to update technical procurement:", error);
@@ -54,13 +56,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "technical:delete"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
     const { id } = await params;
     const [deleted] = await db.update(vtmTechnicalProcurements).set({ deletedAt: new Date() }).where(and(eq(vtmTechnicalProcurements.id, id), eq(vtmTechnicalProcurements.tenantId, user.tenantId), isNull(vtmTechnicalProcurements.deletedAt))).returning({ id: vtmTechnicalProcurements.id });
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "technical-procurements", entityId: deleted?.id, module: "vessel-technical-management", previousData: null, request });
     if (!deleted) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Technical procurement not found" } }, { status: 404 });
+
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "delete", entityType: "technical-procurements", entityId: deleted.id, module: "vessel-technical-management", previousData: null, request });
     return NextResponse.json({ data: { id: deleted.id, deleted: true } });
   } catch (error) {
     console.error("Failed to delete technical procurement:", error);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { firmFreightInvoices } from "@/db/schema";
@@ -46,8 +47,8 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!(await hasPermission(user.id, user.tenantId, "invoice:create"))) return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createFreightInvoiceSchema.safeParse(body);
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       outstandingAmount: parsed.data.totalAmount,
     }).returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "freight-invoices", entityId: created?.id, module: "freight-invoice-revenue-management", newData: created as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "freight-invoices", entityId: created.id, module: "freight-invoice-revenue-management", newData: created as Record<string, unknown>, request });
 
     eventBus.emit({
       type: "INVOICE_GENERATED",

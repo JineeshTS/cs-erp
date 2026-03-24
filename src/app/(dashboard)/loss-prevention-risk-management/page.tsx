@@ -7,13 +7,15 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   lprRiskRegisters, lprHsseRecords, lprNearMissReports, lprIncidentInvestigations,
   lprPiClubScorings, lprContinuityPlans, lprEmergencyProcedures, lprRiskKpiDashboards,
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LossPreventionRiskManagementPage({
   searchParams,
 }: {
@@ -31,22 +33,23 @@ export default async function LossPreventionRiskManagementPage({
   const limit = 50;
 
   const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
-    db.select({ id: lprRiskRegisters.id }).from(lprRiskRegisters).where(and(eq(lprRiskRegisters.tenantId, session.tenantId), isNull(lprRiskRegisters.deletedAt), eq(lprRiskRegisters.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprHsseRecords.id }).from(lprHsseRecords).where(and(eq(lprHsseRecords.tenantId, session.tenantId), isNull(lprHsseRecords.deletedAt), eq(lprHsseRecords.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprNearMissReports.id }).from(lprNearMissReports).where(and(eq(lprNearMissReports.tenantId, session.tenantId), isNull(lprNearMissReports.deletedAt), eq(lprNearMissReports.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprIncidentInvestigations.id }).from(lprIncidentInvestigations).where(and(eq(lprIncidentInvestigations.tenantId, session.tenantId), isNull(lprIncidentInvestigations.deletedAt), eq(lprIncidentInvestigations.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprPiClubScorings.id }).from(lprPiClubScorings).where(and(eq(lprPiClubScorings.tenantId, session.tenantId), isNull(lprPiClubScorings.deletedAt), eq(lprPiClubScorings.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprContinuityPlans.id }).from(lprContinuityPlans).where(and(eq(lprContinuityPlans.tenantId, session.tenantId), isNull(lprContinuityPlans.deletedAt), eq(lprContinuityPlans.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprEmergencyProcedures.id }).from(lprEmergencyProcedures).where(and(eq(lprEmergencyProcedures.tenantId, session.tenantId), isNull(lprEmergencyProcedures.deletedAt), eq(lprEmergencyProcedures.status, "draft"))).then((r) => r.length),
-    db.select({ id: lprRiskKpiDashboards.id }).from(lprRiskKpiDashboards).where(and(eq(lprRiskKpiDashboards.tenantId, session.tenantId), isNull(lprRiskKpiDashboards.deletedAt), eq(lprRiskKpiDashboards.status, "draft"))).then((r) => r.length),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprRiskRegisters).where(and(eq(lprRiskRegisters.tenantId, session.tenantId), isNull(lprRiskRegisters.deletedAt), eq(lprRiskRegisters.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprHsseRecords).where(and(eq(lprHsseRecords.tenantId, session.tenantId), isNull(lprHsseRecords.deletedAt), eq(lprHsseRecords.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprNearMissReports).where(and(eq(lprNearMissReports.tenantId, session.tenantId), isNull(lprNearMissReports.deletedAt), eq(lprNearMissReports.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprIncidentInvestigations).where(and(eq(lprIncidentInvestigations.tenantId, session.tenantId), isNull(lprIncidentInvestigations.deletedAt), eq(lprIncidentInvestigations.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprPiClubScorings).where(and(eq(lprPiClubScorings.tenantId, session.tenantId), isNull(lprPiClubScorings.deletedAt), eq(lprPiClubScorings.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprContinuityPlans).where(and(eq(lprContinuityPlans.tenantId, session.tenantId), isNull(lprContinuityPlans.deletedAt), eq(lprContinuityPlans.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprEmergencyProcedures).where(and(eq(lprEmergencyProcedures.tenantId, session.tenantId), isNull(lprEmergencyProcedures.deletedAt), eq(lprEmergencyProcedures.status, "draft"))).then((r) => r[0]?.value ?? 0),
+    db.select({ value: sql<number>`cast(count(*) as int)` }).from(lprRiskKpiDashboards).where(and(eq(lprRiskKpiDashboards.tenantId, session.tenantId), isNull(lprRiskKpiDashboards.deletedAt), eq(lprRiskKpiDashboards.status, "draft"))).then((r) => r[0]?.value ?? 0),
   ]);
 
   const conditions = [eq(lprRiskRegisters.tenantId, session.tenantId), isNull(lprRiskRegisters.deletedAt)];
   if (status) conditions.push(eq(lprRiskRegisters.status, status));
-  if (search) conditions.push(or(ilike(lprRiskRegisters.riskRef, `%${search}%`), ilike(lprRiskRegisters.title, `%${search}%`))!);
-  if (cursor) conditions.push(lt(lprRiskRegisters.createdAt, new Date(cursor)));
+  if (search) conditions.push(or(ilike(lprRiskRegisters.riskRef, `%${escapeIlike(search)}%`), ilike(lprRiskRegisters.title, `%${escapeIlike(search)}%`))!);
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lprRiskRegisters.createdAt, lprRiskRegisters.id, parsedCursor));
 
-  const data = await db.select().from(lprRiskRegisters).where(and(...conditions)).orderBy(desc(lprRiskRegisters.createdAt)).limit(limit + 1);
+  const data = await db.select().from(lprRiskRegisters).where(and(...conditions)).orderBy(desc(lprRiskRegisters.createdAt), desc(lprRiskRegisters.id)).limit(limit + 1);
   const hasMore = data.length > limit;
   const items = hasMore ? data.slice(0, limit) : data;
   const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
@@ -78,7 +81,7 @@ export default async function LossPreventionRiskManagementPage({
         ].map((c) => (
           <div key={c.label} className="rounded-lg border bg-white p-5">
             <div className="flex items-center gap-3">
-              <div className={`rounded-lg bg-${c.color}-50 p-2.5 text-${c.color}-600`}><c.icon className="h-5 w-5" /></div>
+              <div className={`rounded-lg p-2.5 ${({ blue: "bg-blue-50 text-blue-600", green: "bg-green-50 text-green-600", orange: "bg-orange-50 text-orange-600", red: "bg-red-50 text-red-600", purple: "bg-purple-50 text-purple-600", indigo: "bg-indigo-50 text-indigo-600", teal: "bg-teal-50 text-teal-600", yellow: "bg-yellow-50 text-yellow-600" } as Record<string, string>)[c.color] ?? ""}`}><c.icon className="h-5 w-5" /></div>
               <div><p className="text-sm text-gray-500">{c.label}</p><p className="text-2xl font-bold text-gray-900">{c.count}</p></div>
             </div>
           </div>

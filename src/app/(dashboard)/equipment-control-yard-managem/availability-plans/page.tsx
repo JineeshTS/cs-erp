@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { eqyAvailabilityPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function AvailabilityPlansPage({
   searchParams,
 }: {
@@ -37,17 +39,17 @@ export default async function AvailabilityPlansPage({
   if (status) conditions.push(eq(eqyAvailabilityPlans.status, status));
   if (search) {
     conditions.push(
-      ilike(eqyAvailabilityPlans.planReference, `%${search}%`)
+      ilike(eqyAvailabilityPlans.planReference, `%${escapeIlike(search)}%`)
     );
   }
-  if (cursor)
-    conditions.push(lt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(eqyAvailabilityPlans.createdAt, eqyAvailabilityPlans.id, parsedCursor));
 
   const data = await db
     .select()
     .from(eqyAvailabilityPlans)
     .where(and(...conditions))
-    .orderBy(desc(eqyAvailabilityPlans.createdAt))
+    .orderBy(desc(eqyAvailabilityPlans.createdAt), desc(eqyAvailabilityPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -58,7 +58,7 @@ export const rcmReeferBookings = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_reefer_book_tenant_idx").on(t.tenantId),
@@ -115,7 +115,7 @@ export const rcmTempMonitorings = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_temp_mon_tenant_idx").on(t.tenantId),
@@ -174,7 +174,7 @@ export const rcmPtiInspections = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_pti_insp_tenant_idx").on(t.tenantId),
@@ -229,7 +229,7 @@ export const rcmPowerManagement = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_power_mgmt_tenant_idx").on(t.tenantId),
@@ -284,7 +284,7 @@ export const rcmColdChainDocs = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_cold_chain_tenant_idx").on(t.tenantId),
@@ -343,7 +343,7 @@ export const rcmBreakdownResponses = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_breakdown_tenant_idx").on(t.tenantId),
@@ -398,7 +398,7 @@ export const rcmTempAlerts = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_temp_alert_tenant_idx").on(t.tenantId),
@@ -454,7 +454,7 @@ export const rcmClaimAnalytics = pgTable(
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     index("rcm_claim_analytics_tenant_idx").on(t.tenantId),

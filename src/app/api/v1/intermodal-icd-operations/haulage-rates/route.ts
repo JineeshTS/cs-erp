@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { icdHaulageRates } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
 import { hasPermission } from "@/lib/rbac";
 import { createHaulageRateSchema } from "@/lib/intermodal-icd-operations/validation";
-import { eq, and, isNull, desc, ilike, or, lt } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import crypto from "crypto";
-import { formatZodErrors } from "@/lib/validation";
+import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiUser(request);
@@ -30,9 +32,9 @@ export async function GET(request: NextRequest) {
     if (search) {
       conditions.push(
         or(
-          ilike(icdHaulageRates.rateRef, `%${search}%`),
-          ilike(icdHaulageRates.rateName, `%${search}%`),
-          ilike(icdHaulageRates.carrierName, `%${search}%`)
+          ilike(icdHaulageRates.rateRef, `%${escapeIlike(search)}%`),
+          ilike(icdHaulageRates.rateName, `%${escapeIlike(search)}%`),
+          ilike(icdHaulageRates.carrierName, `%${escapeIlike(search)}%`)
         )!
       );
     }
@@ -41,15 +43,16 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(icdHaulageRates.status, status));
     }
 
-    if (cursor) {
-      conditions.push(lt(icdHaulageRates.createdAt, new Date(cursor)));
+    const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) {
+      conditions.push(cursorCondition(icdHaulageRates.createdAt, icdHaulageRates.id, parsedCursor));
     }
 
     const results = await db
       .select()
       .from(icdHaulageRates)
       .where(and(...conditions))
-      .orderBy(desc(icdHaulageRates.createdAt))
+      .orderBy(desc(icdHaulageRates.createdAt), desc(icdHaulageRates.id))
       .limit(limit + 1);
 
     const hasMore = results.length > limit;
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data,
       meta: {
-        cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined,
+        cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined,
         hasMore,
       },
     });
@@ -78,8 +81,8 @@ export async function POST(request: NextRequest) {
     if (!(await hasPermission(user.id, user.tenantId, "intermodal:create")))
       return forbiddenResponse();
 
-    const csrf = request.headers.get("x-csrf-token");
-    if (!csrf) return NextResponse.json({ error: { code: "CSRF_MISSING", message: "CSRF token required" } }, { status: 403 });
+    const csrfError = validateCsrfToken(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const parsed = createHaulageRateSchema.safeParse(body);
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "haulage-rates", entityId: record?.id, module: "intermodal-icd-operations", newData: record as Record<string, unknown>, request });
+    void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "haulage-rates", entityId: record.id, module: "intermodal-icd-operations", newData: record as Record<string, unknown>, request });
 
     return NextResponse.json({ data: record }, { status: 201 });
   } catch (error) {

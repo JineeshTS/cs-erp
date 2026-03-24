@@ -63,9 +63,14 @@ export const aiChatMessages = pgTable(
     fileAttachments: jsonb("file_attachments"),
     agentAction: jsonb("agent_action"),
     tokensUsed: integer("tokens_used"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("ai_chat_messages_tenant_id_idx").on(table.tenantId),

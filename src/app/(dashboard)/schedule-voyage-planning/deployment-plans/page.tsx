@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { svpDeploymentPlans } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function DeploymentPlansListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function DeploymentPlansListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(svpDeploymentPlans.planRef, `%${search}%`),
-        ilike(svpDeploymentPlans.vesselName, `%${search}%`)
+        ilike(svpDeploymentPlans.planRef, `%${escapeIlike(search)}%`),
+        ilike(svpDeploymentPlans.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(svpDeploymentPlans.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(svpDeploymentPlans.createdAt, svpDeploymentPlans.id, parsedCursor));
 
   const data = await db.select().from(svpDeploymentPlans)
     .where(and(...conditions))
-    .orderBy(desc(svpDeploymentPlans.createdAt))
+    .orderBy(desc(svpDeploymentPlans.createdAt), desc(svpDeploymentPlans.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

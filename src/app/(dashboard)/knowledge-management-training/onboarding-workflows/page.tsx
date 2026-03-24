@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtOnboardingWorkflows } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function OnboardingWorkflowsListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function OnboardingWorkflowsListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtOnboardingWorkflows.workflowRef, `%${search}%`),
-        ilike(kmtOnboardingWorkflows.employeeName, `%${search}%`)
+        ilike(kmtOnboardingWorkflows.workflowRef, `%${escapeIlike(search)}%`),
+        ilike(kmtOnboardingWorkflows.employeeName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtOnboardingWorkflows.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtOnboardingWorkflows.createdAt, kmtOnboardingWorkflows.id, parsedCursor));
 
   const data = await db.select().from(kmtOnboardingWorkflows)
     .where(and(...conditions))
-    .orderBy(desc(kmtOnboardingWorkflows.createdAt))
+    .orderBy(desc(kmtOnboardingWorkflows.createdAt), desc(kmtOnboardingWorkflows.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

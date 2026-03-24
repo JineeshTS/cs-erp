@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import { kmtLessonsLearned } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LessonsLearnedListPage({
   searchParams,
 }: {
@@ -34,16 +36,17 @@ export default async function LessonsLearnedListPage({
   if (search) {
     conditions.push(
       or(
-        ilike(kmtLessonsLearned.lessonRef, `%${search}%`),
-        ilike(kmtLessonsLearned.title, `%${search}%`)
+        ilike(kmtLessonsLearned.lessonRef, `%${escapeIlike(search)}%`),
+        ilike(kmtLessonsLearned.title, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(kmtLessonsLearned.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(kmtLessonsLearned.createdAt, kmtLessonsLearned.id, parsedCursor));
 
   const data = await db.select().from(kmtLessonsLearned)
     .where(and(...conditions))
-    .orderBy(desc(kmtLessonsLearned.createdAt))
+    .orderBy(desc(kmtLessonsLearned.createdAt), desc(kmtLessonsLearned.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

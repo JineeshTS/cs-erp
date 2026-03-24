@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   vpeSpeedConsumptions,
   vpeCiiRatings,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function VesselPerformanceEfficiencyPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function VesselPerformanceEfficiencyPage({
 
   const [draftSpeedConsumptions, draftCiiRatings, draftEexiCompliances, draftNoonReports, draftVoyagePerformances, draftWeatherRoutings, draftCarbonEmissions, draftFuelBenchmarks] =
     await Promise.all([
-      db.select({ id: vpeSpeedConsumptions.id }).from(vpeSpeedConsumptions)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeSpeedConsumptions)
         .where(and(eq(vpeSpeedConsumptions.tenantId, session.tenantId), isNull(vpeSpeedConsumptions.deletedAt), eq(vpeSpeedConsumptions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeCiiRatings.id }).from(vpeCiiRatings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeCiiRatings)
         .where(and(eq(vpeCiiRatings.tenantId, session.tenantId), isNull(vpeCiiRatings.deletedAt), eq(vpeCiiRatings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeEexiCompliances.id }).from(vpeEexiCompliances)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeEexiCompliances)
         .where(and(eq(vpeEexiCompliances.tenantId, session.tenantId), isNull(vpeEexiCompliances.deletedAt), eq(vpeEexiCompliances.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeNoonReports.id }).from(vpeNoonReports)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeNoonReports)
         .where(and(eq(vpeNoonReports.tenantId, session.tenantId), isNull(vpeNoonReports.deletedAt), eq(vpeNoonReports.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeVoyagePerformances.id }).from(vpeVoyagePerformances)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeVoyagePerformances)
         .where(and(eq(vpeVoyagePerformances.tenantId, session.tenantId), isNull(vpeVoyagePerformances.deletedAt), eq(vpeVoyagePerformances.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeWeatherRoutings.id }).from(vpeWeatherRoutings)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeWeatherRoutings)
         .where(and(eq(vpeWeatherRoutings.tenantId, session.tenantId), isNull(vpeWeatherRoutings.deletedAt), eq(vpeWeatherRoutings.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeCarbonEmissions.id }).from(vpeCarbonEmissions)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeCarbonEmissions)
         .where(and(eq(vpeCarbonEmissions.tenantId, session.tenantId), isNull(vpeCarbonEmissions.deletedAt), eq(vpeCarbonEmissions.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: vpeFuelBenchmarks.id }).from(vpeFuelBenchmarks)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(vpeFuelBenchmarks)
         .where(and(eq(vpeFuelBenchmarks.tenantId, session.tenantId), isNull(vpeFuelBenchmarks.deletedAt), eq(vpeFuelBenchmarks.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function VesselPerformanceEfficiencyPage({
   if (search) {
     conditions.push(
       or(
-        ilike(vpeSpeedConsumptions.consumptionRef, `%${search}%`),
-        ilike(vpeSpeedConsumptions.vesselName, `%${search}%`)
+        ilike(vpeSpeedConsumptions.consumptionRef, `%${escapeIlike(search)}%`),
+        ilike(vpeSpeedConsumptions.vesselName, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(vpeSpeedConsumptions.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(vpeSpeedConsumptions.createdAt, vpeSpeedConsumptions.id, parsedCursor));
 
   const data = await db.select().from(vpeSpeedConsumptions)
     .where(and(...conditions))
-    .orderBy(desc(vpeSpeedConsumptions.createdAt))
+    .orderBy(desc(vpeSpeedConsumptions.createdAt), desc(vpeSpeedConsumptions.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -16,7 +16,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   lrmTeuMaximizations,
   lrmCargoMixes,
@@ -29,6 +29,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function LinerRevenueManagementPage({
   searchParams,
 }: {
@@ -49,30 +51,30 @@ export default async function LinerRevenueManagementPage({
 
   const [draftTeuMaximizations, draftCargoMixes, draftDemandForecasts, draftFreightContracts, draftLeakageDetections, draftRateIntegrities, draftRevenueAccruals, draftMaximizationEngines] =
     await Promise.all([
-      db.select({ id: lrmTeuMaximizations.id }).from(lrmTeuMaximizations)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmTeuMaximizations)
         .where(and(eq(lrmTeuMaximizations.tenantId, session.tenantId), isNull(lrmTeuMaximizations.deletedAt), eq(lrmTeuMaximizations.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmCargoMixes.id }).from(lrmCargoMixes)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmCargoMixes)
         .where(and(eq(lrmCargoMixes.tenantId, session.tenantId), isNull(lrmCargoMixes.deletedAt), eq(lrmCargoMixes.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmDemandForecasts.id }).from(lrmDemandForecasts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmDemandForecasts)
         .where(and(eq(lrmDemandForecasts.tenantId, session.tenantId), isNull(lrmDemandForecasts.deletedAt), eq(lrmDemandForecasts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmFreightContracts.id }).from(lrmFreightContracts)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmFreightContracts)
         .where(and(eq(lrmFreightContracts.tenantId, session.tenantId), isNull(lrmFreightContracts.deletedAt), eq(lrmFreightContracts.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmLeakageDetections.id }).from(lrmLeakageDetections)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmLeakageDetections)
         .where(and(eq(lrmLeakageDetections.tenantId, session.tenantId), isNull(lrmLeakageDetections.deletedAt), eq(lrmLeakageDetections.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmRateIntegrities.id }).from(lrmRateIntegrities)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmRateIntegrities)
         .where(and(eq(lrmRateIntegrities.tenantId, session.tenantId), isNull(lrmRateIntegrities.deletedAt), eq(lrmRateIntegrities.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmRevenueAccruals.id }).from(lrmRevenueAccruals)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmRevenueAccruals)
         .where(and(eq(lrmRevenueAccruals.tenantId, session.tenantId), isNull(lrmRevenueAccruals.deletedAt), eq(lrmRevenueAccruals.status, "draft")))
-        .then((r) => r.length),
-      db.select({ id: lrmMaximizationEngines.id }).from(lrmMaximizationEngines)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(lrmMaximizationEngines)
         .where(and(eq(lrmMaximizationEngines.tenantId, session.tenantId), isNull(lrmMaximizationEngines.deletedAt), eq(lrmMaximizationEngines.status, "draft")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -83,16 +85,17 @@ export default async function LinerRevenueManagementPage({
   if (search) {
     conditions.push(
       or(
-        ilike(lrmTeuMaximizations.strategyRef, `%${search}%`),
-        ilike(lrmTeuMaximizations.tradeLane, `%${search}%`)
+        ilike(lrmTeuMaximizations.strategyRef, `%${escapeIlike(search)}%`),
+        ilike(lrmTeuMaximizations.tradeLane, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(lrmTeuMaximizations.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(lrmTeuMaximizations.createdAt, lrmTeuMaximizations.id, parsedCursor));
 
   const data = await db.select().from(lrmTeuMaximizations)
     .where(and(...conditions))
-    .orderBy(desc(lrmTeuMaximizations.createdAt))
+    .orderBy(desc(lrmTeuMaximizations.createdAt), desc(lrmTeuMaximizations.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

@@ -8,6 +8,8 @@ import { eq, and, isNull, desc, lt, ilike } from "drizzle-orm";
 import { csoKnowledgeArticles } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function KnowledgeArticlesPage({
   searchParams,
 }: {
@@ -34,15 +36,16 @@ export default async function KnowledgeArticlesPage({
     isNull(csoKnowledgeArticles.deletedAt),
   ];
   if (search) {
-    conditions.push(ilike(csoKnowledgeArticles.title, `%${search}%`));
+    conditions.push(ilike(csoKnowledgeArticles.title, `%${escapeIlike(search)}%`));
   }
-  if (cursor) conditions.push(lt(csoKnowledgeArticles.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(csoKnowledgeArticles.createdAt, csoKnowledgeArticles.id, parsedCursor));
 
   const data = await db
     .select()
     .from(csoKnowledgeArticles)
     .where(and(...conditions))
-    .orderBy(desc(csoKnowledgeArticles.createdAt))
+    .orderBy(desc(csoKnowledgeArticles.createdAt), desc(csoKnowledgeArticles.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;

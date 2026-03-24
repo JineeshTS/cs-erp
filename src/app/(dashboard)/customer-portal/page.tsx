@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, ilike, or } from "drizzle-orm";
 import {
   cspPortalBookings,
   cspShipmentTracking,
@@ -20,6 +20,8 @@ import {
 } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
+import { escapeIlike } from "@/lib/validation";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export default async function CustomerPortalPage({
   searchParams,
 }: {
@@ -40,18 +42,18 @@ export default async function CustomerPortalPage({
 
   const [activeBookings, inTransit, availableDocs, unpaidInvoices] =
     await Promise.all([
-      db.select({ id: cspPortalBookings.id }).from(cspPortalBookings)
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cspPortalBookings)
         .where(and(eq(cspPortalBookings.tenantId, session.tenantId), isNull(cspPortalBookings.deletedAt), eq(cspPortalBookings.status, "confirmed")))
-        .then((r) => r.length),
-      db.select({ id: cspShipmentTracking.id }).from(cspShipmentTracking)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cspShipmentTracking)
         .where(and(eq(cspShipmentTracking.tenantId, session.tenantId), isNull(cspShipmentTracking.deletedAt), eq(cspShipmentTracking.currentStatus, "in_transit")))
-        .then((r) => r.length),
-      db.select({ id: cspPortalDocuments.id }).from(cspPortalDocuments)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cspPortalDocuments)
         .where(and(eq(cspPortalDocuments.tenantId, session.tenantId), isNull(cspPortalDocuments.deletedAt), eq(cspPortalDocuments.status, "available")))
-        .then((r) => r.length),
-      db.select({ id: cspPortalInvoices.id }).from(cspPortalInvoices)
+        .then((r) => r[0]?.value ?? 0),
+      db.select({ value: sql<number>`cast(count(*) as int)` }).from(cspPortalInvoices)
         .where(and(eq(cspPortalInvoices.tenantId, session.tenantId), isNull(cspPortalInvoices.deletedAt), eq(cspPortalInvoices.status, "issued")))
-        .then((r) => r.length),
+        .then((r) => r[0]?.value ?? 0),
     ]);
 
   const conditions = [
@@ -62,17 +64,18 @@ export default async function CustomerPortalPage({
   if (search) {
     conditions.push(
       or(
-        ilike(cspPortalBookings.bookingRef, `%${search}%`),
-        ilike(cspPortalBookings.customerName, `%${search}%`),
-        ilike(cspPortalBookings.originPort, `%${search}%`)
+        ilike(cspPortalBookings.bookingRef, `%${escapeIlike(search)}%`),
+        ilike(cspPortalBookings.customerName, `%${escapeIlike(search)}%`),
+        ilike(cspPortalBookings.originPort, `%${escapeIlike(search)}%`)
       )!
     );
   }
-  if (cursor) conditions.push(lt(cspPortalBookings.createdAt, new Date(cursor)));
+  const parsedCursor = parseCompoundCursor(cursor);
+    if (parsedCursor) conditions.push(cursorCondition(cspPortalBookings.createdAt, cspPortalBookings.id, parsedCursor));
 
   const data = await db.select().from(cspPortalBookings)
     .where(and(...conditions))
-    .orderBy(desc(cspPortalBookings.createdAt))
+    .orderBy(desc(cspPortalBookings.createdAt), desc(cspPortalBookings.id))
     .limit(limit + 1);
 
   const hasMore = data.length > limit;
