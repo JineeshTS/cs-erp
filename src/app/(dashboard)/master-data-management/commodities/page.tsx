@@ -4,126 +4,37 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import { commodities } from "@/db/schema";
-import { Badge } from "@/components/ui/badge";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
 
-export default async function CommoditiesListPage() {
+const columns: DataColumn[] = [
+  { key: "hsCode", header: "HS Code", width: "w-28" },
+  { key: "description", header: "Description" },
+  { key: "category", header: "Category", width: "w-32" },
+  { key: "status", header: "Status", width: "w-24" },
+];
+
+export default async function CommoditiesPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
-    redirect("/master-data-management");
-
-  const canCreate = await hasPermission(
-    session.id,
-    session.tenantId,
-    "masterdata:create"
-  );
-
-  const data = await db
-    .select()
-    .from(commodities)
-    .where(
-      and(
-        eq(commodities.tenantId, session.tenantId),
-        isNull(commodities.deletedAt)
-      )
-    )
-    .orderBy(desc(commodities.createdAt))
-    .limit(50);
-
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read"))) redirect("/master-data-management");
+  const canCreate = await hasPermission(session.id, session.tenantId, "masterdata:create");
+  const params = await searchParams;
+  const q = params.q?.trim() || "";
+  const data = await db.select().from(commodities).where(and(eq(commodities.tenantId, session.tenantId), isNull(commodities.deletedAt), q ? or(ilike(commodities.hsCode, `%${q}%`), ilike(commodities.description, `%${q}%`)) : undefined, params.status ? eq(commodities.status, params.status) : undefined)).orderBy(desc(commodities.createdAt)).limit(50);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Commodities</h1>
-          <p className="text-sm text-gray-500">
-            Manage commodity and HS code master data
-          </p>
-        </div>
-        {canCreate && (
-          <Link
-            href="/master-data-management/commodities/new"
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Commodity
-          </Link>
-        )}
+        <div><h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-gray-100">Commodities</h1><p className="mt-1 text-sm text-slate-500 dark:text-gray-400">HS codes and cargo classification ({data.length} records)</p></div>
+        {canCreate && <Link href="/master-data-management/commodities/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"><Plus className="h-4 w-4" /> Add Commodity</Link>}
       </div>
-
-      {data.length === 0 ? (
-        <div className="rounded-lg border bg-white px-8 py-12 text-center">
-          <p className="text-gray-500">No commodities found.</p>
-          {canCreate && (
-            <Link
-              href="/master-data-management/commodities/new"
-              className="mt-3 inline-block text-sm text-blue-600 hover:underline"
-            >
-              Add your first commodity
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
-                  HS Code
-                </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
-                  Description
-                </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
-                  Category
-                </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
-                  Hazard Class
-                </th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((commodity) => (
-                <tr
-                  key={commodity.id}
-                  className="border-b last:border-0 hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/master-data-management/commodities/${commodity.id}`}
-                      className="font-medium text-gray-900 hover:underline"
-                    >
-                      {commodity.hsCode}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {commodity.shortDescription || commodity.description}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {commodity.category || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {commodity.hazardClass || "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      variant={
-                        commodity.status === "active" ? "success" : "secondary"
-                      }
-                    >
-                      {commodity.status}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <form className="flex flex-wrap items-center gap-3">
+        <input type="text" name="q" defaultValue={q} placeholder="Search by HS code or description..." className="h-10 w-full max-w-sm rounded-lg border border-slate-200 bg-white px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
+        <button type="submit" className="h-10 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300">Search</button>
+        {q && <Link href="/master-data-management/commodities" className="text-sm text-slate-500 hover:text-slate-700">Clear</Link>}
+      </form>
+      <DataTable columns={columns} data={data as Record<string, unknown>[]} rowLink={(row) => `/master-data-management/commodities/${row.id}`} emptyMessage={q ? `No commodities matching "${q}"` : "No commodities found"} emptyAction={canCreate ? { label: "Add Commodity", href: "/master-data-management/commodities/new" } : undefined} />
     </div>
   );
 }

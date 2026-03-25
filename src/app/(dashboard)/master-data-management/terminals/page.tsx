@@ -4,104 +4,38 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc } from "drizzle-orm";
-import { terminals, ports } from "@/db/schema";
-import { Badge } from "@/components/ui/badge";
+import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
+import { terminals } from "@/db/schema";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
 
-export default async function TerminalsListPage() {
+const columns: DataColumn[] = [
+  { key: "name", header: "Terminal Name" },
+  { key: "code", header: "Code", width: "w-24" },
+  { key: "terminalType", header: "Type", width: "w-28" },
+  { key: "operatorName", header: "Operator", hideOnMobile: true },
+  { key: "status", header: "Status", width: "w-24" },
+];
+
+export default async function TerminalsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read")))
-    redirect("/master-data-management");
-
+  if (!(await hasPermission(session.id, session.tenantId, "masterdata:read"))) redirect("/master-data-management");
   const canCreate = await hasPermission(session.id, session.tenantId, "masterdata:create");
-
-  const data = await db
-    .select({
-      id: terminals.id,
-      name: terminals.name,
-      code: terminals.code,
-      terminalType: terminals.terminalType,
-      status: terminals.status,
-      operatorName: terminals.operatorName,
-      capacity: terminals.capacity,
-      portName: ports.name,
-      portId: terminals.portId,
-      createdAt: terminals.createdAt,
-    })
-    .from(terminals)
-    .leftJoin(ports, eq(terminals.portId, ports.id))
-    .where(and(eq(terminals.tenantId, session.tenantId), isNull(terminals.deletedAt)))
-    .orderBy(desc(terminals.createdAt))
-    .limit(50);
-
+  const params = await searchParams;
+  const q = params.q?.trim() || "";
+  const data = await db.select().from(terminals).where(and(eq(terminals.tenantId, session.tenantId), isNull(terminals.deletedAt), q ? or(ilike(terminals.name, `%${q}%`), ilike(terminals.code, `%${q}%`)) : undefined)).orderBy(desc(terminals.createdAt)).limit(50);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Terminals</h1>
-          <p className="text-sm text-gray-500">Manage port terminal facilities</p>
-        </div>
-        {canCreate && (
-          <Link
-            href="/master-data-management/terminals/new"
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Terminal
-          </Link>
-        )}
+        <div><h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-gray-100">Terminals</h1><p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Port terminals and berth management ({data.length} records)</p></div>
+        {canCreate && <Link href="/master-data-management/terminals/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"><Plus className="h-4 w-4" /> Add Terminal</Link>}
       </div>
-
-      {data.length === 0 ? (
-        <div className="rounded-lg border bg-white px-8 py-12 text-center">
-          <p className="text-gray-500">No terminals found.</p>
-          {canCreate && (
-            <Link
-              href="/master-data-management/terminals/new"
-              className="mt-3 inline-block text-sm text-blue-600 hover:underline"
-            >
-              Add your first terminal
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-4 py-3 text-start font-medium text-gray-500">Name</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">Code</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">Port</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">Type</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((terminal) => (
-                <tr key={terminal.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/master-data-management/terminals/${terminal.id}`}
-                      className="font-medium text-gray-900 hover:underline"
-                    >
-                      {terminal.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{terminal.code || "-"}</td>
-                  <td className="px-4 py-3 text-gray-600">{terminal.portName || "-"}</td>
-                  <td className="px-4 py-3 text-gray-600">{terminal.terminalType}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={terminal.status === "active" ? "success" : "secondary"}>
-                      {terminal.status}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <form className="flex flex-wrap items-center gap-3">
+        <input type="text" name="q" defaultValue={q} placeholder="Search by name or code..." className="h-10 w-full max-w-sm rounded-lg border border-slate-200 bg-white px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
+        <button type="submit" className="h-10 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300">Search</button>
+        {q && <Link href="/master-data-management/terminals" className="text-sm text-slate-500 hover:text-slate-700">Clear</Link>}
+      </form>
+      <DataTable columns={columns} data={data as Record<string, unknown>[]} rowLink={(row) => `/master-data-management/terminals/${row.id}`} emptyMessage="No terminals found" emptyAction={canCreate ? { label: "Add Terminal", href: "/master-data-management/terminals/new" } : undefined} />
     </div>
   );
 }
