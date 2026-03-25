@@ -8,6 +8,7 @@ import { proformaTemplates, proformaPortCalls, generatedVoyages } from "@/db/sch
 import { eq, and, isNull, asc, desc } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { TemplateActions } from "./template-actions";
+import { PortRotationEditor } from "./port-rotation-editor";
 
 export default async function TemplateDetailPage({
   params,
@@ -90,48 +91,48 @@ export default async function TemplateDetailPage({
         </div>
       </div>
 
-      {/* Port Rotation */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Port Rotation (Proforma)</h2>
-        </div>
-        {portCalls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 py-12 dark:border-gray-600">
-            <p className="text-sm text-slate-500 dark:text-gray-400">No port rotation defined yet</p>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-slate-200 dark:border-gray-700 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-slate-50 dark:bg-gray-800/50">
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Seq</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Port</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Code</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Distance (nm)</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Speed (kn)</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Steaming (hrs)</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Port Stay (hrs)</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Day Offset</th>
-                </tr>
-              </thead>
-              <tbody>
-                {portCalls.map((pc) => (
-                  <tr key={pc.id} className="border-b last:border-0">
-                    <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-gray-100">{pc.sequence}</td>
-                    <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-gray-100">{pc.portName}</td>
-                    <td className="px-3 py-2.5 text-slate-600 dark:text-gray-400">{pc.portCode}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.distanceNm || "—"}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.plannedSpeedKnots || "—"}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.steamingHours || "—"}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.portStayHours}</td>
-                    <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">Day {pc.dayOffset}</td>
+      {/* Port Rotation — editable if user has create permission */}
+      {canCreate ? (
+        <PortRotationEditor templateId={id} initialPortCalls={portCalls} />
+      ) : (
+        <div>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-gray-100">Port Rotation (Proforma)</h2>
+          {portCalls.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 py-12 dark:border-gray-600">
+              <p className="text-sm text-slate-500 dark:text-gray-400">No port rotation defined yet</p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-slate-200 dark:border-gray-700 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-slate-50 dark:bg-gray-800/50">
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Seq</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Port</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Code</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Distance (nm)</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Steaming (hrs)</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Port Stay (hrs)</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase text-slate-500">Day Offset</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {portCalls.map((pc) => (
+                    <tr key={pc.id} className="border-b last:border-0">
+                      <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-gray-100">{pc.sequence}</td>
+                      <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-gray-100">{pc.portName}</td>
+                      <td className="px-3 py-2.5 text-slate-600 dark:text-gray-400">{pc.portCode}</td>
+                      <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.distanceNm || "—"}</td>
+                      <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.steamingHours || "—"}</td>
+                      <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">{pc.portStayHours}</td>
+                      <td className="px-3 py-2.5 text-right text-slate-600 dark:text-gray-400">Day {pc.dayOffset}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Generate Schedule Button + Voyages */}
       {canCreate && portCalls.length >= 2 && (

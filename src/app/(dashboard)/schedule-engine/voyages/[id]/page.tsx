@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { generatedVoyages, voyagePortCalls, proformaTemplates } from "@/db/schema/schedule-engine";
 import { eq, and, isNull, asc } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
+import { VoyageCosting } from "./voyage-costing";
 
 function formatDateTime(d: Date | string | null): string {
   if (!d) return "—";
@@ -155,6 +156,9 @@ export default async function VoyageDetailPage({
           </table>
         </div>
       </div>
+
+      {/* Voyage Costing */}
+      <VoyageCosting voyageId={id} />
     </div>
   );
 }
