@@ -3,15 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-// INLINE: bypass Turbopack stale import cache (CSERP-001)
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  for (const c of document.cookie.split("; ")) {
-    const [n, ...v] = c.split("=");
-    if (n === "cs_csrf") return decodeURIComponent(v.join("="));
-  }
-  return "";
-}
+import { getCsrfToken } from "@/lib/client/csrf";
 import {
   ArrowLeft,
   Bot,

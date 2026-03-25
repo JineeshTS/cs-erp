@@ -12,6 +12,7 @@ import {
   Settings,
   Workflow,
   MapPin,
+  Calendar,
 } from "lucide-react";
 
 export interface ModuleCard {
@@ -263,6 +264,13 @@ export const CATEGORIES: NavCategory[] = [
         href: "/chartering-vessel-management",
         icon: FileText,
         permissionPrefix: "chartering:",
+      },
+      {
+        title: "Schedule Engine",
+        description: "Proforma templates, schedule generation, voyage management",
+        href: "/schedule-engine",
+        icon: Calendar,
+        permissionPrefix: "schedule:",
       },
       {
         title: "Vessel Schedules",

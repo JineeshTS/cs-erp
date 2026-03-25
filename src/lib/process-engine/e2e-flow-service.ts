@@ -228,6 +228,24 @@ export async function advanceFlowStep(
     const currentStepNum = instance.currentStepNumber;
     const now = new Date();
 
+    // ERP-006/ISS-027: Block direct advancement of gate or human_form steps.
+    // These require gate resolution or step-complete API, not the PATCH advance endpoint.
+    const [currentStep] = await tx
+      .select({ status: peE2eStepInstances.status })
+      .from(peE2eStepInstances)
+      .where(
+        and(
+          eq(peE2eStepInstances.flowInstanceId, flowInstanceId),
+          eq(peE2eStepInstances.stepNumber, currentStepNum),
+          eq(peE2eStepInstances.tenantId, tenantId)
+        )
+      )
+      .limit(1);
+
+    if (currentStep && (currentStep.status === "waiting_gate" || currentStep.status === "waiting_human")) {
+      return null; // Must use gate-resolve or step-complete API instead
+    }
+
     // Complete current step
     const [completedStep] = await tx
       .update(peE2eStepInstances)
