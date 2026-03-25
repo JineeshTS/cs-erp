@@ -9,6 +9,7 @@ import { updateBillOfLadingSchema } from "@/lib/operations-documentation/validat
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { guardStatusTransition } from "@/lib/engines/status-guard";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -48,26 +49,63 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Fetch existing record to detect status transitions
     const [existing] = await db.select().from(odmBillsOfLading).where(and(eq(odmBillsOfLading.id, id), eq(odmBillsOfLading.tenantId, user.tenantId), isNull(odmBillsOfLading.deletedAt))).limit(1);
 
+    if (!existing) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Bill of lading not found" } }, { status: 404 });
+
+    // ERP-112: Enforce BL status state machine (draft→verified→approved→released→surrendered)
+    if (parsed.data.blStatus) {
+      const guard = guardStatusTransition("bill_of_lading", existing.blStatus || "draft", parsed.data.blStatus);
+      if (guard) return guard;
+
+      // Auto-set timestamps on status transitions
+      if (parsed.data.blStatus === "released") {
+        (parsed.data as Record<string, unknown>).releasedAt = new Date();
+      } else if (parsed.data.blStatus === "surrendered") {
+        (parsed.data as Record<string, unknown>).surrenderedAt = new Date();
+      }
+    }
+
+    // Block editing after release (except status transitions to surrendered/accomplished)
+    if (existing.blStatus === "released" || existing.blStatus === "surrendered" || existing.blStatus === "accomplished") {
+      const editableAfterRelease = ["blStatus"];
+      const nonStatusFields = Object.keys(parsed.data).filter(k => !editableAfterRelease.includes(k));
+      if (nonStatusFields.length > 0) {
+        return NextResponse.json(
+          { error: { code: "BL_LOCKED", message: `BL is ${existing.blStatus} — only status changes are allowed after release` } },
+          { status: 422 }
+        );
+      }
+    }
+
     const [updated] = await db.update(odmBillsOfLading).set({ ...parsed.data }).where(and(eq(odmBillsOfLading.id, id), eq(odmBillsOfLading.tenantId, user.tenantId), isNull(odmBillsOfLading.deletedAt))).returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "update", entityType: "bills-of-lading", entityId: existing.id, module: "operations-documentation", previousData: null, newData: existing as Record<string, unknown>, request });
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Bill of lading not found" } }, { status: 404 });
 
-    // Emit BL_SURRENDERED when status changes to surrendered
-    if (existing && parsed.data.blStatus === "surrendered" && existing.blStatus !== "surrendered") {
-      eventBus.emit({
-        type: "BL_SURRENDERED",
-        tenantId: user.tenantId,
-        userId: user.id,
-        entityId: id,
-        entityType: "bill_of_lading",
-        timestamp: new Date(),
-        data: {
-          blNumber: updated.blNumber,
-          bookingId: updated.bookingReference ?? "",
-        },
-      });
+    // Emit events on BL status transitions
+    if (existing && parsed.data.blStatus && parsed.data.blStatus !== existing.blStatus) {
+      const eventType =
+        parsed.data.blStatus === "verified" ? "BL_VERIFIED" :
+        parsed.data.blStatus === "approved" ? "BL_APPROVED" :
+        parsed.data.blStatus === "released" ? "BL_RELEASED" :
+        parsed.data.blStatus === "surrendered" ? "BL_SURRENDERED" : null;
+
+      if (eventType) {
+        eventBus.emit({
+          type: eventType,
+          tenantId: user.tenantId,
+          userId: user.id,
+          entityId: id,
+          entityType: "bill_of_lading",
+          timestamp: new Date(),
+          data: {
+            blNumber: updated.blNumber,
+            bookingId: updated.bookingReference ?? "",
+            previousStatus: existing.blStatus,
+            newStatus: parsed.data.blStatus,
+          },
+        });
+      }
     }
 
     return NextResponse.json({ data: updated });

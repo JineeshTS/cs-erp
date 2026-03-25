@@ -10,6 +10,7 @@ import { updateBookingSchema } from "@/lib/customer-portal/validation";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { guardStatusTransition } from "@/lib/engines/status-guard";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -58,18 +59,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (existing.status !== "draft") {
-      return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "Only draft bookings can be updated" } },
-        { status: 422 }
-      );
-    }
-
     const body = await request.json();
     const parsed = updateBookingSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } },
+        { status: 422 }
+      );
+    }
+
+    // ERP-115: Enforce booking state machine (draft→confirmed→in_transit→delivered→closed)
+    if (parsed.data.status) {
+      const guard = guardStatusTransition("booking", existing.status || "draft", parsed.data.status);
+      if (guard) return guard;
+    }
+
+    // Block field edits on non-draft bookings (only status changes allowed)
+    if (existing.status !== "draft" && Object.keys(parsed.data).some(k => k !== "status")) {
+      return NextResponse.json(
+        { error: { code: "BOOKING_LOCKED", message: `Booking is ${existing.status} — only status changes allowed` } },
         { status: 422 }
       );
     }
