@@ -9,9 +9,9 @@ import { tariffCodes } from "@/db/schema";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 
 const columns: DataColumn[] = [
-  { key: "tariffCode", header: "Tariff Code", width: "w-28" },
+  { key: "code", header: "Tariff Code", width: "w-28" },
   { key: "description", header: "Description" },
-  { key: "chargeType", header: "Charge Type", width: "w-28" },
+  { key: "rateType", header: "Rate Type", width: "w-28" },
   { key: "rateAmount", header: "Rate", width: "w-24", render: (v) => v ? `$${Number(v).toLocaleString()}` : "—" },
   { key: "currency", header: "Currency", width: "w-20" },
   { key: "status", header: "Status", width: "w-24" },
@@ -24,7 +24,7 @@ export default async function TariffsPage({ searchParams }: { searchParams: Prom
   const canCreate = await hasPermission(session.id, session.tenantId, "masterdata:create");
   const params = await searchParams;
   const q = params.q?.trim() || "";
-  const data = await db.select().from(tariffCodes).where(and(eq(tariffCodes.tenantId, session.tenantId), isNull(tariffCodes.deletedAt), q ? or(ilike(tariffCodes.tariffCode, `%${q}%`), ilike(tariffCodes.description, `%${q}%`)) : undefined)).orderBy(desc(tariffCodes.createdAt)).limit(50);
+  const data = await db.select().from(tariffCodes).where(and(eq(tariffCodes.tenantId, session.tenantId), isNull(tariffCodes.deletedAt), q ? or(ilike(tariffCodes.code, `%${q}%`), ilike(tariffCodes.description, `%${q}%`)) : undefined)).orderBy(desc(tariffCodes.createdAt)).limit(50);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
