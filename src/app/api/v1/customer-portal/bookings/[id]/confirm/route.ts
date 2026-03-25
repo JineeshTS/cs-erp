@@ -7,6 +7,7 @@ import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/
 import { hasPermission } from "@/lib/rbac";
 import { getBooking } from "@/lib/customer-portal/service";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateDraftBL } from "@/lib/engines/transaction-chain";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -53,7 +54,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "confirm", entityId: updated.id, module: "customer-portal", newData: updated as Record<string, unknown>, request });
-    return NextResponse.json({ data: updated });
+
+    // Transaction chain: auto-generate draft BL on booking confirmation
+    let blResult: { blId: string; blNumber: string } | null = null;
+    try {
+      blResult = await generateDraftBL({
+        tenantId: user.tenantId,
+        bookingId: updated.id,
+        bookingRef: updated.bookingRef || updated.id.slice(0, 8),
+        customerName: updated.customerName || "Unknown",
+        originPort: updated.originPort || undefined,
+        destinationPort: updated.destinationPort || undefined,
+        userId: user.id,
+      });
+    } catch (err) {
+      console.error("[confirm] Failed to auto-generate BL:", err);
+      // Non-fatal — booking is confirmed even if BL generation fails
+    }
+
+    return NextResponse.json({
+      data: {
+        ...updated,
+        generatedBL: blResult,
+      },
+    });
   } catch (error) {
     console.error("Failed to confirm portal booking:", error);
     return NextResponse.json(

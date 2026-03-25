@@ -10,6 +10,7 @@ import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
 import { guardStatusTransition } from "@/lib/engines/status-guard";
+import { generateDraftInvoice } from "@/lib/engines/transaction-chain";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -82,6 +83,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Bill of lading not found" } }, { status: 404 });
 
+    // Transaction chain: auto-generate invoice when BL is released
+    let invoiceResult: { invoiceId: string; invoiceNumber: string } | null = null;
+    if (parsed.data.blStatus === "released" && existing.blStatus !== "released") {
+      try {
+        invoiceResult = await generateDraftInvoice({
+          tenantId: user.tenantId,
+          blNumber: updated.blNumber,
+          bookingRef: updated.bookingReference || undefined,
+          customerName: updated.shipperName,
+          userId: user.id,
+        });
+      } catch (err) {
+        console.error("[BL release] Failed to auto-generate invoice:", err);
+      }
+    }
+
     // Emit BL_SURRENDERED when status changes to surrendered
     if (existing && parsed.data.blStatus === "surrendered" && existing.blStatus !== "surrendered") {
       eventBus.emit({
@@ -98,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    return NextResponse.json({ data: updated });
+    return NextResponse.json({ data: { ...updated, generatedInvoice: invoiceResult } });
   } catch (error) {
     console.error("Failed to update bill of lading:", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } }, { status: 500 });
