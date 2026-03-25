@@ -10,7 +10,6 @@ import { updateBookingSchema } from "@/lib/customer-portal/validation";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
-import { guardStatusTransition } from "@/lib/engines/status-guard";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -68,16 +67,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // ERP-115: Enforce booking state machine (draft→confirmed→in_transit→delivered→closed)
-    if (parsed.data.status) {
-      const guard = guardStatusTransition("booking", existing.status || "draft", parsed.data.status);
-      if (guard) return guard;
-    }
-
-    // Block field edits on non-draft bookings (only status changes allowed)
-    if (existing.status !== "draft" && Object.keys(parsed.data).some(k => k !== "status")) {
+    // ERP-115: Block field edits on non-draft bookings
+    if (existing.status !== "draft") {
       return NextResponse.json(
-        { error: { code: "BOOKING_LOCKED", message: `Booking is ${existing.status} — only status changes allowed` } },
+        { error: { code: "BOOKING_LOCKED", message: `Booking is ${existing.status} — use confirm/cancel endpoints to change status` } },
         { status: 422 }
       );
     }

@@ -82,30 +82,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!updated) return NextResponse.json({ error: { code: "NOT_FOUND", message: "Bill of lading not found" } }, { status: 404 });
 
-    // Emit events on BL status transitions
-    if (existing && parsed.data.blStatus && parsed.data.blStatus !== existing.blStatus) {
-      const eventType =
-        parsed.data.blStatus === "verified" ? "BL_VERIFIED" :
-        parsed.data.blStatus === "approved" ? "BL_APPROVED" :
-        parsed.data.blStatus === "released" ? "BL_RELEASED" :
-        parsed.data.blStatus === "surrendered" ? "BL_SURRENDERED" : null;
-
-      if (eventType) {
-        eventBus.emit({
-          type: eventType,
-          tenantId: user.tenantId,
-          userId: user.id,
-          entityId: id,
-          entityType: "bill_of_lading",
-          timestamp: new Date(),
-          data: {
-            blNumber: updated.blNumber,
-            bookingId: updated.bookingReference ?? "",
-            previousStatus: existing.blStatus,
-            newStatus: parsed.data.blStatus,
-          },
-        });
-      }
+    // Emit BL_SURRENDERED when status changes to surrendered
+    if (existing && parsed.data.blStatus === "surrendered" && existing.blStatus !== "surrendered") {
+      eventBus.emit({
+        type: "BL_SURRENDERED",
+        tenantId: user.tenantId,
+        userId: user.id,
+        entityId: id,
+        entityType: "bill_of_lading",
+        timestamp: new Date(),
+        data: {
+          blNumber: updated.blNumber,
+          bookingId: updated.bookingReference ?? "",
+        },
+      });
     }
 
     return NextResponse.json({ data: updated });

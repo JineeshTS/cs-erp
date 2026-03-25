@@ -104,9 +104,9 @@ export const blStateMachine: StateMachine = {
   initialState: "draft",
   terminalStates: ["accomplished", "cancelled"],
   transitions: {
-    draft: ["verified", "cancelled"],
-    verified: ["approved", "draft"], // Can go back to draft for corrections
-    approved: ["released", "verified"], // Can go back for corrections
+    draft: ["confirmed", "cancelled"],
+    confirmed: ["printed", "draft"], // Can go back to draft for corrections
+    printed: ["released", "confirmed"], // Can go back for corrections
     released: ["surrendered", "accomplished"],
     surrendered: ["accomplished"],
   },
