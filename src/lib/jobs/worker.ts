@@ -128,5 +128,11 @@ export function startWorkers() {
 
   console.log("[Jobs] Workers started: cron, notifications, import-export");
 
-  return { cronWorker, notificationWorker, importExportWorker };
+  return { cronWorker, notificationWorker, importExportWorker } satisfies WorkerHandles;
 }
+
+export type WorkerHandles = {
+  cronWorker: Worker;
+  notificationWorker: Worker;
+  importExportWorker: Worker;
+};

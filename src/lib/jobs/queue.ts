@@ -18,10 +18,10 @@ const connection = parseRedisUrl(REDIS_URL);
 // ── Queue names ──────────────────────────────────────────────────
 
 export const QUEUE_NAMES = {
-  CRON: "cs-erp:cron",
-  NOTIFICATIONS: "cs-erp:notifications",
-  IMPORT_EXPORT: "cs-erp:import-export",
-  REPORTS: "cs-erp:reports",
+  CRON: "cs-erp-cron",
+  NOTIFICATIONS: "cs-erp-notifications",
+  IMPORT_EXPORT: "cs-erp-import-export",
+  REPORTS: "cs-erp-reports",
 } as const;
 
 // ── Job types ────────────────────────────────────────────────────
