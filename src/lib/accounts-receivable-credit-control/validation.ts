@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Customer Accounts
@@ -24,7 +25,7 @@ export const createCustomerAccountSchema = z.object({
   onHold: z.boolean().optional(),
   holdReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCustomerAccountSchema = createCustomerAccountSchema.partial();
 
@@ -48,7 +49,7 @@ export const createCreditLimitSchema = z.object({
   insuranceExpiryDate: z.coerce.date().optional(),
   nextReviewDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCreditLimitSchema = createCreditLimitSchema.partial();
 
@@ -62,7 +63,7 @@ export const createAgingReportSchema = z.object({
   currency: z.string().max(3).optional(),
   filterCriteria: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgingReportSchema = createAgingReportSchema.partial();
 
@@ -85,7 +86,7 @@ export const createCashApplicationSchema = z.object({
   baseCurrencyAmount: z.number().int().optional(),
   allocations: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCashApplicationSchema = createCashApplicationSchema.partial();
 
@@ -111,7 +112,7 @@ export const createCollectionWorkflowSchema = z.object({
   promisedDate: z.coerce.date().optional(),
   promisedAmount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCollectionWorkflowSchema = createCollectionWorkflowSchema.partial();
 
@@ -134,7 +135,7 @@ export const createBadDebtProvisionSchema = z.object({
   glAccountCode: z.string().max(20).optional(),
   accountingPeriod: z.string().max(10).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBadDebtProvisionSchema = createBadDebtProvisionSchema.partial();
 
@@ -162,7 +163,7 @@ export const createPaymentPredictionSchema = z.object({
   features: z.record(z.string(), z.unknown()).optional(),
   predictionFactors: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePaymentPredictionSchema = createPaymentPredictionSchema.partial();
 
@@ -188,6 +189,6 @@ export const createCashFlowForecastSchema = z.object({
   assumptions: z.record(z.string(), z.unknown()).optional(),
   scenarioType: z.enum(["base", "optimistic", "pessimistic", "stress"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCashFlowForecastSchema = createCashFlowForecastSchema.partial();

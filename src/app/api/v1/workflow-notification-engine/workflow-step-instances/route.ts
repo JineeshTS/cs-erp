@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(wneWorkflowStepInstances.assignedTo, assignedTo));
     if (cursor)
       conditions.push(
-        lt(wneWorkflowStepInstances.createdAt, new Date(cursor))
+        cursorCondition(wneWorkflowStepInstances.createdAt, wneWorkflowStepInstances.id, parseCompoundCursor(cursor)!)
       );
 
     const results = await db
@@ -58,9 +58,7 @@ export async function GET(request: NextRequest) {
 
     const hasMore = results.length > limit;
     const data = hasMore ? results.slice(0, limit) : results;
-    const nextCursor = hasMore
-      ? data[data.length - 1].createdAt.toISOString()
-      : undefined;
+    const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
     return NextResponse.json({ data, meta: { cursor: nextCursor, hasMore } });
   } catch (err) {

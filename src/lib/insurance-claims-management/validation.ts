@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // P&I Club Policy & Correspondence
@@ -22,7 +23,7 @@ export const createPiClubPolicySchema = z.object({
   brokerName: z.string().max(255).optional(),
   brokerRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePiClubPolicySchema = createPiClubPolicySchema.partial();
 
@@ -52,7 +53,7 @@ export const createHullMachineryInsuranceSchema = z.object({
   brokerName: z.string().max(255).optional(),
   brokerRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHullMachineryInsuranceSchema = createHullMachineryInsuranceSchema.partial();
 
@@ -85,7 +86,7 @@ export const createCargoInsurancePolicySchema = z.object({
   brokerName: z.string().max(255).optional(),
   specialConditions: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoInsurancePolicySchema = createCargoInsurancePolicySchema.partial();
 
@@ -116,7 +117,7 @@ export const createSurveyAppointmentSchema = z.object({
   actualCost: z.string().optional(),
   costCurrency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSurveyAppointmentSchema = createSurveyAppointmentSchema.partial();
 
@@ -146,7 +147,7 @@ export const createClaimsRegistrationSchema = z.object({
   closedAt: z.coerce.date().optional(),
   closureReason: z.enum(["settled", "denied", "withdrawn", "time_barred"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimsRegistrationSchema = createClaimsRegistrationSchema.partial();
 
@@ -174,7 +175,7 @@ export const createClaimsRecoverySchema = z.object({
   courtJurisdiction: z.string().max(255).optional(),
   arbitrationClause: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimsRecoverySchema = createClaimsRecoverySchema.partial();
 
@@ -201,7 +202,7 @@ export const createClaimsPredictionSchema = z.object({
   generatedAt: z.coerce.date().optional(),
   expiresAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimsPredictionSchema = createClaimsPredictionSchema.partial();
 
@@ -228,6 +229,6 @@ export const createLossPreventionReportSchema = z.object({
   approvedBy: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLossPreventionReportSchema = createLossPreventionReportSchema.partial();

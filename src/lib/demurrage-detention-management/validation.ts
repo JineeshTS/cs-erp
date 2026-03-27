@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Demurrage Calculations
@@ -26,7 +27,7 @@ export const createDemurrageCalculationSchema = z.object({
   calculationBreakdown: z.record(z.string(), z.unknown()).optional(),
   autoCalculated: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDemurrageCalculationSchema = createDemurrageCalculationSchema.partial();
 
@@ -53,7 +54,7 @@ export const createFreeTimeRuleSchema = z.object({
   effectiveTo: z.coerce.date().optional(),
   priority: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFreeTimeRuleSchema = createFreeTimeRuleSchema.partial();
 
@@ -81,7 +82,7 @@ export const createDetentionTrackingSchema = z.object({
   containerCondition: z.enum(["good", "damaged", "needs_repair", "condemned"]).optional(),
   damageNotes: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDetentionTrackingSchema = createDetentionTrackingSchema.partial();
 
@@ -109,7 +110,7 @@ export const createDdmInvoiceSchema = z.object({
   dispatchMethod: z.enum(["email", "postal", "portal", "edi"]).optional(),
   customerEmail: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDdmInvoiceSchema = createDdmInvoiceSchema.partial();
 
@@ -137,7 +138,7 @@ export const createDdmDisputeSchema = z.object({
   escalationLevel: z.number().int().optional(),
   slaDeadline: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDdmDisputeSchema = createDdmDisputeSchema.partial();
 
@@ -165,7 +166,7 @@ export const createDdmWaiverSchema = z.object({
   conditions: z.string().optional(),
   expiryDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDdmWaiverSchema = createDdmWaiverSchema.partial();
 
@@ -195,7 +196,7 @@ export const createDdmPredictionSchema = z.object({
   actualOutcome: z.string().optional(),
   accuracy: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDdmPredictionSchema = createDdmPredictionSchema.partial();
 
@@ -218,6 +219,6 @@ export const createDdmNotificationSchema = z.object({
   scheduledAt: z.coerce.date().optional(),
   relatedEntityType: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDdmNotificationSchema = createDdmNotificationSchema.partial();

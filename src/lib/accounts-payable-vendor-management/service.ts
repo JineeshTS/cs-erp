@@ -10,6 +10,7 @@ import {
   apvmOcrExtractions,
   apvmSpendAnalytics,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -27,11 +28,11 @@ export async function listVendorMasters({ tenantId, search, status, cursor, limi
   const conditions = [eq(apvmVendorMasters.tenantId, tenantId), isNull(apvmVendorMasters.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorMasters.vendorName, `%${search}%`), ilike(apvmVendorMasters.vendorCode, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorMasters.status, status));
-  if (cursor) conditions.push(lt(apvmVendorMasters.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmVendorMasters).where(and(...conditions)).orderBy(desc(apvmVendorMasters.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmVendorMasters.createdAt, apvmVendorMasters.id, cc)); }
+  const results = await db.select().from(apvmVendorMasters).where(and(...conditions)).orderBy(desc(apvmVendorMasters.createdAt), desc(apvmVendorMasters.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getVendorMaster(id: string, tenantId: string) {
@@ -47,11 +48,11 @@ export async function listPurchaseOrders({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmPurchaseOrders.tenantId, tenantId), isNull(apvmPurchaseOrders.deletedAt)];
   if (search) conditions.push(or(ilike(apvmPurchaseOrders.poNumber, `%${search}%`), ilike(apvmPurchaseOrders.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmPurchaseOrders.status, status));
-  if (cursor) conditions.push(lt(apvmPurchaseOrders.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmPurchaseOrders).where(and(...conditions)).orderBy(desc(apvmPurchaseOrders.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmPurchaseOrders.createdAt, apvmPurchaseOrders.id, cc)); }
+  const results = await db.select().from(apvmPurchaseOrders).where(and(...conditions)).orderBy(desc(apvmPurchaseOrders.createdAt), desc(apvmPurchaseOrders.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPurchaseOrder(id: string, tenantId: string) {
@@ -67,11 +68,11 @@ export async function listVendorInvoices({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmVendorInvoices.tenantId, tenantId), isNull(apvmVendorInvoices.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorInvoices.invoiceNumber, `%${search}%`), ilike(apvmVendorInvoices.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorInvoices.status, status));
-  if (cursor) conditions.push(lt(apvmVendorInvoices.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmVendorInvoices).where(and(...conditions)).orderBy(desc(apvmVendorInvoices.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmVendorInvoices.createdAt, apvmVendorInvoices.id, cc)); }
+  const results = await db.select().from(apvmVendorInvoices).where(and(...conditions)).orderBy(desc(apvmVendorInvoices.createdAt), desc(apvmVendorInvoices.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getVendorInvoice(id: string, tenantId: string) {
@@ -87,11 +88,11 @@ export async function listThreeWayMatches({ tenantId, search, status, cursor, li
   const conditions = [eq(apvmThreeWayMatches.tenantId, tenantId), isNull(apvmThreeWayMatches.deletedAt)];
   if (search) conditions.push(or(ilike(apvmThreeWayMatches.matchRef, `%${search}%`), ilike(apvmThreeWayMatches.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmThreeWayMatches.status, status));
-  if (cursor) conditions.push(lt(apvmThreeWayMatches.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmThreeWayMatches).where(and(...conditions)).orderBy(desc(apvmThreeWayMatches.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmThreeWayMatches.createdAt, apvmThreeWayMatches.id, cc)); }
+  const results = await db.select().from(apvmThreeWayMatches).where(and(...conditions)).orderBy(desc(apvmThreeWayMatches.createdAt), desc(apvmThreeWayMatches.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getThreeWayMatch(id: string, tenantId: string) {
@@ -107,11 +108,11 @@ export async function listPaymentSchedules({ tenantId, search, status, cursor, l
   const conditions = [eq(apvmPaymentSchedules.tenantId, tenantId), isNull(apvmPaymentSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(apvmPaymentSchedules.scheduleRef, `%${search}%`), ilike(apvmPaymentSchedules.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmPaymentSchedules.status, status));
-  if (cursor) conditions.push(lt(apvmPaymentSchedules.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmPaymentSchedules).where(and(...conditions)).orderBy(desc(apvmPaymentSchedules.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmPaymentSchedules.createdAt, apvmPaymentSchedules.id, cc)); }
+  const results = await db.select().from(apvmPaymentSchedules).where(and(...conditions)).orderBy(desc(apvmPaymentSchedules.createdAt), desc(apvmPaymentSchedules.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPaymentSchedule(id: string, tenantId: string) {
@@ -127,11 +128,11 @@ export async function listVendorReconciliations({ tenantId, search, status, curs
   const conditions = [eq(apvmVendorReconciliations.tenantId, tenantId), isNull(apvmVendorReconciliations.deletedAt)];
   if (search) conditions.push(or(ilike(apvmVendorReconciliations.reconciliationRef, `%${search}%`), ilike(apvmVendorReconciliations.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmVendorReconciliations.status, status));
-  if (cursor) conditions.push(lt(apvmVendorReconciliations.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmVendorReconciliations).where(and(...conditions)).orderBy(desc(apvmVendorReconciliations.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmVendorReconciliations.createdAt, apvmVendorReconciliations.id, cc)); }
+  const results = await db.select().from(apvmVendorReconciliations).where(and(...conditions)).orderBy(desc(apvmVendorReconciliations.createdAt), desc(apvmVendorReconciliations.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getVendorReconciliation(id: string, tenantId: string) {
@@ -147,11 +148,11 @@ export async function listOcrExtractions({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmOcrExtractions.tenantId, tenantId), isNull(apvmOcrExtractions.deletedAt)];
   if (search) conditions.push(or(ilike(apvmOcrExtractions.extractionRef, `%${search}%`), ilike(apvmOcrExtractions.fileName, `%${search}%`))!);
   if (status) conditions.push(eq(apvmOcrExtractions.status, status));
-  if (cursor) conditions.push(lt(apvmOcrExtractions.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmOcrExtractions).where(and(...conditions)).orderBy(desc(apvmOcrExtractions.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmOcrExtractions.createdAt, apvmOcrExtractions.id, cc)); }
+  const results = await db.select().from(apvmOcrExtractions).where(and(...conditions)).orderBy(desc(apvmOcrExtractions.createdAt), desc(apvmOcrExtractions.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getOcrExtraction(id: string, tenantId: string) {
@@ -167,11 +168,11 @@ export async function listSpendAnalytics({ tenantId, search, status, cursor, lim
   const conditions = [eq(apvmSpendAnalytics.tenantId, tenantId), isNull(apvmSpendAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(apvmSpendAnalytics.reportRef, `%${search}%`), ilike(apvmSpendAnalytics.reportType, `%${search}%`))!);
   if (status) conditions.push(eq(apvmSpendAnalytics.status, status));
-  if (cursor) conditions.push(lt(apvmSpendAnalytics.createdAt, new Date(cursor)));
-  const results = await db.select().from(apvmSpendAnalytics).where(and(...conditions)).orderBy(desc(apvmSpendAnalytics.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(apvmSpendAnalytics.createdAt, apvmSpendAnalytics.id, cc)); }
+  const results = await db.select().from(apvmSpendAnalytics).where(and(...conditions)).orderBy(desc(apvmSpendAnalytics.createdAt), desc(apvmSpendAnalytics.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSpendAnalytic(id: string, tenantId: string) {

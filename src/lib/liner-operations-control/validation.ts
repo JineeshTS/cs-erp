@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Cargo Cut-Off Management per Port
@@ -18,7 +19,7 @@ export const createCargoCutoffSchema = z.object({
   affectedBookings: z.number().int().optional(),
   notificationSent: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoCutoffSchema = createCargoCutoffSchema.partial();
 
@@ -42,7 +43,7 @@ export const createOverbookingRolloverSchema = z.object({
   impactCurrency: z.string().max(3).optional(),
   customerNotified: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOverbookingRolloverSchema = createOverbookingRolloverSchema.partial();
 
@@ -64,7 +65,7 @@ export const createRollingUpgradeSchema = z.object({
   upgradeReason: z.string().optional(),
   revenueRecovered: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRollingUpgradeSchema = createRollingUpgradeSchema.partial();
 
@@ -86,7 +87,7 @@ export const createRevenueIntegrityAuditSchema = z.object({
   correctionApplied: z.boolean().optional(),
   correctionDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueIntegrityAuditSchema = createRevenueIntegrityAuditSchema.partial();
 
@@ -108,7 +109,7 @@ export const createSlotSwapCoordinationSchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSlotSwapCoordinationSchema = createSlotSwapCoordinationSchema.partial();
 
@@ -130,7 +131,7 @@ export const createScheduleDeviationSchema = z.object({
   affectedPorts: z.number().int().optional(),
   recoveryAchieved: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateScheduleDeviationSchema = createScheduleDeviationSchema.partial();
 
@@ -152,7 +153,7 @@ export const createCargoMixOptimizationSchema = z.object({
   hazmatSlots: z.number().int().optional(),
   recommendation: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoMixOptimizationSchema = createCargoMixOptimizationSchema.partial();
 
@@ -174,6 +175,6 @@ export const createLoadFactorReportSchema = z.object({
   periodTo: z.coerce.date().optional(),
   emptyRepositioning: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLoadFactorReportSchema = createLoadFactorReportSchema.partial();

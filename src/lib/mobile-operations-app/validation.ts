@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Gate In & Out Mobile Processing
@@ -18,7 +19,7 @@ export const createGateProcessingSchema = z.object({
   damageFound: z.boolean().optional(),
   photoCount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGateProcessingSchema = createGateProcessingSchema.partial();
 
@@ -38,7 +39,7 @@ export const createYardInspectionSchema = z.object({
   weatherCondition: z.string().max(50).optional(),
   photoCount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateYardInspectionSchema = createYardInspectionSchema.partial();
 
@@ -59,7 +60,7 @@ export const createContainerSurveySchema = z.object({
   surveyedAt: z.coerce.date().optional(),
   photoCount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContainerSurveySchema = createContainerSurveySchema.partial();
 
@@ -80,7 +81,7 @@ export const createOfflineSyncSchema = z.object({
   dataSizeKb: z.string().optional(),
   syncDurationMs: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOfflineSyncSchema = createOfflineSyncSchema.partial();
 
@@ -101,7 +102,7 @@ export const createDamageAssessmentSchema = z.object({
   photoCount: z.number().int().optional(),
   assessedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDamageAssessmentSchema = createDamageAssessmentSchema.partial();
 
@@ -122,7 +123,7 @@ export const createDriverDeliverySchema = z.object({
   latitude: z.string().optional(),
   longitude: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDriverDeliverySchema = createDriverDeliverySchema.partial();
 
@@ -141,7 +142,7 @@ export const createExecutiveDashboardSchema = z.object({
   sharedWith: z.string().optional(),
   dashboardConfig: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateExecutiveDashboardSchema = createExecutiveDashboardSchema.partial();
 
@@ -162,6 +163,6 @@ export const createPushNotificationSchema = z.object({
   sentAt: z.coerce.date().optional(),
   expiresAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePushNotificationSchema = createPushNotificationSchema.partial();

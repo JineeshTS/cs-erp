@@ -12,6 +12,7 @@ import {
   firmDunningActions,
   firmRevenueForecastEntries,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -29,11 +30,11 @@ export async function listFreightInvoices({ tenantId, search, status, cursor, li
   const conditions = [eq(firmFreightInvoices.tenantId, tenantId), isNull(firmFreightInvoices.deletedAt)];
   if (search) conditions.push(or(ilike(firmFreightInvoices.invoiceNumber, `%${search}%`), ilike(firmFreightInvoices.customerName, `%${search}%`), ilike(firmFreightInvoices.blNumber ?? "", `%${search}%`))!);
   if (status) conditions.push(eq(firmFreightInvoices.status, status));
-  if (cursor) conditions.push(lt(firmFreightInvoices.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmFreightInvoices).where(and(...conditions)).orderBy(desc(firmFreightInvoices.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmFreightInvoices.createdAt, firmFreightInvoices.id, cc)); }
+  const results = await db.select().from(firmFreightInvoices).where(and(...conditions)).orderBy(desc(firmFreightInvoices.createdAt), desc(firmFreightInvoices.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getFreightInvoice(id: string, tenantId: string) {
@@ -49,11 +50,11 @@ export async function listInvoiceLineItems({ tenantId, search, status, cursor, l
   const conditions = [eq(firmInvoiceLineItems.tenantId, tenantId), isNull(firmInvoiceLineItems.deletedAt)];
   if (search) conditions.push(or(ilike(firmInvoiceLineItems.chargeCode, `%${search}%`), ilike(firmInvoiceLineItems.description, `%${search}%`))!);
   if (status) conditions.push(eq(firmInvoiceLineItems.invoiceId, status));
-  if (cursor) conditions.push(lt(firmInvoiceLineItems.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmInvoiceLineItems).where(and(...conditions)).orderBy(desc(firmInvoiceLineItems.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmInvoiceLineItems.createdAt, firmInvoiceLineItems.id, cc)); }
+  const results = await db.select().from(firmInvoiceLineItems).where(and(...conditions)).orderBy(desc(firmInvoiceLineItems.createdAt), desc(firmInvoiceLineItems.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInvoiceLineItem(id: string, tenantId: string) {
@@ -69,11 +70,11 @@ export async function listDebitCreditNotes({ tenantId, search, status, cursor, l
   const conditions = [eq(firmDebitCreditNotes.tenantId, tenantId), isNull(firmDebitCreditNotes.deletedAt)];
   if (search) conditions.push(or(ilike(firmDebitCreditNotes.noteNumber, `%${search}%`), ilike(firmDebitCreditNotes.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(firmDebitCreditNotes.status, status));
-  if (cursor) conditions.push(lt(firmDebitCreditNotes.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmDebitCreditNotes).where(and(...conditions)).orderBy(desc(firmDebitCreditNotes.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmDebitCreditNotes.createdAt, firmDebitCreditNotes.id, cc)); }
+  const results = await db.select().from(firmDebitCreditNotes).where(and(...conditions)).orderBy(desc(firmDebitCreditNotes.createdAt), desc(firmDebitCreditNotes.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDebitCreditNote(id: string, tenantId: string) {
@@ -89,11 +90,11 @@ export async function listInvoiceAmendments({ tenantId, search, status, cursor, 
   const conditions = [eq(firmInvoiceAmendments.tenantId, tenantId), isNull(firmInvoiceAmendments.deletedAt)];
   if (search) conditions.push(or(ilike(firmInvoiceAmendments.amendmentRef, `%${search}%`), ilike(firmInvoiceAmendments.originalInvoiceNumber, `%${search}%`))!);
   if (status) conditions.push(eq(firmInvoiceAmendments.status, status));
-  if (cursor) conditions.push(lt(firmInvoiceAmendments.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmInvoiceAmendments).where(and(...conditions)).orderBy(desc(firmInvoiceAmendments.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmInvoiceAmendments.createdAt, firmInvoiceAmendments.id, cc)); }
+  const results = await db.select().from(firmInvoiceAmendments).where(and(...conditions)).orderBy(desc(firmInvoiceAmendments.createdAt), desc(firmInvoiceAmendments.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInvoiceAmendment(id: string, tenantId: string) {
@@ -109,11 +110,11 @@ export async function listProformaInvoices({ tenantId, search, status, cursor, l
   const conditions = [eq(firmProformaInvoices.tenantId, tenantId), isNull(firmProformaInvoices.deletedAt)];
   if (search) conditions.push(or(ilike(firmProformaInvoices.proformaNumber, `%${search}%`), ilike(firmProformaInvoices.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(firmProformaInvoices.status, status));
-  if (cursor) conditions.push(lt(firmProformaInvoices.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmProformaInvoices).where(and(...conditions)).orderBy(desc(firmProformaInvoices.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmProformaInvoices.createdAt, firmProformaInvoices.id, cc)); }
+  const results = await db.select().from(firmProformaInvoices).where(and(...conditions)).orderBy(desc(firmProformaInvoices.createdAt), desc(firmProformaInvoices.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getProformaInvoice(id: string, tenantId: string) {
@@ -129,11 +130,11 @@ export async function listRevenueAccruals({ tenantId, search, status, cursor, li
   const conditions = [eq(firmRevenueAccruals.tenantId, tenantId), isNull(firmRevenueAccruals.deletedAt)];
   if (search) conditions.push(or(ilike(firmRevenueAccruals.accrualRef, `%${search}%`), ilike(firmRevenueAccruals.voyageRef ?? "", `%${search}%`))!);
   if (status) conditions.push(eq(firmRevenueAccruals.status, status));
-  if (cursor) conditions.push(lt(firmRevenueAccruals.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmRevenueAccruals).where(and(...conditions)).orderBy(desc(firmRevenueAccruals.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmRevenueAccruals.createdAt, firmRevenueAccruals.id, cc)); }
+  const results = await db.select().from(firmRevenueAccruals).where(and(...conditions)).orderBy(desc(firmRevenueAccruals.createdAt), desc(firmRevenueAccruals.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRevenueAccrual(id: string, tenantId: string) {
@@ -149,11 +150,11 @@ export async function listInvoiceDisputes({ tenantId, search, status, cursor, li
   const conditions = [eq(firmInvoiceDisputes.tenantId, tenantId), isNull(firmInvoiceDisputes.deletedAt)];
   if (search) conditions.push(or(ilike(firmInvoiceDisputes.disputeRef, `%${search}%`), ilike(firmInvoiceDisputes.customerName, `%${search}%`), ilike(firmInvoiceDisputes.invoiceNumber, `%${search}%`))!);
   if (status) conditions.push(eq(firmInvoiceDisputes.status, status));
-  if (cursor) conditions.push(lt(firmInvoiceDisputes.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmInvoiceDisputes).where(and(...conditions)).orderBy(desc(firmInvoiceDisputes.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmInvoiceDisputes.createdAt, firmInvoiceDisputes.id, cc)); }
+  const results = await db.select().from(firmInvoiceDisputes).where(and(...conditions)).orderBy(desc(firmInvoiceDisputes.createdAt), desc(firmInvoiceDisputes.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInvoiceDispute(id: string, tenantId: string) {
@@ -169,11 +170,11 @@ export async function listDunningRuns({ tenantId, search, status, cursor, limit 
   const conditions = [eq(firmDunningRuns.tenantId, tenantId), isNull(firmDunningRuns.deletedAt)];
   if (search) conditions.push(ilike(firmDunningRuns.runRef, `%${search}%`));
   if (status) conditions.push(eq(firmDunningRuns.status, status));
-  if (cursor) conditions.push(lt(firmDunningRuns.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmDunningRuns).where(and(...conditions)).orderBy(desc(firmDunningRuns.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmDunningRuns.createdAt, firmDunningRuns.id, cc)); }
+  const results = await db.select().from(firmDunningRuns).where(and(...conditions)).orderBy(desc(firmDunningRuns.createdAt), desc(firmDunningRuns.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDunningRun(id: string, tenantId: string) {
@@ -189,11 +190,11 @@ export async function listDunningActions({ tenantId, search, status, cursor, lim
   const conditions = [eq(firmDunningActions.tenantId, tenantId), isNull(firmDunningActions.deletedAt)];
   if (search) conditions.push(or(ilike(firmDunningActions.actionRef, `%${search}%`), ilike(firmDunningActions.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(firmDunningActions.status, status));
-  if (cursor) conditions.push(lt(firmDunningActions.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmDunningActions).where(and(...conditions)).orderBy(desc(firmDunningActions.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmDunningActions.createdAt, firmDunningActions.id, cc)); }
+  const results = await db.select().from(firmDunningActions).where(and(...conditions)).orderBy(desc(firmDunningActions.createdAt), desc(firmDunningActions.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDunningAction(id: string, tenantId: string) {
@@ -209,11 +210,11 @@ export async function listRevenueForecastEntries({ tenantId, search, status, cur
   const conditions = [eq(firmRevenueForecastEntries.tenantId, tenantId), isNull(firmRevenueForecastEntries.deletedAt)];
   if (search) conditions.push(or(ilike(firmRevenueForecastEntries.forecastRef, `%${search}%`), ilike(firmRevenueForecastEntries.serviceRoute ?? "", `%${search}%`))!);
   if (status) conditions.push(eq(firmRevenueForecastEntries.status, status));
-  if (cursor) conditions.push(lt(firmRevenueForecastEntries.createdAt, new Date(cursor)));
-  const results = await db.select().from(firmRevenueForecastEntries).where(and(...conditions)).orderBy(desc(firmRevenueForecastEntries.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(firmRevenueForecastEntries.createdAt, firmRevenueForecastEntries.id, cc)); }
+  const results = await db.select().from(firmRevenueForecastEntries).where(and(...conditions)).orderBy(desc(firmRevenueForecastEntries.createdAt), desc(firmRevenueForecastEntries.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRevenueForecastEntry(id: string, tenantId: string) {

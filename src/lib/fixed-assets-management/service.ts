@@ -10,6 +10,7 @@ import {
   famImpairmentTests,
   famLeaseAccounting,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listAssetRegistries({ tenantId, search, status, cursor, li
   const conditions = [eq(famAssetRegistries.tenantId, tenantId), isNull(famAssetRegistries.deletedAt)];
   if (search) conditions.push(or(ilike(famAssetRegistries.assetRef, `%${search}%`), ilike(famAssetRegistries.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famAssetRegistries.status, status));
-  if (cursor) conditions.push(lt(famAssetRegistries.createdAt, new Date(cursor)));
-  const results = await db.select().from(famAssetRegistries).where(and(...conditions)).orderBy(desc(famAssetRegistries.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famAssetRegistries.createdAt, famAssetRegistries.id, cc)); }
+  const results = await db.select().from(famAssetRegistries).where(and(...conditions)).orderBy(desc(famAssetRegistries.createdAt), desc(famAssetRegistries.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getAssetRegistry(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listDepreciationSchedules({ tenantId, search, status, curs
   const conditions = [eq(famDepreciationSchedules.tenantId, tenantId), isNull(famDepreciationSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(famDepreciationSchedules.scheduleRef, `%${search}%`), ilike(famDepreciationSchedules.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famDepreciationSchedules.status, status));
-  if (cursor) conditions.push(lt(famDepreciationSchedules.createdAt, new Date(cursor)));
-  const results = await db.select().from(famDepreciationSchedules).where(and(...conditions)).orderBy(desc(famDepreciationSchedules.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famDepreciationSchedules.createdAt, famDepreciationSchedules.id, cc)); }
+  const results = await db.select().from(famDepreciationSchedules).where(and(...conditions)).orderBy(desc(famDepreciationSchedules.createdAt), desc(famDepreciationSchedules.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDepreciationSchedule(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listAssetDisposals({ tenantId, search, status, cursor, lim
   const conditions = [eq(famAssetDisposals.tenantId, tenantId), isNull(famAssetDisposals.deletedAt)];
   if (search) conditions.push(or(ilike(famAssetDisposals.disposalRef, `%${search}%`), ilike(famAssetDisposals.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famAssetDisposals.status, status));
-  if (cursor) conditions.push(lt(famAssetDisposals.createdAt, new Date(cursor)));
-  const results = await db.select().from(famAssetDisposals).where(and(...conditions)).orderBy(desc(famAssetDisposals.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famAssetDisposals.createdAt, famAssetDisposals.id, cc)); }
+  const results = await db.select().from(famAssetDisposals).where(and(...conditions)).orderBy(desc(famAssetDisposals.createdAt), desc(famAssetDisposals.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getAssetDisposal(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listInsuranceValuations({ tenantId, search, status, cursor
   const conditions = [eq(famInsuranceValuations.tenantId, tenantId), isNull(famInsuranceValuations.deletedAt)];
   if (search) conditions.push(or(ilike(famInsuranceValuations.recordRef, `%${search}%`), ilike(famInsuranceValuations.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famInsuranceValuations.status, status));
-  if (cursor) conditions.push(lt(famInsuranceValuations.createdAt, new Date(cursor)));
-  const results = await db.select().from(famInsuranceValuations).where(and(...conditions)).orderBy(desc(famInsuranceValuations.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famInsuranceValuations.createdAt, famInsuranceValuations.id, cc)); }
+  const results = await db.select().from(famInsuranceValuations).where(and(...conditions)).orderBy(desc(famInsuranceValuations.createdAt), desc(famInsuranceValuations.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInsuranceValuation(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listMaintenanceSchedules({ tenantId, search, status, curso
   const conditions = [eq(famMaintenanceSchedules.tenantId, tenantId), isNull(famMaintenanceSchedules.deletedAt)];
   if (search) conditions.push(or(ilike(famMaintenanceSchedules.maintenanceRef, `%${search}%`), ilike(famMaintenanceSchedules.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famMaintenanceSchedules.status, status));
-  if (cursor) conditions.push(lt(famMaintenanceSchedules.createdAt, new Date(cursor)));
-  const results = await db.select().from(famMaintenanceSchedules).where(and(...conditions)).orderBy(desc(famMaintenanceSchedules.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famMaintenanceSchedules.createdAt, famMaintenanceSchedules.id, cc)); }
+  const results = await db.select().from(famMaintenanceSchedules).where(and(...conditions)).orderBy(desc(famMaintenanceSchedules.createdAt), desc(famMaintenanceSchedules.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getMaintenanceSchedule(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listCapexOpexClassifications({ tenantId, search, status, c
   const conditions = [eq(famCapexOpexClassifications.tenantId, tenantId), isNull(famCapexOpexClassifications.deletedAt)];
   if (search) conditions.push(or(ilike(famCapexOpexClassifications.classificationRef, `%${search}%`), ilike(famCapexOpexClassifications.title, `%${search}%`))!);
   if (status) conditions.push(eq(famCapexOpexClassifications.status, status));
-  if (cursor) conditions.push(lt(famCapexOpexClassifications.createdAt, new Date(cursor)));
-  const results = await db.select().from(famCapexOpexClassifications).where(and(...conditions)).orderBy(desc(famCapexOpexClassifications.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famCapexOpexClassifications.createdAt, famCapexOpexClassifications.id, cc)); }
+  const results = await db.select().from(famCapexOpexClassifications).where(and(...conditions)).orderBy(desc(famCapexOpexClassifications.createdAt), desc(famCapexOpexClassifications.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCapexOpexClassification(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listImpairmentTests({ tenantId, search, status, cursor, li
   const conditions = [eq(famImpairmentTests.tenantId, tenantId), isNull(famImpairmentTests.deletedAt)];
   if (search) conditions.push(or(ilike(famImpairmentTests.testRef, `%${search}%`), ilike(famImpairmentTests.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famImpairmentTests.status, status));
-  if (cursor) conditions.push(lt(famImpairmentTests.createdAt, new Date(cursor)));
-  const results = await db.select().from(famImpairmentTests).where(and(...conditions)).orderBy(desc(famImpairmentTests.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famImpairmentTests.createdAt, famImpairmentTests.id, cc)); }
+  const results = await db.select().from(famImpairmentTests).where(and(...conditions)).orderBy(desc(famImpairmentTests.createdAt), desc(famImpairmentTests.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getImpairmentTest(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listLeaseAccounting({ tenantId, search, status, cursor, li
   const conditions = [eq(famLeaseAccounting.tenantId, tenantId), isNull(famLeaseAccounting.deletedAt)];
   if (search) conditions.push(or(ilike(famLeaseAccounting.leaseRef, `%${search}%`), ilike(famLeaseAccounting.assetName, `%${search}%`))!);
   if (status) conditions.push(eq(famLeaseAccounting.status, status));
-  if (cursor) conditions.push(lt(famLeaseAccounting.createdAt, new Date(cursor)));
-  const results = await db.select().from(famLeaseAccounting).where(and(...conditions)).orderBy(desc(famLeaseAccounting.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(famLeaseAccounting.createdAt, famLeaseAccounting.id, cc)); }
+  const results = await db.select().from(famLeaseAccounting).where(and(...conditions)).orderBy(desc(famLeaseAccounting.createdAt), desc(famLeaseAccounting.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getLeaseAccount(id: string, tenantId: string) {

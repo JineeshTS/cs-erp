@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Bunker Orders
@@ -22,7 +23,7 @@ export const createBunkerOrderSchema = z.object({
   totalAmount: z.number().int().optional(),
   paymentTerms: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBunkerOrderSchema = createBunkerOrderSchema.partial();
@@ -50,7 +51,7 @@ export const createBunkerStemSchema = z.object({
   actualDeliveryEnd: z.coerce.date().optional(),
   pumpingRate: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBunkerStemSchema = createBunkerStemSchema.partial();
@@ -77,7 +78,7 @@ export const createQualityTestSchema = z.object({
   isoCompliant: z.boolean().optional(),
   marpolCompliant: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateQualityTestSchema = createQualityTestSchema.partial();
@@ -97,7 +98,7 @@ export const createQualityClaimSchema = z.object({
   currency: z.string().max(3).optional(),
   quantityDisputed: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateQualityClaimSchema = createQualityClaimSchema.partial();
@@ -122,7 +123,7 @@ export const createFuelRobSchema = z.object({
   portCode: z.string().max(20).optional(),
   reportType: z.enum(["noon", "arrival", "departure", "bunkering", "end_of_sea_passage", "end_of_voyage"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateFuelRobSchema = createFuelRobSchema.partial();
@@ -147,7 +148,7 @@ export const createFuelReconciliationSchema = z.object({
   variancePercent: z.number().int().optional(),
   unit: z.enum(["MT", "CBM", "LTR", "GAL"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateFuelReconciliationSchema = createFuelReconciliationSchema.partial();
@@ -175,7 +176,7 @@ export const createEmissionsRecordSchema = z.object({
   cargoCarried: z.number().int().optional(),
   fuelConsumed: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateEmissionsRecordSchema = createEmissionsRecordSchema.partial();
@@ -201,7 +202,7 @@ export const createSulphurRecordSchema = z.object({
   changoverToFuel: z.string().max(30).optional(),
   bdn: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateSulphurRecordSchema = createSulphurRecordSchema.partial();
@@ -226,7 +227,7 @@ export const createCostAllocationSchema = z.object({
   legTo: z.string().max(50).optional(),
   percentageOfVoyage: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateCostAllocationSchema = createCostAllocationSchema.partial();
@@ -243,7 +244,7 @@ export const createOptimizationRunSchema = z.object({
   inputParameters: z.record(z.string(), z.unknown()),
   constraints: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateOptimizationRunSchema = createOptimizationRunSchema.partial();

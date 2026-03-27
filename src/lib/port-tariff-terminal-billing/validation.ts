@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Terminal Handling Charge THC Management
@@ -21,7 +22,7 @@ export const createTerminalHandlingChargeSchema = z.object({
   peakSeasonMultiplier: z.string().optional(),
   exemptionApplicable: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTerminalHandlingChargeSchema = createTerminalHandlingChargeSchema.partial();
 
@@ -45,7 +46,7 @@ export const createPortDuesWharfageSchema = z.object({
   effectiveDate: z.coerce.date().optional(),
   expiryDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortDuesWharfageSchema = createPortDuesWharfageSchema.partial();
 
@@ -69,7 +70,7 @@ export const createPilotageTowageChargeSchema = z.object({
   nightSurcharge: z.boolean().optional(),
   weekendSurcharge: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePilotageTowageChargeSchema = createPilotageTowageChargeSchema.partial();
 
@@ -95,7 +96,7 @@ export const createStorageDemurrageTariffSchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateStorageDemurrageTariffSchema = createStorageDemurrageTariffSchema.partial();
 
@@ -118,7 +119,7 @@ export const createTariffComparisonSchema = z.object({
   periodTo: z.coerce.date().optional(),
   recommendation: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTariffComparisonSchema = createTariffComparisonSchema.partial();
 
@@ -140,7 +141,7 @@ export const createInvoiceValidationSchema = z.object({
   resolutionDate: z.coerce.date().optional(),
   resolvedAmount: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInvoiceValidationSchema = createInvoiceValidationSchema.partial();
 
@@ -161,7 +162,7 @@ export const createCostOptimizationSchema = z.object({
   timelineWeeks: z.number().int().optional(),
   recommendation: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCostOptimizationSchema = createCostOptimizationSchema.partial();
 
@@ -184,6 +185,6 @@ export const createBudgetPlanningSchema = z.object({
   approvedBy: z.string().max(255).optional(),
   approvalDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBudgetPlanningSchema = createBudgetPlanningSchema.partial();

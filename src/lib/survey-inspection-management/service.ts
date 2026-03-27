@@ -10,6 +10,7 @@ import {
   simClassificationSurveys,
   simSurveyReports,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listCargoSurveys({ tenantId, search, status, cursor, limit
   const conditions = [eq(simCargoSurveys.tenantId, tenantId), isNull(simCargoSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simCargoSurveys.surveyRef, `%${search}%`), ilike(simCargoSurveys.vesselName, `%${search}%`), ilike(simCargoSurveys.clientName, `%${search}%`))!);
   if (status) conditions.push(eq(simCargoSurveys.status, status));
-  if (cursor) conditions.push(lt(simCargoSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simCargoSurveys).where(and(...conditions)).orderBy(desc(simCargoSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simCargoSurveys.createdAt, simCargoSurveys.id, cc)); }
+  const results = await db.select().from(simCargoSurveys).where(and(...conditions)).orderBy(desc(simCargoSurveys.createdAt), desc(simCargoSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCargoSurvey(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listContainerSurveys({ tenantId, search, status, cursor, l
   const conditions = [eq(simContainerSurveys.tenantId, tenantId), isNull(simContainerSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simContainerSurveys.surveyRef, `%${search}%`), ilike(simContainerSurveys.containerNumber, `%${search}%`), ilike(simContainerSurveys.depotName, `%${search}%`))!);
   if (status) conditions.push(eq(simContainerSurveys.status, status));
-  if (cursor) conditions.push(lt(simContainerSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simContainerSurveys).where(and(...conditions)).orderBy(desc(simContainerSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simContainerSurveys.createdAt, simContainerSurveys.id, cc)); }
+  const results = await db.select().from(simContainerSurveys).where(and(...conditions)).orderBy(desc(simContainerSurveys.createdAt), desc(simContainerSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getContainerSurvey(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listDraftSurveys({ tenantId, search, status, cursor, limit
   const conditions = [eq(simDraftSurveys.tenantId, tenantId), isNull(simDraftSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simDraftSurveys.surveyRef, `%${search}%`), ilike(simDraftSurveys.vesselName, `%${search}%`), ilike(simDraftSurveys.portName, `%${search}%`))!);
   if (status) conditions.push(eq(simDraftSurveys.status, status));
-  if (cursor) conditions.push(lt(simDraftSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simDraftSurveys).where(and(...conditions)).orderBy(desc(simDraftSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simDraftSurveys.createdAt, simDraftSurveys.id, cc)); }
+  const results = await db.select().from(simDraftSurveys).where(and(...conditions)).orderBy(desc(simDraftSurveys.createdAt), desc(simDraftSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDraftSurvey(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listHireSurveys({ tenantId, search, status, cursor, limit 
   const conditions = [eq(simHireSurveys.tenantId, tenantId), isNull(simHireSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simHireSurveys.surveyRef, `%${search}%`), ilike(simHireSurveys.vesselName, `%${search}%`), ilike(simHireSurveys.chartererName, `%${search}%`))!);
   if (status) conditions.push(eq(simHireSurveys.status, status));
-  if (cursor) conditions.push(lt(simHireSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simHireSurveys).where(and(...conditions)).orderBy(desc(simHireSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simHireSurveys.createdAt, simHireSurveys.id, cc)); }
+  const results = await db.select().from(simHireSurveys).where(and(...conditions)).orderBy(desc(simHireSurveys.createdAt), desc(simHireSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getHireSurvey(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listHatchInspections({ tenantId, search, status, cursor, l
   const conditions = [eq(simHatchInspections.tenantId, tenantId), isNull(simHatchInspections.deletedAt)];
   if (search) conditions.push(or(ilike(simHatchInspections.inspectionRef, `%${search}%`), ilike(simHatchInspections.vesselName, `%${search}%`), ilike(simHatchInspections.holdNumber, `%${search}%`))!);
   if (status) conditions.push(eq(simHatchInspections.status, status));
-  if (cursor) conditions.push(lt(simHatchInspections.createdAt, new Date(cursor)));
-  const results = await db.select().from(simHatchInspections).where(and(...conditions)).orderBy(desc(simHatchInspections.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simHatchInspections.createdAt, simHatchInspections.id, cc)); }
+  const results = await db.select().from(simHatchInspections).where(and(...conditions)).orderBy(desc(simHatchInspections.createdAt), desc(simHatchInspections.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getHatchInspection(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listReeferPtiSurveys({ tenantId, search, status, cursor, l
   const conditions = [eq(simReeferPtiSurveys.tenantId, tenantId), isNull(simReeferPtiSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simReeferPtiSurveys.surveyRef, `%${search}%`), ilike(simReeferPtiSurveys.containerNumber, `%${search}%`), ilike(simReeferPtiSurveys.depotName, `%${search}%`))!);
   if (status) conditions.push(eq(simReeferPtiSurveys.status, status));
-  if (cursor) conditions.push(lt(simReeferPtiSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simReeferPtiSurveys).where(and(...conditions)).orderBy(desc(simReeferPtiSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simReeferPtiSurveys.createdAt, simReeferPtiSurveys.id, cc)); }
+  const results = await db.select().from(simReeferPtiSurveys).where(and(...conditions)).orderBy(desc(simReeferPtiSurveys.createdAt), desc(simReeferPtiSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getReeferPtiSurvey(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listClassificationSurveys({ tenantId, search, status, curs
   const conditions = [eq(simClassificationSurveys.tenantId, tenantId), isNull(simClassificationSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(simClassificationSurveys.surveyRef, `%${search}%`), ilike(simClassificationSurveys.vesselName, `%${search}%`), ilike(simClassificationSurveys.classificationSociety, `%${search}%`))!);
   if (status) conditions.push(eq(simClassificationSurveys.status, status));
-  if (cursor) conditions.push(lt(simClassificationSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(simClassificationSurveys).where(and(...conditions)).orderBy(desc(simClassificationSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simClassificationSurveys.createdAt, simClassificationSurveys.id, cc)); }
+  const results = await db.select().from(simClassificationSurveys).where(and(...conditions)).orderBy(desc(simClassificationSurveys.createdAt), desc(simClassificationSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getClassificationSurvey(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listSurveyReports({ tenantId, search, status, cursor, limi
   const conditions = [eq(simSurveyReports.tenantId, tenantId), isNull(simSurveyReports.deletedAt)];
   if (search) conditions.push(or(ilike(simSurveyReports.reportRef, `%${search}%`), ilike(simSurveyReports.title, `%${search}%`), ilike(simSurveyReports.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(simSurveyReports.status, status));
-  if (cursor) conditions.push(lt(simSurveyReports.createdAt, new Date(cursor)));
-  const results = await db.select().from(simSurveyReports).where(and(...conditions)).orderBy(desc(simSurveyReports.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(simSurveyReports.createdAt, simSurveyReports.id, cc)); }
+  const results = await db.select().from(simSurveyReports).where(and(...conditions)).orderBy(desc(simSurveyReports.createdAt), desc(simSurveyReports.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSurveyReport(id: string, tenantId: string) {

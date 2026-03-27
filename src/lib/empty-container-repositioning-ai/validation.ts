@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Empty Container Inventory Visibility
@@ -16,7 +17,7 @@ export const createInventorySnapshotSchema = z.object({
   surplusDeficit: z.number().int().optional(),
   snapshotDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInventorySnapshotSchema = createInventorySnapshotSchema.partial();
 
@@ -36,7 +37,7 @@ export const createRepositioningPlanSchema = z.object({
   voyageRef: z.string().max(100).optional(),
   estimatedCost: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRepositioningPlanSchema = createRepositioningPlanSchema.partial();
 
@@ -56,7 +57,7 @@ export const createCostTrackingSchema = z.object({
   approvedDate: z.coerce.date().optional(),
   isApproved: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCostTrackingSchema = createCostTrackingSchema.partial();
 
@@ -76,7 +77,7 @@ export const createRouteOptimizerSchema = z.object({
   aiRecommendation: z.string().optional(),
   runDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRouteOptimizerSchema = createRouteOptimizerSchema.partial();
 
@@ -96,7 +97,7 @@ export const createDemandForecastSchema = z.object({
   confidenceLevel: z.string().optional(),
   aiModelVersion: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDemandForecastSchema = createDemandForecastSchema.partial();
 
@@ -116,7 +117,7 @@ export const createLeasingDecisionSchema = z.object({
   savingsAmount: z.string().optional(),
   aiRecommendation: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeasingDecisionSchema = createLeasingDecisionSchema.partial();
 
@@ -137,7 +138,7 @@ export const createReturnIncentiveSchema = z.object({
   utilizationCount: z.number().int().optional(),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateReturnIncentiveSchema = createReturnIncentiveSchema.partial();
 
@@ -157,6 +158,6 @@ export const createPnlAttributionSchema = z.object({
   costPerMove: z.string().optional(),
   revenuePerMove: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePnlAttributionSchema = createPnlAttributionSchema.partial();

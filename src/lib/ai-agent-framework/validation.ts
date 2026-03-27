@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Agents
@@ -20,7 +21,7 @@ export const createAgentSchema = z.object({
   isActive: z.boolean().optional(),
   status: z.enum(["idle", "running", "error", "disabled"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateAgentSchema = createAgentSchema.partial();
@@ -44,7 +45,7 @@ export const createAgentRunSchema = z.object({
   costEstimate: z.number().int().optional(),
   parentRunId: z.string().uuid().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateAgentRunSchema = createAgentRunSchema.partial();
@@ -65,7 +66,7 @@ export const createOrchestrationTaskSchema = z.object({
   priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
   totalSteps: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateOrchestrationTaskSchema = createOrchestrationTaskSchema.partial();
@@ -85,7 +86,7 @@ export const createDocumentProcessingJobSchema = z.object({
   inputData: z.record(z.string(), z.unknown()).optional(),
   ocrEngine: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateDocumentProcessingJobSchema = createDocumentProcessingJobSchema.partial();
@@ -109,7 +110,7 @@ export const createWorkflowDefinitionSchema = z.object({
   retryPolicy: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateWorkflowDefinitionSchema = createWorkflowDefinitionSchema.partial();
@@ -125,7 +126,7 @@ export const createWorkflowInstanceSchema = z.object({
   input: z.record(z.string(), z.unknown()).optional(),
   totalSteps: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateWorkflowInstanceSchema = createWorkflowInstanceSchema.partial();
@@ -150,7 +151,7 @@ export const createEscalationSchema = z.object({
   assignedTo: z.string().uuid().optional(),
   slaDeadline: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateEscalationSchema = createEscalationSchema.partial();

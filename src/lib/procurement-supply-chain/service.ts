@@ -10,6 +10,7 @@ import {
   pscSpendAnalytics,
   pscSupplierScorecards,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listPurchaseRequisitions({ tenantId, search, status, curso
   const conditions = [eq(pscPurchaseRequisitions.tenantId, tenantId), isNull(pscPurchaseRequisitions.deletedAt)];
   if (search) conditions.push(or(ilike(pscPurchaseRequisitions.requisitionRef, `%${search}%`), ilike(pscPurchaseRequisitions.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscPurchaseRequisitions.status, status));
-  if (cursor) conditions.push(lt(pscPurchaseRequisitions.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscPurchaseRequisitions).where(and(...conditions)).orderBy(desc(pscPurchaseRequisitions.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscPurchaseRequisitions.createdAt, pscPurchaseRequisitions.id, cc)); }
+  const results = await db.select().from(pscPurchaseRequisitions).where(and(...conditions)).orderBy(desc(pscPurchaseRequisitions.createdAt), desc(pscPurchaseRequisitions.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPurchaseRequisition(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listVendorSourcings({ tenantId, search, status, cursor, li
   const conditions = [eq(pscVendorSourcings.tenantId, tenantId), isNull(pscVendorSourcings.deletedAt)];
   if (search) conditions.push(or(ilike(pscVendorSourcings.sourcingRef, `%${search}%`), ilike(pscVendorSourcings.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscVendorSourcings.status, status));
-  if (cursor) conditions.push(lt(pscVendorSourcings.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscVendorSourcings).where(and(...conditions)).orderBy(desc(pscVendorSourcings.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscVendorSourcings.createdAt, pscVendorSourcings.id, cc)); }
+  const results = await db.select().from(pscVendorSourcings).where(and(...conditions)).orderBy(desc(pscVendorSourcings.createdAt), desc(pscVendorSourcings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getVendorSourcing(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listPurchaseOrders({ tenantId, search, status, cursor, lim
   const conditions = [eq(pscPurchaseOrders.tenantId, tenantId), isNull(pscPurchaseOrders.deletedAt)];
   if (search) conditions.push(or(ilike(pscPurchaseOrders.poRef, `%${search}%`), ilike(pscPurchaseOrders.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscPurchaseOrders.status, status));
-  if (cursor) conditions.push(lt(pscPurchaseOrders.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscPurchaseOrders).where(and(...conditions)).orderBy(desc(pscPurchaseOrders.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscPurchaseOrders.createdAt, pscPurchaseOrders.id, cc)); }
+  const results = await db.select().from(pscPurchaseOrders).where(and(...conditions)).orderBy(desc(pscPurchaseOrders.createdAt), desc(pscPurchaseOrders.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPurchaseOrder(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listProcurementContracts({ tenantId, search, status, curso
   const conditions = [eq(pscProcurementContracts.tenantId, tenantId), isNull(pscProcurementContracts.deletedAt)];
   if (search) conditions.push(or(ilike(pscProcurementContracts.contractRef, `%${search}%`), ilike(pscProcurementContracts.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscProcurementContracts.status, status));
-  if (cursor) conditions.push(lt(pscProcurementContracts.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscProcurementContracts).where(and(...conditions)).orderBy(desc(pscProcurementContracts.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscProcurementContracts.createdAt, pscProcurementContracts.id, cc)); }
+  const results = await db.select().from(pscProcurementContracts).where(and(...conditions)).orderBy(desc(pscProcurementContracts.createdAt), desc(pscProcurementContracts.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getProcurementContract(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listInventoryStockControls({ tenantId, search, status, cur
   const conditions = [eq(pscInventoryStockControls.tenantId, tenantId), isNull(pscInventoryStockControls.deletedAt)];
   if (search) conditions.push(or(ilike(pscInventoryStockControls.inventoryRef, `%${search}%`), ilike(pscInventoryStockControls.itemName, `%${search}%`))!);
   if (status) conditions.push(eq(pscInventoryStockControls.status, status));
-  if (cursor) conditions.push(lt(pscInventoryStockControls.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscInventoryStockControls).where(and(...conditions)).orderBy(desc(pscInventoryStockControls.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscInventoryStockControls.createdAt, pscInventoryStockControls.id, cc)); }
+  const results = await db.select().from(pscInventoryStockControls).where(and(...conditions)).orderBy(desc(pscInventoryStockControls.createdAt), desc(pscInventoryStockControls.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInventoryStockControl(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listGoodsReceiptInspections({ tenantId, search, status, cu
   const conditions = [eq(pscGoodsReceiptInspections.tenantId, tenantId), isNull(pscGoodsReceiptInspections.deletedAt)];
   if (search) conditions.push(or(ilike(pscGoodsReceiptInspections.receiptRef, `%${search}%`), ilike(pscGoodsReceiptInspections.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscGoodsReceiptInspections.status, status));
-  if (cursor) conditions.push(lt(pscGoodsReceiptInspections.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscGoodsReceiptInspections).where(and(...conditions)).orderBy(desc(pscGoodsReceiptInspections.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscGoodsReceiptInspections.createdAt, pscGoodsReceiptInspections.id, cc)); }
+  const results = await db.select().from(pscGoodsReceiptInspections).where(and(...conditions)).orderBy(desc(pscGoodsReceiptInspections.createdAt), desc(pscGoodsReceiptInspections.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getGoodsReceiptInspection(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listSpendAnalytics({ tenantId, search, status, cursor, lim
   const conditions = [eq(pscSpendAnalytics.tenantId, tenantId), isNull(pscSpendAnalytics.deletedAt)];
   if (search) conditions.push(or(ilike(pscSpendAnalytics.analyticsRef, `%${search}%`), ilike(pscSpendAnalytics.title, `%${search}%`))!);
   if (status) conditions.push(eq(pscSpendAnalytics.status, status));
-  if (cursor) conditions.push(lt(pscSpendAnalytics.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscSpendAnalytics).where(and(...conditions)).orderBy(desc(pscSpendAnalytics.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscSpendAnalytics.createdAt, pscSpendAnalytics.id, cc)); }
+  const results = await db.select().from(pscSpendAnalytics).where(and(...conditions)).orderBy(desc(pscSpendAnalytics.createdAt), desc(pscSpendAnalytics.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSpendAnalytic(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listSupplierScorecards({ tenantId, search, status, cursor,
   const conditions = [eq(pscSupplierScorecards.tenantId, tenantId), isNull(pscSupplierScorecards.deletedAt)];
   if (search) conditions.push(or(ilike(pscSupplierScorecards.scorecardRef, `%${search}%`), ilike(pscSupplierScorecards.vendorName, `%${search}%`))!);
   if (status) conditions.push(eq(pscSupplierScorecards.status, status));
-  if (cursor) conditions.push(lt(pscSupplierScorecards.createdAt, new Date(cursor)));
-  const results = await db.select().from(pscSupplierScorecards).where(and(...conditions)).orderBy(desc(pscSupplierScorecards.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(pscSupplierScorecards.createdAt, pscSupplierScorecards.id, cc)); }
+  const results = await db.select().from(pscSupplierScorecards).where(and(...conditions)).orderBy(desc(pscSupplierScorecards.createdAt), desc(pscSupplierScorecards.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSupplierScorecard(id: string, tenantId: string) {

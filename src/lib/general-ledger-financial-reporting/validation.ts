@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Chart of Accounts
@@ -22,7 +23,7 @@ export const createChartOfAccountSchema = z.object({
   currentBalance: z.string().optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateChartOfAccountSchema = createChartOfAccountSchema.partial();
 
@@ -46,7 +47,7 @@ export const createJournalEntrySchema = z.object({
   reviewedBy: z.string().max(255).optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateJournalEntrySchema = createJournalEntrySchema.partial();
 
@@ -65,7 +66,7 @@ export const createPeriodClosureSchema = z.object({
   closedBy: z.string().max(255).optional(),
   closedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePeriodClosureSchema = createPeriodClosureSchema.partial();
 
@@ -87,7 +88,7 @@ export const createFinancialStatementSchema = z.object({
   generatedBy: z.string().max(255).optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFinancialStatementSchema = createFinancialStatementSchema.partial();
 
@@ -110,7 +111,7 @@ export const createSegmentReportSchema = z.object({
   segmentLiabilities: z.string().optional(),
   interSegmentRevenue: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSegmentReportSchema = createSegmentReportSchema.partial();
 
@@ -133,7 +134,7 @@ export const createConsolidatedStatementSchema = z.object({
   preparedBy: z.string().max(255).optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateConsolidatedStatementSchema = createConsolidatedStatementSchema.partial();
 
@@ -157,7 +158,7 @@ export const createBudgetSchema = z.object({
   preparedBy: z.string().max(255).optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBudgetSchema = createBudgetSchema.partial();
 
@@ -182,6 +183,6 @@ export const createVarianceAnalysisSchema = z.object({
   preparedBy: z.string().max(255).optional(),
   reviewedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVarianceAnalysisSchema = createVarianceAnalysisSchema.partial();

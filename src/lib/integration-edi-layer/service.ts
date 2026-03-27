@@ -12,6 +12,7 @@ import {
   ielCustomsFilings,
   ielCustomsResponses,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -30,12 +31,12 @@ export async function listConnections({ tenantId, search, status, cursor, limit 
   if (search) conditions.push(or(ilike(ielIntegrationConnections.connectionName, `%${search}%`), ilike(ielIntegrationConnections.connectionCode, `%${search}%`))!);
   if (status) conditions.push(eq(ielIntegrationConnections.status, status));
   if (connectionType) conditions.push(eq(ielIntegrationConnections.connectionType, connectionType));
-  if (cursor) conditions.push(lt(ielIntegrationConnections.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielIntegrationConnections.createdAt, ielIntegrationConnections.id, cc)); }
 
-  const results = await db.select().from(ielIntegrationConnections).where(and(...conditions)).orderBy(desc(ielIntegrationConnections.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielIntegrationConnections).where(and(...conditions)).orderBy(desc(ielIntegrationConnections.createdAt), desc(ielIntegrationConnections.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getConnection(id: string, tenantId: string) {
@@ -51,12 +52,12 @@ export async function listEndpoints({ tenantId, search, cursor, limit = 50 }: Li
   const conditions = [eq(ielIntegrationEndpoints.tenantId, tenantId), isNull(ielIntegrationEndpoints.deletedAt)];
   if (connectionId) conditions.push(eq(ielIntegrationEndpoints.connectionId, connectionId));
   if (search) conditions.push(ilike(ielIntegrationEndpoints.endpointName, `%${search}%`));
-  if (cursor) conditions.push(lt(ielIntegrationEndpoints.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielIntegrationEndpoints.createdAt, ielIntegrationEndpoints.id, cc)); }
 
-  const results = await db.select().from(ielIntegrationEndpoints).where(and(...conditions)).orderBy(desc(ielIntegrationEndpoints.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielIntegrationEndpoints).where(and(...conditions)).orderBy(desc(ielIntegrationEndpoints.createdAt), desc(ielIntegrationEndpoints.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getEndpoint(id: string, tenantId: string) {
@@ -72,12 +73,12 @@ export async function listOracleSyncJobs({ tenantId, search, status, cursor, lim
   const conditions = [eq(ielOracleSyncJobs.tenantId, tenantId), isNull(ielOracleSyncJobs.deletedAt)];
   if (search) conditions.push(ilike(ielOracleSyncJobs.jobCode, `%${search}%`));
   if (status) conditions.push(eq(ielOracleSyncJobs.status, status));
-  if (cursor) conditions.push(lt(ielOracleSyncJobs.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielOracleSyncJobs.createdAt, ielOracleSyncJobs.id, cc)); }
 
-  const results = await db.select().from(ielOracleSyncJobs).where(and(...conditions)).orderBy(desc(ielOracleSyncJobs.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielOracleSyncJobs).where(and(...conditions)).orderBy(desc(ielOracleSyncJobs.createdAt), desc(ielOracleSyncJobs.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getOracleSyncJob(id: string, tenantId: string) {
@@ -93,7 +94,7 @@ export async function listOracleSyncMappings(tenantId: string, jobId?: string) {
   const conditions = [eq(ielOracleSyncMappings.tenantId, tenantId), isNull(ielOracleSyncMappings.deletedAt)];
   if (jobId) conditions.push(eq(ielOracleSyncMappings.jobId, jobId));
 
-  return db.select().from(ielOracleSyncMappings).where(and(...conditions)).orderBy(desc(ielOracleSyncMappings.createdAt));
+  return db.select().from(ielOracleSyncMappings).where(and(...conditions)).orderBy(desc(ielOracleSyncMappings.createdAt), desc(ielOracleSyncMappings.id));
 }
 
 // ==========================================
@@ -106,12 +107,12 @@ export async function listEdiMessages({ tenantId, search, status, cursor, limit 
   if (status) conditions.push(eq(ielEdiMessages.status, status));
   if (messageType) conditions.push(eq(ielEdiMessages.messageType, messageType));
   if (direction) conditions.push(eq(ielEdiMessages.direction, direction));
-  if (cursor) conditions.push(lt(ielEdiMessages.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielEdiMessages.createdAt, ielEdiMessages.id, cc)); }
 
-  const results = await db.select().from(ielEdiMessages).where(and(...conditions)).orderBy(desc(ielEdiMessages.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielEdiMessages).where(and(...conditions)).orderBy(desc(ielEdiMessages.createdAt), desc(ielEdiMessages.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getEdiMessage(id: string, tenantId: string) {
@@ -135,7 +136,7 @@ export async function listEdiProcessingLogs(tenantId: string, messageId?: string
   const conditions = [eq(ielEdiProcessingLogs.tenantId, tenantId), isNull(ielEdiProcessingLogs.deletedAt)];
   if (messageId) conditions.push(eq(ielEdiProcessingLogs.messageId, messageId));
 
-  return db.select().from(ielEdiProcessingLogs).where(and(...conditions)).orderBy(desc(ielEdiProcessingLogs.createdAt)).limit(limit);
+  return db.select().from(ielEdiProcessingLogs).where(and(...conditions)).orderBy(desc(ielEdiProcessingLogs.createdAt), desc(ielEdiProcessingLogs.id)).limit(limit);
 }
 
 // ==========================================
@@ -148,12 +149,12 @@ export async function listPortConnectMessages({ tenantId, search, status, cursor
   if (status) conditions.push(eq(ielPortConnectMessages.status, status));
   if (messageType) conditions.push(eq(ielPortConnectMessages.messageType, messageType));
   if (direction) conditions.push(eq(ielPortConnectMessages.direction, direction));
-  if (cursor) conditions.push(lt(ielPortConnectMessages.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielPortConnectMessages.createdAt, ielPortConnectMessages.id, cc)); }
 
-  const results = await db.select().from(ielPortConnectMessages).where(and(...conditions)).orderBy(desc(ielPortConnectMessages.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielPortConnectMessages).where(and(...conditions)).orderBy(desc(ielPortConnectMessages.createdAt), desc(ielPortConnectMessages.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPortConnectMessage(id: string, tenantId: string) {
@@ -171,12 +172,12 @@ export async function listCustomsFilings({ tenantId, search, status, cursor, lim
   if (status) conditions.push(eq(ielCustomsFilings.status, status));
   if (filingType) conditions.push(eq(ielCustomsFilings.filingType, filingType));
   if (customsAuthority) conditions.push(eq(ielCustomsFilings.customsAuthority, customsAuthority));
-  if (cursor) conditions.push(lt(ielCustomsFilings.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(ielCustomsFilings.createdAt, ielCustomsFilings.id, cc)); }
 
-  const results = await db.select().from(ielCustomsFilings).where(and(...conditions)).orderBy(desc(ielCustomsFilings.createdAt)).limit(limit + 1);
+  const results = await db.select().from(ielCustomsFilings).where(and(...conditions)).orderBy(desc(ielCustomsFilings.createdAt), desc(ielCustomsFilings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCustomsFiling(id: string, tenantId: string) {
@@ -189,7 +190,7 @@ export async function getCustomsFiling(id: string, tenantId: string) {
 // ==========================================
 
 export async function listCustomsResponses(tenantId: string, filingId: string) {
-  return db.select().from(ielCustomsResponses).where(and(eq(ielCustomsResponses.tenantId, tenantId), eq(ielCustomsResponses.filingId, filingId), isNull(ielCustomsResponses.deletedAt))).orderBy(desc(ielCustomsResponses.createdAt));
+  return db.select().from(ielCustomsResponses).where(and(eq(ielCustomsResponses.tenantId, tenantId), eq(ielCustomsResponses.filingId, filingId), isNull(ielCustomsResponses.deletedAt))).orderBy(desc(ielCustomsResponses.createdAt), desc(ielCustomsResponses.id));
 }
 
 export async function getCustomsResponse(id: string, tenantId: string) {

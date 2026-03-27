@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Voyage Budgets
@@ -19,7 +20,7 @@ export const createVoyageBudgetSchema = z.object({
   otherCost: z.number().int().optional(),
   totalBudget: z.number().int(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyageBudgetSchema = createVoyageBudgetSchema.partial();
 
@@ -45,7 +46,7 @@ export const createPortDisbursementSchema = z.object({
   otherCharges: z.number().int().optional(),
   totalAmount: z.number().int(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortDisbursementSchema = createPortDisbursementSchema.partial();
 
@@ -71,7 +72,7 @@ export const createRevenueRecognitionSchema = z.object({
   recognitionPeriod: z.string().max(20).optional(),
   journalEntryRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueRecognitionSchema = createRevenueRecognitionSchema.partial();
 
@@ -93,7 +94,7 @@ export const createAgencyCommissionSchema = z.object({
   netPayable: z.number().int(),
   invoiceRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgencyCommissionSchema = createAgencyCommissionSchema.partial();
 
@@ -123,7 +124,7 @@ export const createVoyagePnlSchema = z.object({
   periodStart: z.coerce.date().optional(),
   periodEnd: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyagePnlSchema = createVoyagePnlSchema.partial();
 
@@ -147,7 +148,7 @@ export const createContainerCostSchema = z.object({
   totalCost: z.number().int(),
   allocationMethod: z.string().max(30).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContainerCostSchema = createContainerCostSchema.partial();
 
@@ -167,7 +168,7 @@ export const createOverheadAllocationSchema = z.object({
   targetEntity: z.string().max(50).optional(),
   targetRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOverheadAllocationSchema = createOverheadAllocationSchema.partial();
 
@@ -188,7 +189,7 @@ export const createVarianceAnalysisSchema = z.object({
   variancePercent: z.number().int().optional(),
   varianceType: z.enum(["favorable", "unfavorable"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVarianceAnalysisSchema = createVarianceAnalysisSchema.partial();
 
@@ -209,7 +210,7 @@ export const createCostCentreSchema = z.object({
   isActive: z.boolean().optional(),
   glAccountCode: z.string().max(30).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCostCentreSchema = createCostCentreSchema.partial();
 
@@ -229,7 +230,7 @@ export const createCapexItemSchema = z.object({
   acquisitionDate: z.coerce.date(),
   inServiceDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCapexItemSchema = createCapexItemSchema.partial();
 
@@ -251,7 +252,7 @@ export const createAnomalyDetectionSchema = z.object({
   modelVersion: z.string().max(20).optional(),
   suggestedAction: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAnomalyDetectionSchema = createAnomalyDetectionSchema.partial();
 
@@ -276,6 +277,6 @@ export const createKpiReportSchema = z.object({
   costPerTeu: z.number().int().optional(),
   kpiData: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateKpiReportSchema = createKpiReportSchema.partial();

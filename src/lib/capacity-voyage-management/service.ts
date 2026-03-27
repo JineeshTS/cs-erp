@@ -14,6 +14,7 @@ import {
   capDemandForecasts,
   capSchedulePerformances,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 type ListParams = {
   tenantId: string;
@@ -41,21 +42,18 @@ export async function listVesselSchedules({
   if (search)
     conditions.push(ilike(capVesselSchedules.vesselName, `%${search}%`));
   if (status) conditions.push(eq(capVesselSchedules.status, status));
-  if (cursor)
-    conditions.push(lt(capVesselSchedules.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capVesselSchedules.createdAt, capVesselSchedules.id, cc)); }
 
   const results = await db
     .select()
     .from(capVesselSchedules)
     .where(and(...conditions))
-    .orderBy(desc(capVesselSchedules.createdAt))
+    .orderBy(desc(capVesselSchedules.createdAt), desc(capVesselSchedules.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -93,21 +91,18 @@ export async function listPortRotations({
   if (search)
     conditions.push(ilike(capPortRotations.portName, `%${search}%`));
   if (status) conditions.push(eq(capPortRotations.status, status));
-  if (cursor)
-    conditions.push(lt(capPortRotations.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capPortRotations.createdAt, capPortRotations.id, cc)); }
 
   const results = await db
     .select()
     .from(capPortRotations)
     .where(and(...conditions))
-    .orderBy(desc(capPortRotations.createdAt))
+    .orderBy(desc(capPortRotations.createdAt), desc(capPortRotations.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -145,21 +140,18 @@ export async function listTradeAllocations({
   if (search)
     conditions.push(ilike(capTradeAllocations.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capTradeAllocations.status, status));
-  if (cursor)
-    conditions.push(lt(capTradeAllocations.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capTradeAllocations.createdAt, capTradeAllocations.id, cc)); }
 
   const results = await db
     .select()
     .from(capTradeAllocations)
     .where(and(...conditions))
-    .orderBy(desc(capTradeAllocations.createdAt))
+    .orderBy(desc(capTradeAllocations.createdAt), desc(capTradeAllocations.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -197,21 +189,18 @@ export async function listSpaceControls({
   if (search)
     conditions.push(ilike(capSpaceControls.bookingReference, `%${search}%`));
   if (status) conditions.push(eq(capSpaceControls.status, status));
-  if (cursor)
-    conditions.push(lt(capSpaceControls.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capSpaceControls.createdAt, capSpaceControls.id, cc)); }
 
   const results = await db
     .select()
     .from(capSpaceControls)
     .where(and(...conditions))
-    .orderBy(desc(capSpaceControls.createdAt))
+    .orderBy(desc(capSpaceControls.createdAt), desc(capSpaceControls.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -251,21 +240,18 @@ export async function listTransshipmentPlans({
       ilike(capTransshipmentPlans.transshipmentPort, `%${search}%`)
     );
   if (status) conditions.push(eq(capTransshipmentPlans.status, status));
-  if (cursor)
-    conditions.push(lt(capTransshipmentPlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capTransshipmentPlans.createdAt, capTransshipmentPlans.id, cc)); }
 
   const results = await db
     .select()
     .from(capTransshipmentPlans)
     .where(and(...conditions))
-    .orderBy(desc(capTransshipmentPlans.createdAt))
+    .orderBy(desc(capTransshipmentPlans.createdAt), desc(capTransshipmentPlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -303,21 +289,18 @@ export async function listLoadingLists({
   if (search)
     conditions.push(ilike(capLoadingLists.listReference, `%${search}%`));
   if (status) conditions.push(eq(capLoadingLists.status, status));
-  if (cursor)
-    conditions.push(lt(capLoadingLists.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capLoadingLists.createdAt, capLoadingLists.id, cc)); }
 
   const results = await db
     .select()
     .from(capLoadingLists)
     .where(and(...conditions))
-    .orderBy(desc(capLoadingLists.createdAt))
+    .orderBy(desc(capLoadingLists.createdAt), desc(capLoadingLists.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -355,21 +338,18 @@ export async function listBayPlans({
   if (search)
     conditions.push(ilike(capBayPlans.fileReference, `%${search}%`));
   if (status) conditions.push(eq(capBayPlans.status, status));
-  if (cursor)
-    conditions.push(lt(capBayPlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capBayPlans.createdAt, capBayPlans.id, cc)); }
 
   const results = await db
     .select()
     .from(capBayPlans)
     .where(and(...conditions))
-    .orderBy(desc(capBayPlans.createdAt))
+    .orderBy(desc(capBayPlans.createdAt), desc(capBayPlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -407,21 +387,18 @@ export async function listStowagePlans({
   if (search)
     conditions.push(ilike(capStowagePlans.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(capStowagePlans.status, status));
-  if (cursor)
-    conditions.push(lt(capStowagePlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capStowagePlans.createdAt, capStowagePlans.id, cc)); }
 
   const results = await db
     .select()
     .from(capStowagePlans)
     .where(and(...conditions))
-    .orderBy(desc(capStowagePlans.createdAt))
+    .orderBy(desc(capStowagePlans.createdAt), desc(capStowagePlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -461,21 +438,18 @@ export async function listLoadOptimizations({
       ilike(capLoadOptimizations.optimizationRunId, `%${search}%`)
     );
   if (status) conditions.push(eq(capLoadOptimizations.status, status));
-  if (cursor)
-    conditions.push(lt(capLoadOptimizations.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capLoadOptimizations.createdAt, capLoadOptimizations.id, cc)); }
 
   const results = await db
     .select()
     .from(capLoadOptimizations)
     .where(and(...conditions))
-    .orderBy(desc(capLoadOptimizations.createdAt))
+    .orderBy(desc(capLoadOptimizations.createdAt), desc(capLoadOptimizations.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -513,21 +487,18 @@ export async function listRevenueAnalytics({
   if (search)
     conditions.push(ilike(capRevenueAnalytics.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capRevenueAnalytics.status, status));
-  if (cursor)
-    conditions.push(lt(capRevenueAnalytics.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capRevenueAnalytics.createdAt, capRevenueAnalytics.id, cc)); }
 
   const results = await db
     .select()
     .from(capRevenueAnalytics)
     .where(and(...conditions))
-    .orderBy(desc(capRevenueAnalytics.createdAt))
+    .orderBy(desc(capRevenueAnalytics.createdAt), desc(capRevenueAnalytics.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -565,21 +536,18 @@ export async function listDemandForecasts({
   if (search)
     conditions.push(ilike(capDemandForecasts.tradeLane, `%${search}%`));
   if (status) conditions.push(eq(capDemandForecasts.status, status));
-  if (cursor)
-    conditions.push(lt(capDemandForecasts.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capDemandForecasts.createdAt, capDemandForecasts.id, cc)); }
 
   const results = await db
     .select()
     .from(capDemandForecasts)
     .where(and(...conditions))
-    .orderBy(desc(capDemandForecasts.createdAt))
+    .orderBy(desc(capDemandForecasts.createdAt), desc(capDemandForecasts.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -617,21 +585,18 @@ export async function listSchedulePerformances({
   if (search)
     conditions.push(ilike(capSchedulePerformances.portName, `%${search}%`));
   if (status) conditions.push(eq(capSchedulePerformances.status, status));
-  if (cursor)
-    conditions.push(lt(capSchedulePerformances.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(capSchedulePerformances.createdAt, capSchedulePerformances.id, cc)); }
 
   const results = await db
     .select()
     .from(capSchedulePerformances)
     .where(and(...conditions))
-    .orderBy(desc(capSchedulePerformances.createdAt))
+    .orderBy(desc(capSchedulePerformances.createdAt), desc(capSchedulePerformances.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Speed Consumption & Performance Monitoring
@@ -23,7 +24,7 @@ export const createSpeedConsumptionSchema = z.object({
   performanceIndex: z.string().optional(),
   weatherImpact: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSpeedConsumptionSchema = createSpeedConsumptionSchema.partial();
 
@@ -47,7 +48,7 @@ export const createCiiRatingSchema = z.object({
   complianceStatus: z.string().max(50).optional(),
   correctiveActionPlan: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCiiRatingSchema = createCiiRatingSchema.partial();
 
@@ -73,7 +74,7 @@ export const createEexiComplianceSchema = z.object({
   flagState: z.string().max(100).optional(),
   classificationSociety: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEexiComplianceSchema = createEexiComplianceSchema.partial();
 
@@ -105,7 +106,7 @@ export const createNoonReportSchema = z.object({
   eta: z.coerce.date().optional(),
   masterRemarks: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateNoonReportSchema = createNoonReportSchema.partial();
 
@@ -131,7 +132,7 @@ export const createVoyagePerformanceSchema = z.object({
   claimDirection: z.string().max(20).optional(),
   analysisReport: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyagePerformanceSchema = createVoyagePerformanceSchema.partial();
 
@@ -157,7 +158,7 @@ export const createWeatherRoutingSchema = z.object({
   riskAssessment: z.string().max(50).optional(),
   confidenceScore: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateWeatherRoutingSchema = createWeatherRoutingSchema.partial();
 
@@ -184,7 +185,7 @@ export const createCarbonEmissionSchema = z.object({
   reductionTarget: z.string().optional(),
   reductionAchieved: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCarbonEmissionSchema = createCarbonEmissionSchema.partial();
 
@@ -209,6 +210,6 @@ export const createFuelBenchmarkSchema = z.object({
   trendDirection: z.string().max(20).optional(),
   recommendations: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFuelBenchmarkSchema = createFuelBenchmarkSchema.partial();

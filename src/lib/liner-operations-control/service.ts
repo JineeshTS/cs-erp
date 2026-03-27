@@ -10,6 +10,7 @@ import {
   locCargoMixOptimizations,
   locLoadFactorReports,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listCargoCutoffs({ tenantId, search, status, cursor, limit
   const conditions = [eq(locCargoCutoffs.tenantId, tenantId), isNull(locCargoCutoffs.deletedAt)];
   if (search) conditions.push(or(ilike(locCargoCutoffs.cutoffRef, `%${search}%`), ilike(locCargoCutoffs.portName, `%${search}%`))!);
   if (status) conditions.push(eq(locCargoCutoffs.status, status));
-  if (cursor) conditions.push(lt(locCargoCutoffs.createdAt, new Date(cursor)));
-  const results = await db.select().from(locCargoCutoffs).where(and(...conditions)).orderBy(desc(locCargoCutoffs.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locCargoCutoffs.createdAt, locCargoCutoffs.id, cc)); }
+  const results = await db.select().from(locCargoCutoffs).where(and(...conditions)).orderBy(desc(locCargoCutoffs.createdAt), desc(locCargoCutoffs.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCargoCutoff(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listOverbookingRollovers({ tenantId, search, status, curso
   const conditions = [eq(locOverbookingRollovers.tenantId, tenantId), isNull(locOverbookingRollovers.deletedAt)];
   if (search) conditions.push(or(ilike(locOverbookingRollovers.rolloverRef, `%${search}%`), ilike(locOverbookingRollovers.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(locOverbookingRollovers.status, status));
-  if (cursor) conditions.push(lt(locOverbookingRollovers.createdAt, new Date(cursor)));
-  const results = await db.select().from(locOverbookingRollovers).where(and(...conditions)).orderBy(desc(locOverbookingRollovers.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locOverbookingRollovers.createdAt, locOverbookingRollovers.id, cc)); }
+  const results = await db.select().from(locOverbookingRollovers).where(and(...conditions)).orderBy(desc(locOverbookingRollovers.createdAt), desc(locOverbookingRollovers.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getOverbookingRollover(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listRollingUpgrades({ tenantId, search, status, cursor, li
   const conditions = [eq(locRollingUpgrades.tenantId, tenantId), isNull(locRollingUpgrades.deletedAt)];
   if (search) conditions.push(or(ilike(locRollingUpgrades.upgradeRef, `%${search}%`), ilike(locRollingUpgrades.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(locRollingUpgrades.status, status));
-  if (cursor) conditions.push(lt(locRollingUpgrades.createdAt, new Date(cursor)));
-  const results = await db.select().from(locRollingUpgrades).where(and(...conditions)).orderBy(desc(locRollingUpgrades.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locRollingUpgrades.createdAt, locRollingUpgrades.id, cc)); }
+  const results = await db.select().from(locRollingUpgrades).where(and(...conditions)).orderBy(desc(locRollingUpgrades.createdAt), desc(locRollingUpgrades.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRollingUpgrade(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listRevenueIntegrityAudits({ tenantId, search, status, cur
   const conditions = [eq(locRevenueIntegrityAudits.tenantId, tenantId), isNull(locRevenueIntegrityAudits.deletedAt)];
   if (search) conditions.push(or(ilike(locRevenueIntegrityAudits.auditRef, `%${search}%`), ilike(locRevenueIntegrityAudits.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(locRevenueIntegrityAudits.status, status));
-  if (cursor) conditions.push(lt(locRevenueIntegrityAudits.createdAt, new Date(cursor)));
-  const results = await db.select().from(locRevenueIntegrityAudits).where(and(...conditions)).orderBy(desc(locRevenueIntegrityAudits.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locRevenueIntegrityAudits.createdAt, locRevenueIntegrityAudits.id, cc)); }
+  const results = await db.select().from(locRevenueIntegrityAudits).where(and(...conditions)).orderBy(desc(locRevenueIntegrityAudits.createdAt), desc(locRevenueIntegrityAudits.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRevenueIntegrityAudit(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listSlotSwapCoordinations({ tenantId, search, status, curs
   const conditions = [eq(locSlotSwapCoordinations.tenantId, tenantId), isNull(locSlotSwapCoordinations.deletedAt)];
   if (search) conditions.push(or(ilike(locSlotSwapCoordinations.swapRef, `%${search}%`), ilike(locSlotSwapCoordinations.partnerName, `%${search}%`))!);
   if (status) conditions.push(eq(locSlotSwapCoordinations.status, status));
-  if (cursor) conditions.push(lt(locSlotSwapCoordinations.createdAt, new Date(cursor)));
-  const results = await db.select().from(locSlotSwapCoordinations).where(and(...conditions)).orderBy(desc(locSlotSwapCoordinations.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locSlotSwapCoordinations.createdAt, locSlotSwapCoordinations.id, cc)); }
+  const results = await db.select().from(locSlotSwapCoordinations).where(and(...conditions)).orderBy(desc(locSlotSwapCoordinations.createdAt), desc(locSlotSwapCoordinations.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSlotSwapCoordination(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listScheduleDeviations({ tenantId, search, status, cursor,
   const conditions = [eq(locScheduleDeviations.tenantId, tenantId), isNull(locScheduleDeviations.deletedAt)];
   if (search) conditions.push(or(ilike(locScheduleDeviations.deviationRef, `%${search}%`), ilike(locScheduleDeviations.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(locScheduleDeviations.status, status));
-  if (cursor) conditions.push(lt(locScheduleDeviations.createdAt, new Date(cursor)));
-  const results = await db.select().from(locScheduleDeviations).where(and(...conditions)).orderBy(desc(locScheduleDeviations.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locScheduleDeviations.createdAt, locScheduleDeviations.id, cc)); }
+  const results = await db.select().from(locScheduleDeviations).where(and(...conditions)).orderBy(desc(locScheduleDeviations.createdAt), desc(locScheduleDeviations.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getScheduleDeviation(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listCargoMixOptimizations({ tenantId, search, status, curs
   const conditions = [eq(locCargoMixOptimizations.tenantId, tenantId), isNull(locCargoMixOptimizations.deletedAt)];
   if (search) conditions.push(or(ilike(locCargoMixOptimizations.optimizationRef, `%${search}%`), ilike(locCargoMixOptimizations.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(locCargoMixOptimizations.status, status));
-  if (cursor) conditions.push(lt(locCargoMixOptimizations.createdAt, new Date(cursor)));
-  const results = await db.select().from(locCargoMixOptimizations).where(and(...conditions)).orderBy(desc(locCargoMixOptimizations.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locCargoMixOptimizations.createdAt, locCargoMixOptimizations.id, cc)); }
+  const results = await db.select().from(locCargoMixOptimizations).where(and(...conditions)).orderBy(desc(locCargoMixOptimizations.createdAt), desc(locCargoMixOptimizations.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCargoMixOptimization(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listLoadFactorReports({ tenantId, search, status, cursor, 
   const conditions = [eq(locLoadFactorReports.tenantId, tenantId), isNull(locLoadFactorReports.deletedAt)];
   if (search) conditions.push(or(ilike(locLoadFactorReports.reportRef, `%${search}%`), ilike(locLoadFactorReports.vesselName, `%${search}%`))!);
   if (status) conditions.push(eq(locLoadFactorReports.status, status));
-  if (cursor) conditions.push(lt(locLoadFactorReports.createdAt, new Date(cursor)));
-  const results = await db.select().from(locLoadFactorReports).where(and(...conditions)).orderBy(desc(locLoadFactorReports.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(locLoadFactorReports.createdAt, locLoadFactorReports.id, cc)); }
+  const results = await db.select().from(locLoadFactorReports).where(and(...conditions)).orderBy(desc(locLoadFactorReports.createdAt), desc(locLoadFactorReports.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getLoadFactorReport(id: string, tenantId: string) {

@@ -10,6 +10,7 @@ import {
   acmIsoCertificationTrackings,
   acmAiRiskDetections,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listInternalAudits({ tenantId, search, status, cursor, lim
   const conditions = [eq(acmInternalAudits.tenantId, tenantId), isNull(acmInternalAudits.deletedAt)];
   if (search) conditions.push(or(ilike(acmInternalAudits.auditRef, `%${search}%`), ilike(acmInternalAudits.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmInternalAudits.status, status));
-  if (cursor) conditions.push(lt(acmInternalAudits.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmInternalAudits).where(and(...conditions)).orderBy(desc(acmInternalAudits.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmInternalAudits.createdAt, acmInternalAudits.id, cc)); }
+  const results = await db.select().from(acmInternalAudits).where(and(...conditions)).orderBy(desc(acmInternalAudits.createdAt), desc(acmInternalAudits.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInternalAudit(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listRegulatoryComplianceCalendars({ tenantId, search, stat
   const conditions = [eq(acmRegulatoryComplianceCalendars.tenantId, tenantId), isNull(acmRegulatoryComplianceCalendars.deletedAt)];
   if (search) conditions.push(or(ilike(acmRegulatoryComplianceCalendars.calendarRef, `%${search}%`), ilike(acmRegulatoryComplianceCalendars.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRegulatoryComplianceCalendars.status, status));
-  if (cursor) conditions.push(lt(acmRegulatoryComplianceCalendars.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmRegulatoryComplianceCalendars).where(and(...conditions)).orderBy(desc(acmRegulatoryComplianceCalendars.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmRegulatoryComplianceCalendars.createdAt, acmRegulatoryComplianceCalendars.id, cc)); }
+  const results = await db.select().from(acmRegulatoryComplianceCalendars).where(and(...conditions)).orderBy(desc(acmRegulatoryComplianceCalendars.createdAt), desc(acmRegulatoryComplianceCalendars.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRegulatoryComplianceCalendar(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listRiskRegisters({ tenantId, search, status, cursor, limi
   const conditions = [eq(acmRiskRegisters.tenantId, tenantId), isNull(acmRiskRegisters.deletedAt)];
   if (search) conditions.push(or(ilike(acmRiskRegisters.riskRef, `%${search}%`), ilike(acmRiskRegisters.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRiskRegisters.status, status));
-  if (cursor) conditions.push(lt(acmRiskRegisters.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmRiskRegisters).where(and(...conditions)).orderBy(desc(acmRiskRegisters.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmRiskRegisters.createdAt, acmRiskRegisters.id, cc)); }
+  const results = await db.select().from(acmRiskRegisters).where(and(...conditions)).orderBy(desc(acmRiskRegisters.createdAt), desc(acmRiskRegisters.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRiskRegister(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listPolicyProcedures({ tenantId, search, status, cursor, l
   const conditions = [eq(acmPolicyProcedures.tenantId, tenantId), isNull(acmPolicyProcedures.deletedAt)];
   if (search) conditions.push(or(ilike(acmPolicyProcedures.policyRef, `%${search}%`), ilike(acmPolicyProcedures.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmPolicyProcedures.status, status));
-  if (cursor) conditions.push(lt(acmPolicyProcedures.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmPolicyProcedures).where(and(...conditions)).orderBy(desc(acmPolicyProcedures.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmPolicyProcedures.createdAt, acmPolicyProcedures.id, cc)); }
+  const results = await db.select().from(acmPolicyProcedures).where(and(...conditions)).orderBy(desc(acmPolicyProcedures.createdAt), desc(acmPolicyProcedures.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPolicyProcedure(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listRegulatoryReportingSubmissions({ tenantId, search, sta
   const conditions = [eq(acmRegulatoryReportingSubmissions.tenantId, tenantId), isNull(acmRegulatoryReportingSubmissions.deletedAt)];
   if (search) conditions.push(or(ilike(acmRegulatoryReportingSubmissions.submissionRef, `%${search}%`), ilike(acmRegulatoryReportingSubmissions.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmRegulatoryReportingSubmissions.status, status));
-  if (cursor) conditions.push(lt(acmRegulatoryReportingSubmissions.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmRegulatoryReportingSubmissions).where(and(...conditions)).orderBy(desc(acmRegulatoryReportingSubmissions.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmRegulatoryReportingSubmissions.createdAt, acmRegulatoryReportingSubmissions.id, cc)); }
+  const results = await db.select().from(acmRegulatoryReportingSubmissions).where(and(...conditions)).orderBy(desc(acmRegulatoryReportingSubmissions.createdAt), desc(acmRegulatoryReportingSubmissions.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getRegulatoryReportingSubmission(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listSoxFinancialControls({ tenantId, search, status, curso
   const conditions = [eq(acmSoxFinancialControls.tenantId, tenantId), isNull(acmSoxFinancialControls.deletedAt)];
   if (search) conditions.push(or(ilike(acmSoxFinancialControls.controlRef, `%${search}%`), ilike(acmSoxFinancialControls.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmSoxFinancialControls.status, status));
-  if (cursor) conditions.push(lt(acmSoxFinancialControls.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmSoxFinancialControls).where(and(...conditions)).orderBy(desc(acmSoxFinancialControls.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmSoxFinancialControls.createdAt, acmSoxFinancialControls.id, cc)); }
+  const results = await db.select().from(acmSoxFinancialControls).where(and(...conditions)).orderBy(desc(acmSoxFinancialControls.createdAt), desc(acmSoxFinancialControls.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSoxFinancialControl(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listIsoCertificationTrackings({ tenantId, search, status, 
   const conditions = [eq(acmIsoCertificationTrackings.tenantId, tenantId), isNull(acmIsoCertificationTrackings.deletedAt)];
   if (search) conditions.push(or(ilike(acmIsoCertificationTrackings.certificationRef, `%${search}%`), ilike(acmIsoCertificationTrackings.standard, `%${search}%`))!);
   if (status) conditions.push(eq(acmIsoCertificationTrackings.status, status));
-  if (cursor) conditions.push(lt(acmIsoCertificationTrackings.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmIsoCertificationTrackings).where(and(...conditions)).orderBy(desc(acmIsoCertificationTrackings.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmIsoCertificationTrackings.createdAt, acmIsoCertificationTrackings.id, cc)); }
+  const results = await db.select().from(acmIsoCertificationTrackings).where(and(...conditions)).orderBy(desc(acmIsoCertificationTrackings.createdAt), desc(acmIsoCertificationTrackings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getIsoCertificationTracking(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listAiRiskDetections({ tenantId, search, status, cursor, l
   const conditions = [eq(acmAiRiskDetections.tenantId, tenantId), isNull(acmAiRiskDetections.deletedAt)];
   if (search) conditions.push(or(ilike(acmAiRiskDetections.detectionRef, `%${search}%`), ilike(acmAiRiskDetections.title, `%${search}%`))!);
   if (status) conditions.push(eq(acmAiRiskDetections.status, status));
-  if (cursor) conditions.push(lt(acmAiRiskDetections.createdAt, new Date(cursor)));
-  const results = await db.select().from(acmAiRiskDetections).where(and(...conditions)).orderBy(desc(acmAiRiskDetections.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(acmAiRiskDetections.createdAt, acmAiRiskDetections.id, cc)); }
+  const results = await db.select().from(acmAiRiskDetections).where(and(...conditions)).orderBy(desc(acmAiRiskDetections.createdAt), desc(acmAiRiskDetections.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getAiRiskDetection(id: string, tenantId: string) {

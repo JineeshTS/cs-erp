@@ -18,6 +18,7 @@ import {
   scmLeads,
   scmCampaigns,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 type ListParams = {
   tenantId: string;
@@ -44,13 +45,13 @@ export async function listCustomers({
   ];
   if (search) conditions.push(ilike(scmCustomers.companyName, `%${search}%`));
   if (status) conditions.push(eq(scmCustomers.status, status));
-  if (cursor) conditions.push(lt(scmCustomers.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmCustomers.createdAt, scmCustomers.id, cc)); }
 
   const results = await db
     .select()
     .from(scmCustomers)
     .where(and(...conditions))
-    .orderBy(desc(scmCustomers.createdAt))
+    .orderBy(desc(scmCustomers.createdAt), desc(scmCustomers.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -93,13 +94,13 @@ export async function listCustomerContacts({
   ];
   if (customerId) conditions.push(eq(scmCustomerContacts.customerId, customerId));
   if (search) conditions.push(ilike(scmCustomerContacts.firstName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmCustomerContacts.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmCustomerContacts.createdAt, scmCustomerContacts.id, cc)); }
 
   const results = await db
     .select()
     .from(scmCustomerContacts)
     .where(and(...conditions))
-    .orderBy(desc(scmCustomerContacts.createdAt))
+    .orderBy(desc(scmCustomerContacts.createdAt), desc(scmCustomerContacts.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -141,13 +142,13 @@ export async function listCustomerSegments({
     isNull(scmCustomerSegments.deletedAt),
   ];
   if (search) conditions.push(ilike(scmCustomerSegments.segmentName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmCustomerSegments.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmCustomerSegments.createdAt, scmCustomerSegments.id, cc)); }
 
   const results = await db
     .select()
     .from(scmCustomerSegments)
     .where(and(...conditions))
-    .orderBy(desc(scmCustomerSegments.createdAt))
+    .orderBy(desc(scmCustomerSegments.createdAt), desc(scmCustomerSegments.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -189,13 +190,13 @@ export async function listPipelineStages({
     isNull(scmPipelineStages.deletedAt),
   ];
   if (search) conditions.push(ilike(scmPipelineStages.stageName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmPipelineStages.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmPipelineStages.createdAt, scmPipelineStages.id, cc)); }
 
   const results = await db
     .select()
     .from(scmPipelineStages)
     .where(and(...conditions))
-    .orderBy(desc(scmPipelineStages.createdAt))
+    .orderBy(desc(scmPipelineStages.createdAt), desc(scmPipelineStages.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -239,13 +240,13 @@ export async function listOpportunities({
   ];
   if (search) conditions.push(ilike(scmOpportunities.opportunityName, `%${search}%`));
   if (status) conditions.push(eq(scmOpportunities.status, status));
-  if (cursor) conditions.push(lt(scmOpportunities.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmOpportunities.createdAt, scmOpportunities.id, cc)); }
 
   const results = await db
     .select()
     .from(scmOpportunities)
     .where(and(...conditions))
-    .orderBy(desc(scmOpportunities.createdAt))
+    .orderBy(desc(scmOpportunities.createdAt), desc(scmOpportunities.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -290,13 +291,13 @@ export async function listOpportunityActivities({
   if (opportunityId) conditions.push(eq(scmOpportunityActivities.opportunityId, opportunityId));
   if (search) conditions.push(ilike(scmOpportunityActivities.subject, `%${search}%`));
   if (status) conditions.push(eq(scmOpportunityActivities.status, status));
-  if (cursor) conditions.push(lt(scmOpportunityActivities.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmOpportunityActivities.createdAt, scmOpportunityActivities.id, cc)); }
 
   const results = await db
     .select()
     .from(scmOpportunityActivities)
     .where(and(...conditions))
-    .orderBy(desc(scmOpportunityActivities.createdAt))
+    .orderBy(desc(scmOpportunityActivities.createdAt), desc(scmOpportunityActivities.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -340,13 +341,13 @@ export async function listRateQuotations({
   ];
   if (search) conditions.push(ilike(scmRateQuotations.quotationNumber, `%${search}%`));
   if (status) conditions.push(eq(scmRateQuotations.status, status));
-  if (cursor) conditions.push(lt(scmRateQuotations.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmRateQuotations.createdAt, scmRateQuotations.id, cc)); }
 
   const results = await db
     .select()
     .from(scmRateQuotations)
     .where(and(...conditions))
-    .orderBy(desc(scmRateQuotations.createdAt))
+    .orderBy(desc(scmRateQuotations.createdAt), desc(scmRateQuotations.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -389,13 +390,13 @@ export async function listQuotationLineItems({
   ];
   if (quotationId) conditions.push(eq(scmQuotationLineItems.quotationId, quotationId));
   if (search) conditions.push(ilike(scmQuotationLineItems.chargeName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmQuotationLineItems.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmQuotationLineItems.createdAt, scmQuotationLineItems.id, cc)); }
 
   const results = await db
     .select()
     .from(scmQuotationLineItems)
     .where(and(...conditions))
-    .orderBy(desc(scmQuotationLineItems.createdAt))
+    .orderBy(desc(scmQuotationLineItems.createdAt), desc(scmQuotationLineItems.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -439,13 +440,13 @@ export async function listContracts({
   ];
   if (search) conditions.push(ilike(scmContracts.contractName, `%${search}%`));
   if (status) conditions.push(eq(scmContracts.status, status));
-  if (cursor) conditions.push(lt(scmContracts.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmContracts.createdAt, scmContracts.id, cc)); }
 
   const results = await db
     .select()
     .from(scmContracts)
     .where(and(...conditions))
-    .orderBy(desc(scmContracts.createdAt))
+    .orderBy(desc(scmContracts.createdAt), desc(scmContracts.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -488,13 +489,13 @@ export async function listContractLineItems({
   ];
   if (contractId) conditions.push(eq(scmContractLineItems.contractId, contractId));
   if (search) conditions.push(ilike(scmContractLineItems.chargeName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmContractLineItems.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmContractLineItems.createdAt, scmContractLineItems.id, cc)); }
 
   const results = await db
     .select()
     .from(scmContractLineItems)
     .where(and(...conditions))
-    .orderBy(desc(scmContractLineItems.createdAt))
+    .orderBy(desc(scmContractLineItems.createdAt), desc(scmContractLineItems.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -538,13 +539,13 @@ export async function listAccountPlans({
   ];
   if (search) conditions.push(ilike(scmAccountPlans.planName, `%${search}%`));
   if (status) conditions.push(eq(scmAccountPlans.status, status));
-  if (cursor) conditions.push(lt(scmAccountPlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmAccountPlans.createdAt, scmAccountPlans.id, cc)); }
 
   const results = await db
     .select()
     .from(scmAccountPlans)
     .where(and(...conditions))
-    .orderBy(desc(scmAccountPlans.createdAt))
+    .orderBy(desc(scmAccountPlans.createdAt), desc(scmAccountPlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -588,13 +589,13 @@ export async function listSalesTargets({
   ];
   if (search) conditions.push(ilike(scmSalesTargets.targetName, `%${search}%`));
   if (status) conditions.push(eq(scmSalesTargets.status, status));
-  if (cursor) conditions.push(lt(scmSalesTargets.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmSalesTargets.createdAt, scmSalesTargets.id, cc)); }
 
   const results = await db
     .select()
     .from(scmSalesTargets)
     .where(and(...conditions))
-    .orderBy(desc(scmSalesTargets.createdAt))
+    .orderBy(desc(scmSalesTargets.createdAt), desc(scmSalesTargets.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -636,13 +637,13 @@ export async function listIncentiveRules({
     isNull(scmIncentiveRules.deletedAt),
   ];
   if (search) conditions.push(ilike(scmIncentiveRules.ruleName, `%${search}%`));
-  if (cursor) conditions.push(lt(scmIncentiveRules.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmIncentiveRules.createdAt, scmIncentiveRules.id, cc)); }
 
   const results = await db
     .select()
     .from(scmIncentiveRules)
     .where(and(...conditions))
-    .orderBy(desc(scmIncentiveRules.createdAt))
+    .orderBy(desc(scmIncentiveRules.createdAt), desc(scmIncentiveRules.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -687,13 +688,13 @@ export async function listOnboardingChecklists({
   if (customerId) conditions.push(eq(scmOnboardingChecklists.customerId, customerId));
   if (search) conditions.push(ilike(scmOnboardingChecklists.taskName, `%${search}%`));
   if (status) conditions.push(eq(scmOnboardingChecklists.status, status));
-  if (cursor) conditions.push(lt(scmOnboardingChecklists.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmOnboardingChecklists.createdAt, scmOnboardingChecklists.id, cc)); }
 
   const results = await db
     .select()
     .from(scmOnboardingChecklists)
     .where(and(...conditions))
-    .orderBy(desc(scmOnboardingChecklists.createdAt))
+    .orderBy(desc(scmOnboardingChecklists.createdAt), desc(scmOnboardingChecklists.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -737,13 +738,13 @@ export async function listLeads({
   ];
   if (search) conditions.push(ilike(scmLeads.companyName, `%${search}%`));
   if (status) conditions.push(eq(scmLeads.status, status));
-  if (cursor) conditions.push(lt(scmLeads.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmLeads.createdAt, scmLeads.id, cc)); }
 
   const results = await db
     .select()
     .from(scmLeads)
     .where(and(...conditions))
-    .orderBy(desc(scmLeads.createdAt))
+    .orderBy(desc(scmLeads.createdAt), desc(scmLeads.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -787,13 +788,13 @@ export async function listCampaigns({
   ];
   if (search) conditions.push(ilike(scmCampaigns.campaignName, `%${search}%`));
   if (status) conditions.push(eq(scmCampaigns.status, status));
-  if (cursor) conditions.push(lt(scmCampaigns.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(scmCampaigns.createdAt, scmCampaigns.id, cc)); }
 
   const results = await db
     .select()
     .from(scmCampaigns)
     .where(and(...conditions))
-    .orderBy(desc(scmCampaigns.createdAt))
+    .orderBy(desc(scmCampaigns.createdAt), desc(scmCampaigns.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;

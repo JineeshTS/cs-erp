@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Voyage Close Procedure & Sign-Off
@@ -17,7 +18,7 @@ export const createVoyageCloseSchema = z.object({
   netResult: z.string().optional(),
   isSignedOff: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyageCloseSchema = createVoyageCloseSchema.partial();
 
@@ -39,7 +40,7 @@ export const createTcSettlementSchema = z.object({
   netPayable: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTcSettlementSchema = createTcSettlementSchema.partial();
 
@@ -65,7 +66,7 @@ export const createVoyagePnlSchema = z.object({
   approvedBy: z.string().max(255).optional(),
   approvedDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyagePnlSchema = createVoyagePnlSchema.partial();
 
@@ -85,7 +86,7 @@ export const createHireReconciliationSchema = z.object({
   resolvedItems: z.number().int().optional(),
   isReconciled: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHireReconciliationSchema = createHireReconciliationSchema.partial();
 
@@ -105,7 +106,7 @@ export const createResultWorkflowSchema = z.object({
   varianceAmount: z.string().optional(),
   variancePct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateResultWorkflowSchema = createResultWorkflowSchema.partial();
 
@@ -126,7 +127,7 @@ export const createIntercoSettlementSchema = z.object({
   settledDate: z.coerce.date().optional(),
   isSettled: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIntercoSettlementSchema = createIntercoSettlementSchema.partial();
 
@@ -147,7 +148,7 @@ export const createProfitBenchmarkSchema = z.object({
   performanceScore: z.string().optional(),
   aiInsights: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateProfitBenchmarkSchema = createProfitBenchmarkSchema.partial();
 
@@ -167,6 +168,6 @@ export const createVoyageAnalyticsSchema = z.object({
   topPerformer: z.string().max(255).optional(),
   reportUrl: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyageAnalyticsSchema = createVoyageAnalyticsSchema.partial();

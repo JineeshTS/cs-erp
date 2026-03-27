@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Pre-Load Cargo Survey Management
@@ -30,7 +31,7 @@ export const createCargoSurveySchema = z.object({
   clientRef: z.string().max(50).optional(),
   recommendations: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoSurveySchema = createCargoSurveySchema.partial();
 
@@ -63,7 +64,7 @@ export const createContainerSurveySchema = z.object({
   scheduledAt: z.coerce.date().optional(),
   completedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContainerSurveySchema = createContainerSurveySchema.partial();
 
@@ -97,7 +98,7 @@ export const createDraftSurveySchema = z.object({
   scheduledAt: z.coerce.date().optional(),
   completedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDraftSurveySchema = createDraftSurveySchema.partial();
 
@@ -129,7 +130,7 @@ export const createHireSurveySchema = z.object({
   deliveryDate: z.coerce.date().optional(),
   redeliveryDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHireSurveySchema = createHireSurveySchema.partial();
 
@@ -162,7 +163,7 @@ export const createHatchInspectionSchema = z.object({
   scheduledAt: z.coerce.date().optional(),
   completedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHatchInspectionSchema = createHatchInspectionSchema.partial();
 
@@ -199,7 +200,7 @@ export const createReeferPtiSurveySchema = z.object({
   completedAt: z.coerce.date().optional(),
   nextPtiDue: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateReeferPtiSurveySchema = createReeferPtiSurveySchema.partial();
 
@@ -228,7 +229,7 @@ export const createClassificationSurveySchema = z.object({
   completedAt: z.coerce.date().optional(),
   overallResult: z.enum(["passed", "conditional", "failed"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClassificationSurveySchema = createClassificationSurveySchema.partial();
 
@@ -256,6 +257,6 @@ export const createSurveyReportSchema = z.object({
   approvedBy: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSurveyReportSchema = createSurveyReportSchema.partial();

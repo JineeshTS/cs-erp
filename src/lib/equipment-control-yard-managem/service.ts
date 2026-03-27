@@ -14,6 +14,7 @@ import {
   eqyAvailabilityPlans,
   eqyRepositioningOptimizations,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 type ListParams = {
   tenantId: string;
@@ -41,21 +42,18 @@ export async function listContainerFleet({
   if (search)
     conditions.push(ilike(eqyContainerFleet.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyContainerFleet.status, status));
-  if (cursor)
-    conditions.push(lt(eqyContainerFleet.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyContainerFleet.createdAt, eqyContainerFleet.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyContainerFleet)
     .where(and(...conditions))
-    .orderBy(desc(eqyContainerFleet.createdAt))
+    .orderBy(desc(eqyContainerFleet.createdAt), desc(eqyContainerFleet.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -93,21 +91,18 @@ export async function listRepositioningPlans({
   if (search)
     conditions.push(ilike(eqyRepositioningPlans.planReference, `%${search}%`));
   if (status) conditions.push(eq(eqyRepositioningPlans.status, status));
-  if (cursor)
-    conditions.push(lt(eqyRepositioningPlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyRepositioningPlans.createdAt, eqyRepositioningPlans.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyRepositioningPlans)
     .where(and(...conditions))
-    .orderBy(desc(eqyRepositioningPlans.createdAt))
+    .orderBy(desc(eqyRepositioningPlans.createdAt), desc(eqyRepositioningPlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -145,21 +140,18 @@ export async function listReeferContainers({
   if (search)
     conditions.push(ilike(eqyReeferContainers.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyReeferContainers.status, status));
-  if (cursor)
-    conditions.push(lt(eqyReeferContainers.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyReeferContainers.createdAt, eqyReeferContainers.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyReeferContainers)
     .where(and(...conditions))
-    .orderBy(desc(eqyReeferContainers.createdAt))
+    .orderBy(desc(eqyReeferContainers.createdAt), desc(eqyReeferContainers.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -197,21 +189,18 @@ export async function listMaintenanceRepairs({
   if (search)
     conditions.push(ilike(eqyMaintenanceRepairs.mnrReference, `%${search}%`));
   if (status) conditions.push(eq(eqyMaintenanceRepairs.status, status));
-  if (cursor)
-    conditions.push(lt(eqyMaintenanceRepairs.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyMaintenanceRepairs.createdAt, eqyMaintenanceRepairs.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyMaintenanceRepairs)
     .where(and(...conditions))
-    .orderBy(desc(eqyMaintenanceRepairs.createdAt))
+    .orderBy(desc(eqyMaintenanceRepairs.createdAt), desc(eqyMaintenanceRepairs.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -249,21 +238,18 @@ export async function listYardSlots({
   if (search)
     conditions.push(ilike(eqyYardSlots.yardName, `%${search}%`));
   if (status) conditions.push(eq(eqyYardSlots.status, status));
-  if (cursor)
-    conditions.push(lt(eqyYardSlots.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyYardSlots.createdAt, eqyYardSlots.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyYardSlots)
     .where(and(...conditions))
-    .orderBy(desc(eqyYardSlots.createdAt))
+    .orderBy(desc(eqyYardSlots.createdAt), desc(eqyYardSlots.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -301,21 +287,18 @@ export async function listGateMovements({
   if (search)
     conditions.push(ilike(eqyGateMovements.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyGateMovements.status, status));
-  if (cursor)
-    conditions.push(lt(eqyGateMovements.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyGateMovements.createdAt, eqyGateMovements.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyGateMovements)
     .where(and(...conditions))
-    .orderBy(desc(eqyGateMovements.createdAt))
+    .orderBy(desc(eqyGateMovements.createdAt), desc(eqyGateMovements.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -355,21 +338,18 @@ export async function listEquipmentInterchanges({
       ilike(eqyEquipmentInterchanges.interchangeReference, `%${search}%`)
     );
   if (status) conditions.push(eq(eqyEquipmentInterchanges.status, status));
-  if (cursor)
-    conditions.push(lt(eqyEquipmentInterchanges.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyEquipmentInterchanges.createdAt, eqyEquipmentInterchanges.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyEquipmentInterchanges)
     .where(and(...conditions))
-    .orderBy(desc(eqyEquipmentInterchanges.createdAt))
+    .orderBy(desc(eqyEquipmentInterchanges.createdAt), desc(eqyEquipmentInterchanges.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -407,21 +387,18 @@ export async function listOnHireOffHire({
   if (search)
     conditions.push(ilike(eqyOnHireOffHire.contractReference, `%${search}%`));
   if (status) conditions.push(eq(eqyOnHireOffHire.status, status));
-  if (cursor)
-    conditions.push(lt(eqyOnHireOffHire.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyOnHireOffHire.createdAt, eqyOnHireOffHire.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyOnHireOffHire)
     .where(and(...conditions))
-    .orderBy(desc(eqyOnHireOffHire.createdAt))
+    .orderBy(desc(eqyOnHireOffHire.createdAt), desc(eqyOnHireOffHire.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -459,21 +436,18 @@ export async function listContainerSurveys({
   if (search)
     conditions.push(ilike(eqyContainerSurveys.containerNumber, `%${search}%`));
   if (status) conditions.push(eq(eqyContainerSurveys.status, status));
-  if (cursor)
-    conditions.push(lt(eqyContainerSurveys.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyContainerSurveys.createdAt, eqyContainerSurveys.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyContainerSurveys)
     .where(and(...conditions))
-    .orderBy(desc(eqyContainerSurveys.createdAt))
+    .orderBy(desc(eqyContainerSurveys.createdAt), desc(eqyContainerSurveys.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -511,21 +485,18 @@ export async function listLeasedContainers({
   if (search)
     conditions.push(ilike(eqyLeasedContainers.leaseReference, `%${search}%`));
   if (status) conditions.push(eq(eqyLeasedContainers.status, status));
-  if (cursor)
-    conditions.push(lt(eqyLeasedContainers.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyLeasedContainers.createdAt, eqyLeasedContainers.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyLeasedContainers)
     .where(and(...conditions))
-    .orderBy(desc(eqyLeasedContainers.createdAt))
+    .orderBy(desc(eqyLeasedContainers.createdAt), desc(eqyLeasedContainers.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -563,21 +534,18 @@ export async function listAvailabilityPlans({
   if (search)
     conditions.push(ilike(eqyAvailabilityPlans.planReference, `%${search}%`));
   if (status) conditions.push(eq(eqyAvailabilityPlans.status, status));
-  if (cursor)
-    conditions.push(lt(eqyAvailabilityPlans.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc)     conditions.push(cursorCondition(eqyAvailabilityPlans.createdAt, eqyAvailabilityPlans.id, cc)); }
 
   const results = await db
     .select()
     .from(eqyAvailabilityPlans)
     .where(and(...conditions))
-    .orderBy(desc(eqyAvailabilityPlans.createdAt))
+    .orderBy(desc(eqyAvailabilityPlans.createdAt), desc(eqyAvailabilityPlans.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }
@@ -620,21 +588,19 @@ export async function listRepositioningOptimizations({
     conditions.push(eq(eqyRepositioningOptimizations.status, status));
   if (cursor)
     conditions.push(
-      lt(eqyRepositioningOptimizations.createdAt, new Date(cursor))
+      cursorCondition(eqyRepositioningOptimizations.createdAt, eqyRepositioningOptimizations.id, parseCompoundCursor(cursor)!)
     );
 
   const results = await db
     .select()
     .from(eqyRepositioningOptimizations)
     .where(and(...conditions))
-    .orderBy(desc(eqyRepositioningOptimizations.createdAt))
+    .orderBy(desc(eqyRepositioningOptimizations.createdAt), desc(eqyRepositioningOptimizations.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore
-    ? data[data.length - 1].createdAt.toISOString()
-    : undefined;
+  const nextCursor = hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined;
 
   return { data, meta: { cursor: nextCursor, hasMore } };
 }

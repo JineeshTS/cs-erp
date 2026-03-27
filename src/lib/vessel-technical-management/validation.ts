@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Planned Maintenance Tasks
@@ -26,7 +27,7 @@ export const createPlannedMaintenanceTaskSchema = z.object({
   completedAt: z.coerce.date().optional(),
   completedByName: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePlannedMaintenanceTaskSchema = createPlannedMaintenanceTaskSchema.partial();
 
@@ -55,7 +56,7 @@ export const createDryDockPlanSchema = z.object({
   projectManagerName: z.string().max(255).optional(),
   workItems: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDryDockPlanSchema = createDryDockPlanSchema.partial();
 
@@ -82,7 +83,7 @@ export const createSurveyTrackingSchema = z.object({
   remediationRequired: z.boolean().optional(),
   remediationDeadline: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSurveyTrackingSchema = createSurveyTrackingSchema.partial();
 
@@ -112,7 +113,7 @@ export const createDefectRepairSchema = z.object({
   sparesUsed: z.record(z.string(), z.unknown()).optional(),
   photos: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDefectRepairSchema = createDefectRepairSchema.partial();
 
@@ -141,7 +142,7 @@ export const createSparePartSchema = z.object({
   leadTimeDays: z.number().int().optional(),
   preferredSupplierName: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSparePartSchema = createSparePartSchema.partial();
 
@@ -168,7 +169,7 @@ export const createTechnicalProcurementSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTechnicalProcurementSchema = createTechnicalProcurementSchema.partial();
 
@@ -197,7 +198,7 @@ export const createComplianceRecordSchema = z.object({
   nextInspectionDate: z.coerce.date().optional(),
   documentRefs: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateComplianceRecordSchema = createComplianceRecordSchema.partial();
 
@@ -226,6 +227,6 @@ export const createPredictiveMaintenanceSchema = z.object({
   actionDate: z.coerce.date().optional(),
   accuracy: z.number().int().min(0).max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePredictiveMaintenanceSchema = createPredictiveMaintenanceSchema.partial();

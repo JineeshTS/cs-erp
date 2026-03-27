@@ -10,6 +10,7 @@ import {
   mobExecutiveDashboards,
   mobPushNotifications,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listGateProcessings({ tenantId, search, status, cursor, li
   const conditions = [eq(mobGateProcessings.tenantId, tenantId), isNull(mobGateProcessings.deletedAt)];
   if (search) conditions.push(or(ilike(mobGateProcessings.gateRef, `%${search}%`), ilike(mobGateProcessings.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(mobGateProcessings.status, status));
-  if (cursor) conditions.push(lt(mobGateProcessings.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobGateProcessings).where(and(...conditions)).orderBy(desc(mobGateProcessings.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobGateProcessings.createdAt, mobGateProcessings.id, cc)); }
+  const results = await db.select().from(mobGateProcessings).where(and(...conditions)).orderBy(desc(mobGateProcessings.createdAt), desc(mobGateProcessings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getGateProcessing(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listYardInspections({ tenantId, search, status, cursor, li
   const conditions = [eq(mobYardInspections.tenantId, tenantId), isNull(mobYardInspections.deletedAt)];
   if (search) conditions.push(or(ilike(mobYardInspections.inspectionRef, `%${search}%`), ilike(mobYardInspections.inspectorName, `%${search}%`))!);
   if (status) conditions.push(eq(mobYardInspections.status, status));
-  if (cursor) conditions.push(lt(mobYardInspections.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobYardInspections).where(and(...conditions)).orderBy(desc(mobYardInspections.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobYardInspections.createdAt, mobYardInspections.id, cc)); }
+  const results = await db.select().from(mobYardInspections).where(and(...conditions)).orderBy(desc(mobYardInspections.createdAt), desc(mobYardInspections.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getYardInspection(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listContainerSurveys({ tenantId, search, status, cursor, l
   const conditions = [eq(mobContainerSurveys.tenantId, tenantId), isNull(mobContainerSurveys.deletedAt)];
   if (search) conditions.push(or(ilike(mobContainerSurveys.surveyRef, `%${search}%`), ilike(mobContainerSurveys.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(mobContainerSurveys.status, status));
-  if (cursor) conditions.push(lt(mobContainerSurveys.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobContainerSurveys).where(and(...conditions)).orderBy(desc(mobContainerSurveys.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobContainerSurveys.createdAt, mobContainerSurveys.id, cc)); }
+  const results = await db.select().from(mobContainerSurveys).where(and(...conditions)).orderBy(desc(mobContainerSurveys.createdAt), desc(mobContainerSurveys.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getContainerSurvey(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listOfflineSyncs({ tenantId, search, status, cursor, limit
   const conditions = [eq(mobOfflineSyncs.tenantId, tenantId), isNull(mobOfflineSyncs.deletedAt)];
   if (search) conditions.push(or(ilike(mobOfflineSyncs.syncRef, `%${search}%`), ilike(mobOfflineSyncs.deviceName, `%${search}%`))!);
   if (status) conditions.push(eq(mobOfflineSyncs.status, status));
-  if (cursor) conditions.push(lt(mobOfflineSyncs.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobOfflineSyncs).where(and(...conditions)).orderBy(desc(mobOfflineSyncs.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobOfflineSyncs.createdAt, mobOfflineSyncs.id, cc)); }
+  const results = await db.select().from(mobOfflineSyncs).where(and(...conditions)).orderBy(desc(mobOfflineSyncs.createdAt), desc(mobOfflineSyncs.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getOfflineSync(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listDamageAssessments({ tenantId, search, status, cursor, 
   const conditions = [eq(mobDamageAssessments.tenantId, tenantId), isNull(mobDamageAssessments.deletedAt)];
   if (search) conditions.push(or(ilike(mobDamageAssessments.assessmentRef, `%${search}%`), ilike(mobDamageAssessments.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(mobDamageAssessments.status, status));
-  if (cursor) conditions.push(lt(mobDamageAssessments.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobDamageAssessments).where(and(...conditions)).orderBy(desc(mobDamageAssessments.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobDamageAssessments.createdAt, mobDamageAssessments.id, cc)); }
+  const results = await db.select().from(mobDamageAssessments).where(and(...conditions)).orderBy(desc(mobDamageAssessments.createdAt), desc(mobDamageAssessments.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDamageAssessment(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listDriverDeliveries({ tenantId, search, status, cursor, l
   const conditions = [eq(mobDriverDeliveries.tenantId, tenantId), isNull(mobDriverDeliveries.deletedAt)];
   if (search) conditions.push(or(ilike(mobDriverDeliveries.deliveryRef, `%${search}%`), ilike(mobDriverDeliveries.containerNumber, `%${search}%`))!);
   if (status) conditions.push(eq(mobDriverDeliveries.status, status));
-  if (cursor) conditions.push(lt(mobDriverDeliveries.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobDriverDeliveries).where(and(...conditions)).orderBy(desc(mobDriverDeliveries.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobDriverDeliveries.createdAt, mobDriverDeliveries.id, cc)); }
+  const results = await db.select().from(mobDriverDeliveries).where(and(...conditions)).orderBy(desc(mobDriverDeliveries.createdAt), desc(mobDriverDeliveries.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDriverDelivery(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listExecutiveDashboards({ tenantId, search, status, cursor
   const conditions = [eq(mobExecutiveDashboards.tenantId, tenantId), isNull(mobExecutiveDashboards.deletedAt)];
   if (search) conditions.push(or(ilike(mobExecutiveDashboards.dashboardRef, `%${search}%`), ilike(mobExecutiveDashboards.dashboardName, `%${search}%`))!);
   if (status) conditions.push(eq(mobExecutiveDashboards.status, status));
-  if (cursor) conditions.push(lt(mobExecutiveDashboards.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobExecutiveDashboards).where(and(...conditions)).orderBy(desc(mobExecutiveDashboards.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobExecutiveDashboards.createdAt, mobExecutiveDashboards.id, cc)); }
+  const results = await db.select().from(mobExecutiveDashboards).where(and(...conditions)).orderBy(desc(mobExecutiveDashboards.createdAt), desc(mobExecutiveDashboards.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getExecutiveDashboard(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listPushNotifications({ tenantId, search, status, cursor, 
   const conditions = [eq(mobPushNotifications.tenantId, tenantId), isNull(mobPushNotifications.deletedAt)];
   if (search) conditions.push(or(ilike(mobPushNotifications.notificationRef, `%${search}%`), ilike(mobPushNotifications.title, `%${search}%`))!);
   if (status) conditions.push(eq(mobPushNotifications.status, status));
-  if (cursor) conditions.push(lt(mobPushNotifications.createdAt, new Date(cursor)));
-  const results = await db.select().from(mobPushNotifications).where(and(...conditions)).orderBy(desc(mobPushNotifications.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mobPushNotifications.createdAt, mobPushNotifications.id, cc)); }
+  const results = await db.select().from(mobPushNotifications).where(and(...conditions)).orderBy(desc(mobPushNotifications.createdAt), desc(mobPushNotifications.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPushNotification(id: string, tenantId: string) {

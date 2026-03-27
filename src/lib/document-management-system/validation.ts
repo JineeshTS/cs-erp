@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Document Category schemas
 export const createDocumentCategorySchema = z.object({

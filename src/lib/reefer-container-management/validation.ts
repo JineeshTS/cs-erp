@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Reefer Bookings
@@ -30,7 +31,7 @@ export const createReeferBookingSchema = z.object({
   acceptedByName: z.string().max(255).optional(),
   acceptedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateReeferBookingSchema = createReeferBookingSchema.partial();
 
@@ -62,7 +63,7 @@ export const createTempMonitoringSchema = z.object({
   alertType: z.string().max(30).optional(),
   dataSource: z.string().max(30).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTempMonitoringSchema = createTempMonitoringSchema.partial();
 
@@ -96,7 +97,7 @@ export const createPtiInspectionSchema = z.object({
   certificateExpiry: z.coerce.date().optional(),
   photosUrls: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePtiInspectionSchema = createPtiInspectionSchema.partial();
 
@@ -125,7 +126,7 @@ export const createPowerManagementSchema = z.object({
   gensetBackup: z.boolean().optional(),
   monitoredByName: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePowerManagementSchema = createPowerManagementSchema.partial();
 
@@ -155,7 +156,7 @@ export const createColdChainDocSchema = z.object({
   verifiedByName: z.string().max(255).optional(),
   verifiedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateColdChainDocSchema = createColdChainDocSchema.partial();
 
@@ -189,7 +190,7 @@ export const createBreakdownResponseSchema = z.object({
   containerSwapped: z.boolean().optional(),
   swappedToContainer: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBreakdownResponseSchema = createBreakdownResponseSchema.partial();
 
@@ -219,7 +220,7 @@ export const createTempAlertSchema = z.object({
   cargoImpact: z.string().max(30).optional(),
   notificationsSent: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTempAlertSchema = createTempAlertSchema.partial();
 
@@ -249,6 +250,6 @@ export const createClaimAnalyticsSchema = z.object({
   actualClaimAmount: z.string().optional(),
   predictionAccuracy: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimAnalyticsSchema = createClaimAnalyticsSchema.partial();

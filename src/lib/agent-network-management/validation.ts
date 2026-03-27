@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // General Agent GA Agreement Management
@@ -18,7 +19,7 @@ export const createGaAgreementSchema = z.object({
   exclusivityClause: z.boolean().optional(),
   performanceGuarantee: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGaAgreementSchema = createGaAgreementSchema.partial();
 
@@ -39,7 +40,7 @@ export const createSubAgentConfigSchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSubAgentConfigSchema = createSubAgentConfigSchema.partial();
 
@@ -61,7 +62,7 @@ export const createAgentCommissionSchema = z.object({
   paymentRef: z.string().max(100).optional(),
   invoiceNumber: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgentCommissionSchema = createAgentCommissionSchema.partial();
 
@@ -82,7 +83,7 @@ export const createAgencyDocumentSchema = z.object({
   fileSizeBytes: z.number().int().optional(),
   confidential: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgencyDocumentSchema = createAgencyDocumentSchema.partial();
 
@@ -102,7 +103,7 @@ export const createPerformanceKpiSchema = z.object({
   trendDirection: z.string().max(20).optional(),
   benchmarkValue: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePerformanceKpiSchema = createPerformanceKpiSchema.partial();
 
@@ -122,7 +123,7 @@ export const createPortalConfigSchema = z.object({
   lastLoginAt: z.coerce.date().optional(),
   activeSessions: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortalConfigSchema = createPortalConfigSchema.partial();
 
@@ -143,7 +144,7 @@ export const createBookingAuthoritySchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBookingAuthoritySchema = createBookingAuthoritySchema.partial();
 
@@ -163,6 +164,6 @@ export const createAgentIncentiveSchema = z.object({
   payoutDate: z.coerce.date().optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgentIncentiveSchema = createAgentIncentiveSchema.partial();

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // MARPOL Annex I to VI Compliance Tracking
@@ -16,7 +17,7 @@ export const createAnnexComplianceSchema = z.object({
   findingsCount: z.number().int().optional(),
   correctiveActions: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAnnexComplianceSchema = createAnnexComplianceSchema.partial();
 
@@ -36,7 +37,7 @@ export const createBallastWaterSchema = z.object({
   exchangeLongitude: z.string().optional(),
   isCompliant: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBallastWaterSchema = createBallastWaterSchema.partial();
 
@@ -55,7 +56,7 @@ export const createAntiFoulingSchema = z.object({
   issuingAuthority: z.string().max(255).optional(),
   isTbtFree: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAntiFoulingSchema = createAntiFoulingSchema.partial();
 
@@ -74,7 +75,7 @@ export const createWasteManagementSchema = z.object({
   receivingFacility: z.string().max(255).optional(),
   receiptNumber: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateWasteManagementSchema = createWasteManagementSchema.partial();
 
@@ -93,7 +94,7 @@ export const createSulphurCapSchema = z.object({
   hasScrubber: z.boolean().optional(),
   isCompliant: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSulphurCapSchema = createSulphurCapSchema.partial();
 
@@ -112,7 +113,7 @@ export const createCiiRatingSchema = z.object({
   improvementTarget: z.string().optional(),
   correctionPlan: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCiiRatingSchema = createCiiRatingSchema.partial();
 
@@ -131,7 +132,7 @@ export const createCargoCharterSchema = z.object({
   alignmentStatus: z.string().max(50).optional(),
   disclosureDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoCharterSchema = createCargoCharterSchema.partial();
 
@@ -152,6 +153,6 @@ export const createEnvironmentalIncidentSchema = z.object({
   reportedToAuthority: z.boolean().optional(),
   fineAmount: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEnvironmentalIncidentSchema = createEnvironmentalIncidentSchema.partial();

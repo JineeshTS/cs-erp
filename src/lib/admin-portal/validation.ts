@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Module Config schemas
 export const createModuleConfigSchema = z.object({

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Import Customs Clearance Management
@@ -36,7 +37,7 @@ export const createImportClearanceSchema = z.object({
   brokerName: z.string().max(255).optional(),
   brokerLicense: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateImportClearanceSchema = createImportClearanceSchema.partial();
 
@@ -71,7 +72,7 @@ export const createExportFilingSchema = z.object({
   brokerName: z.string().max(255).optional(),
   brokerLicense: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateExportFilingSchema = createExportFilingSchema.partial();
 
@@ -102,7 +103,7 @@ export const createTransitProcedureSchema = z.object({
   transitCompletedAt: z.coerce.date().optional(),
   discharged: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTransitProcedureSchema = createTransitProcedureSchema.partial();
 
@@ -135,7 +136,7 @@ export const createDutyCalculationSchema = z.object({
   calculatedByName: z.string().max(255).optional(),
   calculatedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDutyCalculationSchema = createDutyCalculationSchema.partial();
 
@@ -159,7 +160,7 @@ export const createAeoComplianceSchema = z.object({
   contactName: z.string().max(255).optional(),
   contactEmail: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAeoComplianceSchema = createAeoComplianceSchema.partial();
 
@@ -185,7 +186,7 @@ export const createIspsComplianceSchema = z.object({
   isscNumber: z.string().max(50).optional(),
   isscExpiresAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIspsComplianceSchema = createIspsComplianceSchema.partial();
 
@@ -209,7 +210,7 @@ export const createPscPreparationSchema = z.object({
   rectifiedAt: z.coerce.date().optional(),
   overallResult: z.enum(["clear", "deficiency", "detention"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePscPreparationSchema = createPscPreparationSchema.partial();
 
@@ -232,6 +233,6 @@ export const createImoRegulationSchema = z.object({
   documentUrl: z.string().max(500).optional(),
   supersedes: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateImoRegulationSchema = createImoRegulationSchema.partial();

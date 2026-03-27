@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Port Call Planning & Coordination
@@ -28,7 +29,7 @@ export const createPortCallPlanSchema = z.object({
   portChargesEstimate: z.string().optional(),
   portChargesCurrency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortCallPlanSchema = createPortCallPlanSchema.partial();
 
@@ -55,7 +56,7 @@ export const createHusbandryServiceSchema = z.object({
   currency: z.string().max(3).optional(),
   invoiceRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHusbandryServiceSchema = createHusbandryServiceSchema.partial();
 
@@ -78,7 +79,7 @@ export const createPreArrivalChecklistSchema = z.object({
   healthAuthorityNotified: z.boolean().optional(),
   assignedTo: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePreArrivalChecklistSchema = createPreArrivalChecklistSchema.partial();
 
@@ -106,7 +107,7 @@ export const createPortAuthorityCommunicationSchema = z.object({
   responseDeadline: z.coerce.date().optional(),
   responseText: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortAuthorityCommunicationSchema = createPortAuthorityCommunicationSchema.partial();
 
@@ -137,7 +138,7 @@ export const createCrewChangeCoordinationSchema = z.object({
   actualCost: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCrewChangeCoordinationSchema = createCrewChangeCoordinationSchema.partial();
 
@@ -158,7 +159,7 @@ export const createCashToMasterSchema = z.object({
   localAmount: z.string().optional(),
   purpose: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCashToMasterSchema = createCashToMasterSchema.partial();
 
@@ -185,7 +186,7 @@ export const createVesselClearanceSchema = z.object({
   portHealthClearance: z.boolean().optional(),
   quarantineClearance: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVesselClearanceSchema = createVesselClearanceSchema.partial();
 
@@ -214,6 +215,6 @@ export const createDisbursementAccountSchema = z.object({
   varianceExplanation: z.string().optional(),
   dueDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDisbursementAccountSchema = createDisbursementAccountSchema.partial();

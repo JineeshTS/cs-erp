@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     if (cursor)
       conditions.push(
-        lt(famDepreciationSchedules.createdAt, new Date(cursor))
+        cursorCondition(famDepreciationSchedules.createdAt, famDepreciationSchedules.id, parseCompoundCursor(cursor)!)
       );
 
     const results = await db

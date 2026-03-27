@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         and(
           eq(users.tenantId, tenantId),
           search ? ilike(users.email, `%${escapeIlike(search)}%`) : undefined,
-          cursor ? lt(users.createdAt, new Date(cursor)) : undefined
+          cursor ? cursorCondition(users.createdAt, users.id, parseCompoundCursor(cursor)!) : undefined
         )
       )
       .orderBy(desc(users.createdAt), desc(users.id))

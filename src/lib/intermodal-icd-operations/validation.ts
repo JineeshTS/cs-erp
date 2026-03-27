@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // ICD & Dry Port Management
@@ -25,7 +26,7 @@ export const createDryPortSchema = z.object({
   contactPhone: z.string().max(50).optional(),
   contactEmail: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDryPortSchema = createDryPortSchema.partial();
 
@@ -53,7 +54,7 @@ export const createRailPlanSchema = z.object({
   estimatedCost: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRailPlanSchema = createRailPlanSchema.partial();
 
@@ -87,7 +88,7 @@ export const createTruckBookingSchema = z.object({
   podSignedByName: z.string().max(255).optional(),
   podSignedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTruckBookingSchema = createTruckBookingSchema.partial();
 
@@ -119,7 +120,7 @@ export const createBondedWarehouseSchema = z.object({
   contactName: z.string().max(255).optional(),
   contactPhone: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBondedWarehouseSchema = createBondedWarehouseSchema.partial();
 
@@ -155,7 +156,7 @@ export const createLastMileDeliverySchema = z.object({
   currency: z.string().max(3).optional(),
   failureReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLastMileDeliverySchema = createLastMileDeliverySchema.partial();
 
@@ -194,7 +195,7 @@ export const createMultimodalBolSchema = z.object({
   numberOfOriginals: z.number().int().optional(),
   surrendered: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMultimodalBolSchema = createMultimodalBolSchema.partial();
 
@@ -222,7 +223,7 @@ export const createHaulageRateSchema = z.object({
   transitTimeDays: z.number().int().optional(),
   termsAndConditions: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHaulageRateSchema = createHaulageRateSchema.partial();
 
@@ -249,6 +250,6 @@ export const createRouteOptimizationSchema = z.object({
   aiConfidenceScore: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRouteOptimizationSchema = createRouteOptimizationSchema.partial();

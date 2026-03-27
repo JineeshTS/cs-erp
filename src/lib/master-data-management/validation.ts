@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Port schemas
 export const createPortSchema = z.object({

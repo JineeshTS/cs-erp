@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Portal Bookings
@@ -20,7 +21,7 @@ export const createBookingSchema = z.object({
   temperature: z.number().int().optional(),
   incoterm: z.enum(["FOB", "CIF", "CFR", "EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBookingSchema = createBookingSchema.partial();
@@ -63,7 +64,7 @@ export const createTrackingSchema = z.object({
   eta: z.coerce.date().optional(),
   etd: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateTrackingSchema = createTrackingSchema.partial();
@@ -100,7 +101,7 @@ export const createDocumentSchema = z.object({
   isCustomerVisible: z.boolean().optional(),
   expiresAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateDocumentSchema = createDocumentSchema.partial();
@@ -121,7 +122,7 @@ export const createInvoiceSchema = z.object({
   dueDate: z.coerce.date().optional(),
   lineItems: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateInvoiceSchema = createInvoiceSchema.partial();
@@ -137,5 +138,5 @@ export const createPaymentSchema = z.object({
   paymentMethod: z.enum(["credit_card", "bank_transfer", "wire", "cheque", "online_banking", "letter_of_credit"]),
   gatewayProvider: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });

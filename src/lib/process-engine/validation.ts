@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 export const createProcessInstanceSchema = z.object({
   processId: z.string().min(1).max(20),
@@ -92,5 +93,5 @@ export const createFlowInstanceSchema = z.object({
   entityId: z.string().min(1).max(100),
   triggerEvent: z.string().min(1).max(100),
   parentFlowInstanceId: z.string().uuid().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });

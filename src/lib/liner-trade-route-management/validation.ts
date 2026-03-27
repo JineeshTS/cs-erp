@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Service Loops
@@ -22,7 +23,7 @@ export const createServiceLoopSchema = z.object({
   alliancePartner: z.string().max(255).optional(),
   operatingCarrier: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateServiceLoopSchema = createServiceLoopSchema.partial();
 
@@ -49,7 +50,7 @@ export const createPortPairTradeLaneSchema = z.object({
   currency: z.string().max(3).optional(),
   seasonalityFactors: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortPairTradeLaneSchema = createPortPairTradeLaneSchema.partial();
 
@@ -79,7 +80,7 @@ export const createTradeLanePnlSchema = z.object({
   currency: z.string().max(3).optional(),
   costBreakdown: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTradeLanePnlSchema = createTradeLanePnlSchema.partial();
 
@@ -108,7 +109,7 @@ export const createSlotAgreementSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSlotAgreementSchema = createSlotAgreementSchema.partial();
 
@@ -133,7 +134,7 @@ export const createAllianceAgreementSchema = z.object({
   regulatoryApproval: z.boolean().optional(),
   regulatoryDetails: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAllianceAgreementSchema = createAllianceAgreementSchema.partial();
 
@@ -163,7 +164,7 @@ export const createPortStayAnalysisSchema = z.object({
   productivityScore: z.string().optional(),
   benchmarkScore: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortStayAnalysisSchema = createPortStayAnalysisSchema.partial();
 
@@ -192,7 +193,7 @@ export const createRouteOptimizationSchema = z.object({
   approvedAt: z.coerce.date().optional(),
   implementedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRouteOptimizationSchema = createRouteOptimizationSchema.partial();
 
@@ -221,6 +222,6 @@ export const createMarketIntelligenceSchema = z.object({
   aiInsights: z.string().optional(),
   alerts: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMarketIntelligenceSchema = createMarketIntelligenceSchema.partial();

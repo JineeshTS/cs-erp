@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Vendor Masters
@@ -24,7 +25,7 @@ export const createVendorMasterSchema = z.object({
   address: z.string().optional(),
   riskRating: z.enum(["low", "medium", "high", "critical"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVendorMasterSchema = createVendorMasterSchema.partial();
 
@@ -49,7 +50,7 @@ export const createPurchaseOrderSchema = z.object({
   budgetCode: z.string().max(50).optional(),
   costCentre: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePurchaseOrderSchema = createPurchaseOrderSchema.partial();
 
@@ -74,7 +75,7 @@ export const createVendorInvoiceSchema = z.object({
   exchangeRate: z.number().int().optional(),
   baseCurrencyAmount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVendorInvoiceSchema = createVendorInvoiceSchema.partial();
 
@@ -96,7 +97,7 @@ export const createThreeWayMatchSchema = z.object({
   lineMatchDetails: z.record(z.string(), z.unknown()).optional(),
   exceptionReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateThreeWayMatchSchema = createThreeWayMatchSchema.partial();
 
@@ -120,7 +121,7 @@ export const createPaymentScheduleSchema = z.object({
   batchId: z.string().max(50).optional(),
   priorityLevel: z.enum(["low", "normal", "high", "urgent"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePaymentScheduleSchema = createPaymentScheduleSchema.partial();
 
@@ -138,7 +139,7 @@ export const createVendorReconciliationSchema = z.object({
   ourBalance: z.number().int(),
   vendorBalance: z.number().int(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVendorReconciliationSchema = createVendorReconciliationSchema.partial();
 
@@ -154,7 +155,7 @@ export const createOcrExtractionSchema = z.object({
   vendorName: z.string().max(255).optional(),
   aiModelVersion: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOcrExtractionSchema = createOcrExtractionSchema.partial();
 
@@ -170,6 +171,6 @@ export const createSpendAnalyticSchema = z.object({
   currency: z.string().max(3).optional(),
   aiModelVersion: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSpendAnalyticSchema = createSpendAnalyticSchema.partial();

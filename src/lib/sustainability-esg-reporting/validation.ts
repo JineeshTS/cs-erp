@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Carbon Footprint Calculation per Voyage
@@ -20,7 +21,7 @@ export const createCarbonFootprintSchema = z.object({
   cargoCarriedMt: z.string().optional(),
   calculationMethod: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCarbonFootprintSchema = createCarbonFootprintSchema.partial();
 
@@ -41,7 +42,7 @@ export const createGhgReportSchema = z.object({
   verificationBody: z.string().max(255).optional(),
   verifiedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGhgReportSchema = createGhgReportSchema.partial();
 
@@ -61,7 +62,7 @@ export const createSeaCargoCharterSchema = z.object({
   gapToTarget: z.string().optional(),
   disclosureLevel: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSeaCargoCharterSchema = createSeaCargoCharterSchema.partial();
 
@@ -81,7 +82,7 @@ export const createPoseidonAlignmentSchema = z.object({
   portfolioScore: z.string().optional(),
   trajectoryTarget: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePoseidonAlignmentSchema = createPoseidonAlignmentSchema.partial();
 
@@ -100,7 +101,7 @@ export const createDecarbRoadmapSchema = z.object({
   implementationStatus: z.string().max(50).optional(),
   riskLevel: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDecarbRoadmapSchema = createDecarbRoadmapSchema.partial();
 
@@ -120,7 +121,7 @@ export const createAltFuelTrackingSchema = z.object({
   supplierName: z.string().max(255).optional(),
   certificationRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAltFuelTrackingSchema = createAltFuelTrackingSchema.partial();
 
@@ -140,7 +141,7 @@ export const createEsgKpiSchema = z.object({
   trendDirection: z.string().max(20).optional(),
   rating: z.string().max(10).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEsgKpiSchema = createEsgKpiSchema.partial();
 
@@ -160,6 +161,6 @@ export const createTcfdReportSchema = z.object({
   opportunityCategory: z.string().max(50).optional(),
   maturityLevel: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTcfdReportSchema = createTcfdReportSchema.partial();

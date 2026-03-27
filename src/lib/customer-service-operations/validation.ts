@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Service Categories
@@ -12,7 +13,7 @@ export const createServiceCategorySchema = z.object({
   slaHours: z.number().int().min(1).optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateServiceCategorySchema = createServiceCategorySchema.partial();
@@ -37,7 +38,7 @@ export const createInquirySchema = z.object({
   referenceType: z.string().max(30).optional(),
   referenceId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateInquirySchema = createInquirySchema.partial();
@@ -67,7 +68,7 @@ export const createComplaintSchema = z.object({
   referenceType: z.string().max(30).optional(),
   referenceId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateComplaintSchema = createComplaintSchema.partial();
@@ -92,7 +93,7 @@ export const createServiceRequestSchema = z.object({
   referenceType: z.string().max(30).optional(),
   referenceId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateServiceRequestSchema = createServiceRequestSchema.partial();
@@ -112,7 +113,7 @@ export const createSlaPolicySchema = z.object({
   businessHoursOnly: z.boolean().optional(),
   isActive: z.boolean().optional(),
   description: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateSlaPolicySchema = createSlaPolicySchema.partial();
@@ -131,7 +132,7 @@ export const createSlaBreachSchema = z.object({
   overageMinutes: z.number().int().optional(),
   acknowledged: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateSlaBreachSchema = createSlaBreachSchema.partial();
@@ -149,7 +150,7 @@ export const createEscalationSchema = z.object({
   escalatedTo: z.string().uuid().optional(),
   status: z.enum(["pending", "acknowledged", "in_progress", "resolved"]).optional(),
   responseNotes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateEscalationSchema = createEscalationSchema.partial();
@@ -170,7 +171,7 @@ export const createCommunicationLogSchema = z.object({
   sentBy: z.string().uuid().optional(),
   sentAt: z.coerce.date().optional(),
   attachments: z.array(z.record(z.string(), z.unknown())).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateCommunicationLogSchema = createCommunicationLogSchema.partial();
@@ -188,7 +189,7 @@ export const createCustomerFeedbackSchema = z.object({
   satisfactionScore: z.number().int().min(0).max(100).optional(),
   feedbackText: z.string().optional(),
   feedbackChannel: z.string().max(30).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateCustomerFeedbackSchema = createCustomerFeedbackSchema.partial();
@@ -207,7 +208,7 @@ export const createKnowledgeArticleSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).optional(),
   isPublic: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateKnowledgeArticleSchema = createKnowledgeArticleSchema.partial();
@@ -223,7 +224,7 @@ export const createAgentAssignmentSchema = z.object({
   assignedBy: z.string().uuid(),
   status: z.enum(["active", "completed", "reassigned"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateAgentAssignmentSchema = createAgentAssignmentSchema.partial();
@@ -240,7 +241,7 @@ export const createResolutionNoteSchema = z.object({
   createdBy: z.string().uuid(),
   isInternal: z.boolean().optional(),
   attachments: z.array(z.record(z.string(), z.unknown())).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateResolutionNoteSchema = createResolutionNoteSchema.partial();

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Cargo Acceptances
@@ -30,7 +31,7 @@ export const createCargoAcceptanceSchema = z.object({
   hazardous: z.boolean().optional(),
   photosUrls: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoAcceptanceSchema = createCargoAcceptanceSchema.partial();
 
@@ -61,7 +62,7 @@ export const createStowagePlanSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateStowagePlanSchema = createStowagePlanSchema.partial();
 
@@ -91,7 +92,7 @@ export const createSpecialEquipmentSchema = z.object({
   leaseReference: z.string().max(100).optional(),
   availableFrom: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSpecialEquipmentSchema = createSpecialEquipmentSchema.partial();
 
@@ -120,7 +121,7 @@ export const createSecuringPlanSchema = z.object({
   verifiedByName: z.string().max(255).optional(),
   verifiedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSecuringPlanSchema = createSecuringPlanSchema.partial();
 
@@ -154,7 +155,7 @@ export const createHeavyLiftSchema = z.object({
   estimatedCost: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHeavyLiftSchema = createHeavyLiftSchema.partial();
 
@@ -183,7 +184,7 @@ export const createMultiModalLogisticsSchema = z.object({
   transportCost: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMultiModalLogisticsSchema = createMultiModalLogisticsSchema.partial();
 
@@ -210,7 +211,7 @@ export const createDocPermitSchema = z.object({
   renewalRequired: z.boolean().optional(),
   renewalDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDocPermitSchema = createDocPermitSchema.partial();
 
@@ -241,6 +242,6 @@ export const createPortApprovalSchema = z.object({
   fees: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortApprovalSchema = createPortApprovalSchema.partial();

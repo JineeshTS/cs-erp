@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Purchase Requisition Management
@@ -23,7 +24,7 @@ export const createPurchaseRequisitionSchema = z.object({
   budgetCode: z.string().max(50).optional(),
   deliveryLocation: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePurchaseRequisitionSchema = createPurchaseRequisitionSchema.partial();
 
@@ -48,7 +49,7 @@ export const createVendorSourcingSchema = z.object({
   linkedRequisitionRef: z.string().max(50).optional(),
   linkedPoRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVendorSourcingSchema = createVendorSourcingSchema.partial();
 
@@ -78,7 +79,7 @@ export const createPurchaseOrderSchema = z.object({
   receivedDate: z.coerce.date().optional(),
   invoiceRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePurchaseOrderSchema = createPurchaseOrderSchema.partial();
 
@@ -106,7 +107,7 @@ export const createProcurementContractSchema = z.object({
   terminationDate: z.coerce.date().optional(),
   terminationReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateProcurementContractSchema = createProcurementContractSchema.partial();
 
@@ -134,7 +135,7 @@ export const createInventoryStockControlSchema = z.object({
   expiryDate: z.coerce.date().optional(),
   batchNumber: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInventoryStockControlSchema = createInventoryStockControlSchema.partial();
 
@@ -161,7 +162,7 @@ export const createGoodsReceiptInspectionSchema = z.object({
   warehouseLocation: z.string().max(255).optional(),
   deliveryNoteRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGoodsReceiptInspectionSchema = createGoodsReceiptInspectionSchema.partial();
 
@@ -187,7 +188,7 @@ export const createSpendAnalyticSchema = z.object({
   dataPoints: z.number().int().optional(),
   generatedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSpendAnalyticSchema = createSpendAnalyticSchema.partial();
 
@@ -216,6 +217,6 @@ export const createSupplierScorecardSchema = z.object({
   actionItems: z.array(z.record(z.string(), z.unknown())).optional(),
   evaluatedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSupplierScorecardSchema = createSupplierScorecardSchema.partial();

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Internal Audit Planning & Management
@@ -24,7 +25,7 @@ export const createInternalAuditSchema = z.object({
   actionItems: z.array(z.record(z.string(), z.unknown())).optional(),
   reportUrl: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInternalAuditSchema = createInternalAuditSchema.partial();
 
@@ -49,7 +50,7 @@ export const createRegulatoryComplianceCalendarSchema = z.object({
   attachments: z.array(z.record(z.string(), z.unknown())).optional(),
   isRecurring: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRegulatoryComplianceCalendarSchema = createRegulatoryComplianceCalendarSchema.partial();
 
@@ -75,7 +76,7 @@ export const createRiskRegisterSchema = z.object({
   reviewDate: z.coerce.date().optional(),
   lastAssessedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRiskRegisterSchema = createRiskRegisterSchema.partial();
 
@@ -102,7 +103,7 @@ export const createPolicyProcedureSchema = z.object({
   relatedPolicies: z.array(z.record(z.string(), z.unknown())).optional(),
   changeHistory: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePolicyProcedureSchema = createPolicyProcedureSchema.partial();
 
@@ -129,7 +130,7 @@ export const createRegulatoryReportingSubmissionSchema = z.object({
   preparedBy: z.string().max(255).optional(),
   reviewedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRegulatoryReportingSubmissionSchema = createRegulatoryReportingSubmissionSchema.partial();
 
@@ -156,7 +157,7 @@ export const createSoxFinancialControlSchema = z.object({
   riskRating: z.enum(["low", "medium", "high"]).optional(),
   keyControl: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSoxFinancialControlSchema = createSoxFinancialControlSchema.partial();
 
@@ -181,7 +182,7 @@ export const createIsoCertificationTrackingSchema = z.object({
   majorNonConformities: z.number().int().optional(),
   documentUrl: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIsoCertificationTrackingSchema = createIsoCertificationTrackingSchema.partial();
 
@@ -208,6 +209,6 @@ export const createAiRiskDetectionSchema = z.object({
   resolutionNotes: z.string().optional(),
   detectedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAiRiskDetectionSchema = createAiRiskDetectionSchema.partial();

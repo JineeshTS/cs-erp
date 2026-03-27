@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Charter Party schemas
 export const createCharterPartySchema = z.object({

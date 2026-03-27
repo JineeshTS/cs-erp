@@ -15,6 +15,7 @@ import {
   cpmRevenueLeakages,
   cpmPricingApprovals,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 type ListParams = {
   tenantId: string;
@@ -41,13 +42,13 @@ export async function listTariffs({
   ];
   if (search) conditions.push(ilike(cpmTariffs.tariffName, `%${search}%`));
   if (status) conditions.push(eq(cpmTariffs.status, status));
-  if (cursor) conditions.push(lt(cpmTariffs.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmTariffs.createdAt, cpmTariffs.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmTariffs)
     .where(and(...conditions))
-    .orderBy(desc(cpmTariffs.createdAt))
+    .orderBy(desc(cpmTariffs.createdAt), desc(cpmTariffs.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -90,13 +91,13 @@ export async function listTariffRates({
   ];
   if (tariffId) conditions.push(eq(cpmTariffRates.tariffId, tariffId));
   if (search) conditions.push(ilike(cpmTariffRates.chargeName, `%${search}%`));
-  if (cursor) conditions.push(lt(cpmTariffRates.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmTariffRates.createdAt, cpmTariffRates.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmTariffRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmTariffRates.createdAt))
+    .orderBy(desc(cpmTariffRates.createdAt), desc(cpmTariffRates.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -140,13 +141,13 @@ export async function listSpecialRates({
   ];
   if (search) conditions.push(ilike(cpmSpecialRates.rateName, `%${search}%`));
   if (status) conditions.push(eq(cpmSpecialRates.status, status));
-  if (cursor) conditions.push(lt(cpmSpecialRates.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmSpecialRates.createdAt, cpmSpecialRates.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmSpecialRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmSpecialRates.createdAt))
+    .orderBy(desc(cpmSpecialRates.createdAt), desc(cpmSpecialRates.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -188,13 +189,13 @@ export async function listSurcharges({
     isNull(cpmSurcharges.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmSurcharges.surchargeName, `%${search}%`));
-  if (cursor) conditions.push(lt(cpmSurcharges.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmSurcharges.createdAt, cpmSurcharges.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmSurcharges)
     .where(and(...conditions))
-    .orderBy(desc(cpmSurcharges.createdAt))
+    .orderBy(desc(cpmSurcharges.createdAt), desc(cpmSurcharges.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -238,13 +239,13 @@ export async function listDetentionDemurrage({
   ];
   if (search) conditions.push(ilike(cpmDetentionDemurrage.tariffName, `%${search}%`));
   if (status) conditions.push(eq(cpmDetentionDemurrage.status, status));
-  if (cursor) conditions.push(lt(cpmDetentionDemurrage.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmDetentionDemurrage.createdAt, cpmDetentionDemurrage.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmDetentionDemurrage)
     .where(and(...conditions))
-    .orderBy(desc(cpmDetentionDemurrage.createdAt))
+    .orderBy(desc(cpmDetentionDemurrage.createdAt), desc(cpmDetentionDemurrage.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -288,13 +289,13 @@ export async function listYieldTargets({
   ];
   if (search) conditions.push(ilike(cpmYieldTargets.targetName, `%${search}%`));
   if (status) conditions.push(eq(cpmYieldTargets.status, status));
-  if (cursor) conditions.push(lt(cpmYieldTargets.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmYieldTargets.createdAt, cpmYieldTargets.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmYieldTargets)
     .where(and(...conditions))
-    .orderBy(desc(cpmYieldTargets.createdAt))
+    .orderBy(desc(cpmYieldTargets.createdAt), desc(cpmYieldTargets.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -336,13 +337,13 @@ export async function listRateBenchmarks({
     isNull(cpmRateBenchmarks.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmRateBenchmarks.benchmarkName, `%${search}%`));
-  if (cursor) conditions.push(lt(cpmRateBenchmarks.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmRateBenchmarks.createdAt, cpmRateBenchmarks.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmRateBenchmarks)
     .where(and(...conditions))
-    .orderBy(desc(cpmRateBenchmarks.createdAt))
+    .orderBy(desc(cpmRateBenchmarks.createdAt), desc(cpmRateBenchmarks.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -386,13 +387,13 @@ export async function listProfitabilityAnalyses({
   ];
   if (search) conditions.push(ilike(cpmProfitabilityAnalyses.analysisName, `%${search}%`));
   if (status) conditions.push(eq(cpmProfitabilityAnalyses.status, status));
-  if (cursor) conditions.push(lt(cpmProfitabilityAnalyses.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmProfitabilityAnalyses.createdAt, cpmProfitabilityAnalyses.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmProfitabilityAnalyses)
     .where(and(...conditions))
-    .orderBy(desc(cpmProfitabilityAnalyses.createdAt))
+    .orderBy(desc(cpmProfitabilityAnalyses.createdAt), desc(cpmProfitabilityAnalyses.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -434,13 +435,13 @@ export async function listAiPricingModels({
     isNull(cpmAiPricingModels.deletedAt),
   ];
   if (search) conditions.push(ilike(cpmAiPricingModels.modelName, `%${search}%`));
-  if (cursor) conditions.push(lt(cpmAiPricingModels.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmAiPricingModels.createdAt, cpmAiPricingModels.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmAiPricingModels)
     .where(and(...conditions))
-    .orderBy(desc(cpmAiPricingModels.createdAt))
+    .orderBy(desc(cpmAiPricingModels.createdAt), desc(cpmAiPricingModels.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -484,13 +485,13 @@ export async function listVsaSlotRates({
   ];
   if (search) conditions.push(ilike(cpmVsaSlotRates.vsaPartner, `%${search}%`));
   if (status) conditions.push(eq(cpmVsaSlotRates.status, status));
-  if (cursor) conditions.push(lt(cpmVsaSlotRates.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmVsaSlotRates.createdAt, cpmVsaSlotRates.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmVsaSlotRates)
     .where(and(...conditions))
-    .orderBy(desc(cpmVsaSlotRates.createdAt))
+    .orderBy(desc(cpmVsaSlotRates.createdAt), desc(cpmVsaSlotRates.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -534,13 +535,13 @@ export async function listDeadFreightRecords({
   ];
   if (search) conditions.push(ilike(cpmDeadFreightRecords.recordReference, `%${search}%`));
   if (status) conditions.push(eq(cpmDeadFreightRecords.status, status));
-  if (cursor) conditions.push(lt(cpmDeadFreightRecords.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmDeadFreightRecords.createdAt, cpmDeadFreightRecords.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmDeadFreightRecords)
     .where(and(...conditions))
-    .orderBy(desc(cpmDeadFreightRecords.createdAt))
+    .orderBy(desc(cpmDeadFreightRecords.createdAt), desc(cpmDeadFreightRecords.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -584,13 +585,13 @@ export async function listRevenueLeakages({
   ];
   if (search) conditions.push(ilike(cpmRevenueLeakages.leakageReference, `%${search}%`));
   if (status) conditions.push(eq(cpmRevenueLeakages.status, status));
-  if (cursor) conditions.push(lt(cpmRevenueLeakages.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmRevenueLeakages.createdAt, cpmRevenueLeakages.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmRevenueLeakages)
     .where(and(...conditions))
-    .orderBy(desc(cpmRevenueLeakages.createdAt))
+    .orderBy(desc(cpmRevenueLeakages.createdAt), desc(cpmRevenueLeakages.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -634,13 +635,13 @@ export async function listPricingApprovals({
   ];
   if (search) conditions.push(ilike(cpmPricingApprovals.approvalReference, `%${search}%`));
   if (status) conditions.push(eq(cpmPricingApprovals.status, status));
-  if (cursor) conditions.push(lt(cpmPricingApprovals.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cpmPricingApprovals.createdAt, cpmPricingApprovals.id, cc)); }
 
   const results = await db
     .select()
     .from(cpmPricingApprovals)
     .where(and(...conditions))
-    .orderBy(desc(cpmPricingApprovals.createdAt))
+    .orderBy(desc(cpmPricingApprovals.createdAt), desc(cpmPricingApprovals.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;

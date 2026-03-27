@@ -10,6 +10,7 @@ import {
   mecCargoCharters,
   mecEnvironmentalIncidents,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -26,11 +27,11 @@ export async function listAnnexCompliances({ tenantId, search, status, cursor, l
   const conditions = [eq(mecAnnexCompliances.tenantId, tenantId), isNull(mecAnnexCompliances.deletedAt)];
   if (search) conditions.push(or(ilike(mecAnnexCompliances.complianceRef, `%${search}%`), ilike(mecAnnexCompliances.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecAnnexCompliances.status, status));
-  if (cursor) conditions.push(lt(mecAnnexCompliances.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecAnnexCompliances).where(and(...conditions)).orderBy(desc(mecAnnexCompliances.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecAnnexCompliances.createdAt, mecAnnexCompliances.id, cc)); }
+  const results = await db.select().from(mecAnnexCompliances).where(and(...conditions)).orderBy(desc(mecAnnexCompliances.createdAt), desc(mecAnnexCompliances.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getAnnexCompliance(id: string, tenantId: string) {
@@ -45,11 +46,11 @@ export async function listBallastWaters({ tenantId, search, status, cursor, limi
   const conditions = [eq(mecBallastWaters.tenantId, tenantId), isNull(mecBallastWaters.deletedAt)];
   if (search) conditions.push(or(ilike(mecBallastWaters.ballastRef, `%${search}%`), ilike(mecBallastWaters.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecBallastWaters.status, status));
-  if (cursor) conditions.push(lt(mecBallastWaters.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecBallastWaters).where(and(...conditions)).orderBy(desc(mecBallastWaters.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecBallastWaters.createdAt, mecBallastWaters.id, cc)); }
+  const results = await db.select().from(mecBallastWaters).where(and(...conditions)).orderBy(desc(mecBallastWaters.createdAt), desc(mecBallastWaters.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getBallastWater(id: string, tenantId: string) {
@@ -64,11 +65,11 @@ export async function listAntiFoulings({ tenantId, search, status, cursor, limit
   const conditions = [eq(mecAntiFoulings.tenantId, tenantId), isNull(mecAntiFoulings.deletedAt)];
   if (search) conditions.push(or(ilike(mecAntiFoulings.afsRef, `%${search}%`), ilike(mecAntiFoulings.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecAntiFoulings.status, status));
-  if (cursor) conditions.push(lt(mecAntiFoulings.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecAntiFoulings).where(and(...conditions)).orderBy(desc(mecAntiFoulings.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecAntiFoulings.createdAt, mecAntiFoulings.id, cc)); }
+  const results = await db.select().from(mecAntiFoulings).where(and(...conditions)).orderBy(desc(mecAntiFoulings.createdAt), desc(mecAntiFoulings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getAntiFouling(id: string, tenantId: string) {
@@ -83,11 +84,11 @@ export async function listWasteManagements({ tenantId, search, status, cursor, l
   const conditions = [eq(mecWasteManagements.tenantId, tenantId), isNull(mecWasteManagements.deletedAt)];
   if (search) conditions.push(or(ilike(mecWasteManagements.wasteRef, `%${search}%`), ilike(mecWasteManagements.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecWasteManagements.status, status));
-  if (cursor) conditions.push(lt(mecWasteManagements.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecWasteManagements).where(and(...conditions)).orderBy(desc(mecWasteManagements.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecWasteManagements.createdAt, mecWasteManagements.id, cc)); }
+  const results = await db.select().from(mecWasteManagements).where(and(...conditions)).orderBy(desc(mecWasteManagements.createdAt), desc(mecWasteManagements.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getWasteManagement(id: string, tenantId: string) {
@@ -102,11 +103,11 @@ export async function listSulphurCaps({ tenantId, search, status, cursor, limit 
   const conditions = [eq(mecSulphurCaps.tenantId, tenantId), isNull(mecSulphurCaps.deletedAt)];
   if (search) conditions.push(or(ilike(mecSulphurCaps.sulphurRef, `%${search}%`), ilike(mecSulphurCaps.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecSulphurCaps.status, status));
-  if (cursor) conditions.push(lt(mecSulphurCaps.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecSulphurCaps).where(and(...conditions)).orderBy(desc(mecSulphurCaps.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecSulphurCaps.createdAt, mecSulphurCaps.id, cc)); }
+  const results = await db.select().from(mecSulphurCaps).where(and(...conditions)).orderBy(desc(mecSulphurCaps.createdAt), desc(mecSulphurCaps.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getSulphurCap(id: string, tenantId: string) {
@@ -121,11 +122,11 @@ export async function listCiiRatings({ tenantId, search, status, cursor, limit =
   const conditions = [eq(mecCiiRatings.tenantId, tenantId), isNull(mecCiiRatings.deletedAt)];
   if (search) conditions.push(or(ilike(mecCiiRatings.ciiRef, `%${search}%`), ilike(mecCiiRatings.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecCiiRatings.status, status));
-  if (cursor) conditions.push(lt(mecCiiRatings.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecCiiRatings).where(and(...conditions)).orderBy(desc(mecCiiRatings.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecCiiRatings.createdAt, mecCiiRatings.id, cc)); }
+  const results = await db.select().from(mecCiiRatings).where(and(...conditions)).orderBy(desc(mecCiiRatings.createdAt), desc(mecCiiRatings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCiiRating(id: string, tenantId: string) {
@@ -140,11 +141,11 @@ export async function listCargoCharters({ tenantId, search, status, cursor, limi
   const conditions = [eq(mecCargoCharters.tenantId, tenantId), isNull(mecCargoCharters.deletedAt)];
   if (search) conditions.push(or(ilike(mecCargoCharters.charterRef, `%${search}%`), ilike(mecCargoCharters.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecCargoCharters.status, status));
-  if (cursor) conditions.push(lt(mecCargoCharters.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecCargoCharters).where(and(...conditions)).orderBy(desc(mecCargoCharters.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecCargoCharters.createdAt, mecCargoCharters.id, cc)); }
+  const results = await db.select().from(mecCargoCharters).where(and(...conditions)).orderBy(desc(mecCargoCharters.createdAt), desc(mecCargoCharters.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getCargoCharter(id: string, tenantId: string) {
@@ -159,11 +160,11 @@ export async function listEnvironmentalIncidents({ tenantId, search, status, cur
   const conditions = [eq(mecEnvironmentalIncidents.tenantId, tenantId), isNull(mecEnvironmentalIncidents.deletedAt)];
   if (search) conditions.push(or(ilike(mecEnvironmentalIncidents.incidentRef, `%${search}%`), ilike(mecEnvironmentalIncidents.title, `%${search}%`))!);
   if (status) conditions.push(eq(mecEnvironmentalIncidents.status, status));
-  if (cursor) conditions.push(lt(mecEnvironmentalIncidents.createdAt, new Date(cursor)));
-  const results = await db.select().from(mecEnvironmentalIncidents).where(and(...conditions)).orderBy(desc(mecEnvironmentalIncidents.createdAt)).limit(limit + 1);
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(mecEnvironmentalIncidents.createdAt, mecEnvironmentalIncidents.id, cc)); }
+  const results = await db.select().from(mecEnvironmentalIncidents).where(and(...conditions)).orderBy(desc(mecEnvironmentalIncidents.createdAt), desc(mecEnvironmentalIncidents.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getEnvironmentalIncident(id: string, tenantId: string) {

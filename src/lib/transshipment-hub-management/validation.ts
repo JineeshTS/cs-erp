@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Transshipment Cargo Planning & Coordination
@@ -16,7 +17,7 @@ export const createCargoPlanSchema = z.object({
   dwellTimeDays: z.string().optional(),
   priority: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoPlanSchema = createCargoPlanSchema.partial();
 
@@ -35,7 +36,7 @@ export const createFeederCoordinationSchema = z.object({
   cargoUnits: z.number().int().optional(),
   bufferHours: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFeederCoordinationSchema = createFeederCoordinationSchema.partial();
 
@@ -54,7 +55,7 @@ export const createCargoTrackingSchema = z.object({
   loadTime: z.coerce.date().optional(),
   yardPosition: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoTrackingSchema = createCargoTrackingSchema.partial();
 
@@ -74,7 +75,7 @@ export const createMissedConnectionSchema = z.object({
   currency: z.string().max(3).optional(),
   recovered: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMissedConnectionSchema = createMissedConnectionSchema.partial();
 
@@ -94,7 +95,7 @@ export const createRevenueAttributionSchema = z.object({
   currency: z.string().max(3).optional(),
   marginPct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueAttributionSchema = createRevenueAttributionSchema.partial();
 
@@ -112,7 +113,7 @@ export const createHubEfficiencySchema = z.object({
   berthUtilizationPct: z.string().optional(),
   yardOccupancyPct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHubEfficiencySchema = createHubEfficiencySchema.partial();
 
@@ -132,7 +133,7 @@ export const createOptimizationEngineSchema = z.object({
   confidenceScore: z.string().optional(),
   accepted: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOptimizationEngineSchema = createOptimizationEngineSchema.partial();
 
@@ -151,6 +152,6 @@ export const createPenaltyTrackingSchema = z.object({
   chargedTo: z.string().max(255).optional(),
   waived: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePenaltyTrackingSchema = createPenaltyTrackingSchema.partial();

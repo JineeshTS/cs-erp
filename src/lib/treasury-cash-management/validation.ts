@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Bank Accounts
@@ -22,7 +23,7 @@ export const createBankAccountSchema = z.object({
   openingDate: z.coerce.date().optional(),
   closingDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBankAccountSchema = createBankAccountSchema.partial();
 
@@ -45,7 +46,7 @@ export const createCashPositionSchema = z.object({
   variance: z.string().optional(),
   variancePercentage: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCashPositionSchema = createCashPositionSchema.partial();
 
@@ -69,7 +70,7 @@ export const createBankReconciliationSchema = z.object({
   reconciledAt: z.coerce.date().optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBankReconciliationSchema = createBankReconciliationSchema.partial();
 
@@ -91,7 +92,7 @@ export const createCashPoolingSweepSchema = z.object({
   interestRate: z.string().optional(),
   totalPoolBalance: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCashPoolingSweepSchema = createCashPoolingSweepSchema.partial();
 
@@ -117,7 +118,7 @@ export const createFxHedgingExposureSchema = z.object({
   exposureType: z.string().max(50).optional(),
   hedgeAccountingMethod: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFxHedgingExposureSchema = createFxHedgingExposureSchema.partial();
 
@@ -144,7 +145,7 @@ export const createLetterOfCreditSchema = z.object({
   availableAmount: z.string().optional(),
   charges: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLetterOfCreditSchema = createLetterOfCreditSchema.partial();
 
@@ -171,7 +172,7 @@ export const createBankGuaranteeSchema = z.object({
   autoRenewal: z.boolean().optional(),
   renewalCount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBankGuaranteeSchema = createBankGuaranteeSchema.partial();
 
@@ -196,6 +197,6 @@ export const createIntercompanyLoanSchema = z.object({
   transferPricingCompliance: z.boolean().optional(),
   armLengthRate: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIntercompanyLoanSchema = createIntercompanyLoanSchema.partial();

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // K8s Clusters
@@ -20,7 +21,7 @@ export const createClusterSchema = z.object({
   config: z.record(z.string(), z.unknown()).optional(),
   tags: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateClusterSchema = createClusterSchema.partial();
@@ -39,7 +40,7 @@ export const createNamespaceSchema = z.object({
   labels: z.record(z.string(), z.unknown()).optional(),
   annotations: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateNamespaceSchema = createNamespaceSchema.partial();
@@ -65,7 +66,7 @@ export const createDeploymentSchema = z.object({
   envVars: z.record(z.string(), z.unknown()).optional(),
   volumeMounts: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateDeploymentSchema = createDeploymentSchema.partial();
@@ -91,7 +92,7 @@ export const createIamPolicySchema = z.object({
   priority: z.number().int().optional(),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateIamPolicySchema = createIamPolicySchema.partial();
@@ -109,7 +110,7 @@ export const createServiceAccountSchema = z.object({
   policyIds: z.array(z.string().uuid()).optional(),
   ipWhitelist: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateServiceAccountSchema = createServiceAccountSchema.partial();
@@ -126,7 +127,7 @@ export const createApiKeySchema = z.object({
   expiresAt: z.coerce.date().optional(),
   ipWhitelist: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const revokeApiKeySchema = z.object({
@@ -144,7 +145,7 @@ export const createJitAccessSchema = z.object({
   justification: z.string().min(1),
   expiresAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 // ==========================================
@@ -163,7 +164,7 @@ export const createEncryptionKeySchema = z.object({
   provider: z.string().max(50).optional(),
   providerKeyId: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateEncryptionKeySchema = createEncryptionKeySchema.partial();
@@ -195,7 +196,7 @@ export const createAuditEventSchema = z.object({
   sessionId: z.string().max(255).optional(),
   correlationId: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 // ==========================================
@@ -214,7 +215,7 @@ export const createComplianceReportSchema = z.object({
   recommendations: z.array(z.record(z.string(), z.unknown())).optional(),
   evidenceRefs: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateComplianceReportSchema = createComplianceReportSchema.partial();

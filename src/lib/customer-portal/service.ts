@@ -10,6 +10,7 @@ import {
   cspPortalPayments,
   cspPaymentTransactions,
 } from "@/db/schema";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 interface ListParams {
   tenantId: string;
@@ -27,12 +28,12 @@ export async function listBookings({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(cspPortalBookings.tenantId, tenantId), isNull(cspPortalBookings.deletedAt)];
   if (search) conditions.push(or(ilike(cspPortalBookings.bookingRef, `%${search}%`), ilike(cspPortalBookings.customerName, `%${search}%`))!);
   if (status) conditions.push(eq(cspPortalBookings.status, status));
-  if (cursor) conditions.push(lt(cspPortalBookings.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cspPortalBookings.createdAt, cspPortalBookings.id, cc)); }
 
-  const results = await db.select().from(cspPortalBookings).where(and(...conditions)).orderBy(desc(cspPortalBookings.createdAt)).limit(limit + 1);
+  const results = await db.select().from(cspPortalBookings).where(and(...conditions)).orderBy(desc(cspPortalBookings.createdAt), desc(cspPortalBookings.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getBooking(id: string, tenantId: string) {
@@ -45,7 +46,7 @@ export async function getBooking(id: string, tenantId: string) {
 // ==========================================
 
 export async function listBookingContainers(tenantId: string, bookingId: string) {
-  return db.select().from(cspPortalBookingContainers).where(and(eq(cspPortalBookingContainers.tenantId, tenantId), eq(cspPortalBookingContainers.bookingId, bookingId), isNull(cspPortalBookingContainers.deletedAt))).orderBy(desc(cspPortalBookingContainers.createdAt));
+  return db.select().from(cspPortalBookingContainers).where(and(eq(cspPortalBookingContainers.tenantId, tenantId), eq(cspPortalBookingContainers.bookingId, bookingId), isNull(cspPortalBookingContainers.deletedAt))).orderBy(desc(cspPortalBookingContainers.createdAt), desc(cspPortalBookingContainers.id));
 }
 
 // ==========================================
@@ -56,12 +57,12 @@ export async function listTracking({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(cspShipmentTracking.tenantId, tenantId), isNull(cspShipmentTracking.deletedAt)];
   if (search) conditions.push(or(ilike(cspShipmentTracking.trackingNumber, `%${search}%`), ilike(cspShipmentTracking.blNumber ?? "", `%${search}%`))!);
   if (status) conditions.push(eq(cspShipmentTracking.currentStatus, status));
-  if (cursor) conditions.push(lt(cspShipmentTracking.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cspShipmentTracking.createdAt, cspShipmentTracking.id, cc)); }
 
-  const results = await db.select().from(cspShipmentTracking).where(and(...conditions)).orderBy(desc(cspShipmentTracking.createdAt)).limit(limit + 1);
+  const results = await db.select().from(cspShipmentTracking).where(and(...conditions)).orderBy(desc(cspShipmentTracking.createdAt), desc(cspShipmentTracking.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getTracking(id: string, tenantId: string) {
@@ -91,12 +92,12 @@ export async function listDocuments({ tenantId, search, status, cursor, limit = 
   if (search) conditions.push(or(ilike(cspPortalDocuments.documentRef, `%${search}%`), ilike(cspPortalDocuments.documentName, `%${search}%`))!);
   if (status) conditions.push(eq(cspPortalDocuments.status, status));
   if (documentType) conditions.push(eq(cspPortalDocuments.documentType, documentType));
-  if (cursor) conditions.push(lt(cspPortalDocuments.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cspPortalDocuments.createdAt, cspPortalDocuments.id, cc)); }
 
-  const results = await db.select().from(cspPortalDocuments).where(and(...conditions)).orderBy(desc(cspPortalDocuments.createdAt)).limit(limit + 1);
+  const results = await db.select().from(cspPortalDocuments).where(and(...conditions)).orderBy(desc(cspPortalDocuments.createdAt), desc(cspPortalDocuments.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getDocument(id: string, tenantId: string) {
@@ -113,12 +114,12 @@ export async function listInvoices({ tenantId, search, status, cursor, limit = 5
   if (search) conditions.push(or(ilike(cspPortalInvoices.invoiceRef, `%${search}%`), ilike(cspPortalInvoices.currency, `%${search}%`))!);
   if (status) conditions.push(eq(cspPortalInvoices.status, status));
   if (invoiceType) conditions.push(eq(cspPortalInvoices.invoiceType, invoiceType));
-  if (cursor) conditions.push(lt(cspPortalInvoices.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cspPortalInvoices.createdAt, cspPortalInvoices.id, cc)); }
 
-  const results = await db.select().from(cspPortalInvoices).where(and(...conditions)).orderBy(desc(cspPortalInvoices.createdAt)).limit(limit + 1);
+  const results = await db.select().from(cspPortalInvoices).where(and(...conditions)).orderBy(desc(cspPortalInvoices.createdAt), desc(cspPortalInvoices.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getInvoice(id: string, tenantId: string) {
@@ -134,12 +135,12 @@ export async function listPayments({ tenantId, search, status, cursor, limit = 5
   const conditions = [eq(cspPortalPayments.tenantId, tenantId), isNull(cspPortalPayments.deletedAt)];
   if (search) conditions.push(ilike(cspPortalPayments.paymentRef, `%${search}%`));
   if (status) conditions.push(eq(cspPortalPayments.status, status));
-  if (cursor) conditions.push(lt(cspPortalPayments.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(cspPortalPayments.createdAt, cspPortalPayments.id, cc)); }
 
-  const results = await db.select().from(cspPortalPayments).where(and(...conditions)).orderBy(desc(cspPortalPayments.createdAt)).limit(limit + 1);
+  const results = await db.select().from(cspPortalPayments).where(and(...conditions)).orderBy(desc(cspPortalPayments.createdAt), desc(cspPortalPayments.id)).limit(limit + 1);
   const hasMore = results.length > limit;
   const data = hasMore ? results.slice(0, limit) : results;
-  return { data, meta: { cursor: hasMore ? data[data.length - 1].createdAt.toISOString() : undefined, hasMore } };
+  return { data, meta: { cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined, hasMore } };
 }
 
 export async function getPayment(id: string, tenantId: string) {
@@ -152,5 +153,5 @@ export async function getPayment(id: string, tenantId: string) {
 // ==========================================
 
 export async function listPaymentTransactions(tenantId: string, paymentId: string) {
-  return db.select().from(cspPaymentTransactions).where(and(eq(cspPaymentTransactions.tenantId, tenantId), eq(cspPaymentTransactions.paymentId, paymentId), isNull(cspPaymentTransactions.deletedAt))).orderBy(desc(cspPaymentTransactions.createdAt));
+  return db.select().from(cspPaymentTransactions).where(and(eq(cspPaymentTransactions.tenantId, tenantId), eq(cspPaymentTransactions.paymentId, paymentId), isNull(cspPaymentTransactions.deletedAt))).orderBy(desc(cspPaymentTransactions.createdAt), desc(cspPaymentTransactions.id));
 }

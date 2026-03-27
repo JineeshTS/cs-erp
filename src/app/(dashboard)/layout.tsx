@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getUserPermissions } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { tenants } from "@/db/schema";
+import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -19,15 +19,12 @@ export default async function DashboardLayout({
 
   const permissions = await getUserPermissions(session.id, session.tenantId);
 
-  const [tenant] = await db
-    .select({ name: tenants.name })
-    .from(tenants)
-    .where(eq(tenants.id, session.tenantId))
-    .limit(1);
+  const [[tenant], [user]] = await Promise.all([
+    db.select({ name: tenants.name }).from(tenants).where(eq(tenants.id, session.tenantId)).limit(1),
+    db.select({ displayName: users.displayName }).from(users).where(eq(users.id, session.id)).limit(1),
+  ]);
 
-  // Fetch display name from session email (we have it in the JWT role, but need displayName from header or DB)
-  // For simplicity, derive from email
-  const userName = session.email.split("@")[0];
+  const userName = user?.displayName || session.email.split("@")[0];
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // SOP Library & Process Documentation
@@ -15,7 +16,7 @@ export const createSopLibrarySchema = z.object({
   documentUrl: z.string().optional(),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSopLibrarySchema = createSopLibrarySchema.partial();
 
@@ -33,7 +34,7 @@ export const createTrainingModuleSchema = z.object({
   isMandatory: z.boolean().optional(),
   validityMonths: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTrainingModuleSchema = createTrainingModuleSchema.partial();
 
@@ -52,7 +53,7 @@ export const createCompetencyAssessmentSchema = z.object({
   assessedDate: z.coerce.date().optional(),
   nextAssessmentDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCompetencyAssessmentSchema = createCompetencyAssessmentSchema.partial();
 
@@ -71,7 +72,7 @@ export const createOnboardingWorkflowSchema = z.object({
   totalSteps: z.number().int().optional(),
   progressPct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOnboardingWorkflowSchema = createOnboardingWorkflowSchema.partial();
 
@@ -89,7 +90,7 @@ export const createKnowledgeAssistantSchema = z.object({
   responseTimeMs: z.number().int().optional(),
   helpful: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateKnowledgeAssistantSchema = createKnowledgeAssistantSchema.partial();
 
@@ -107,7 +108,7 @@ export const createRegulatoryAlertSchema = z.object({
   complianceDeadline: z.coerce.date().optional(),
   acknowledged: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRegulatoryAlertSchema = createRegulatoryAlertSchema.partial();
 
@@ -125,7 +126,7 @@ export const createLessonLearnedSchema = z.object({
   impactLevel: z.string().max(20).optional(),
   implemented: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLessonLearnedSchema = createLessonLearnedSchema.partial();
 
@@ -144,6 +145,6 @@ export const createVideoLibrarySchema = z.object({
   viewCount: z.number().int().optional(),
   isMandatory: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVideoLibrarySchema = createVideoLibrarySchema.partial();

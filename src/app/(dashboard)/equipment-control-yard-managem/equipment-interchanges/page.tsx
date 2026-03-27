@@ -45,7 +45,7 @@ export default async function EquipmentInterchangesListPage({
     conditions.push(eq(eqyEquipmentInterchanges.status, status));
   if (cursor)
     conditions.push(
-      lt(eqyEquipmentInterchanges.createdAt, new Date(cursor))
+      cursorCondition(eqyEquipmentInterchanges.createdAt, eqyEquipmentInterchanges.id, parseCompoundCursor(cursor)!)
     );
 
   const data = await db

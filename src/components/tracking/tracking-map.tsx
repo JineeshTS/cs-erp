@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type L from "leaflet";
 
+function escapeHtml(str: string | number | null | undefined): string {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface VesselMarker {
   id: string;
   name: string;
@@ -167,16 +177,16 @@ export function TrackingMap({
 
         marker.bindPopup(
           `<div style="font-family:system-ui;font-size:13px;min-width:200px">
-            <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e293b">${v.name}</div>
-            <div style="color:#64748b;font-size:12px;margin-bottom:8px">IMO: ${v.imo} | MMSI: ${v.mmsi}</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e293b">${escapeHtml(v.name)}</div>
+            <div style="color:#64748b;font-size:12px;margin-bottom:8px">IMO: ${escapeHtml(v.imo)} | MMSI: ${escapeHtml(v.mmsi)}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px">
-              <span style="color:#94a3b8">Speed</span><span style="color:#1e293b;font-weight:500">${v.speed} kn</span>
-              <span style="color:#94a3b8">Course</span><span style="color:#1e293b;font-weight:500">${v.course}&deg;</span>
-              <span style="color:#94a3b8">Status</span><span style="color:#1e293b;font-weight:500">${v.navStatus || "—"}</span>
-              <span style="color:#94a3b8">Destination</span><span style="color:#1e293b;font-weight:500">${v.destination || "—"}</span>
-              ${v.eta ? `<span style="color:#94a3b8">ETA</span><span style="color:#1e293b;font-weight:500">${new Date(v.eta).toLocaleDateString()}</span>` : ""}
+              <span style="color:#94a3b8">Speed</span><span style="color:#1e293b;font-weight:500">${escapeHtml(v.speed)} kn</span>
+              <span style="color:#94a3b8">Course</span><span style="color:#1e293b;font-weight:500">${escapeHtml(v.course)}&deg;</span>
+              <span style="color:#94a3b8">Status</span><span style="color:#1e293b;font-weight:500">${escapeHtml(v.navStatus) || "—"}</span>
+              <span style="color:#94a3b8">Destination</span><span style="color:#1e293b;font-weight:500">${escapeHtml(v.destination) || "—"}</span>
+              ${v.eta ? `<span style="color:#94a3b8">ETA</span><span style="color:#1e293b;font-weight:500">${escapeHtml(new Date(v.eta).toLocaleDateString())}</span>` : ""}
             </div>
-            <div style="margin-top:8px;font-size:11px;color:#94a3b8">Updated: ${new Date(v.updatedAt).toLocaleString()}</div>
+            <div style="margin-top:8px;font-size:11px;color:#94a3b8">Updated: ${escapeHtml(new Date(v.updatedAt).toLocaleString())}</div>
           </div>`
         );
 
@@ -214,15 +224,15 @@ export function TrackingMap({
 
         marker.bindPopup(
           `<div style="font-family:system-ui;font-size:13px;min-width:180px">
-            <div style="font-weight:700;font-size:14px;margin-bottom:4px;color:#1e293b;font-family:monospace">${c.containerNumber}</div>
-            <div style="color:#64748b;font-size:12px;margin-bottom:8px">${c.containerType} | ${c.trackingType}</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:4px;color:#1e293b;font-family:monospace">${escapeHtml(c.containerNumber)}</div>
+            <div style="color:#64748b;font-size:12px;margin-bottom:8px">${escapeHtml(c.containerType)} | ${escapeHtml(c.trackingType)}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px">
-              <span style="color:#94a3b8">Location</span><span style="color:#1e293b;font-weight:500">${c.locationName || "At sea"}</span>
-              <span style="color:#94a3b8">Speed</span><span style="color:#1e293b;font-weight:500">${c.speed} km/h</span>
-              <span style="color:#94a3b8">Device</span><span style="color:#1e293b;font-weight:500">${c.deviceId || "—"}</span>
-              ${c.batteryLevel != null ? `<span style="color:#94a3b8">Battery</span><span style="color:#1e293b;font-weight:500">${c.batteryLevel}%</span>` : ""}
+              <span style="color:#94a3b8">Location</span><span style="color:#1e293b;font-weight:500">${escapeHtml(c.locationName) || "At sea"}</span>
+              <span style="color:#94a3b8">Speed</span><span style="color:#1e293b;font-weight:500">${escapeHtml(c.speed)} km/h</span>
+              <span style="color:#94a3b8">Device</span><span style="color:#1e293b;font-weight:500">${escapeHtml(c.deviceId) || "—"}</span>
+              ${c.batteryLevel != null ? `<span style="color:#94a3b8">Battery</span><span style="color:#1e293b;font-weight:500">${escapeHtml(c.batteryLevel)}%</span>` : ""}
             </div>
-            <div style="margin-top:8px;font-size:11px;color:#94a3b8">Updated: ${new Date(c.updatedAt).toLocaleString()}</div>
+            <div style="margin-top:8px;font-size:11px;color:#94a3b8">Updated: ${escapeHtml(new Date(c.updatedAt).toLocaleString())}</div>
           </div>`
         );
 
@@ -248,9 +258,9 @@ export function TrackingMap({
 
         marker.bindPopup(
           `<div style="font-family:system-ui;font-size:13px">
-            <div style="font-weight:700;font-size:14px;color:#1e293b">${p.name}</div>
+            <div style="font-weight:700;font-size:14px;color:#1e293b">${escapeHtml(p.name)}</div>
             <div style="color:#64748b;font-size:12px;margin-top:2px">
-              <span style="font-family:monospace">${p.unLocode}</span> &middot; ${p.country} &middot; ${p.portType}
+              <span style="font-family:monospace">${escapeHtml(p.unLocode)}</span> &middot; ${escapeHtml(p.country)} &middot; ${escapeHtml(p.portType)}
             </div>
           </div>`
         );

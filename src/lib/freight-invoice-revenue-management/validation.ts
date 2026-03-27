@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Freight Invoices
@@ -21,7 +22,7 @@ export const createFreightInvoiceSchema = z.object({
   dueDate: z.coerce.date().optional(),
   dispatchMethod: z.enum(["email", "post", "portal", "edi", "manual"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFreightInvoiceSchema = createFreightInvoiceSchema.partial();
 
@@ -45,7 +46,7 @@ export const createInvoiceLineItemSchema = z.object({
   totalAmount: z.number().int(),
   tariffRef: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInvoiceLineItemSchema = createInvoiceLineItemSchema.partial();
 
@@ -66,7 +67,7 @@ export const createDebitCreditNoteSchema = z.object({
   taxAmount: z.number().int().optional(),
   totalAmount: z.number().int(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDebitCreditNoteSchema = createDebitCreditNoteSchema.partial();
 
@@ -85,7 +86,7 @@ export const createInvoiceAmendmentSchema = z.object({
   adjustmentAmount: z.number().int(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInvoiceAmendmentSchema = createInvoiceAmendmentSchema.partial();
 
@@ -104,7 +105,7 @@ export const createProformaInvoiceSchema = z.object({
   totalAmount: z.number().int(),
   validUntil: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateProformaInvoiceSchema = createProformaInvoiceSchema.partial();
 
@@ -126,7 +127,7 @@ export const createRevenueAccrualSchema = z.object({
   glAccountCode: z.string().max(30).optional(),
   reversalDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueAccrualSchema = createRevenueAccrualSchema.partial();
 
@@ -144,7 +145,7 @@ export const createInvoiceDisputeSchema = z.object({
   reason: z.string().min(1),
   assignedToName: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInvoiceDisputeSchema = createInvoiceDisputeSchema.partial();
 
@@ -160,7 +161,7 @@ export const createDunningRunSchema = z.object({
   invoicesTargeted: z.number().int().optional(),
   customersTargeted: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDunningRunSchema = createDunningRunSchema.partial();
 
@@ -184,7 +185,7 @@ export const createDunningActionSchema = z.object({
   promisedDate: z.coerce.date().optional(),
   promisedAmount: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDunningActionSchema = createDunningActionSchema.partial();
 
@@ -206,6 +207,6 @@ export const createRevenueForecastEntrySchema = z.object({
   forecastMethod: z.enum(["historical_trend", "ai_model", "manual", "bottom_up", "top_down", "weighted_pipeline"]).optional(),
   confidenceScore: z.number().int().min(0).max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueForecastEntrySchema = createRevenueForecastEntrySchema.partial();

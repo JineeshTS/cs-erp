@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Container GPS Location Tracking
@@ -18,7 +19,7 @@ export const createContainerGpsTrackingSchema = z.object({
   batteryLevel: z.string().optional(),
   signalStrength: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContainerGpsTrackingSchema = createContainerGpsTrackingSchema.partial();
 
@@ -40,7 +41,7 @@ export const createReeferMonitoringSchema = z.object({
   alarmCode: z.string().max(20).optional(),
   sensorId: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateReeferMonitoringSchema = createReeferMonitoringSchema.partial();
 
@@ -62,7 +63,7 @@ export const createElectronicSealSchema = z.object({
   deviceId: z.string().max(100).optional(),
   batteryLevel: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateElectronicSealSchema = createElectronicSealSchema.partial();
 
@@ -83,7 +84,7 @@ export const createShockDetectionSchema = z.object({
   sensorId: z.string().max(100).optional(),
   cargoDescription: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateShockDetectionSchema = createShockDetectionSchema.partial();
 
@@ -104,7 +105,7 @@ export const createVesselPositionSchema = z.object({
   eta: z.coerce.date().optional(),
   draught: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVesselPositionSchema = createVesselPositionSchema.partial();
 
@@ -125,7 +126,7 @@ export const createPortEquipmentSchema = z.object({
   nextMaintenanceDue: z.coerce.date().optional(),
   sensorId: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortEquipmentSchema = createPortEquipmentSchema.partial();
 
@@ -146,7 +147,7 @@ export const createPredictiveAlertSchema = z.object({
   acknowledgedAt: z.coerce.date().optional(),
   resolvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePredictiveAlertSchema = createPredictiveAlertSchema.partial();
 
@@ -166,6 +167,6 @@ export const createDataLakeAnalyticSchema = z.object({
   lastRefreshedAt: z.coerce.date().optional(),
   scheduleCron: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDataLakeAnalyticSchema = createDataLakeAnalyticSchema.partial();

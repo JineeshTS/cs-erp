@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // IMDG Compliance
@@ -25,7 +26,7 @@ export const createImdgComplianceSchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateImdgComplianceSchema = createImdgComplianceSchema.partial();
 
@@ -61,7 +62,7 @@ export const createBookingScreeningSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBookingScreeningSchema = createBookingScreeningSchema.partial();
 
@@ -91,7 +92,7 @@ export const createSegregationRuleSchema = z.object({
   effectiveTo: z.coerce.date().optional(),
   priority: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSegregationRuleSchema = createSegregationRuleSchema.partial();
 
@@ -120,7 +121,7 @@ export const createPlacardRequirementSchema = z.object({
   imdgReference: z.string().max(100).optional(),
   imageUrl: z.string().max(500).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePlacardRequirementSchema = createPlacardRequirementSchema.partial();
 
@@ -149,7 +150,7 @@ export const createManifestSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateManifestSchema = createManifestSchema.partial();
 
@@ -177,7 +178,7 @@ export const createEmergencyProcedureSchema = z.object({
   lastDrillDate: z.coerce.date().optional(),
   nextDrillDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEmergencyProcedureSchema = createEmergencyProcedureSchema.partial();
 
@@ -211,7 +212,7 @@ export const createChemicalSafetyDataSchema = z.object({
   sdsDocumentUrl: z.string().max(500).optional(),
   expiryDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateChemicalSafetyDataSchema = createChemicalSafetyDataSchema.partial();
 
@@ -248,6 +249,6 @@ export const createIncidentReportSchema = z.object({
   preventiveMeasures: z.array(z.record(z.string(), z.unknown())).optional(),
   lessonsLearned: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIncidentReportSchema = createIncidentReportSchema.partial();

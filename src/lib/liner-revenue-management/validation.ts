@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Revenue per TEU Maximization Strategy
@@ -18,7 +19,7 @@ export const createTeuMaximizationSchema = z.object({
   effectiveTo: z.coerce.date().optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTeuMaximizationSchema = createTeuMaximizationSchema.partial();
 
@@ -39,7 +40,7 @@ export const createCargoMixSchema = z.object({
   periodStart: z.coerce.date().optional(),
   periodEnd: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCargoMixSchema = createCargoMixSchema.partial();
 
@@ -59,7 +60,7 @@ export const createDemandForecastSchema = z.object({
   modelVersion: z.string().max(50).optional(),
   forecastDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDemandForecastSchema = createDemandForecastSchema.partial();
 
@@ -80,7 +81,7 @@ export const createFreightContractSchema = z.object({
   indexReference: z.string().max(100).optional(),
   markToMarketValue: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFreightContractSchema = createFreightContractSchema.partial();
 
@@ -101,7 +102,7 @@ export const createLeakageDetectionSchema = z.object({
   recoveryAction: z.string().max(100).optional(),
   recovered: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeakageDetectionSchema = createLeakageDetectionSchema.partial();
 
@@ -121,7 +122,7 @@ export const createRateIntegritySchema = z.object({
   authorizedBy: z.string().max(255).optional(),
   violationSeverity: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRateIntegritySchema = createRateIntegritySchema.partial();
 
@@ -141,7 +142,7 @@ export const createRevenueAccrualSchema = z.object({
   reversalDate: z.coerce.date().optional(),
   glAccountCode: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRevenueAccrualSchema = createRevenueAccrualSchema.partial();
 
@@ -162,6 +163,6 @@ export const createMaximizationEngineSchema = z.object({
   acceptedRecommendation: z.boolean().optional(),
   revenueImpact: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMaximizationEngineSchema = createMaximizationEngineSchema.partial();

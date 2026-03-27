@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Enterprise Risk Register Management
@@ -18,7 +19,7 @@ export const createRiskRegisterSchema = z.object({
   residualScore: z.number().int().optional(),
   reviewDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRiskRegisterSchema = createRiskRegisterSchema.partial();
 
@@ -38,7 +39,7 @@ export const createHsseRecordSchema = z.object({
   nextDueDate: z.coerce.date().optional(),
   isCompliant: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHsseRecordSchema = createHsseRecordSchema.partial();
 
@@ -59,7 +60,7 @@ export const createNearMissReportSchema = z.object({
   preventiveMeasure: z.string().optional(),
   isAnonymous: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateNearMissReportSchema = createNearMissReportSchema.partial();
 
@@ -81,7 +82,7 @@ export const createIncidentInvestigationSchema = z.object({
   estimatedCost: z.string().optional(),
   closedDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIncidentInvestigationSchema = createIncidentInvestigationSchema.partial();
 
@@ -103,7 +104,7 @@ export const createPiClubScoringSchema = z.object({
   premiumImpact: z.string().optional(),
   recommendations: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePiClubScoringSchema = createPiClubScoringSchema.partial();
 
@@ -124,7 +125,7 @@ export const createContinuityPlanSchema = z.object({
   planOwner: z.string().max(255).optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContinuityPlanSchema = createContinuityPlanSchema.partial();
 
@@ -145,7 +146,7 @@ export const createEmergencyProcedureSchema = z.object({
   revisionNumber: z.number().int().optional(),
   approvedBy: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEmergencyProcedureSchema = createEmergencyProcedureSchema.partial();
 
@@ -166,6 +167,6 @@ export const createRiskKpiDashboardSchema = z.object({
   complianceRate: z.string().optional(),
   boardPresentedDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateRiskKpiDashboardSchema = createRiskKpiDashboardSchema.partial();

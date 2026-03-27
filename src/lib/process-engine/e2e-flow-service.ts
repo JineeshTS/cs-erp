@@ -15,6 +15,7 @@ import {
   peEventTriggers,
 } from "@/db/schema";
 import { eq, and, isNull, desc, lt, sql } from "drizzle-orm";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 // Note: Step executor import is deferred to avoid circular deps.
 // Gate resolution triggers execution via the API layer or bridge.
@@ -50,13 +51,13 @@ export async function listFlowInstances({
   if (e2eFlowId) conditions.push(eq(peE2eFlowInstances.e2eFlowId, e2eFlowId));
   if (entityType) conditions.push(eq(peE2eFlowInstances.entityType, entityType));
   if (entityId) conditions.push(eq(peE2eFlowInstances.entityId, entityId));
-  if (cursor) conditions.push(lt(peE2eFlowInstances.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(peE2eFlowInstances.createdAt, peE2eFlowInstances.id, cc)); }
 
   const results = await db
     .select()
     .from(peE2eFlowInstances)
     .where(and(...conditions))
-    .orderBy(desc(peE2eFlowInstances.createdAt))
+    .orderBy(desc(peE2eFlowInstances.createdAt), desc(peE2eFlowInstances.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;

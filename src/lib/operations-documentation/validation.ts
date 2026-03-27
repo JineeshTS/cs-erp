@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Bills of Lading
@@ -35,7 +36,7 @@ export const createBillOfLadingSchema = z.object({
   marksAndNumbers: z.string().optional(),
   specialInstructions: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBillOfLadingSchema = createBillOfLadingSchema.partial();
@@ -58,7 +59,7 @@ export const createBlContainerSchema = z.object({
   packageType: z.string().max(30).optional(),
   cargoDescription: z.string().optional(),
   hsCode: z.string().max(20).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBlContainerSchema = createBlContainerSchema.partial();
@@ -76,7 +77,7 @@ export const createBlChargeSchema = z.object({
   currency: z.string().max(3).optional(),
   prepaidCollect: z.enum(["prepaid", "collect"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateBlChargeSchema = createBlChargeSchema.partial();
@@ -102,7 +103,7 @@ export const createManifestSchema = z.object({
   status: z.enum(["draft", "prepared", "submitted", "acknowledged", "rejected", "amended"]).optional(),
   rejectionReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateManifestSchema = createManifestSchema.partial();
@@ -124,7 +125,7 @@ export const createManifestItemSchema = z.object({
   packageType: z.string().max(30).optional(),
   grossWeight: z.number().int().optional(),
   volumeCbm: z.number().int().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateManifestItemSchema = createManifestItemSchema.partial();
@@ -158,7 +159,7 @@ export const createRegulatoryFilingSchema = z.object({
   grossWeight: z.number().int().optional(),
   filingData: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateRegulatoryFilingSchema = createRegulatoryFilingSchema.partial();
@@ -190,7 +191,7 @@ export const createVgmRecordSchema = z.object({
   discrepancyFlag: z.boolean().optional(),
   discrepancyNotes: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateVgmRecordSchema = createVgmRecordSchema.partial();
@@ -214,7 +215,7 @@ export const createShippingInstructionSchema = z.object({
   specialInstructions: z.string().optional(),
   status: z.enum(["draft", "submitted", "approved", "rejected"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateShippingInstructionSchema = createShippingInstructionSchema.partial();
@@ -237,7 +238,7 @@ export const createCargoTrackingEventSchema = z.object({
   voyageNumber: z.string().max(50).optional(),
   isActual: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateCargoTrackingEventSchema = createCargoTrackingEventSchema.partial();
@@ -258,7 +259,7 @@ export const createDocumentAmendmentSchema = z.object({
   fee: z.number().int().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateDocumentAmendmentSchema = createDocumentAmendmentSchema.partial();

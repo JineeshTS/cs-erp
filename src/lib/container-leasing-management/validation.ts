@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Lease Agreement Lifecycle Management
@@ -22,7 +23,7 @@ export const createLeaseAgreementSchema = z.object({
   autoRenewal: z.boolean().optional(),
   terminationNoticeDays: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeaseAgreementSchema = createLeaseAgreementSchema.partial();
 
@@ -46,7 +47,7 @@ export const createOnhireOffhireSchema = z.object({
   totalCost: z.string().optional(),
   interchangeRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOnhireOffhireSchema = createOnhireOffhireSchema.partial();
 
@@ -70,7 +71,7 @@ export const createMnrDamageBillingSchema = z.object({
   approvedAmount: z.string().optional(),
   invoiceDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMnrDamageBillingSchema = createMnrDamageBillingSchema.partial();
 
@@ -92,7 +93,7 @@ export const createLeaseCostAllocationSchema = z.object({
   revenueGenerated: z.string().optional(),
   profitMargin: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeaseCostAllocationSchema = createLeaseCostAllocationSchema.partial();
 
@@ -114,7 +115,7 @@ export const createLessorReconciliationSchema = z.object({
   adjustmentAmount: z.string().optional(),
   reconciliationDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLessorReconciliationSchema = createLessorReconciliationSchema.partial();
 
@@ -137,7 +138,7 @@ export const createContainerRedeliverySchema = z.object({
   penaltyAmount: z.string().optional(),
   dropoffCharges: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateContainerRedeliverySchema = createContainerRedeliverySchema.partial();
 
@@ -160,7 +161,7 @@ export const createLeaseVsBuyAnalysisSchema = z.object({
   savingsAmount: z.string().optional(),
   analysisCurrency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeaseVsBuyAnalysisSchema = createLeaseVsBuyAnalysisSchema.partial();
 
@@ -182,6 +183,6 @@ export const createFleetOptimizerSchema = z.object({
   confidenceScore: z.string().optional(),
   inputFeatures: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFleetOptimizerSchema = createFleetOptimizerSchema.partial();

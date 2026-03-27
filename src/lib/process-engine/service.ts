@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { eq, and, isNull, desc, lt, inArray, sql } from "drizzle-orm";
 import { eventBus } from "@/lib/events/event-bus";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 // ── Process Instance Operations ──
 
@@ -41,13 +42,13 @@ export async function listProcessInstances({
   if (status) conditions.push(eq(peProcessInstances.status, status));
   if (processId) conditions.push(eq(peProcessInstances.processId, processId));
   if (entityType) conditions.push(eq(peProcessInstances.entityType, entityType));
-  if (cursor) conditions.push(lt(peProcessInstances.createdAt, new Date(cursor)));
+  if (cursor) { const cc = parseCompoundCursor(cursor); if (cc) conditions.push(cursorCondition(peProcessInstances.createdAt, peProcessInstances.id, cc)); }
 
   const results = await db
     .select()
     .from(peProcessInstances)
     .where(and(...conditions))
-    .orderBy(desc(peProcessInstances.createdAt))
+    .orderBy(desc(peProcessInstances.createdAt), desc(peProcessInstances.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -352,7 +353,7 @@ export async function listPendingApprovals(tenantId: string, approverId: string)
         isNull(peApprovals.deletedAt)
       )
     )
-    .orderBy(desc(peApprovals.createdAt));
+    .orderBy(desc(peApprovals.createdAt), desc(peApprovals.id));
 }
 
 // ── Event Log ──
@@ -394,7 +395,7 @@ export async function listEventLog(
     .select()
     .from(peEventLog)
     .where(and(...conditions))
-    .orderBy(desc(peEventLog.createdAt))
+    .orderBy(desc(peEventLog.createdAt), desc(peEventLog.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;

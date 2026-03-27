@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Proforma DA Estimates
@@ -27,7 +28,7 @@ export const createProformaEstimateSchema = z.object({
   estimateDate: z.coerce.date(),
   validUntil: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateProformaEstimateSchema = createProformaEstimateSchema.partial();
 
@@ -59,7 +60,7 @@ export const createFinalDaSchema = z.object({
   invoiceDate: z.coerce.date().optional(),
   receivedDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFinalDaSchema = createFinalDaSchema.partial();
 
@@ -86,7 +87,7 @@ export const createPortCostSchema = z.object({
   rateSchedule: z.record(z.string(), z.unknown()).optional(),
   sourceDocument: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortCostSchema = createPortCostSchema.partial();
 
@@ -113,7 +114,7 @@ export const createAgentStatementSchema = z.object({
   balanceDue: z.number().int().optional(),
   dueDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAgentStatementSchema = createAgentStatementSchema.partial();
 
@@ -138,7 +139,7 @@ export const createExpenseAllocationSchema = z.object({
   costCentre: z.string().max(50).optional(),
   glAccountCode: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateExpenseAllocationSchema = createExpenseAllocationSchema.partial();
 
@@ -159,7 +160,7 @@ export const createVarianceAnalysisSchema = z.object({
   rootCauseAnalysis: z.string().optional(),
   recommendations: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVarianceAnalysisSchema = createVarianceAnalysisSchema.partial();
 
@@ -183,7 +184,7 @@ export const createCostBenchmarkSchema = z.object({
   aiModelVersion: z.string().max(50).optional(),
   dataSource: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCostBenchmarkSchema = createCostBenchmarkSchema.partial();
 
@@ -199,6 +200,6 @@ export const createConsolidatedReportSchema = z.object({
   currency: z.string().max(3).optional(),
   aiModelVersion: z.string().max(50).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateConsolidatedReportSchema = createConsolidatedReportSchema.partial();

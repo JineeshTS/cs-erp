@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Container Fleet schemas
@@ -21,7 +22,7 @@ export const createContainerFleetSchema = z.object({
   tareWeightKg: z.number().int().min(0).optional(),
   maxGrossWeightKg: z.number().int().min(0).optional(),
   capacityCbm: z.number().min(0).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["active", "inactive", "retired"]).optional(),
   notes: z.string().optional(),
 });
@@ -71,7 +72,7 @@ export const createReeferContainerSchema = z.object({
   currentTemperature: z.number().optional(),
   fuelType: z.string().max(20).optional(),
   gensetRequired: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["active", "standby", "under_repair", "off"]).optional(),
   notes: z.string().optional(),
 });
@@ -98,7 +99,7 @@ export const createMaintenanceRepairSchema = z.object({
   repairStartDate: z.string().datetime().optional(),
   repairCompleteDate: z.string().datetime().optional(),
   approvalStatus: z.enum(["pending", "approved", "rejected"]).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["reported", "estimated", "approved", "in_progress", "completed", "billed"]).optional(),
   notes: z.string().optional(),
 });
@@ -122,7 +123,7 @@ export const createYardSlotSchema = z.object({
   assignedContainerId: z.string().uuid().optional(),
   reservedFor: z.string().max(255).optional(),
   reservedUntil: z.string().datetime().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["available", "occupied", "reserved", "blocked", "maintenance"]).optional(),
   notes: z.string().optional(),
 });
@@ -147,7 +148,7 @@ export const createGateMovementSchema = z.object({
   codecoMessageId: z.string().max(50).optional(),
   ediReference: z.string().max(100).optional(),
   movementTimestamp: z.string().datetime().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["pending", "completed", "rejected"]).optional(),
   notes: z.string().optional(),
 });
@@ -171,7 +172,7 @@ export const createEquipmentInterchangeSchema = z.object({
   damageRemarks: z.string().optional(),
   liabilityParty: z.string().max(255).optional(),
   receiptNumber: z.string().max(50).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["draft", "issued", "accepted", "disputed"]).optional(),
   notes: z.string().optional(),
 });
@@ -199,7 +200,7 @@ export const createOnHireOffHireSchema = z.object({
   conditionOffHire: z.string().max(20).optional(),
   damageCharges: z.number().int().min(0).optional(),
   cleaningCharges: z.number().int().min(0).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["active", "pending_off_hire", "off_hired", "disputed"]).optional(),
   notes: z.string().optional(),
 });
@@ -225,7 +226,7 @@ export const createContainerSurveySchema = z.object({
   damageFindings: z.array(z.record(z.string(), z.unknown())).optional(),
   photos: z.array(z.string()).optional(),
   nextSurveyDue: z.string().datetime().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["scheduled", "in_progress", "completed", "reviewed"]).optional(),
   notes: z.string().optional(),
 });
@@ -252,7 +253,7 @@ export const createLeasedContainerSchema = z.object({
   contractTerms: z.record(z.string(), z.unknown()).optional(),
   minimumLeaseDays: z.number().int().min(0).optional(),
   penaltyRate: z.number().int().min(0).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["active", "expiring", "expired", "terminated"]).optional(),
   notes: z.string().optional(),
 });
@@ -278,7 +279,7 @@ export const createAvailabilityPlanSchema = z.object({
   aiModel: z.string().max(100).optional(),
   executedAction: z.string().max(30).optional(),
   executionDate: z.string().datetime().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
   status: z.enum(["forecast", "approved", "executing", "completed"]).optional(),
   notes: z.string().optional(),
 });

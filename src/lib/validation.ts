@@ -45,6 +45,19 @@ export function escapeIlike(input: string): string {
   return input.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
+/**
+ * Constrained metadata schema — accepts a JSON object with max 50 keys.
+ * Prevents unbounded payload sizes in metadata fields.
+ */
+export const metadataSchema = z
+  .record(z.string(), z.unknown())
+  .refine(
+    (val) => Object.keys(val).length <= 50,
+    { message: "Metadata must have at most 50 keys" }
+  )
+  .optional()
+  .nullable();
+
 export function formatZodErrors(error: z.ZodError): Record<string, string[]> {
   const errors: Record<string, string[]> = {};
   for (const issue of error.issues) {

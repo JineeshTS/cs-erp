@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Asset Registry
@@ -24,7 +25,7 @@ export const createAssetRegistrySchema = z.object({
   warrantyExpiry: z.coerce.date().optional(),
   condition: z.enum(["new", "good", "fair", "poor", "decommissioned"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAssetRegistrySchema = createAssetRegistrySchema.partial();
 
@@ -50,7 +51,7 @@ export const createDepreciationScheduleSchema = z.object({
   lastCalculatedDate: z.coerce.date().optional(),
   entries: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDepreciationScheduleSchema = createDepreciationScheduleSchema.partial();
 
@@ -75,7 +76,7 @@ export const createAssetDisposalSchema = z.object({
   environmentalCompliance: z.boolean().optional(),
   journalEntryRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAssetDisposalSchema = createAssetDisposalSchema.partial();
 
@@ -101,7 +102,7 @@ export const createInsuranceValuationSchema = z.object({
   valuationMethod: z.string().max(100).optional(),
   nextReviewDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateInsuranceValuationSchema = createInsuranceValuationSchema.partial();
 
@@ -126,7 +127,7 @@ export const createMaintenanceScheduleSchema = z.object({
   nextScheduledDate: z.coerce.date().optional(),
   priority: z.enum(["low", "medium", "high", "critical"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMaintenanceScheduleSchema = createMaintenanceScheduleSchema.partial();
 
@@ -152,7 +153,7 @@ export const createCapexOpexClassificationSchema = z.object({
   approvalDate: z.coerce.date().optional(),
   journalEntryRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCapexOpexClassificationSchema = createCapexOpexClassificationSchema.partial();
 
@@ -178,7 +179,7 @@ export const createImpairmentTestSchema = z.object({
   reviewedBy: z.string().max(255).optional(),
   journalEntryRef: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateImpairmentTestSchema = createImpairmentTestSchema.partial();
 
@@ -207,6 +208,6 @@ export const createLeaseAccountingSchema = z.object({
   terminationOption: z.boolean().optional(),
   paymentSchedule: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeaseAccountingSchema = createLeaseAccountingSchema.partial();

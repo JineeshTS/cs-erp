@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Project Plan & Milestone Tracking
@@ -17,7 +18,7 @@ export const createProjectPlanSchema = z.object({
   budget: z.string().optional(),
   priority: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateProjectPlanSchema = createProjectPlanSchema.partial();
 
@@ -37,7 +38,7 @@ export const createDataMigrationSchema = z.object({
   completedDate: z.coerce.date().optional(),
   validationPassed: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDataMigrationSchema = createDataMigrationSchema.partial();
 
@@ -57,7 +58,7 @@ export const createUatManagementSchema = z.object({
   testEndDate: z.coerce.date().optional(),
   signoffDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateUatManagementSchema = createUatManagementSchema.partial();
 
@@ -76,7 +77,7 @@ export const createGoLiveChecklistSchema = z.object({
   approvedDate: z.coerce.date().optional(),
   isReady: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGoLiveChecklistSchema = createGoLiveChecklistSchema.partial();
 
@@ -97,7 +98,7 @@ export const createChangeRequestSchema = z.object({
   approvedDate: z.coerce.date().optional(),
   targetDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateChangeRequestSchema = createChangeRequestSchema.partial();
 
@@ -116,7 +117,7 @@ export const createSystemConfigSchema = z.object({
   isActive: z.boolean().optional(),
   versionNumber: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSystemConfigSchema = createSystemConfigSchema.partial();
 
@@ -135,7 +136,7 @@ export const createTrainingCompletionSchema = z.object({
   certificateUrl: z.string().optional(),
   validUntil: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTrainingCompletionSchema = createTrainingCompletionSchema.partial();
 
@@ -156,6 +157,6 @@ export const createHypercareSupportSchema = z.object({
   resolvedDate: z.coerce.date().optional(),
   slaBreached: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateHypercareSupportSchema = createHypercareSupportSchema.partial();

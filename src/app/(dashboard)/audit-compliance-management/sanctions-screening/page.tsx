@@ -45,7 +45,7 @@ export default async function SanctionsScreeningPage({
   }
   if (cursor)
     conditions.push(
-      lt(acmSanctionsScreenings.createdAt, new Date(cursor))
+      cursorCondition(acmSanctionsScreenings.createdAt, acmSanctionsScreenings.id, parseCompoundCursor(cursor)!)
     );
 
   const data = await db

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Crew Rotations
@@ -21,7 +22,7 @@ export const createCrewRotationSchema = z.object({
   approvedByName: z.string().max(255).optional(),
   approvedAt: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCrewRotationSchema = createCrewRotationSchema.partial();
 
@@ -46,7 +47,7 @@ export const createCertificateTrackingSchema = z.object({
   revalidationDate: z.coerce.date().optional(),
   documentUrl: z.string().max(500).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCertificateTrackingSchema = createCertificateTrackingSchema.partial();
 
@@ -78,7 +79,7 @@ export const createPayrollAllotmentSchema = z.object({
   taxWithheld: z.number().int().optional(),
   socialSecurity: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePayrollAllotmentSchema = createPayrollAllotmentSchema.partial();
 
@@ -103,7 +104,7 @@ export const createFlagStateComplianceSchema = z.object({
   reportNumber: z.string().max(100).optional(),
   nextInspectionDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFlagStateComplianceSchema = createFlagStateComplianceSchema.partial();
 
@@ -128,7 +129,7 @@ export const createManningAgencySchema = z.object({
   contractStartDate: z.coerce.date().optional(),
   contractEndDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateManningAgencySchema = createManningAgencySchema.partial();
 
@@ -158,7 +159,7 @@ export const createVisaTravelRecordSchema = z.object({
   arrangedByName: z.string().max(255).optional(),
   approvedByName: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVisaTravelRecordSchema = createVisaTravelRecordSchema.partial();
 
@@ -186,7 +187,7 @@ export const createWelfareMedicalRecordSchema = z.object({
   claimNumber: z.string().max(100).optional(),
   followUpDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateWelfareMedicalRecordSchema = createWelfareMedicalRecordSchema.partial();
 
@@ -211,6 +212,6 @@ export const createMlcComplianceSchema = z.object({
   certificateIssueDate: z.coerce.date().optional(),
   certificateExpiryDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMlcComplianceSchema = createMlcComplianceSchema.partial();

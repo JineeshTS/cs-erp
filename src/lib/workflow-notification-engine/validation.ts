@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Workflow schemas
 export const createWorkflowSchema = z.object({
@@ -57,7 +58,7 @@ export const updateSlaInstanceSchema = z.object({
   completedAt: z.string().datetime().optional(),
   breachedAt: z.string().datetime().optional(),
   assignedTo: z.string().uuid().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 // DOA Matrix schemas

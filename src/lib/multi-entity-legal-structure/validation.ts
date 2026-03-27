@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metadataSchema } from "@/lib/validation";
 
 // Legal Entity schemas
 export const createLegalEntitySchema = z.object({
@@ -20,7 +21,7 @@ export const createLegalEntitySchema = z.object({
   contactInfo: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
   isHeadquarters: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLegalEntitySchema = createLegalEntitySchema.partial();
 
@@ -34,7 +35,7 @@ export const createCurrencyConfigSchema = z.object({
   smallestUnit: z.number().int().positive().optional(),
   isBaseCurrency: z.boolean().optional(),
   isEnabled: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCurrencyConfigSchema = createCurrencyConfigSchema.partial();
 
@@ -49,7 +50,7 @@ export const createFxRateSchema = z.object({
   effectiveFrom: z.string().datetime(),
   effectiveTo: z.string().datetime().optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFxRateSchema = createFxRateSchema.partial();
 
@@ -64,7 +65,7 @@ export const createTaxConfigSchema = z.object({
   description: z.string().optional(),
   isCompound: z.boolean().optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTaxConfigSchema = createTaxConfigSchema.partial();
 
@@ -76,7 +77,7 @@ export const createTaxRateSchema = z.object({
   effectiveTo: z.string().datetime().optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTaxRateSchema = createTaxRateSchema.partial();
 
@@ -95,7 +96,7 @@ export const createIntercompanyTransactionSchema = z.object({
   status: z.enum(["draft", "pending", "approved", "posted", "reversed", "cancelled"]).optional(),
   referenceType: z.string().max(50).optional(),
   referenceId: z.string().uuid().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateIntercompanyTransactionSchema = createIntercompanyTransactionSchema.partial();
 
@@ -108,7 +109,7 @@ export const createSettlementBatchSchema = z.object({
   totalAmount: z.number().int().optional(),
   netAmount: z.number().int().optional(),
   status: z.enum(["draft", "pending", "approved", "settled", "cancelled"]).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSettlementBatchSchema = createSettlementBatchSchema.partial();
 
@@ -118,7 +119,7 @@ export const createSettlementItemSchema = z.object({
   transactionId: z.string().uuid(),
   amount: z.number().int(),
   netDirection: z.enum(["debit", "credit"]),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSettlementItemSchema = createSettlementItemSchema.partial();
 
@@ -132,7 +133,7 @@ export const createOracleIntegrationConfigSchema = z.object({
   mappingConfig: z.record(z.string(), z.unknown()).optional(),
   syncSchedule: z.string().max(100).optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOracleIntegrationConfigSchema = createOracleIntegrationConfigSchema.partial();
 
@@ -146,7 +147,7 @@ export const createOracleSyncLogSchema = z.object({
   errorLog: z.record(z.string(), z.unknown()).optional(),
   startedAt: z.string().datetime().optional(),
   completedAt: z.string().datetime().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOracleSyncLogSchema = createOracleSyncLogSchema.partial();
 
@@ -162,7 +163,7 @@ export const createComplianceRuleSchema = z.object({
   frequency: z.string().max(30).optional(),
   conditions: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateComplianceRuleSchema = createComplianceRuleSchema.partial();
 
@@ -177,7 +178,7 @@ export const createComplianceFilingSchema = z.object({
   filingReference: z.string().max(255).optional(),
   filingData: z.record(z.string(), z.unknown()).optional(),
   submittedBy: z.string().uuid().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateComplianceFilingSchema = createComplianceFilingSchema.partial();
 
@@ -191,7 +192,7 @@ export const createLocaleConfigSchema = z.object({
   numberFormat: z.string().max(30).optional(),
   isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLocaleConfigSchema = createLocaleConfigSchema.partial();
 
@@ -202,6 +203,6 @@ export const createTranslationSchema = z.object({
   key: z.string().min(1).max(255),
   value: z.string().min(1),
   isVerified: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTranslationSchema = createTranslationSchema.partial();

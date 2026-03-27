@@ -35,7 +35,7 @@ export default async function VesselPerformancesPage({
   ];
   if (cursor)
     conditions.push(
-      lt(cvmVesselPerformances.createdAt, new Date(cursor))
+      cursorCondition(cvmVesselPerformances.createdAt, cvmVesselPerformances.id, parseCompoundCursor(cursor)!)
     );
 
   const data = await db

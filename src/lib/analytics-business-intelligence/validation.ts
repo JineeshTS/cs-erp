@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Executive KPI Dashboard
@@ -25,7 +26,7 @@ export const createExecutiveKpiDashboardSchema = z.object({
   kpiBreakdown: z.record(z.string(), z.unknown()).optional(),
   trendData: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateExecutiveKpiDashboardSchema = createExecutiveKpiDashboardSchema.partial();
 
@@ -55,7 +56,7 @@ export const createVoyageAnalyticsSchema = z.object({
   cargoMix: z.record(z.string(), z.unknown()).optional(),
   performanceMetrics: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyageAnalyticsSchema = createVoyageAnalyticsSchema.partial();
 
@@ -81,7 +82,7 @@ export const createTradeLaneAnalyticsSchema = z.object({
   avgTransitDays: z.string().optional(),
   reliabilityPct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTradeLaneAnalyticsSchema = createTradeLaneAnalyticsSchema.partial();
 
@@ -108,7 +109,7 @@ export const createCustomerRevenueAnalyticsSchema = z.object({
   outstandingBalance: z.string().optional(),
   lifetimeValue: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCustomerRevenueAnalyticsSchema = createCustomerRevenueAnalyticsSchema.partial();
 
@@ -131,7 +132,7 @@ export const createPredictiveForecastSchema = z.object({
   actualValue: z.string().optional(),
   dataPoints: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePredictiveForecastSchema = createPredictiveForecastSchema.partial();
 
@@ -155,7 +156,7 @@ export const createMarketIntelligenceReportSchema = z.object({
   recommendations: z.string().optional(),
   source: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMarketIntelligenceReportSchema = createMarketIntelligenceReportSchema.partial();
 
@@ -181,7 +182,7 @@ export const createOperationalEfficiencySchema = z.object({
   costPerTeu: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateOperationalEfficiencySchema = createOperationalEfficiencySchema.partial();
 
@@ -202,6 +203,6 @@ export const createBiReportSchema = z.object({
   outputFormat: z.enum(["pdf", "xlsx", "csv", "html"]).optional(),
   isPublished: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateBiReportSchema = createBiReportSchema.partial();

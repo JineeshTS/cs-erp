@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Integration Connections
@@ -17,7 +18,7 @@ export const createConnectionSchema = z.object({
   rateLimitPerMinute: z.number().int().min(1).optional(),
   timeoutMs: z.number().int().min(1000).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateConnectionSchema = createConnectionSchema.partial();
@@ -37,7 +38,7 @@ export const createEndpointSchema = z.object({
   transformConfig: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const updateEndpointSchema = createEndpointSchema.partial();
@@ -55,7 +56,7 @@ export const createOracleSyncJobSchema = z.object({
   scheduleCron: z.string().max(100).optional(),
   syncConfig: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const triggerOracleSyncSchema = z.object({
@@ -79,7 +80,7 @@ export const createEdiMessageSchema = z.object({
   relatedEntityType: z.string().max(50).optional(),
   relatedEntityId: z.string().uuid().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const parseEdiSchema = z.object({
@@ -110,7 +111,7 @@ export const createPortConnectMessageSchema = z.object({
   payload: z.record(z.string(), z.unknown()).optional(),
   connectionId: z.string().uuid().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 // ==========================================
@@ -130,7 +131,7 @@ export const createCustomsFilingSchema = z.object({
   currency: z.string().max(3).optional(),
   connectionId: z.string().uuid().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 
 export const submitCustomsFilingSchema = z.object({

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Employee Master & Profile Management
@@ -29,7 +30,7 @@ export const createEmployeeProfileSchema = z.object({
   emergencyContact: z.record(z.string(), z.unknown()).optional(),
   address: z.record(z.string(), z.unknown()).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEmployeeProfileSchema = createEmployeeProfileSchema.partial();
 
@@ -51,7 +52,7 @@ export const createLeaveAbsenceSchema = z.object({
   attachmentUrl: z.string().optional(),
   rejectionReason: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLeaveAbsenceSchema = createLeaveAbsenceSchema.partial();
 
@@ -75,7 +76,7 @@ export const createAttendanceTimeTrackingSchema = z.object({
   isEarlyLeave: z.boolean().optional(),
   earlyLeaveMinutes: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateAttendanceTimeTrackingSchema = createAttendanceTimeTrackingSchema.partial();
 
@@ -100,7 +101,7 @@ export const createPerformanceAppraisalSchema = z.object({
   promotionRecommendation: z.boolean().optional(),
   salaryRevision: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePerformanceAppraisalSchema = createPerformanceAppraisalSchema.partial();
 
@@ -129,7 +130,7 @@ export const createPayrollProcessingSchema = z.object({
   deductionBreakdown: z.array(z.record(z.string(), z.unknown())).optional(),
   allowanceBreakdown: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePayrollProcessingSchema = createPayrollProcessingSchema.partial();
 
@@ -153,7 +154,7 @@ export const createSocialInsuranceRecordSchema = z.object({
   filingRef: z.string().max(100).optional(),
   filingStatus: z.enum(["pending", "filed", "accepted", "rejected"]).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSocialInsuranceRecordSchema = createSocialInsuranceRecordSchema.partial();
 
@@ -181,7 +182,7 @@ export const createGratuityCalculationSchema = z.object({
   approvalDate: z.coerce.date().optional(),
   paymentDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateGratuityCalculationSchema = createGratuityCalculationSchema.partial();
 
@@ -209,6 +210,6 @@ export const createVisaResidencyRecordSchema = z.object({
   cost: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVisaResidencyRecordSchema = createVisaResidencyRecordSchema.partial();

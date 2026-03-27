@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Vessel Deployment Decision Matrix
@@ -16,7 +17,7 @@ export const createDeploymentDecisionSchema = z.object({
   approvedBy: z.string().max(255).optional(),
   approvedDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDeploymentDecisionSchema = createDeploymentDecisionSchema.partial();
 
@@ -35,7 +36,7 @@ export const createFleetUtilizationSchema = z.object({
   vesselCount: z.number().int().optional(),
   tradeLane: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFleetUtilizationSchema = createFleetUtilizationSchema.partial();
 
@@ -54,7 +55,7 @@ export const createNetworkDesignSchema = z.object({
   estimatedCost: z.string().optional(),
   netContribution: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateNetworkDesignSchema = createNetworkDesignSchema.partial();
 
@@ -74,7 +75,7 @@ export const createDeploymentOptimizerSchema = z.object({
   aiRecommendation: z.string().optional(),
   runDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDeploymentOptimizerSchema = createDeploymentOptimizerSchema.partial();
 
@@ -94,7 +95,7 @@ export const createFleetFinancialSchema = z.object({
   irrPct: z.string().optional(),
   paybackYears: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateFleetFinancialSchema = createFleetFinancialSchema.partial();
 
@@ -113,7 +114,7 @@ export const createVesselSwapSchema = z.object({
   capacityChange: z.number().int().optional(),
   isApproved: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVesselSwapSchema = createVesselSwapSchema.partial();
 
@@ -133,7 +134,7 @@ export const createDeploymentContractSchema = z.object({
   renewalDate: z.coerce.date().optional(),
   isAutoRenew: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDeploymentContractSchema = createDeploymentContractSchema.partial();
 
@@ -152,6 +153,6 @@ export const createMarketIntelligenceSchema = z.object({
   marketSentiment: z.string().max(50).optional(),
   summary: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateMarketIntelligenceSchema = createMarketIntelligenceSchema.partial();

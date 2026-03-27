@@ -4,9 +4,10 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { eq, and, isNull, desc } from "drizzle-orm";
-import { proformaTemplates, generatedVoyages } from "@/db/schema/schedule-engine";
+import { eq, and, isNull, desc, asc, inArray } from "drizzle-orm";
+import { proformaTemplates, generatedVoyages, voyagePortCalls } from "@/db/schema/schedule-engine";
 import { Badge } from "@/components/ui/badge";
+import ScheduleGantt, { type Voyage as GanttVoyage } from "./schedule-gantt";
 
 export default async function ScheduleEnginePage() {
   const session = await getSession();
@@ -22,13 +23,59 @@ export default async function ScheduleEnginePage() {
     .orderBy(desc(proformaTemplates.createdAt))
     .limit(20);
 
-  // Fetch recent voyages
+  // Fetch recent voyages with port calls for Gantt
   const voyages = await db
     .select()
     .from(generatedVoyages)
     .where(and(eq(generatedVoyages.tenantId, session.tenantId), isNull(generatedVoyages.deletedAt)))
     .orderBy(desc(generatedVoyages.startDate))
-    .limit(10);
+    .limit(20);
+
+  // Fetch port calls for Gantt (single batch query, no N+1)
+  let ganttVoyages: GanttVoyage[] = [];
+  if (voyages.length > 0) {
+    const voyageIds = voyages.map((v) => v.id);
+    const portCallRows = await db
+      .select()
+      .from(voyagePortCalls)
+      .where(and(
+        eq(voyagePortCalls.tenantId, session.tenantId),
+        inArray(voyagePortCalls.voyageId, voyageIds),
+      ))
+      .orderBy(asc(voyagePortCalls.sequence));
+
+    const pcByVoyage = new Map<string, typeof portCallRows>();
+    for (const pc of portCallRows) {
+      const list = pcByVoyage.get(pc.voyageId) ?? [];
+      list.push(pc);
+      pcByVoyage.set(pc.voyageId, list);
+    }
+
+    ganttVoyages = voyages.map((v) => ({
+      id: v.id,
+      voyageNumber: v.voyageNumber,
+      startDate: String(v.startDate),
+      endDate: v.endDate ? String(v.endDate) : null,
+      status: v.status,
+      isBlankSailing: v.isBlankSailing ?? null,
+      isExtraLoader: v.isExtraLoader ?? null,
+      portCalls: (pcByVoyage.get(v.id) ?? []).map((pc) => ({
+        id: pc.id,
+        voyageId: pc.voyageId,
+        sequence: pc.sequence,
+        portCode: pc.portCode,
+        portName: pc.portName,
+        plannedArrival: pc.plannedArrival.toISOString(),
+        plannedDeparture: pc.plannedDeparture.toISOString(),
+        actualArrival: pc.actualArrival?.toISOString() ?? null,
+        actualDeparture: pc.actualDeparture?.toISOString() ?? null,
+        cargoCutoff: pc.cargoCutoff?.toISOString() ?? null,
+        delayHours: pc.delayHours ? String(pc.delayHours) : null,
+        delayReason: pc.delayReason ?? null,
+        status: pc.status,
+      })),
+    }));
+  }
 
   return (
     <div className="space-y-8">
@@ -89,6 +136,12 @@ export default async function ScheduleEnginePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Schedule Gantt Timeline */}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-gray-100">Voyage Timeline</h2>
+        <ScheduleGantt voyages={ganttVoyages} />
       </div>
 
       {/* Templates Table */}

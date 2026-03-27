@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { aiChatSessions, aiChatMessages } from "@/db/schema";
 import { eq, and, desc, isNull, lt } from "drizzle-orm";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -210,14 +211,15 @@ export async function getSessions(
   ];
 
   if (cursor) {
-    conditions.push(lt(aiChatSessions.createdAt, new Date(cursor)));
+    const cc = parseCompoundCursor(cursor);
+    if (cc) conditions.push(cursorCondition(aiChatSessions.createdAt, aiChatSessions.id, cc));
   }
 
   const results = await db
     .select()
     .from(aiChatSessions)
     .where(and(...conditions))
-    .orderBy(desc(aiChatSessions.createdAt))
+    .orderBy(desc(aiChatSessions.createdAt), desc(aiChatSessions.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -226,9 +228,7 @@ export async function getSessions(
   return {
     data,
     meta: {
-      cursor: hasMore
-        ? data[data.length - 1].createdAt.toISOString()
-        : undefined,
+      cursor: hasMore ? encodeCompoundCursor(data[data.length - 1].createdAt, data[data.length - 1].id) : undefined,
       hasMore,
     },
   };
@@ -277,14 +277,15 @@ export async function getMessages(
   ];
 
   if (cursor) {
-    conditions.push(lt(aiChatMessages.createdAt, new Date(cursor)));
+    const cc = parseCompoundCursor(cursor);
+    if (cc) conditions.push(cursorCondition(aiChatMessages.createdAt, aiChatMessages.id, cc));
   }
 
   const results = await db
     .select()
     .from(aiChatMessages)
     .where(and(...conditions))
-    .orderBy(desc(aiChatMessages.createdAt))
+    .orderBy(desc(aiChatMessages.createdAt), desc(aiChatMessages.id))
     .limit(limit + 1);
 
   const hasMore = results.length > limit;
@@ -353,7 +354,7 @@ export async function chat(
         eq(aiChatMessages.tenantId, tenantId)
       )
     )
-    .orderBy(desc(aiChatMessages.createdAt))
+    .orderBy(desc(aiChatMessages.createdAt), desc(aiChatMessages.id))
     .limit(MAX_CONTEXT_MESSAGES);
 
   // Build messages array for Claude (reversed to chronological, truncated, XML-wrapped)
@@ -465,7 +466,7 @@ export async function chatStream(
         eq(aiChatMessages.tenantId, tenantId)
       )
     )
-    .orderBy(desc(aiChatMessages.createdAt))
+    .orderBy(desc(aiChatMessages.createdAt), desc(aiChatMessages.id))
     .limit(MAX_CONTEXT_MESSAGES);
 
   const messages: Anthropic.MessageParam[] = recentMessages

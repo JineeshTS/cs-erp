@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Cargo Claim Registration & Triage
@@ -23,7 +24,7 @@ export const createClaimRegistrationSchema = z.object({
   triagePriority: z.string().max(20).optional(),
   assignedHandler: z.string().max(255).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimRegistrationSchema = createClaimRegistrationSchema.partial();
 
@@ -47,7 +48,7 @@ export const createLiabilityAssessmentSchema = z.object({
   recommendedLiability: z.string().optional(),
   carrierLiabilityPct: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateLiabilityAssessmentSchema = createLiabilityAssessmentSchema.partial();
 
@@ -71,7 +72,7 @@ export const createDamageSurveySchema = z.object({
   reportReceived: z.boolean().optional(),
   reportDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDamageSurveySchema = createDamageSurveySchema.partial();
 
@@ -95,7 +96,7 @@ export const createTimeBarTrackingSchema = z.object({
   protectiveAction: z.string().max(100).optional(),
   protectiveActionDate: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateTimeBarTrackingSchema = createTimeBarTrackingSchema.partial();
 
@@ -119,7 +120,7 @@ export const createClaimSettlementSchema = z.object({
   savingsAmount: z.string().optional(),
   savingsPercentage: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimSettlementSchema = createClaimSettlementSchema.partial();
 
@@ -142,7 +143,7 @@ export const createSubrogationRecoverySchema = z.object({
   legalActionFiled: z.boolean().optional(),
   recoveryPercentage: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSubrogationRecoverySchema = createSubrogationRecoverySchema.partial();
 
@@ -164,7 +165,7 @@ export const createClaimPredictionSchema = z.object({
   similarCasesCount: z.number().int().optional(),
   historicalAvgSettlement: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateClaimPredictionSchema = createClaimPredictionSchema.partial();
 
@@ -187,6 +188,6 @@ export const createPortfolioAnalyticSchema = z.object({
   topClaimCategory: z.string().max(100).optional(),
   trendDirection: z.string().max(20).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortfolioAnalyticSchema = createPortfolioAnalyticSchema.partial();

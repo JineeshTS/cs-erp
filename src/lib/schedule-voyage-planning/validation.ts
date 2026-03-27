@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { metadataSchema } from "@/lib/validation";
 
 // ==========================================
 // Multi-Service Schedule Integration & Publication
@@ -16,7 +17,7 @@ export const createServiceScheduleSchema = z.object({
   effectiveFrom: z.coerce.date().optional(),
   effectiveTo: z.coerce.date().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateServiceScheduleSchema = createServiceScheduleSchema.partial();
 
@@ -35,7 +36,7 @@ export const createPortSequenceSchema = z.object({
   dwellHours: z.string().optional(),
   cargoMovesPlanned: z.number().int().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updatePortSequenceSchema = createPortSequenceSchema.partial();
 
@@ -54,7 +55,7 @@ export const createCanalTransitSchema = z.object({
   convoyPosition: z.number().int().optional(),
   pilotRequired: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateCanalTransitSchema = createCanalTransitSchema.partial();
 
@@ -73,7 +74,7 @@ export const createEtaManagementSchema = z.object({
   delayReason: z.string().max(255).optional(),
   notificationSent: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateEtaManagementSchema = createEtaManagementSchema.partial();
 
@@ -93,7 +94,7 @@ export const createVoyageOptimizationSchema = z.object({
   confidenceScore: z.string().optional(),
   accepted: z.boolean().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateVoyageOptimizationSchema = createVoyageOptimizationSchema.partial();
 
@@ -112,7 +113,7 @@ export const createSpeedFuelAnalysisSchema = z.object({
   currency: z.string().max(3).optional(),
   optimalSpeed: z.string().optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateSpeedFuelAnalysisSchema = createSpeedFuelAnalysisSchema.partial();
 
@@ -132,7 +133,7 @@ export const createWeatherRoutingSchema = z.object({
   windSpeedKnots: z.string().optional(),
   routeProvider: z.string().max(100).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateWeatherRoutingSchema = createWeatherRoutingSchema.partial();
 
@@ -151,6 +152,6 @@ export const createDeploymentPlanSchema = z.object({
   revenueProjection: z.string().optional(),
   currency: z.string().max(3).optional(),
   notes: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: metadataSchema,
 });
 export const updateDeploymentPlanSchema = createDeploymentPlanSchema.partial();

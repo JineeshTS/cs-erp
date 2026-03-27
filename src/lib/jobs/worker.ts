@@ -24,56 +24,24 @@ async function handleCronJob(job: Job) {
 
   switch (type) {
     case "sla-check":
-      // TODO: Wire to human-gate-manager.ts checkGateSlas()
-      console.log("[CronWorker] SLA check — placeholder");
-      break;
-
-    case "session-cleanup": {
-      // Call the internal API endpoint
-      const apiKey = process.env.INTERNAL_API_KEY;
-      if (!apiKey) { console.warn("[CronWorker] INTERNAL_API_KEY not set"); break; }
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3100";
-      const res = await fetch(`${baseUrl}/api/internal/cron/session-cleanup`, {
-        method: "POST",
-        headers: { "x-internal-api-key": apiKey },
-      });
-      const data = await res.json();
-      console.log("[CronWorker] Session cleanup:", data);
-      break;
-    }
-
-    case "overdue-invoices": {
-      const apiKey = process.env.INTERNAL_API_KEY;
-      if (!apiKey) { console.warn("[CronWorker] INTERNAL_API_KEY not set"); break; }
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3100";
-      const res = await fetch(`${baseUrl}/api/internal/cron/overdue-invoices`, {
-        method: "POST",
-        headers: { "x-internal-api-key": apiKey },
-      });
-      const data = await res.json();
-      console.log("[CronWorker] Overdue invoices:", data);
-      break;
-    }
-
+    case "session-cleanup":
+    case "overdue-invoices":
     case "retention-enforce":
-      // TODO: Wire to dms_retention_policies enforcement
-      console.log("[CronWorker] Retention enforcement — placeholder");
-      break;
-
     case "fx-rate-refresh":
-      // TODO: Wire to exchange rate API feed
-      console.log("[CronWorker] FX rate refresh — placeholder");
-      break;
-
     case "certificate-expiry-check":
-      // TODO: Wire to vtm_survey_trackings expiry alerting
-      console.log("[CronWorker] Certificate expiry check — placeholder");
+    case "notification-digest": {
+      const apiKey = process.env.INTERNAL_API_KEY;
+      if (!apiKey) { console.warn("[CronWorker] INTERNAL_API_KEY not set"); break; }
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3100";
+      const res = await fetch(`${baseUrl}/api/internal/cron/${type}`, {
+        method: "POST",
+        headers: { "x-internal-api-key": apiKey },
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await res.json();
+      console.log(`[CronWorker] ${type}:`, data);
       break;
-
-    case "notification-digest":
-      // TODO: Wire to notification digest email batching
-      console.log("[CronWorker] Notification digest — placeholder");
-      break;
+    }
 
     default:
       console.warn(`[CronWorker] Unknown job type: ${type}`);
