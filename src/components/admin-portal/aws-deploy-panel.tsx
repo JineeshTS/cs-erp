@@ -106,7 +106,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
 
   const fetchCredentials = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/admin/aws-deploy/credentials");
+      const res = await fetch("/api/v1/admin/aws-deploy/credentials", { credentials: "include" });
       const json = await res.json();
       if (json.data) {
         setCredentials(json.data);
@@ -128,6 +128,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
     setCredError(null);
     try {
       const res = await fetch("/api/v1/admin/aws-deploy/credentials", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -166,6 +167,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
     try {
       // Trigger deployment
       const res = await fetch("/api/v1/admin/aws-deploy", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -201,7 +203,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
           setDeploying(false);
           setDeployComplete(true);
           // Fetch final status for URL
-          fetch(`/api/v1/admin/aws-deploy/${depId}`)
+          fetch(`/api/v1/admin/aws-deploy/${depId}`, { credentials: "include" })
             .then((r) => r.json())
             .then((r) => {
               if (r.data?.deployedUrl) setDeployedUrl(r.data.deployedUrl);
@@ -232,7 +234,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
         eventSource.close();
         // Don't mark as error yet — the deployment might still be running
         // Poll for final status
-        fetch(`/api/v1/admin/aws-deploy/${depId}`)
+        fetch(`/api/v1/admin/aws-deploy/${depId}`, { credentials: "include" })
           .then((r) => r.json())
           .then((r) => {
             if (r.data?.status === "complete") {
@@ -255,6 +257,7 @@ export function AwsDeployPanel({ tenantId }: AwsDeployPanelProps) {
     setTearingDown(true);
     try {
       const res = await fetch(`/api/v1/admin/aws-deploy/${deploymentId}`, {
+        credentials: "include",
         method: "DELETE",
         headers: { "x-csrf-token": getCsrfToken() },
       });

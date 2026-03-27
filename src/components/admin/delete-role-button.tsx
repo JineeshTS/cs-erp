@@ -22,6 +22,7 @@ export function DeleteRoleButton({ roleId, roleName, hasUsers }: DeleteRoleButto
     setError(null);
     try {
       const res = await fetch(`/api/v1/admin/roles/${roleId}`, {
+        credentials: "include",
         method: "DELETE",
         headers: { "x-csrf-token": getCsrfToken() },
       });

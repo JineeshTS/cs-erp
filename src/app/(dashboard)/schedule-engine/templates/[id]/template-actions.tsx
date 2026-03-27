@@ -28,9 +28,9 @@ export function TemplateActions({ templateId }: TemplateActionsProps) {
 
     try {
       const res = await fetch(`/api/v1/schedule-engine/templates/${templateId}/generate`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
-        credentials: "include",
         body: JSON.stringify({ startDate, endDate }),
       });
 

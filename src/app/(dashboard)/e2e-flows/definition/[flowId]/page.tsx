@@ -162,7 +162,7 @@ export default function FlowDefinitionPage() {
     try {
       const params = new URLSearchParams({ limit: "50", e2eFlowId: flowId });
       if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`);
+      const res = await fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`, { credentials: "include" });
       if (res.status === 401) { window.location.href = "/login"; return; }
       if (!res.ok) return;
       const body = await res.json();
@@ -185,6 +185,7 @@ export default function FlowDefinitionPage() {
     setStarting(true);
     try {
       const res = await fetch("/api/v1/process-engine/e2e-flows", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({

@@ -80,6 +80,7 @@ export function ChatPanel() {
   async function createSession(): Promise<string | null> {
     try {
       const res = await fetch("/api/v1/ai-chat/sessions", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
       });
@@ -99,6 +100,7 @@ export function ChatPanel() {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/v1/ai-chat/upload", {
+        credentials: "include",
         method: "POST",
         headers: { "x-csrf-token": getCsrfToken() },
         body: formData,

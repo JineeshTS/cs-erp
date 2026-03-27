@@ -135,7 +135,7 @@ export function StepInputForm({
     }
     if (optionKeys.size === 0) return;
 
-    fetch(`/api/v1/process-engine/form-options?fields=${Array.from(optionKeys).join(",")}`)
+    fetch(`/api/v1/process-engine/form-options?fields=${Array.from(optionKeys).join(",")}`, { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((json) => {
         if (json?.data) setSelectOptions(json.data);
@@ -147,7 +147,7 @@ export function StepInputForm({
   const fetchContext = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowInstanceId}/step-context?step=${stepNumber}`);
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowInstanceId}/step-context?step=${stepNumber}`, { credentials: "include" });
       if (!res.ok) {
         setLoading(false);
         return;
@@ -213,6 +213,7 @@ export function StepInputForm({
       }
 
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowInstanceId}/step-complete`, {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

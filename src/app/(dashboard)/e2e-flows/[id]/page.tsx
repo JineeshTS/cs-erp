@@ -209,7 +209,7 @@ export default function FlowDetailPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}`);
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}`, { credentials: "include" });
       if (res.status === 401) {
         window.location.href = "/login";
         return;
@@ -275,6 +275,7 @@ export default function FlowDetailPage() {
     setExecuting(true);
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/execute`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
       });
@@ -296,6 +297,7 @@ export default function FlowDetailPage() {
     setAiAssisting(true);
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}/ai-assist`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ action, stepNumber: flow.currentStepNumber }),
@@ -318,6 +320,7 @@ export default function FlowDetailPage() {
     setAdvancing(true);
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${flowId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ output: { completedManually: true, completedAt: new Date().toISOString() } }),
@@ -1019,6 +1022,7 @@ function GateCard({ gate, onResolved }: { gate: HumanGate; onResolved?: () => vo
       if (additionalInput.trim()) decisionData.additionalInput = additionalInput.trim();
 
       const res = await fetch(`/api/v1/process-engine/human-gates/${gate.id}/resolve`, {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

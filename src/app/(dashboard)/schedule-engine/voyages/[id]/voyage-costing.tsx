@@ -42,7 +42,7 @@ export function VoyageCosting({ voyageId }: { voyageId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/schedule-engine/voyages/${voyageId}/costing`);
+      const res = await fetch(`/api/v1/schedule-engine/voyages/${voyageId}/costing`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load costing");
       const json = await res.json();
       setData(json.data);

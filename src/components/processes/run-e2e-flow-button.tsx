@@ -33,6 +33,7 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
     try {
       // Step 1: Create E2E flow instance (steps are resolved server-side from flow definition)
       const res = await fetch("/api/v1/process-engine/e2e-flows", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({
@@ -55,6 +56,7 @@ export function RunE2EFlowButton({ flowId, flowName, steps }: RunE2EFlowButtonPr
       // Step 2: Auto-execute step 1 (creation doesn't auto-run)
       if (instanceId) {
         await fetch(`/api/v1/process-engine/e2e-flows/${instanceId}/execute`, {
+          credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         }).catch(() => {}); // Fire-and-forget — flow still created even if execution fails

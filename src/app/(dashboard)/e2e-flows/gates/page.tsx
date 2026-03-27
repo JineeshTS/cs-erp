@@ -102,7 +102,7 @@ export default function HumanGateInboxPage() {
     try {
       const params = new URLSearchParams();
       if (showMyOnly) params.set("myOnly", "true");
-      const res = await fetch(`/api/v1/process-engine/human-gates?${params.toString()}`);
+      const res = await fetch(`/api/v1/process-engine/human-gates?${params.toString()}`, { credentials: "include" });
       if (res.status === 401) {
         window.location.href = "/login";
         return;
@@ -133,6 +133,7 @@ export default function HumanGateInboxPage() {
     setResolveError(null);
     try {
       const res = await fetch(`/api/v1/process-engine/human-gates/${gateId}/resolve`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ decision }),

@@ -68,7 +68,7 @@ export function SearchableSelect({
       if (!entity) return;
       setLoading(true);
       try {
-        const res = await fetch(`/api/v1/lookups/${entity}?q=${encodeURIComponent(q)}&limit=20`);
+        const res = await fetch(`/api/v1/lookups/${entity}?q=${encodeURIComponent(q)}&limit=20`, { credentials: "include" });
         if (res.ok) {
           const json = await res.json();
           setOptions(json.data || []);

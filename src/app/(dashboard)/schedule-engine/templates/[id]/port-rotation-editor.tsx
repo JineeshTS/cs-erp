@@ -131,9 +131,9 @@ export function PortRotationEditor({ templateId, initialPortCalls }: PortRotatio
 
     try {
       const res = await fetch(`/api/v1/schedule-engine/templates/${templateId}/port-calls`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
-        credentials: "include",
         body: JSON.stringify({
           portCalls: rows.map((r) => ({
             sequence: r.sequence,

@@ -43,7 +43,7 @@ export function TrackingDashboard({ initialData }: TrackingDashboardProps) {
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      const res = await fetch("/api/v1/tracking/map-data");
+      const res = await fetch("/api/v1/tracking/map-data", { credentials: "include" });
       if (res.ok) {
         const json = await res.json();
         setData(json.data);

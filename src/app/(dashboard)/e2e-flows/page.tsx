@@ -121,9 +121,9 @@ export default function E2EFlowMonitorPage() {
       if (statusFilter) params.set("status", statusFilter);
 
       const [statsRes, instancesRes, gateStatsRes] = await Promise.all([
-        fetch("/api/v1/process-engine/e2e-flows?dashboard=true"),
-        fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`),
-        fetch("/api/v1/process-engine/human-gates/stats"),
+        fetch("/api/v1/process-engine/e2e-flows?dashboard=true", { credentials: "include" }),
+        fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`, { credentials: "include" }),
+        fetch("/api/v1/process-engine/human-gates/stats", { credentials: "include" }),
       ]);
 
       if (statsRes.status === 401 || instancesRes.status === 401) {

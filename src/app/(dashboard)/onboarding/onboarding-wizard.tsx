@@ -37,6 +37,7 @@ export function OnboardingWizard({
     setError(null);
     try {
       const res = await fetch(`/api/v1/tenants/${tenantId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, currency: cur }),
@@ -63,6 +64,7 @@ export function OnboardingWizard({
     try {
       // Invite without roleId — the API will assign the default tenant role
       await fetch(`/api/v1/tenants/${tenantId}/members/invite`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,6 +84,7 @@ export function OnboardingWizard({
     try {
       // Mark tenant as onboarded
       await fetch(`/api/v1/tenants/${tenantId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: { onboarded: true } }),

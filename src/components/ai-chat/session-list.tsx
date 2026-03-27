@@ -27,7 +27,7 @@ export function SessionList({
 
   const loadSessions = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/ai-chat/sessions?limit=10");
+      const res = await fetch("/api/v1/ai-chat/sessions?limit=10", { credentials: "include" });
       if (res.ok) {
         const json = await res.json();
         setSessions(json.data ?? []);

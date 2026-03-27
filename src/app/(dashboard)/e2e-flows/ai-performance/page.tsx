@@ -67,7 +67,7 @@ export default function AiPerformancePage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/process-engine/ai-performance?days=${days}`);
+      const res = await fetch(`/api/v1/process-engine/ai-performance?days=${days}`, { credentials: "include" });
       if (res.status === 401) {
         window.location.href = "/login";
         return;

@@ -79,6 +79,7 @@ function FlowContextBannerInner() {
       // D-006: If we have entity binding context, use step-complete endpoint
       if (txId && stepNumber && entityTable && entityId) {
         const res = await fetch(`/api/v1/process-engine/e2e-flows/${txId}/step-complete`, {
+          credentials: "include",
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -102,6 +103,7 @@ function FlowContextBannerInner() {
 
       // Legacy: advance step without entity binding
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${txId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

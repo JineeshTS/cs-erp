@@ -47,7 +47,7 @@ export function Topbar({ userName, userEmail }: TopbarProps) {
   }));
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() } });
+    await fetch("/api/auth/logout", { credentials: "include", method: "POST", headers: { "x-csrf-token": getCsrfToken() } });
     router.push("/login");
     router.refresh();
   }

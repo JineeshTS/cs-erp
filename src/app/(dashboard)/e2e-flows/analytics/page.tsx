@@ -89,8 +89,8 @@ export default function ProcessAnalyticsPage() {
   const fetchData = useCallback(async () => {
     try {
       const [analyticsRes, risksRes] = await Promise.all([
-        fetch(`/api/v1/process-engine/analytics?days=${days}`),
-        fetch("/api/v1/process-engine/risk-alerts"),
+        fetch(`/api/v1/process-engine/analytics?days=${days}`, { credentials: "include" }),
+        fetch("/api/v1/process-engine/risk-alerts", { credentials: "include" }),
       ]);
 
       if (analyticsRes.status === 401) {

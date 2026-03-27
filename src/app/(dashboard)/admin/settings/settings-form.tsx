@@ -55,6 +55,7 @@ export function OrgSettingsForm({ tenant, canEdit }: OrgSettingsFormProps) {
 
     try {
       const res = await fetch(`/api/v1/tenants/${tenant.id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, timezone, currency, country }),

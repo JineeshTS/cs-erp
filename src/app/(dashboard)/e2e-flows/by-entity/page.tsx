@@ -114,7 +114,7 @@ export default function TransactionProcessViewPage() {
         entityId: eId,
         limit: "50",
       });
-      const res = await fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`);
+      const res = await fetch(`/api/v1/process-engine/e2e-flows?${params.toString()}`, { credentials: "include" });
       if (res.status === 401) {
         window.location.href = "/login";
         return;

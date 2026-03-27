@@ -88,8 +88,8 @@ export default function ProcessMonitorPage() {
       const params = new URLSearchParams({ limit: "50" });
       if (statusFilter) params.set("status", statusFilter);
       const [statsRes, instancesRes] = await Promise.all([
-        fetch("/api/v1/process-engine/dashboard"),
-        fetch(`/api/v1/process-engine/instances?${params.toString()}`),
+        fetch("/api/v1/process-engine/dashboard", { credentials: "include" }),
+        fetch(`/api/v1/process-engine/instances?${params.toString()}`, { credentials: "include" }),
       ]);
 
       if (statsRes.status === 401 || instancesRes.status === 401) {

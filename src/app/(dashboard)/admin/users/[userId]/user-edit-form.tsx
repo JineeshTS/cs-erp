@@ -29,6 +29,7 @@ export function UserEditForm({
     setError(null);
     try {
       const res = await fetch(`/api/v1/admin/users/${userId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roleId }),
@@ -52,6 +53,7 @@ export function UserEditForm({
     setError(null);
     try {
       const res = await fetch(`/api/v1/admin/users/${userId}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "inactive" }),

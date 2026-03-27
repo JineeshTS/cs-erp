@@ -89,6 +89,7 @@ export function RunProcessButton({
 
     try {
       const res = await fetch("/api/v1/process-engine/instances", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

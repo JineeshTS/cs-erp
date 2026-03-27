@@ -118,7 +118,7 @@ export default function FlowInstanceDetailPage() {
 
   const fetchFlow = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/process-engine/e2e-flows/${id}`);
+      const res = await fetch(`/api/v1/process-engine/e2e-flows/${id}`, { credentials: "include" });
       if (res.status === 401) { router.push("/login"); return; }
       if (!res.ok) { setError("Failed to load flow instance"); return; }
       const body = await res.json();
@@ -145,6 +145,7 @@ export default function FlowInstanceDetailPage() {
     setAiAssistResult(null);
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${id}/ai-assist`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ action: "generate", stepNumber }),
@@ -167,6 +168,7 @@ export default function FlowInstanceDetailPage() {
     setAiAcceptLoading(true);
     try {
       const res = await fetch(`/api/v1/process-engine/e2e-flows/${id}/ai-assist`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ action: "accept", stepNumber }),
@@ -189,6 +191,7 @@ export default function FlowInstanceDetailPage() {
   async function handleAiReject(stepNumber: number) {
     try {
       await fetch(`/api/v1/process-engine/e2e-flows/${id}/ai-assist`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ action: "reject", stepNumber }),
