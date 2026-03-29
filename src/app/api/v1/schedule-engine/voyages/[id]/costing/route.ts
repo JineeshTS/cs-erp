@@ -68,7 +68,8 @@ export async function GET(
     };
   });
 
-  const costSummary = calculateVoyageCosts({
+  const costSummary = await calculateVoyageCosts({
+    tenantId: user.tenantId,
     voyageId: id,
     voyageNumber: voyage.voyageNumber,
     portCalls: portCallData,

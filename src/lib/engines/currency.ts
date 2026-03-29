@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { eq, and, lte, gte, or, isNull, desc } from "drizzle-orm";
-import { exchangeRates } from "@/db/schema";
+import { exchangeRates, tenants } from "@/db/schema";
 
 /**
  * Convert an amount from one currency to another using effective exchange rates.
@@ -81,4 +81,44 @@ export async function convertCurrency(
   }
 
   throw new Error(`No exchange rate found for ${fromCurrency}→${toCurrency} as of ${asOfDate.toISOString().slice(0, 10)}`);
+}
+
+/**
+ * Auto-convert an amount to the tenant's base currency.
+ *
+ * Determines the tenant's base currency from the tenants table (defaults to "USD"),
+ * then converts if the source currency differs. Returns the base-currency amount,
+ * the base currency code, and the exchange rate used.
+ *
+ * Usage: import this utility in invoice creation / financial record routes.
+ */
+export async function autoConvertToBaseCurrency(
+  tenantId: string,
+  amount: number,
+  currency: string
+): Promise<{ baseCurrencyAmount: number; baseCurrency: string; exchangeRate: number }> {
+  // Look up the tenant's base currency
+  let baseCurrency = "USD";
+  const [tenant] = await db
+    .select({ currency: tenants.currency })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+
+  if (tenant?.currency) {
+    baseCurrency = tenant.currency;
+  }
+
+  // If already in base currency, no conversion needed
+  if (currency === baseCurrency) {
+    return { baseCurrencyAmount: amount, baseCurrency, exchangeRate: 1 };
+  }
+
+  // Convert to base currency
+  const result = await convertCurrency(amount, currency, baseCurrency, tenantId);
+  return {
+    baseCurrencyAmount: result.convertedAmount,
+    baseCurrency,
+    exchangeRate: result.exchangeRate,
+  };
 }

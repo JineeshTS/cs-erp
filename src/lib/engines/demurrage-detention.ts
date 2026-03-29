@@ -220,6 +220,88 @@ export function calculateBulkDDCharges(
 /**
  * Example: Standard D&D tariff for Indo-Gulf Express (IGX) service.
  */
+// ── Invoice Generation ──────────────────────────────────────────
+
+import { db } from "@/lib/db";
+import { firmFreightInvoices, firmInvoiceLineItems } from "@/db/schema";
+import { generateNextNumber } from "@/lib/number-sequence";
+
+export interface DDInvoiceResult {
+  invoiceId: string;
+  invoiceNumber: string;
+  totalAmount: number;
+  currency: string;
+  lineItemCount: number;
+}
+
+/**
+ * Generate a freight invoice from D&D calculation results.
+ * Creates the invoice header + one line item per container charge.
+ */
+export async function generateDDInvoice(
+  tenantId: string,
+  calculationResult: { charges: DDChargeResult[]; totalAmount: number; currency: string },
+  customerId: string,
+  bookingRef: string
+): Promise<DDInvoiceResult> {
+  const invoiceNumber = await generateNextNumber("invoice", tenantId);
+  const totalAmount = Math.round(calculationResult.totalAmount * 100); // Store as integer cents
+  const currency = calculationResult.currency;
+
+  const [invoice] = await db
+    .insert(firmFreightInvoices)
+    .values({
+      tenantId,
+      invoiceNumber,
+      invoiceType: "demurrage_detention",
+      bookingRef,
+      customerName: customerId,
+      currency,
+      subtotal: totalAmount,
+      taxAmount: 0,
+      discountAmount: 0,
+      totalAmount,
+      paidAmount: 0,
+      outstandingAmount: totalAmount,
+      paymentTerms: "Net 30",
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      status: "draft",
+    })
+    .returning();
+
+  // Insert one line item per container charge
+  const lineItems = calculationResult.charges.map((charge, idx) => ({
+    tenantId,
+    invoiceId: invoice.id,
+    lineNumber: idx + 1,
+    chargeCode: charge.direction === "import" ? "DEM" : "DET",
+    description: `${charge.direction === "import" ? "Demurrage" : "Detention"} — ${charge.containerNumber} at ${charge.portCode} (${charge.chargeableDays} days)`,
+    containerNumber: charge.containerNumber,
+    containerType: charge.containerType,
+    quantity: charge.chargeableDays,
+    unitPrice: charge.chargeableDays > 0 ? Math.round((charge.totalCharge / charge.chargeableDays) * 100) : 0,
+    currency: charge.currency,
+    amount: Math.round(charge.totalCharge * 100),
+    taxRate: 0,
+    taxAmount: 0,
+    totalAmount: Math.round(charge.totalCharge * 100),
+  }));
+
+  if (lineItems.length > 0) {
+    await db.insert(firmInvoiceLineItems).values(lineItems);
+  }
+
+  return {
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoiceNumber,
+    totalAmount: calculationResult.totalAmount,
+    currency,
+    lineItemCount: lineItems.length,
+  };
+}
+
+// ── Example Tariffs ─────────────────────────────────────────────
+
 export const IGX_DEFAULT_TARIFFS: DDTariffRule[] = [
   // Import — 20GP at Nhava Sheva
   {

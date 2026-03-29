@@ -159,6 +159,23 @@ export const claimStateMachine: StateMachine = {
   },
 };
 
+// ── Container M&R (Maintenance & Repair) Lifecycle ──────────────
+
+export const containerMRStateMachine: StateMachine = {
+  entity: "container_mr",
+  initialState: "inspection",
+  terminalStates: ["closed", "cancelled"],
+  transitions: {
+    inspection: ["estimate_pending", "cancelled"],
+    estimate_pending: ["estimate_approved", "estimate_rejected", "cancelled"],
+    estimate_rejected: ["estimate_pending", "cancelled"], // Re-submit estimate
+    estimate_approved: ["repair_in_progress", "cancelled"],
+    repair_in_progress: ["repair_complete", "cancelled"],
+    repair_complete: ["billing", "cancelled"],
+    billing: ["closed", "cancelled"],
+  },
+};
+
 // ── Registry ─────────────────────────────────────────────────────
 
 const MACHINES: Record<string, StateMachine> = {
@@ -169,6 +186,7 @@ const MACHINES: Record<string, StateMachine> = {
   invoice: invoiceStateMachine,
   port_call: portCallStateMachine,
   claim: claimStateMachine,
+  container_mr: containerMRStateMachine,
 };
 
 /**

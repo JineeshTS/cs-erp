@@ -140,6 +140,80 @@ export function calculateCascadingDelay(
   return impacts;
 }
 
+// ── Deviation Report ────────────────────────────────────────────
+
+export interface PortDeviation {
+  sequence: number;
+  portCode: string;
+  portName: string;
+  plannedArrival: Date;
+  actualArrival: Date | null;
+  plannedDeparture: Date;
+  actualDeparture: Date | null;
+  arrivalDelayHours: number | null;
+  departureDelayHours: number | null;
+  status: "on_time" | "early" | "delayed" | "no_actual";
+}
+
+/**
+ * Generate an actual-vs-planned deviation report for a voyage.
+ *
+ * Queries all voyagePortCalls for the given voyage and compares
+ * planned vs actual arrival/departure for each port.
+ */
+export async function generateDeviationReport(
+  voyageId: string,
+  tenantId: string
+): Promise<PortDeviation[]> {
+  const portCalls = await db
+    .select()
+    .from(voyagePortCalls)
+    .where(
+      and(
+        eq(voyagePortCalls.voyageId, voyageId),
+        eq(voyagePortCalls.tenantId, tenantId)
+      )
+    )
+    .orderBy(asc(voyagePortCalls.sequence));
+
+  return portCalls.map((pc) => {
+    const plannedArr = new Date(pc.plannedArrival);
+    const plannedDep = new Date(pc.plannedDeparture);
+    const actualArr = pc.actualArrival ? new Date(pc.actualArrival) : null;
+    const actualDep = pc.actualDeparture ? new Date(pc.actualDeparture) : null;
+
+    let arrivalDelayHours: number | null = null;
+    let departureDelayHours: number | null = null;
+
+    if (actualArr) {
+      arrivalDelayHours = Math.round(((actualArr.getTime() - plannedArr.getTime()) / (60 * 60 * 1000)) * 10) / 10;
+    }
+    if (actualDep) {
+      departureDelayHours = Math.round(((actualDep.getTime() - plannedDep.getTime()) / (60 * 60 * 1000)) * 10) / 10;
+    }
+
+    let status: PortDeviation["status"] = "no_actual";
+    if (arrivalDelayHours !== null) {
+      if (arrivalDelayHours > 1) status = "delayed";
+      else if (arrivalDelayHours < -1) status = "early";
+      else status = "on_time";
+    }
+
+    return {
+      sequence: pc.sequence,
+      portCode: pc.portCode,
+      portName: pc.portName,
+      plannedArrival: plannedArr,
+      actualArrival: actualArr,
+      plannedDeparture: plannedDep,
+      actualDeparture: actualDep,
+      arrivalDelayHours,
+      departureDelayHours,
+      status,
+    };
+  });
+}
+
 // ── Schedule Generator ───────────────────────────────────────────
 
 /**

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { eq, and, isNull, lte, gte, or, desc } from "drizzle-orm";
-import { tariffCodes } from "@/db/schema";
+import { tariffCodes, cpmSpecialRates, cpmSurcharges } from "@/db/schema";
 import { convertCurrency } from "./currency";
 
 /**
@@ -53,34 +53,95 @@ export async function calculateFreightRate(params: {
   customerId?: string;
   baseCurrency?: string;
 }): Promise<RateResult> {
-  const { tenantId, originPortCode, destinationPortCode, baseCurrency } = params;
+  const { tenantId, originPortCode, destinationPortCode, customerId, baseCurrency } = params;
 
-  // Look up published tariff rate
-  const tariffConditions = [
-    eq(tariffCodes.tenantId, tenantId),
-    isNull(tariffCodes.deletedAt),
-    eq(tariffCodes.status, "active"),
-  ];
-
-  // Build query — tariff codes may have origin/destination port references
-  const [tariff] = await db
-    .select()
-    .from(tariffCodes)
-    .where(and(...tariffConditions))
-    .orderBy(desc(tariffCodes.createdAt))
-    .limit(1);
-
-  // Default rate if no tariff found
-  const baseRate = tariff ? Number(tariff.rateAmount) : 0;
-  const currency = tariff?.currency || "USD";
+  let baseRate = 0;
+  let currency = "USD";
+  let source: RateResult["source"] = "default";
   const basis = "per_teu";
 
-  // Standard surcharges (simplified — in production these come from a surcharge table)
-  const surcharges: SurchargeItem[] = [
-    { code: "THC", name: "Terminal Handling Charge", amount: 150, currency, basis: "per_teu" },
-    { code: "BAF", name: "Bunker Adjustment Factor", amount: 250, currency, basis: "per_teu" },
-    { code: "DOC", name: "Documentation Fee", amount: 50, currency, basis: "per_bl" },
-  ];
+  // Priority 1: Customer-specific contract rate (from cpm_special_rates)
+  if (customerId) {
+    const now = new Date();
+    const [contractRate] = await db
+      .select()
+      .from(cpmSpecialRates)
+      .where(
+        and(
+          eq(cpmSpecialRates.tenantId, tenantId),
+          eq(cpmSpecialRates.customerId, customerId),
+          eq(cpmSpecialRates.status, "active"),
+          isNull(cpmSpecialRates.deletedAt),
+          lte(cpmSpecialRates.effectiveFrom, now),
+          or(isNull(cpmSpecialRates.effectiveTo), gte(cpmSpecialRates.effectiveTo, now))
+        )
+      )
+      .orderBy(desc(cpmSpecialRates.effectiveFrom))
+      .limit(1);
+
+    if (contractRate) {
+      baseRate = Number(contractRate.finalRate);
+      currency = contractRate.currency || "USD";
+      source = "contract";
+    }
+  }
+
+  // Priority 2: Published tariff rate (fallback if no contract rate found)
+  if (source === "default") {
+    const tariffConditions = [
+      eq(tariffCodes.tenantId, tenantId),
+      isNull(tariffCodes.deletedAt),
+      eq(tariffCodes.status, "active"),
+    ];
+
+    const [tariff] = await db
+      .select()
+      .from(tariffCodes)
+      .where(and(...tariffConditions))
+      .orderBy(desc(tariffCodes.createdAt))
+      .limit(1);
+
+    if (tariff) {
+      baseRate = Number(tariff.rateAmount);
+      currency = tariff.currency || "USD";
+      source = "published_tariff";
+    }
+  }
+
+  // Read surcharges from cpm_surcharges table, fall back to hardcoded defaults
+  let surcharges: SurchargeItem[];
+  const now = new Date();
+  const dbSurcharges = await db
+    .select()
+    .from(cpmSurcharges)
+    .where(
+      and(
+        eq(cpmSurcharges.tenantId, tenantId),
+        eq(cpmSurcharges.isActive, true),
+        isNull(cpmSurcharges.deletedAt),
+        lte(cpmSurcharges.effectiveFrom, now),
+        or(isNull(cpmSurcharges.effectiveTo), gte(cpmSurcharges.effectiveTo, now))
+      )
+    )
+    .orderBy(desc(cpmSurcharges.createdAt))
+    .limit(50);
+
+  if (dbSurcharges.length > 0) {
+    surcharges = dbSurcharges.map((s) => ({
+      code: s.surchargeCode,
+      name: s.surchargeName,
+      amount: Number(s.amount) || 0,
+      currency: s.currency || currency,
+      basis: s.calculationBasis || "per_teu",
+    }));
+  } else {
+    // Fallback: hardcoded defaults when no surcharges configured in DB
+    surcharges = [
+      { code: "THC", name: "Terminal Handling Charge", amount: 150, currency, basis: "per_teu" },
+      { code: "BAF", name: "Bunker Adjustment Factor", amount: 250, currency, basis: "per_teu" },
+      { code: "DOC", name: "Documentation Fee", amount: 50, currency, basis: "per_bl" },
+    ];
+  }
 
   const surchargeTotal = surcharges.reduce((sum, s) => sum + s.amount, 0);
   const totalFreight = baseRate + surchargeTotal;
@@ -89,7 +150,7 @@ export async function calculateFreightRate(params: {
     baseRate,
     currency,
     basis,
-    source: tariff ? "published_tariff" : "default",
+    source,
     surcharges,
     totalFreight,
   };
