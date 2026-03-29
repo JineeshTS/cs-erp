@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
@@ -10,6 +9,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -49,6 +49,8 @@ export const eqyContainerFleet = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -101,6 +103,8 @@ export const eqyRepositioningPlans = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -154,6 +158,8 @@ export const eqyReeferContainers = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -210,6 +216,8 @@ export const eqyMaintenanceRepairs = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("reported"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -262,6 +270,8 @@ export const eqyYardSlots = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("available"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -322,6 +332,8 @@ export const eqyGateMovements = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("pending"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -376,6 +388,8 @@ export const eqyEquipmentInterchanges = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -429,6 +443,8 @@ export const eqyOnHireOffHire = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -482,6 +498,8 @@ export const eqyContainerSurveys = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("scheduled"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -539,6 +557,8 @@ export const eqyLeasedContainers = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -593,6 +613,8 @@ export const eqyAvailabilityPlans = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("forecast"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -647,6 +669,8 @@ export const eqyRepositioningOptimizations = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("pending"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

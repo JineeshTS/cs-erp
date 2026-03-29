@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   boolean,
   integer,
@@ -9,6 +8,7 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { roles } from "./roles";
@@ -47,6 +47,8 @@ export const users = pgTable("users", {
   }),
   mustChangePassword: boolean("must_change_password").notNull().default(false),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

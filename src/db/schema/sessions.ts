@@ -1,11 +1,11 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   timestamp,
   inet,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -24,6 +24,8 @@ export const sessions = pgTable("sessions", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   revokedReason: varchar("revoked_reason", { length: 100 }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
@@ -10,6 +9,7 @@ import {
   index,
   uniqueIndex,
   date,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -43,6 +43,8 @@ export const cpmTariffs = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -87,6 +89,8 @@ export const cpmTariffRates = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -138,6 +142,8 @@ export const cpmSpecialRates = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -191,6 +197,8 @@ export const cpmSurcharges = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -241,6 +249,8 @@ export const cpmDetentionDemurrage = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -289,6 +299,8 @@ export const cpmYieldTargets = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -334,6 +346,8 @@ export const cpmRateBenchmarks = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -381,6 +395,8 @@ export const cpmProfitabilityAnalyses = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -428,6 +444,8 @@ export const cpmAiPricingModels = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -474,6 +492,8 @@ export const cpmVsaSlotRates = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -524,6 +544,8 @@ export const cpmDeadFreightRecords = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -575,6 +597,8 @@ export const cpmRevenueLeakages = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -631,6 +655,8 @@ export const cpmPricingApprovals = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

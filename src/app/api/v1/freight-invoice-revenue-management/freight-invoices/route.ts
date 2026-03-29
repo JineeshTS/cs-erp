@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
-import crypto from "crypto";
 import { db } from "@/lib/db";
 import { firmFreightInvoices } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -10,6 +9,7 @@ import { createFreightInvoiceSchema } from "@/lib/freight-invoice-revenue-manage
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const invoiceNumber = `INV-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const invoiceNumber = await generateNextNumber("invoice", user.tenantId);
 
     const [created] = await db.insert(firmFreightInvoices).values({
       tenantId: user.tenantId,

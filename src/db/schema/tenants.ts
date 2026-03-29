@@ -1,11 +1,11 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   jsonb,
   timestamp,
   pgEnum,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 export const tenantPlanEnum = pgEnum("tenant_plan", [
@@ -44,6 +44,8 @@ export const tenants = pgTable("tenants", {
   logoUrl: text("logo_url"),
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

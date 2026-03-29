@@ -82,6 +82,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (csrfError) return csrfError;
 
     const { id } = await params;
+
+    // ERP-054: Check for active references before deleting
+    const { checkActiveReferences, MDM_REFERENCE_CHECKS } = await import("@/lib/referential-integrity");
+    const refs = await checkActiveReferences(id, user.tenantId, MDM_REFERENCE_CHECKS.vessels);
+    if (refs.length > 0) {
+      const details = refs.map((r) => `${r.label} (${r.count})`).join(", ");
+      return NextResponse.json(
+        { error: { code: "CONFLICT", message: `Cannot delete vessel — active references exist: ${details}` } },
+        { status: 409 }
+      );
+    }
+
     const [deleted] = await db.update(vessels).set({ deletedAt: new Date() })
       .where(and(eq(vessels.id, id), eq(vessels.tenantId, user.tenantId), isNull(vessels.deletedAt))).returning({ id: vessels.id });
 

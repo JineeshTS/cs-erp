@@ -9,6 +9,7 @@ import { createClaimRegistrationSchema } from "@/lib/cargo-claims-management/val
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
         { status: 422 }
       );
     }
-    const claimRef = `CCR-${Date.now()}`;
+    const claimRef = await generateNextNumber("claim", user.tenantId);
     const [record] = await db
       .insert(ccmClaimRegistrations)
       .values({

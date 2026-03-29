@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   integer,
@@ -9,6 +8,7 @@ import {
   index,
   boolean,
   type AnyPgColumn,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -41,6 +41,8 @@ export const peProcessInstances = pgTable(
     failureReason: text("failure_reason"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -86,6 +88,8 @@ export const peStepInstances = pgTable(
     failureReason: text("failure_reason"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -125,6 +129,8 @@ export const peApprovals = pgTable(
     dueAt: timestamp("due_at", { withTimezone: true }),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -159,6 +165,8 @@ export const peEventLog = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     payload: jsonb("payload"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -207,6 +215,8 @@ export const peE2eFlowInstances = pgTable(
       .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -259,6 +269,8 @@ export const peE2eStepInstances = pgTable(
     entityAction: varchar("entity_action", { length: 20 }), // create | update | read
     executorMode: varchar("executor_mode", { length: 20 }), // crud | ai_with_tools | gate | human_form
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -312,6 +324,8 @@ export const peHumanGates = pgTable(
       .references(() => users.id),
     autoApproved: boolean("auto_approved").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -348,6 +362,8 @@ export const peFlowEvents = pgTable(
     metadata: jsonb("metadata").default({}),
     cascadedFlowIds: jsonb("cascaded_flow_ids"), // IDs of child flows spawned by this event
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -381,6 +397,8 @@ export const peEventTriggers = pgTable(
     isActive: boolean("is_active").notNull().default(true),
     priority: integer("priority").notNull().default(0), // higher = evaluated first
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -421,6 +439,8 @@ export const peStepEntityBindings = pgTable(
     entityAction: varchar("entity_action", { length: 20 }).notNull(), // create | update | read
     entityData: jsonb("entity_data"), // snapshot of entity at time of binding
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -33,7 +33,8 @@ export type CronJobType =
   | "retention-enforce"
   | "fx-rate-refresh"
   | "certificate-expiry-check"
-  | "notification-digest";
+  | "notification-digest"
+  | "db-backup";
 
 export type NotificationJobType =
   | "send-email"
@@ -158,6 +159,12 @@ export async function setupCronSchedules() {
   await queue.add("retention-enforce", { type: "retention-enforce" }, {
     repeat: { pattern: "0 2 * * *" },
     removeOnComplete: 5,
+  });
+
+  // Database backup — daily at 03:00
+  await queue.add("db-backup", { type: "db-backup" }, {
+    repeat: { pattern: "0 3 * * *" },
+    removeOnComplete: 7,
   });
 
   console.log("[Jobs] Cron schedules configured");

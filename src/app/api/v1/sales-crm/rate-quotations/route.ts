@@ -9,6 +9,7 @@ import { createRateQuotationSchema } from "@/lib/sales-crm/validation";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
@@ -64,10 +65,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { validFrom, validTo, ...rest } = parsed.data;
+    const { validFrom, validTo, quotationNumber: clientQuotationNumber, ...rest } = parsed.data;
+    const quotationNumber = clientQuotationNumber || await generateNextNumber("quotation", user.tenantId);
+
     const [created] = await db.insert(scmRateQuotations).values({
       tenantId: user.tenantId,
       ...rest,
+      quotationNumber,
       validFrom: new Date(validFrom),
       validTo: new Date(validTo),
     }).returning();

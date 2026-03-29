@@ -7,6 +7,9 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import { ports } from "@/db/schema";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
+
+const PAGE_SIZE = 50;
 
 const columns: DataColumn[] = [
   { key: "name", header: "Port Name", width: "w-48" },
@@ -31,18 +34,37 @@ export default async function PortsListPage({
   const params = await searchParams;
   const q = params.q?.trim() || "";
   const statusFilter = params.status || "";
+  const cursor = parseCompoundCursor(params.cursor);
 
-  const data = await db
+  const conditions = and(
+    eq(ports.tenantId, session.tenantId),
+    isNull(ports.deletedAt),
+    q ? or(ilike(ports.name, `%${q}%`), ilike(ports.unLocode, `%${q}%`), ilike(ports.country, `%${q}%`)) : undefined,
+    statusFilter ? eq(ports.status, statusFilter) : undefined,
+    cursor ? cursorCondition(ports.createdAt, ports.id, cursor) : undefined,
+  );
+
+  const rows = await db
     .select()
     .from(ports)
-    .where(and(
-      eq(ports.tenantId, session.tenantId),
-      isNull(ports.deletedAt),
-      q ? or(ilike(ports.name, `%${q}%`), ilike(ports.unLocode, `%${q}%`), ilike(ports.country, `%${q}%`)) : undefined,
-      statusFilter ? eq(ports.status, statusFilter) : undefined,
-    ))
-    .orderBy(desc(ports.createdAt))
-    .limit(50);
+    .where(conditions)
+    .orderBy(desc(ports.createdAt), desc(ports.id))
+    .limit(PAGE_SIZE + 1);
+
+  const hasMore = rows.length > PAGE_SIZE;
+  const data = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+  const nextCursor = hasMore && data.length > 0
+    ? encodeCompoundCursor(data[data.length - 1].createdAt!, String(data[data.length - 1].id))
+    : null;
+
+  // Build "Load More" URL preserving existing search params
+  const loadMoreUrl = nextCursor
+    ? `/master-data-management/ports?${new URLSearchParams({
+        ...(q && { q }),
+        ...(statusFilter && { status: statusFilter }),
+        cursor: nextCursor,
+      }).toString()}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -52,7 +74,7 @@ export default async function PortsListPage({
             Ports & Terminals
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">
-            Manage port and terminal master data ({data.length} records)
+            Manage port and terminal master data ({data.length}{hasMore ? "+" : ""} records)
           </p>
         </div>
         {canCreate && (
@@ -109,6 +131,18 @@ export default async function PortsListPage({
         emptyMessage={q ? `No ports matching "${q}"` : "No ports found"}
         emptyAction={canCreate ? { label: "Add Port", href: "/master-data-management/ports/new" } : undefined}
       />
+
+      {/* Server-side cursor pagination */}
+      {loadMoreUrl && (
+        <div className="text-center">
+          <Link
+            href={loadMoreUrl}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+          >
+            Load more
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

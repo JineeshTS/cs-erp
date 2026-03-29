@@ -7,6 +7,9 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import { vessels } from "@/db/schema";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
+
+const PAGE_SIZE = 50;
 
 const columns: DataColumn[] = [
   { key: "name", header: "Vessel Name", width: "w-48" },
@@ -21,7 +24,7 @@ const columns: DataColumn[] = [
 export default async function VesselsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; cursor?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -32,25 +35,43 @@ export default async function VesselsListPage({
   const params = await searchParams;
   const q = params.q?.trim() || "";
   const statusFilter = params.status || "";
+  const cursor = parseCompoundCursor(params.cursor);
 
-  const data = await db
+  const conditions = and(
+    eq(vessels.tenantId, session.tenantId),
+    isNull(vessels.deletedAt),
+    q ? or(ilike(vessels.name, `%${q}%`), ilike(vessels.imoNumber, `%${q}%`), ilike(vessels.flag, `%${q}%`)) : undefined,
+    statusFilter ? eq(vessels.status, statusFilter) : undefined,
+    cursor ? cursorCondition(vessels.createdAt, vessels.id, cursor) : undefined,
+  );
+
+  const rows = await db
     .select()
     .from(vessels)
-    .where(and(
-      eq(vessels.tenantId, session.tenantId),
-      isNull(vessels.deletedAt),
-      q ? or(ilike(vessels.name, `%${q}%`), ilike(vessels.imoNumber, `%${q}%`), ilike(vessels.flag, `%${q}%`)) : undefined,
-      statusFilter ? eq(vessels.status, statusFilter) : undefined,
-    ))
-    .orderBy(desc(vessels.createdAt))
-    .limit(50);
+    .where(conditions)
+    .orderBy(desc(vessels.createdAt), desc(vessels.id))
+    .limit(PAGE_SIZE + 1);
+
+  const hasMore = rows.length > PAGE_SIZE;
+  const data = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+  const nextCursor = hasMore && data.length > 0
+    ? encodeCompoundCursor(data[data.length - 1].createdAt!, String(data[data.length - 1].id))
+    : null;
+
+  const loadMoreUrl = nextCursor
+    ? `/master-data-management/vessels?${new URLSearchParams({
+        ...(q && { q }),
+        ...(statusFilter && { status: statusFilter }),
+        cursor: nextCursor,
+      }).toString()}`
+    : null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-gray-100">Vessels</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Vessel registry and fleet management ({data.length} records)</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Vessel registry and fleet management ({data.length}{hasMore ? "+" : ""} records)</p>
         </div>
         {canCreate && (
           <Link href="/master-data-management/vessels/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">
@@ -70,7 +91,7 @@ export default async function VesselsListPage({
           <option value="laid_up">Laid Up</option>
         </select>
         <button type="submit" className="h-10 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300">Search</button>
-        {(q || statusFilter) && <Link href="/master-data-management/vessels" className="text-sm text-slate-500 hover:text-slate-700">Clear</Link>}
+        {(q || statusFilter) && <Link href="/master-data-management/vessels" className="text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400">Clear</Link>}
       </form>
 
       <DataTable
@@ -80,6 +101,17 @@ export default async function VesselsListPage({
         emptyMessage={q ? `No vessels matching "${q}"` : "No vessels found"}
         emptyAction={canCreate ? { label: "Add Vessel", href: "/master-data-management/vessels/new" } : undefined}
       />
+
+      {loadMoreUrl && (
+        <div className="text-center">
+          <Link
+            href={loadMoreUrl}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+          >
+            Load more
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

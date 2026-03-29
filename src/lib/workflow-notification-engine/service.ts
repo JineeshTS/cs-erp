@@ -8,9 +8,42 @@ import {
   wneSlaDefinitions,
   wneSlaInstances,
   wneNotifications,
+  wneNotificationTemplates,
   users,
 } from "@/db/schema";
 import { sendNotificationEmail } from "@/lib/email";
+import Handlebars from "handlebars";
+
+// ERP-048: Render a notification body through a Handlebars template if available
+async function renderNotificationBody(
+  tenantId: string,
+  channel: string,
+  eventType: string | null,
+  title: string,
+  body: string,
+  variables: Record<string, unknown> = {}
+): Promise<string> {
+  if (!eventType) return body;
+
+  const [template] = await db
+    .select({ bodyTemplate: wneNotificationTemplates.bodyTemplate, bodyHtml: wneNotificationTemplates.bodyHtml })
+    .from(wneNotificationTemplates)
+    .where(and(
+      eq(wneNotificationTemplates.tenantId, tenantId),
+      eq(wneNotificationTemplates.channel, channel),
+      isNull(wneNotificationTemplates.deletedAt),
+    ))
+    .limit(1);
+
+  if (!template?.bodyTemplate) return body;
+
+  try {
+    const compiled = Handlebars.compile(template.bodyTemplate);
+    return compiled({ ...variables, title, body });
+  } catch {
+    return body;
+  }
+}
 
 // Start a workflow instance for a given entity
 export async function startWorkflowInstance(
@@ -138,10 +171,16 @@ export async function dispatchEmailNotifications(tenantId: string) {
       continue;
     }
 
+    // ERP-048: Render body through Handlebars template if configured
+    const renderedBody = await renderNotificationBody(
+      tenantId, "email", null,
+      notif.title, notif.body
+    );
+
     const sent = await sendNotificationEmail(
       user.email,
       `CS-ERP — ${notif.title}`,
-      `<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;"><h3>${notif.title}</h3><p>${notif.body}</p></div>`
+      `<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;"><h3>${notif.title}</h3>${renderedBody}</div>`
     );
 
     await db

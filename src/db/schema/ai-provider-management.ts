@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
@@ -9,6 +8,7 @@ import {
   timestamp,
   jsonb,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -31,6 +31,8 @@ export const aiProviders = pgTable(
     isDefault: boolean("is_default").notNull().default(false),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -70,6 +72,8 @@ export const aiModels = pgTable(
     capabilities: jsonb("capabilities"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -109,6 +113,8 @@ export const aiAgentModelAssignments = pgTable(
     isActive: boolean("is_active").notNull().default(true),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -146,6 +152,8 @@ export const aiUsageLogs = pgTable(
     errorMessage: text("error_message"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

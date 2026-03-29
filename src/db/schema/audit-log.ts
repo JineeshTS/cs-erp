@@ -1,12 +1,12 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   jsonb,
   timestamp,
   inet,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
@@ -19,6 +19,8 @@ export const authAuditLog = pgTable("auth_audit_log", {
   userAgent: text("user_agent"),
   metadata: jsonb("metadata").default({}),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

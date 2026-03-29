@@ -7,6 +7,9 @@ import { db } from "@/lib/db";
 import { eq, and, isNull, desc, ilike, or } from "drizzle-orm";
 import { customers } from "@/db/schema";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
+
+const PAGE_SIZE = 50;
 
 const columns: DataColumn[] = [
   { key: "name", header: "Customer Name", width: "w-48" },
@@ -21,7 +24,7 @@ const columns: DataColumn[] = [
 export default async function CustomersListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; cursor?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -32,25 +35,43 @@ export default async function CustomersListPage({
   const params = await searchParams;
   const q = params.q?.trim() || "";
   const statusFilter = params.status || "";
+  const cursor = parseCompoundCursor(params.cursor);
 
-  const data = await db
+  const conditions = and(
+    eq(customers.tenantId, session.tenantId),
+    isNull(customers.deletedAt),
+    q ? or(ilike(customers.name, `%${q}%`), ilike(customers.shortName, `%${q}%`), ilike(customers.country, `%${q}%`)) : undefined,
+    statusFilter ? eq(customers.status, statusFilter) : undefined,
+    cursor ? cursorCondition(customers.createdAt, customers.id, cursor) : undefined,
+  );
+
+  const rows = await db
     .select()
     .from(customers)
-    .where(and(
-      eq(customers.tenantId, session.tenantId),
-      isNull(customers.deletedAt),
-      q ? or(ilike(customers.name, `%${q}%`), ilike(customers.shortName, `%${q}%`), ilike(customers.country, `%${q}%`)) : undefined,
-      statusFilter ? eq(customers.status, statusFilter) : undefined,
-    ))
-    .orderBy(desc(customers.createdAt))
-    .limit(50);
+    .where(conditions)
+    .orderBy(desc(customers.createdAt), desc(customers.id))
+    .limit(PAGE_SIZE + 1);
+
+  const hasMore = rows.length > PAGE_SIZE;
+  const data = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+  const nextCursor = hasMore && data.length > 0
+    ? encodeCompoundCursor(data[data.length - 1].createdAt!, String(data[data.length - 1].id))
+    : null;
+
+  const loadMoreUrl = nextCursor
+    ? `/master-data-management/customers?${new URLSearchParams({
+        ...(q && { q }),
+        ...(statusFilter && { status: statusFilter }),
+        cursor: nextCursor,
+      }).toString()}`
+    : null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-gray-100">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Customer master data and agent hierarchy ({data.length} records)</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Customer master data and agent hierarchy ({data.length}{hasMore ? "+" : ""} records)</p>
         </div>
         {canCreate && (
           <Link href="/master-data-management/customers/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">
@@ -71,7 +92,7 @@ export default async function CustomersListPage({
           <option value="blocked">Blocked</option>
         </select>
         <button type="submit" className="h-10 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300">Search</button>
-        {(q || statusFilter) && <Link href="/master-data-management/customers" className="text-sm text-slate-500 hover:text-slate-700">Clear</Link>}
+        {(q || statusFilter) && <Link href="/master-data-management/customers" className="text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400">Clear</Link>}
       </form>
 
       <DataTable
@@ -81,6 +102,17 @@ export default async function CustomersListPage({
         emptyMessage={q ? `No customers matching "${q}"` : "No customers found"}
         emptyAction={canCreate ? { label: "Add Customer", href: "/master-data-management/customers/new" } : undefined}
       />
+
+      {loadMoreUrl && (
+        <div className="text-center">
+          <Link
+            href={loadMoreUrl}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+          >
+            Load more
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

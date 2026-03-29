@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { timingSafeCompare } from "@/lib/tokens";
+import { exchangeRates } from "@/db/schema";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
@@ -42,8 +44,34 @@ export async function POST(request: NextRequest) {
           const rate = parseFloat(cols[cols.length - 2]); // OBS_VALUE column
           if (!currency || isNaN(rate)) continue;
 
-          // Upsert rate for all tenants that have this currency pair
-          console.log(`[FxRefresh] EUR/${currency} = ${rate}`);
+          // Upsert rate for all tenants — find existing EUR→currency rows and update
+          const updated = await db
+            .update(exchangeRates)
+            .set({ rate: String(rate), updatedAt: now })
+            .where(and(
+              eq(exchangeRates.baseCurrency, "EUR"),
+              eq(exchangeRates.targetCurrency, currency),
+              isNull(exchangeRates.deletedAt),
+            ))
+            .returning({ id: exchangeRates.id });
+
+          if (updated.length === 0) {
+            // No existing row — insert for all tenants that have exchange rate data
+            const tenantIds = await db.execute<{ tenant_id: string }>(
+              sql`SELECT DISTINCT tenant_id FROM mdm_exchange_rates WHERE deleted_at IS NULL LIMIT 100`
+            );
+            for (const t of tenantIds) {
+              await db.insert(exchangeRates).values({
+                tenantId: t.tenant_id,
+                baseCurrency: "EUR",
+                targetCurrency: currency,
+                rate: String(rate),
+                effectiveDate: today,
+              });
+            }
+          }
+
+          console.log(`[FxRefresh] EUR/${currency} = ${rate} (${updated.length} rows updated)`);
           ratesUpdated++;
         }
       }

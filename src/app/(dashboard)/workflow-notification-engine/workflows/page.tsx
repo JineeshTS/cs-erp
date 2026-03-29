@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, PenTool } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
@@ -84,6 +84,9 @@ export default async function WorkflowsListPage() {
                 <th className="px-4 py-3 text-start font-medium text-gray-500">
                   Version
                 </th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -115,6 +118,15 @@ export default async function WorkflowsListPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">
                     v{workflow.version}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/workflow-notification-engine/process-studio/${workflow.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                    >
+                      <PenTool className="h-3.5 w-3.5" />
+                      Design
+                    </Link>
                   </td>
                 </tr>
               ))}

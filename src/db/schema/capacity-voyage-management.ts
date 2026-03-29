@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
@@ -10,6 +9,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -41,6 +41,8 @@ export const capVesselSchedules = pgTable(
     notes: text("notes"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -92,6 +94,8 @@ export const capPortRotations = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("scheduled"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -141,6 +145,8 @@ export const capTradeAllocations = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -189,6 +195,8 @@ export const capSpaceControls = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("pending"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -235,6 +243,8 @@ export const capTransshipmentPlans = pgTable(
     coordinationNotes: text("coordination_notes"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -291,6 +301,8 @@ export const capLoadingLists = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -340,6 +352,8 @@ export const capBayPlans = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -393,6 +407,8 @@ export const capStowagePlans = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("planned"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -449,6 +465,8 @@ export const capLoadOptimizations = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("pending"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -496,6 +514,8 @@ export const capRevenueAnalytics = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -554,6 +574,8 @@ export const capDemandForecasts = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -621,6 +643,8 @@ export const capSchedulePerformances = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("recorded"),
     notes: text("notes"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

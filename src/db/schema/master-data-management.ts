@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
@@ -12,6 +11,7 @@ import {
   index,
   uniqueIndex,
   type AnyPgColumn,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 
@@ -38,6 +38,8 @@ export const ports = pgTable(
     isMajorPort: boolean("is_major_port").notNull().default(false),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -77,6 +79,8 @@ export const terminals = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -125,6 +129,8 @@ export const vessels = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -172,6 +178,8 @@ export const commodities = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -218,6 +226,8 @@ export const containerTypes = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -268,6 +278,8 @@ export const customers = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -313,6 +325,8 @@ export const tariffCodes = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -354,6 +368,8 @@ export const exchangeRates = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -394,6 +410,8 @@ export const glAccounts = pgTable(
       .default("debit"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -428,6 +446,8 @@ export const costCentres = pgTable(
     isActive: boolean("is_active").notNull().default(true),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -445,3 +465,122 @@ export const costCentres = pgTable(
     index("mdm_cost_centres_parent_id_idx").on(table.parentId),
   ]
 );
+
+// ==========================================
+// ERP-032: Reference Lookup Tables
+// ==========================================
+
+export const currencies = pgTable("mdm_currencies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  code: varchar("code", { length: 3 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  symbol: varchar("symbol", { length: 10 }),
+  decimalPlaces: integer("decimal_places").notNull().default(2),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_currencies_tenant_id_idx").on(table.tenantId),
+  uniqueIndex("mdm_currencies_tenant_code_idx").on(table.tenantId, table.code),
+]);
+
+export const regions = pgTable("mdm_regions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  code: varchar("code", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  parentRegionId: uuid("parent_region_id").references((): AnyPgColumn => regions.id),
+  regionType: varchar("region_type", { length: 30 }).notNull().default("geographic"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_regions_tenant_id_idx").on(table.tenantId),
+  uniqueIndex("mdm_regions_tenant_code_idx").on(table.tenantId, table.code),
+]);
+
+export const countries = pgTable("mdm_countries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  code: varchar("code", { length: 2 }).notNull(),
+  code3: varchar("code3", { length: 3 }),
+  name: varchar("name", { length: 100 }).notNull(),
+  numericCode: varchar("numeric_code", { length: 3 }),
+  regionId: uuid("region_id").references(() => regions.id),
+  phoneCode: varchar("phone_code", { length: 10 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_countries_tenant_id_idx").on(table.tenantId),
+  uniqueIndex("mdm_countries_tenant_code_idx").on(table.tenantId, table.code),
+]);
+
+export const tradeLanes = pgTable("mdm_trade_lanes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  code: varchar("code", { length: 30 }).notNull(),
+  name: varchar("name", { length: 150 }).notNull(),
+  originRegionId: uuid("origin_region_id").references(() => regions.id),
+  destinationRegionId: uuid("destination_region_id").references(() => regions.id),
+  direction: varchar("direction", { length: 20 }).default("both"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_trade_lanes_tenant_id_idx").on(table.tenantId),
+  uniqueIndex("mdm_trade_lanes_tenant_code_idx").on(table.tenantId, table.code),
+]);
+
+export const vesselClasses = pgTable("mdm_vessel_classes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  code: varchar("code", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  minTeu: integer("min_teu"),
+  maxTeu: integer("max_teu"),
+  minDwt: numeric("min_dwt", { precision: 12, scale: 2 }),
+  maxDwt: numeric("max_dwt", { precision: 12, scale: 2 }),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_vessel_classes_tenant_id_idx").on(table.tenantId),
+  uniqueIndex("mdm_vessel_classes_tenant_code_idx").on(table.tenantId, table.code),
+]);
+
+export const taxRates = pgTable("mdm_tax_rates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  jurisdiction: varchar("jurisdiction", { length: 10 }).notNull(),
+  taxType: varchar("tax_type", { length: 20 }).notNull().default("VAT"),
+  ratePercent: numeric("rate_percent", { precision: 5, scale: 2 }).notNull(),
+  description: varchar("description", { length: 200 }),
+  effectiveFrom: date("effective_from").notNull().defaultNow(),
+  effectiveTo: date("effective_to"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: uuid("created_by"),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => [
+  index("mdm_tax_rates_tenant_id_idx").on(table.tenantId),
+]);

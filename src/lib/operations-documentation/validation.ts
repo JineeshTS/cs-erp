@@ -87,7 +87,7 @@ export const updateBlChargeSchema = createBlChargeSchema.partial();
 // ==========================================
 
 export const createManifestSchema = z.object({
-  manifestNumber: z.string().min(1).max(50),
+  manifestNumber: z.string().min(1).max(50).optional(),
   manifestType: z.enum(["export", "import", "transit", "transshipment"]).optional(),
   vesselName: z.string().min(1).max(100),
   voyageNumber: z.string().min(1).max(50),

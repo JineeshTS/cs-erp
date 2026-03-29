@@ -126,7 +126,7 @@ export const updateOpportunityActivitySchema = createOpportunityActivitySchema.p
 // Rate Quotation schemas
 // ==========================================
 export const createRateQuotationSchema = z.object({
-  quotationNumber: z.string().min(1).max(50),
+  quotationNumber: z.string().min(1).max(50).optional(),
   customerId: z.string().uuid(),
   contactId: z.string().uuid().optional(),
   opportunityId: z.string().uuid().optional(),

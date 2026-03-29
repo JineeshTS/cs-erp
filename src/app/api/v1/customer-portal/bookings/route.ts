@@ -9,6 +9,7 @@ import { createBookingSchema } from "@/lib/customer-portal/validation";
 import { eventBus } from "@/lib/events/event-bus";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bookingRef = `BK-${Date.now()}`;
+    const bookingRef = await generateNextNumber("booking", user.tenantId);
 
     const [created] = await db.insert(cspPortalBookings).values({
       tenantId: user.tenantId,

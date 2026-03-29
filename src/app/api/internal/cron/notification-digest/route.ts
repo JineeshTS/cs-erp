@@ -3,6 +3,7 @@ import { and, eq, isNull, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { timingSafeCompare } from "@/lib/tokens";
 import { sql } from "drizzle-orm";
+import { dispatchEmailNotifications } from "@/lib/workflow-notification-engine/service";
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
@@ -40,15 +41,45 @@ export async function POST(request: NextRequest) {
 
     const digestRows = Array.isArray(digests) ? digests : [];
 
-    // In production, this would enqueue email jobs for each user
-    for (const row of digestRows as unknown as Array<{ email: string; display_name: string; unread_count: number }>) {
+    for (const row of digestRows as unknown as Array<{ user_id: string; email: string; display_name: string; unread_count: number }>) {
       console.log(
         `[NotificationDigest] ${row.email} has ${row.unread_count} unread notifications`
       );
     }
 
+    // Query distinct tenant IDs that have pending email notifications
+    const tenantsWithPending = await db.execute(sql`
+      SELECT DISTINCT tenant_id
+      FROM wne_notifications
+      WHERE channel = 'email'
+        AND status = 'pending'
+        AND deleted_at IS NULL
+      LIMIT 50
+    `);
+
+    const tenantRows = Array.isArray(tenantsWithPending) ? tenantsWithPending : [];
+
+    // Dispatch email notifications for each tenant
+    let emailDispatchCount = 0;
+    for (const row of tenantRows as unknown as Array<{ tenant_id: string }>) {
+      try {
+        await dispatchEmailNotifications(row.tenant_id);
+        emailDispatchCount++;
+      } catch (err) {
+        console.error(`[NotificationDigest] Email dispatch failed for tenant ${row.tenant_id}:`, err);
+      }
+    }
+
+    // WhatsApp placeholder -- no API integration yet
+    console.log(`[NotificationDigest] WhatsApp digest: not yet implemented (placeholder)`);
+
     return NextResponse.json({
-      data: { processedAt: now.toISOString(), usersWithDigests: digestRows.length },
+      data: {
+        processedAt: now.toISOString(),
+        usersWithDigests: digestRows.length,
+        emailDispatchedTenants: emailDispatchCount,
+        whatsappStatus: "not_implemented",
+      },
     });
   } catch (error) {
     console.error("Notification digest cron error:", error);

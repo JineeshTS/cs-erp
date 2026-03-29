@@ -151,18 +151,9 @@ export async function executeCalculateTax(
   const taxJurisdiction = (input.taxJurisdiction as string) ?? "AE";
   const taxType = (input.taxType as string) ?? "VAT";
 
-  // VAT rates by jurisdiction
-  const vatRates: Record<string, number> = {
-    AE: 5,
-    SA: 15,
-    QA: 0,
-    IN: 18,
-    US: 0,
-    GB: 20,
-  };
-  const ratePercent = vatRates[taxJurisdiction] ?? 5;
-  const taxAmount = Math.round(subtotal * ratePercent / 100 * 100) / 100;
-  const totalWithTax = subtotal + taxAmount;
+  // ERP-107: Read tax rate from DB (falls back to defaults if not configured)
+  const { calculateTax } = await import("@/lib/engines/tax");
+  const { ratePercent, taxAmount, totalWithTax } = await calculateTax(tenantId, subtotal, taxJurisdiction, taxType);
 
   // Update invoice if linked
   if (invoiceId) {

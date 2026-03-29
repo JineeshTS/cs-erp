@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LogOut, Settings, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCsrfToken } from "@/lib/client/csrf";
+import { NotificationBell } from "./notification-bell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +80,7 @@ export function Topbar({ userName, userEmail }: TopbarProps) {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100 focus:outline-none">
             <Avatar className="h-8 w-8 border border-slate-200">

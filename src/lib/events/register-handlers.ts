@@ -16,11 +16,15 @@ import "./handlers/sales-handlers";
 
 import { registerProcessBridge } from "./process-bridge";
 import { registerE2eFlowBridge } from "./e2e-flow-bridge";
+import { registerWorkflowBridge } from "./workflow-bridge";
 
 // Register event → process instance bridge (PRC-level)
 registerProcessBridge();
 
 // Register event → E2E flow instance bridge (E2E-level)
 registerE2eFlowBridge();
+
+// ERP-042: Register event → WNE workflow bridge
+registerWorkflowBridge();
 
 export const EVENT_HANDLERS_REGISTERED = true;

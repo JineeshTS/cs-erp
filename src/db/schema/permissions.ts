@@ -1,11 +1,11 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   primaryKey,
   timestamp,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { roles } from "./roles";
 import { tenants } from "./tenants";
@@ -17,6 +17,8 @@ export const permissions = pgTable("permissions", {
   action: varchar("action", { length: 50 }).notNull(),
   description: text("description"),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -38,6 +40,8 @@ export const rolePermissions = pgTable(
       .notNull()
       .references(() => permissions.id, { onDelete: "cascade" }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

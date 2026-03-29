@@ -15,6 +15,14 @@ import {
   scmRateQuotations,
   scmContracts,
   scmCustomers,
+  cspPortalBookings,
+  cspPortalBookingContainers,
+  odmBillsOfLading,
+  firmFreightInvoices,
+  ports,
+  vessels,
+  customers,
+  exchangeRates,
 } from "@/db/schema";
 import { eq, and, ilike, isNull } from "drizzle-orm";
 import type { StepExecutorConfig } from "./executor-configs/e2e-01-lead-to-quote";
@@ -60,6 +68,14 @@ const TABLE_REGISTRY: Record<string, {
   scm_rate_quotations: { table: scmRateQuotations, idColumn: "id" },
   scm_contracts: { table: scmContracts, idColumn: "id" },
   scm_customers: { table: scmCustomers, idColumn: "id" },
+  csp_portal_bookings: { table: cspPortalBookings, idColumn: "id" },
+  csp_portal_booking_containers: { table: cspPortalBookingContainers, idColumn: "id" },
+  odm_bills_of_lading: { table: odmBillsOfLading, idColumn: "id" },
+  firm_freight_invoices: { table: firmFreightInvoices, idColumn: "id" },
+  mdm_ports: { table: ports, idColumn: "id" },
+  mdm_vessels: { table: vessels, idColumn: "id" },
+  mdm_customers: { table: customers, idColumn: "id" },
+  mdm_exchange_rates: { table: exchangeRates, idColumn: "id" },
 };
 
 // ═══════════════════════════════════════════════════════════

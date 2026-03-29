@@ -8,6 +8,7 @@ import { hasPermission } from "@/lib/rbac";
 import { createManifestSchema } from "@/lib/operations-documentation/validation";
 import { formatZodErrors , escapeIlike } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 export async function GET(request: NextRequest) {
@@ -56,7 +57,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
-    const [created] = await db.insert(odmManifests).values({ tenantId: user.tenantId, ...parsed.data }).returning();
+    const manifestNumber = parsed.data.manifestNumber || await generateNextNumber("manifest", user.tenantId);
+
+    const [created] = await db.insert(odmManifests).values({ tenantId: user.tenantId, ...parsed.data, manifestNumber }).returning();
 
     void logBusinessAudit({ tenantId: user.tenantId, userId: user.id, userEmail: user.email, action: "create", entityType: "manifests", entityId: created.id, module: "operations-documentation", newData: created as Record<string, unknown>, request });
     return NextResponse.json({ data: created }, { status: 201 });

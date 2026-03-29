@@ -1,12 +1,12 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   timestamp,
   jsonb,
   integer,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -29,6 +29,8 @@ export const aiChatSessions = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("active"),
     metadata: jsonb("metadata"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -64,6 +66,8 @@ export const aiChatMessages = pgTable(
     agentAction: jsonb("agent_action"),
     tokensUsed: integer("tokens_used"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

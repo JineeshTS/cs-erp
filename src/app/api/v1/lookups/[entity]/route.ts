@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-auth";
 import { db } from "@/lib/db";
+import { cached } from "@/lib/cache";
 import {
   ports,
   customers,
@@ -8,10 +9,18 @@ import {
   containerTypes,
   commodities,
   terminals,
+  currencies,
+  countries,
+  regions,
+  tradeLanes,
+  vesselClasses,
 } from "@/db/schema";
 import { and, eq, isNull, ilike, or, asc } from "drizzle-orm";
 
-const VALID_ENTITIES = ["ports", "vessels", "customers", "commodities", "container-types", "terminals"] as const;
+const VALID_ENTITIES = [
+  "ports", "vessels", "customers", "commodities", "container-types", "terminals",
+  "currencies", "countries", "regions", "trade-lanes", "vessel-classes",
+] as const;
 type EntityType = (typeof VALID_ENTITIES)[number];
 
 /**
@@ -37,12 +46,16 @@ export async function GET(
   }
 
   const q = request.nextUrl.searchParams.get("q")?.trim() || "";
+  const parentId = request.nextUrl.searchParams.get("parentId")?.trim() || "";
   const limit = Math.min(parseInt(request.nextUrl.searchParams.get("limit") || "20", 10), 50);
   const tenantId = user.tenantId;
   const searchPattern = `%${q}%`;
 
   try {
-    let options: { value: string; label: string }[] = [];
+    // ERP-109: Cache lookups in Redis (5 min TTL). Empty search = full list, cached aggressively.
+    const cacheKey = `lookup:${tenantId}:${entity}:${q}:${parentId}:${limit}`;
+    const options = await cached<{ value: string; label: string }[]>(cacheKey, async () => {
+    let result: { value: string; label: string }[] = [];
 
     switch (entity as EntityType) {
       case "ports": {
@@ -57,7 +70,7 @@ export async function GET(
           ))
           .orderBy(asc(ports.name))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.unLocode, label: `${r.name} (${r.unLocode})` }));
+        result = rows.map((r) => ({ value: r.unLocode, label: `${r.name} (${r.unLocode})` }));
         break;
       }
       case "vessels": {
@@ -72,7 +85,7 @@ export async function GET(
           ))
           .orderBy(asc(vessels.name))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.name, label: `${r.name} (IMO ${r.imoNumber})` }));
+        result = rows.map((r) => ({ value: r.name, label: `${r.name} (IMO ${r.imoNumber})` }));
         break;
       }
       case "customers": {
@@ -87,7 +100,7 @@ export async function GET(
           ))
           .orderBy(asc(customers.name))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.name, label: r.shortName ? `${r.name} (${r.shortName})` : r.name }));
+        result = rows.map((r) => ({ value: r.name, label: r.shortName ? `${r.name} (${r.shortName})` : r.name }));
         break;
       }
       case "commodities": {
@@ -102,7 +115,7 @@ export async function GET(
           ))
           .orderBy(asc(commodities.hsCode))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.hsCode, label: `${r.hsCode} — ${r.description}` }));
+        result = rows.map((r) => ({ value: r.hsCode, label: `${r.hsCode} — ${r.description}` }));
         break;
       }
       case "container-types": {
@@ -117,7 +130,7 @@ export async function GET(
           ))
           .orderBy(asc(containerTypes.isoCode))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.isoCode, label: `${r.isoCode} — ${r.description}` }));
+        result = rows.map((r) => ({ value: r.isoCode, label: `${r.isoCode} — ${r.description}` }));
         break;
       }
       case "terminals": {
@@ -128,14 +141,94 @@ export async function GET(
             eq(terminals.tenantId, tenantId),
             eq(terminals.status, "active"),
             isNull(terminals.deletedAt),
+            parentId ? eq(terminals.portId, parentId) : undefined,
             q ? or(ilike(terminals.name, searchPattern), ilike(terminals.code, searchPattern)) : undefined
           ))
           .orderBy(asc(terminals.name))
           .limit(limit);
-        options = rows.map((r) => ({ value: r.name, label: r.code ? `${r.name} (${r.code})` : r.name }));
+        result = rows.map((r) => ({ value: r.name, label: r.code ? `${r.name} (${r.code})` : r.name }));
+        break;
+      }
+      case "currencies": {
+        const rows = await db
+          .select({ code: currencies.code, name: currencies.name, symbol: currencies.symbol })
+          .from(currencies)
+          .where(and(
+            eq(currencies.tenantId, tenantId),
+            eq(currencies.isActive, true),
+            isNull(currencies.deletedAt),
+            q ? or(ilike(currencies.code, searchPattern), ilike(currencies.name, searchPattern)) : undefined
+          ))
+          .orderBy(asc(currencies.code))
+          .limit(limit);
+        result = rows.map((r) => ({ value: r.code, label: `${r.code} — ${r.name}${r.symbol ? ` (${r.symbol})` : ""}` }));
+        break;
+      }
+      case "countries": {
+        const rows = await db
+          .select({ code: countries.code, name: countries.name, code3: countries.code3 })
+          .from(countries)
+          .where(and(
+            eq(countries.tenantId, tenantId),
+            eq(countries.isActive, true),
+            isNull(countries.deletedAt),
+            parentId ? eq(countries.regionId, parentId) : undefined,
+            q ? or(ilike(countries.code, searchPattern), ilike(countries.name, searchPattern)) : undefined
+          ))
+          .orderBy(asc(countries.name))
+          .limit(limit);
+        result = rows.map((r) => ({ value: r.code, label: `${r.name} (${r.code})` }));
+        break;
+      }
+      case "regions": {
+        const rows = await db
+          .select({ id: regions.id, code: regions.code, name: regions.name })
+          .from(regions)
+          .where(and(
+            eq(regions.tenantId, tenantId),
+            eq(regions.isActive, true),
+            isNull(regions.deletedAt),
+            q ? or(ilike(regions.code, searchPattern), ilike(regions.name, searchPattern)) : undefined
+          ))
+          .orderBy(asc(regions.name))
+          .limit(limit);
+        result = rows.map((r) => ({ value: String(r.id), label: `${r.name} (${r.code})` }));
+        break;
+      }
+      case "trade-lanes": {
+        const rows = await db
+          .select({ id: tradeLanes.id, code: tradeLanes.code, name: tradeLanes.name })
+          .from(tradeLanes)
+          .where(and(
+            eq(tradeLanes.tenantId, tenantId),
+            eq(tradeLanes.isActive, true),
+            isNull(tradeLanes.deletedAt),
+            q ? or(ilike(tradeLanes.code, searchPattern), ilike(tradeLanes.name, searchPattern)) : undefined
+          ))
+          .orderBy(asc(tradeLanes.name))
+          .limit(limit);
+        result = rows.map((r) => ({ value: String(r.id), label: `${r.code} — ${r.name}` }));
+        break;
+      }
+      case "vessel-classes": {
+        const rows = await db
+          .select({ id: vesselClasses.id, code: vesselClasses.code, name: vesselClasses.name })
+          .from(vesselClasses)
+          .where(and(
+            eq(vesselClasses.tenantId, tenantId),
+            eq(vesselClasses.isActive, true),
+            isNull(vesselClasses.deletedAt),
+            q ? or(ilike(vesselClasses.code, searchPattern), ilike(vesselClasses.name, searchPattern)) : undefined
+          ))
+          .orderBy(asc(vesselClasses.name))
+          .limit(limit);
+        result = rows.map((r) => ({ value: String(r.id), label: `${r.code} — ${r.name}` }));
         break;
       }
     }
+
+    return result;
+    }); // end cached()
 
     return NextResponse.json({ data: options });
   } catch (err) {

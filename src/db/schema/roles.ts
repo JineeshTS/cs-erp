@@ -1,12 +1,12 @@
 import {
   pgTable,
-  uuid,
   varchar,
   text,
   boolean,
   jsonb,
   timestamp,
   index,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants";
 import { users } from "./users";
@@ -23,6 +23,8 @@ export const roles = pgTable("roles", {
   region: varchar("region", { length: 50 }),
   permissions: jsonb("permissions").notNull().default([]),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -47,6 +49,8 @@ export const roleAssignments = pgTable("role_assignments", {
     .defaultNow(),
   validUntil: timestamp("valid_until", { withTimezone: true }),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
-import crypto from "crypto";
 import { db } from "@/lib/db";
 import { apvmVendorInvoices } from "@/db/schema";
 import { getApiUser, unauthorizedResponse, forbiddenResponse } from "@/lib/auth/api-auth";
@@ -9,6 +8,7 @@ import { listVendorInvoices } from "@/lib/accounts-payable-vendor-management/ser
 import { createVendorInvoiceSchema } from "@/lib/accounts-payable-vendor-management/validation";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { generateNextNumber } from "@/lib/number-sequence";
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Invalid input", details: formatZodErrors(parsed.error) } }, { status: 422 });
     }
 
-    const invoiceNumber = `VIN-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const invoiceNumber = await generateNextNumber("purchase_order", user.tenantId);
 
     const [created] = await db.insert(apvmVendorInvoices).values({
       tenantId: user.tenantId,
