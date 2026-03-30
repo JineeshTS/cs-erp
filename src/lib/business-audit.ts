@@ -3,7 +3,7 @@ import { adminAuditLogs } from "@/db/schema";
 import { getClientIp, getUserAgent } from "@/lib/request";
 import { NextRequest } from "next/server";
 
-export type BusinessAction = "create" | "update" | "delete" | "approve" | "reject" | "submit" | "cancel";
+export type BusinessAction = "create" | "update" | "delete" | "approve" | "reject" | "submit" | "cancel" | "upload" | "import" | "export";
 
 export async function logBusinessAudit(params: {
   tenantId: string;
