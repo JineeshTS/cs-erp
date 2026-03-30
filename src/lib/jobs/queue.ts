@@ -46,11 +46,16 @@ export type ImportExportJobType =
   | "excel-export"
   | "pdf-report";
 
+export type ReportJobType =
+  | "generate-report"
+  | "scheduled-report";
+
 // ── Queue instances ──────────────────────────────────────────────
 
 let cronQueue: Queue | null = null;
 let notificationQueue: Queue | null = null;
 let importExportQueue: Queue | null = null;
+let reportsQueue: Queue | null = null;
 
 export function getCronQueue(): Queue {
   if (!cronQueue) {
@@ -71,6 +76,13 @@ export function getImportExportQueue(): Queue {
     importExportQueue = new Queue(QUEUE_NAMES.IMPORT_EXPORT, { connection });
   }
   return importExportQueue;
+}
+
+export function getReportsQueue(): Queue {
+  if (!reportsQueue) {
+    reportsQueue = new Queue(QUEUE_NAMES.REPORTS, { connection });
+  }
+  return reportsQueue;
 }
 
 // ── Enqueue helpers ──────────────────────────────────────────────
@@ -111,6 +123,21 @@ export async function enqueueImportExport(
     backoff: { type: "fixed", delay: 10000 },
     removeOnComplete: 50,
     removeOnFail: 200,
+  });
+}
+
+export async function enqueueReport(
+  type: ReportJobType,
+  data: Record<string, unknown>,
+  options?: { repeat?: { pattern: string } }
+) {
+  const queue = getReportsQueue();
+  return queue.add(type, { type, ...data }, {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: 100,
+    removeOnFail: 500,
+    ...(options?.repeat ? { repeat: options.repeat } : {}),
   });
 }
 

@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfToken } from "@/lib/client/csrf";
 import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import { SearchableSelect, type SelectOption } from "./searchable-select";
 import { Loader2 } from "lucide-react";
+
+// ── Custom Field Definition shape from the API ─────────────────
+
+interface CustomFieldDef {
+  id: string;
+  fieldName: string;
+  fieldLabel: string;
+  fieldType: "text" | "number" | "date" | "select" | "checkbox" | "textarea";
+  isRequired: boolean;
+  options: Array<{ label: string; value: string }> | null;
+  defaultValue: string | null;
+  sortOrder: number;
+  sectionName: string | null;
+}
 
 // ── Field configuration ──────────────────────────────────────────
 
@@ -65,6 +79,10 @@ interface GenericFormProps {
   cancelPath?: string;
   /** Submit button label (default: "Create" or "Update") */
   submitLabel?: string;
+  /** Entity type for loading custom fields (e.g., "booking", "vessel") */
+  entityType?: string;
+  /** Entity ID for loading existing custom field values (edit mode) */
+  entityId?: string;
 }
 
 // ── Component ────────────────────────────────────────────────────
@@ -78,6 +96,8 @@ export function GenericForm({
   returnPath,
   cancelPath,
   submitLabel,
+  entityType,
+  entityId,
 }: GenericFormProps) {
   const router = useRouter();
   const isEdit = !!initialData;
@@ -104,6 +124,82 @@ export function GenericForm({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Custom fields state ───────────────────────────────────────
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>([]);
+  const [customFieldData, setCustomFieldData] = useState<Record<string, unknown>>({});
+
+  // Load custom field definitions when entityType is provided
+  useEffect(() => {
+    if (!entityType) return;
+    let cancelled = false;
+
+    async function loadCustomFields() {
+      try {
+        const res = await fetch(
+          `/api/v1/admin-portal/custom-fields?entityType=${encodeURIComponent(entityType!)}`,
+          { credentials: "include" }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json.data) {
+          const defs = json.data as CustomFieldDef[];
+          setCustomFieldDefs(defs);
+          // Set defaults for fields that have them
+          const defaults: Record<string, unknown> = {};
+          for (const def of defs) {
+            if (def.defaultValue != null) {
+              defaults[`cf_${def.id}`] =
+                def.fieldType === "checkbox"
+                  ? def.defaultValue === "true"
+                  : def.fieldType === "number"
+                    ? Number(def.defaultValue)
+                    : def.defaultValue;
+            }
+          }
+          setCustomFieldData((prev) => ({ ...defaults, ...prev }));
+        }
+      } catch {
+        // Silently ignore — custom fields are optional
+      }
+    }
+
+    void loadCustomFields();
+    return () => { cancelled = true; };
+  }, [entityType]);
+
+  // Load existing custom field values in edit mode
+  useEffect(() => {
+    if (!entityType || !entityId) return;
+    let cancelled = false;
+
+    async function loadCustomFieldValues() {
+      try {
+        const res = await fetch(
+          `/api/v1/admin-portal/custom-field-values?entityType=${encodeURIComponent(entityType!)}&entityId=${encodeURIComponent(entityId!)}`,
+          { credentials: "include" }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json.data) {
+          const values: Record<string, unknown> = {};
+          for (const v of json.data) {
+            values[`cf_${v.fieldDefinitionId}`] = v.valueText ?? v.valueJson;
+          }
+          setCustomFieldData((prev) => ({ ...prev, ...values }));
+        }
+      } catch {
+        // Silently ignore
+      }
+    }
+
+    void loadCustomFieldValues();
+    return () => { cancelled = true; };
+  }, [entityType, entityId]);
+
+  function handleCustomFieldChange(defId: string, value: unknown) {
+    setCustomFieldData((prev) => ({ ...prev, [`cf_${defId}`]: value }));
+  }
 
   function handleChange(name: string, value: unknown) {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -150,6 +246,37 @@ export function GenericForm({
           setError(json.error?.message || `Error: ${res.status}`);
         }
         return;
+      }
+
+      // Save custom field values if entityType is set and there are custom fields
+      if (entityType && customFieldDefs.length > 0) {
+        const recordId = entityId || json.data?.id;
+        if (recordId) {
+          const cfValues = customFieldDefs.map((def) => {
+            const raw = customFieldData[`cf_${def.id}`];
+            const isJson = def.fieldType === "select" || typeof raw === "object";
+            return {
+              fieldDefinitionId: def.id,
+              valueText: isJson ? null : raw != null ? String(raw) : null,
+              valueJson: isJson && raw != null ? raw : null,
+            };
+          });
+
+          // Fire-and-forget — do not block navigation on custom field save failure
+          void fetch("/api/v1/admin-portal/custom-field-values", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-csrf-token": getCsrfToken(),
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              entityId: recordId,
+              entityType,
+              values: cfValues,
+            }),
+          });
+        }
       }
 
       router.push(returnPath);
@@ -283,6 +410,91 @@ export function GenericForm({
             </div>
           ))}
         </div>
+
+        {/* Custom fields section (loaded dynamically when entityType is set) */}
+        {customFieldDefs.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-gray-200">
+              Custom Fields
+            </h2>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              {customFieldDefs.map((cf) => {
+                const key = `cf_${cf.id}`;
+                return (
+                  <div key={cf.id}>
+                    <label
+                      htmlFor={key}
+                      className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
+                    >
+                      {cf.fieldLabel}
+                      {cf.isRequired && <span className="text-red-500 ms-0.5">*</span>}
+                    </label>
+
+                    {cf.fieldType === "checkbox" && (
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={key}
+                          checked={!!customFieldData[key]}
+                          onChange={(e) => handleCustomFieldChange(cf.id, e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        />
+                      </label>
+                    )}
+
+                    {cf.fieldType === "textarea" && (
+                      <textarea
+                        id={key}
+                        rows={3}
+                        value={(customFieldData[key] as string) ?? ""}
+                        onChange={(e) => handleCustomFieldChange(cf.id, e.target.value)}
+                        required={cf.isRequired}
+                        className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:border-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      />
+                    )}
+
+                    {cf.fieldType === "select" && (
+                      <select
+                        id={key}
+                        value={(customFieldData[key] as string) ?? ""}
+                        onChange={(e) => handleCustomFieldChange(cf.id, e.target.value)}
+                        required={cf.isRequired}
+                        className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:border-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Select...</option>
+                        {(cf.options || []).map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {!["checkbox", "textarea", "select"].includes(cf.fieldType) && (
+                      <Input
+                        id={key}
+                        type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
+                        value={
+                          customFieldData[key] != null
+                            ? String(customFieldData[key])
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const val =
+                            cf.fieldType === "number"
+                              ? e.target.value === "" ? "" : Number(e.target.value)
+                              : e.target.value;
+                          handleCustomFieldChange(cf.id, val);
+                        }}
+                        required={cf.isRequired}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6 dark:border-gray-700">

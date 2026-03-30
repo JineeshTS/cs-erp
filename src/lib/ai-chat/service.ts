@@ -1,7 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { db } from "@/lib/db";
-import { aiChatSessions, aiChatMessages } from "@/db/schema";
-import { eq, and, desc, isNull, lt } from "drizzle-orm";
+import { db, setTenantRLS } from "@/lib/db";
+import {
+  aiChatSessions,
+  aiChatMessages,
+  ports,
+  vessels,
+  scmCustomers,
+  cspPortalBookings,
+  firmFreightInvoices,
+  odmBillsOfLading,
+} from "@/db/schema";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { parseCompoundCursor, cursorCondition, encodeCompoundCursor } from "@/lib/pagination";
 
 const anthropic = new Anthropic({
@@ -106,6 +115,123 @@ function parseActionFromResponse(content: string): {
     return { cleanContent, agentAction };
   } catch {
     return { cleanContent: content };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ERP-106: AI CHAT DB QUERY CAPABILITY
+// Executes safe read-only queries via Drizzle ORM with tenant isolation.
+// NEVER allows raw SQL — only structured queries against a whitelist of tables.
+// ═══════════════════════════════════════════════════════════
+
+const ALLOWED_ENTITIES = ["ports", "vessels", "customers", "bookings", "invoices", "bills_of_lading"] as const;
+
+/** Normalize entity name from AI response to a canonical key */
+function resolveEntityName(raw: string): (typeof ALLOWED_ENTITIES)[number] | null {
+  const normalized = raw.toLowerCase().replace(/\s+/g, "_");
+  const aliases: Record<string, (typeof ALLOWED_ENTITIES)[number]> = {
+    ports: "ports", port: "ports",
+    vessels: "vessels", vessel: "vessels",
+    customers: "customers", customer: "customers",
+    bookings: "bookings", booking: "bookings",
+    invoices: "invoices", invoice: "invoices", freight_invoices: "invoices",
+    bls: "bills_of_lading", bl: "bills_of_lading",
+    bills_of_lading: "bills_of_lading", bill_of_lading: "bills_of_lading",
+  };
+  return aliases[normalized] ?? null;
+}
+
+/**
+ * Execute a safe read-only query for AI chat "query" actions.
+ * Uses a switch to handle each table with proper typing.
+ * Returns formatted results as a markdown string, max 20 rows.
+ */
+async function executeQueryAction(
+  tenantId: string,
+  action: AgentAction
+): Promise<string> {
+  const entity = resolveEntityName(action.entity ?? "");
+  if (!entity) {
+    return `I can query: Ports, Vessels, Customers, Bookings, Invoices, Bills of Lading. The entity "${action.entity}" is not in the allowed list.`;
+  }
+
+  const filters = action.filters ?? {};
+  const statusFilter = typeof filters.status === "string" ? filters.status.slice(0, 50) : undefined;
+
+  try {
+    await setTenantRLS(tenantId);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let results: Record<string, any>[] = [];
+    let label = "";
+    let nameKey = "";
+
+    switch (entity) {
+      case "ports": {
+        label = "Ports";
+        nameKey = "name";
+        const conds = [eq(ports.tenantId, tenantId), isNull(ports.deletedAt)];
+        results = await db.select().from(ports).where(and(...conds)).limit(20);
+        break;
+      }
+      case "vessels": {
+        label = "Vessels";
+        nameKey = "name";
+        const conds = [eq(vessels.tenantId, tenantId), isNull(vessels.deletedAt)];
+        results = await db.select().from(vessels).where(and(...conds)).limit(20);
+        break;
+      }
+      case "customers": {
+        label = "Customers";
+        nameKey = "companyName";
+        const conds = [eq(scmCustomers.tenantId, tenantId), isNull(scmCustomers.deletedAt)];
+        if (statusFilter) conds.push(eq(scmCustomers.status, statusFilter));
+        results = await db.select().from(scmCustomers).where(and(...conds)).limit(20);
+        break;
+      }
+      case "bookings": {
+        label = "Bookings";
+        nameKey = "bookingRef";
+        const conds = [eq(cspPortalBookings.tenantId, tenantId), isNull(cspPortalBookings.deletedAt)];
+        if (statusFilter) conds.push(eq(cspPortalBookings.status, statusFilter));
+        results = await db.select().from(cspPortalBookings).where(and(...conds)).limit(20);
+        break;
+      }
+      case "invoices": {
+        label = "Freight Invoices";
+        nameKey = "invoiceNumber";
+        const conds = [eq(firmFreightInvoices.tenantId, tenantId), isNull(firmFreightInvoices.deletedAt)];
+        if (statusFilter) conds.push(eq(firmFreightInvoices.status, statusFilter));
+        results = await db.select().from(firmFreightInvoices).where(and(...conds)).limit(20);
+        break;
+      }
+      case "bills_of_lading": {
+        label = "Bills of Lading";
+        nameKey = "blNumber";
+        const conds = [eq(odmBillsOfLading.tenantId, tenantId), isNull(odmBillsOfLading.deletedAt)];
+        if (statusFilter) conds.push(eq(odmBillsOfLading.blStatus, statusFilter));
+        results = await db.select().from(odmBillsOfLading).where(and(...conds)).limit(20);
+        break;
+      }
+    }
+
+    if (results.length === 0) {
+      return `No ${label} found matching your criteria.`;
+    }
+
+    const rows = results.map((row, idx) => {
+      const nameVal = row[nameKey] ?? row.id ?? "N/A";
+      const status = row.status ?? row.blStatus ?? "";
+      const id = String(row.id ?? "").slice(0, 8);
+      return `${idx + 1}. **${nameVal}**${status ? ` (${status})` : ""} — ID: ${id}...`;
+    });
+
+    return `Found ${results.length} ${label}:\n${rows.join("\n")}${
+      results.length === 20 ? "\n\n_Showing first 20 results. Refine your search for more specific results._" : ""
+    }`;
+  } catch (err) {
+    console.error("[AI Chat Query] Error:", err);
+    return "I encountered an error while querying the database. Please try again.";
   }
 }
 
@@ -390,18 +516,25 @@ export async function chat(
     (response.usage?.input_tokens ?? 0) +
     (response.usage?.output_tokens ?? 0);
 
+  // ERP-106: If action is "query", execute the DB query and append results
+  let finalContent = cleanContent;
+  if (agentAction?.action === "query" && agentAction.entity) {
+    const queryResults = await executeQueryAction(tenantId, agentAction);
+    finalContent = `${cleanContent}\n\n---\n**Query Results:**\n${queryResults}`;
+  }
+
   // Save assistant message
   await db.insert(aiChatMessages).values({
     tenantId,
     sessionId,
     role: "assistant",
-    content: cleanContent,
+    content: finalContent,
     agentAction: agentAction ?? null,
     tokensUsed,
   });
 
   return {
-    content: cleanContent,
+    content: finalContent,
     agentAction,
     tokensUsed,
   };

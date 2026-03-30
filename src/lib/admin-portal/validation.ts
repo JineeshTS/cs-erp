@@ -186,6 +186,53 @@ export const createNotificationConfigSchema = z.object({
 });
 export const updateNotificationConfigSchema = createNotificationConfigSchema.partial();
 
+// Custom Field Definition schemas (ERP-035)
+export const createCustomFieldDefinitionSchema = z.object({
+  entityType: z.string().min(1).max(100),
+  fieldName: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, "Field name must be lowercase snake_case"),
+  fieldLabel: z.string().min(1).max(200),
+  fieldType: z.enum(["text", "number", "date", "select", "checkbox", "textarea"]),
+  isRequired: z.boolean().optional(),
+  validationRules: z.record(z.string(), z.unknown()).optional(),
+  options: z.array(z.record(z.string(), z.unknown())).optional(),
+  defaultValue: z.string().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  sectionName: z.string().max(100).optional(),
+  isActive: z.boolean().optional(),
+  effectiveFrom: z.string().datetime().optional(),
+  effectiveTo: z.string().datetime().optional(),
+});
+export const updateCustomFieldDefinitionSchema = createCustomFieldDefinitionSchema.partial();
+
+// Custom Field Values schema (ERP-035)
+export const saveCustomFieldValuesSchema = z.object({
+  entityId: z.string().uuid(),
+  entityType: z.string().min(1).max(100),
+  values: z.array(
+    z.object({
+      fieldDefinitionId: z.string().uuid(),
+      valueText: z.string().nullable().optional(),
+      valueJson: z.record(z.string(), z.unknown()).nullable().optional(),
+    })
+  ),
+});
+
+// Business Rule schemas (ERP-038)
+export const createBusinessRuleSchema = z.object({
+  ruleName: z.string().min(1).max(200),
+  entityType: z.string().min(1).max(100),
+  triggerEvent: z.enum(["before_create", "before_update", "after_create", "after_update"]),
+  ruleType: z.enum(["validation", "calculation", "assignment", "notification"]),
+  conditions: z.array(z.record(z.string(), z.unknown())),
+  actions: z.array(z.record(z.string(), z.unknown())),
+  priority: z.number().int().min(0).max(100).optional(),
+  isActive: z.boolean().optional(),
+  effectiveFrom: z.string().datetime().optional(),
+  effectiveTo: z.string().datetime().optional(),
+  description: z.string().optional(),
+});
+export const updateBusinessRuleSchema = createBusinessRuleSchema.partial();
+
 // AWS Deployment schemas
 export const saveAwsCredentialsSchema = z.object({
   accessKeyId: z.string().min(16).max(128),

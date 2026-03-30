@@ -8,6 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { parseEdiSchema } from "@/lib/integration-edi-layer/validation";
 import { formatZodErrors } from "@/lib/validation";
 import { logBusinessAudit } from "@/lib/business-audit";
+import { parseCoparn, parseCuscar, parseIftmin } from "@/lib/engines/edi-messages";
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +96,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Detect message type from UNH segment or provided messageType, then call specific parser
+    let detectedType = msgType;
+    if (standard === "EDIFACT" && detectedType === "CUSTOM") {
+      const unhSegment = rawSegments.find((s) => s.startsWith("UNH"));
+      if (unhSegment) {
+        const unhParts = unhSegment.split("+");
+        const msgId = unhParts[2]?.split(":")[0]?.toUpperCase() ?? "";
+        if (["COPARN", "IFTMIN", "CUSCAR"].includes(msgId)) {
+          detectedType = msgId;
+        }
+      }
+    }
+
+    // Pre-split segments for specific parsers: each segment → components split by '+'
+    const splitSegments = rawSegments.map((s) => s.split("+"));
+
+    let messageSpecificData: Record<string, unknown> | null = null;
+    if (detectedType === "COPARN") {
+      messageSpecificData = { coparn: parseCoparn(splitSegments) };
+    } else if (detectedType === "IFTMIN") {
+      messageSpecificData = { iftmin: parseIftmin(splitSegments) };
+    } else if (detectedType === "CUSCAR") {
+      messageSpecificData = { cuscar: parseCuscar(splitSegments) };
+    }
+
     // Update the message with parsed data
     const durationMs = Date.now() - startTime;
     await db.update(ielEdiMessages)
@@ -102,7 +128,12 @@ export async function POST(request: NextRequest) {
         status: "parsed",
         senderCode,
         receiverCode,
-        parsedContent: { segmentCount: segmentRecords.length, standard },
+        parsedContent: {
+          segmentCount: segmentRecords.length,
+          standard,
+          ...(detectedType !== "CUSTOM" ? { detectedMessageType: detectedType } : {}),
+          ...(messageSpecificData ?? {}),
+        },
         processedAt: new Date(),
       })
       .where(and(eq(ielEdiMessages.id, message.id), eq(ielEdiMessages.tenantId, user.tenantId), isNull(ielEdiMessages.deletedAt)));
@@ -122,6 +153,8 @@ export async function POST(request: NextRequest) {
         messageId: message.id,
         segmentCount: segmentRecords.length,
         status: "parsed",
+        ...(detectedType !== "CUSTOM" ? { detectedMessageType: detectedType } : {}),
+        ...(messageSpecificData ?? {}),
       },
     }, { status: 201 });
   } catch (error) {
