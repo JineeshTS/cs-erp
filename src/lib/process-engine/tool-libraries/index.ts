@@ -55,6 +55,23 @@ import {
   executeApplyCash,
   executeRecognizeRevenue,
 } from "./finance-tools";
+import {
+  executeGetServiceSchedule,
+  executeGetPortRotation,
+  executeGetVesselCapacity,
+  executeGetVesselPosition,
+  executeCreatePortRotation,
+  executeGenerateVoyageNumber,
+  executeAllocateTradeCapacity,
+  executeGenerateLtsReport,
+  executeCreateEtaRecords,
+  executeUpdateSpeedConsumption,
+  executeUpdateVoyageTracking,
+  executeAnalyzeNoonReport,
+  executeCalculateDelayImpact,
+  executeCascadeEtaChanges,
+  executeModifyPortCall,
+} from "./voyage-tools";
 
 // ═══════════════════════════════════════════════════════════
 // TOOL DISPATCH MAP
@@ -108,6 +125,23 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   calculate_tax: executeCalculateTax,
   apply_cash: executeApplyCash,
   recognize_revenue: executeRecognizeRevenue,
+
+  // ── Voyage Tools (E2E-18) ──
+  get_service_schedule: executeGetServiceSchedule,
+  get_port_rotation: executeGetPortRotation,
+  get_vessel_capacity: executeGetVesselCapacity,
+  get_vessel_position: executeGetVesselPosition,
+  create_port_rotation: executeCreatePortRotation,
+  generate_voyage_number: executeGenerateVoyageNumber,
+  allocate_trade_capacity: executeAllocateTradeCapacity,
+  generate_lts_report: executeGenerateLtsReport,
+  create_eta_records: executeCreateEtaRecords,
+  update_speed_consumption: executeUpdateSpeedConsumption,
+  update_voyage_tracking: executeUpdateVoyageTracking,
+  analyze_noon_report: executeAnalyzeNoonReport,
+  calculate_delay_impact: executeCalculateDelayImpact,
+  cascade_eta_changes: executeCascadeEtaChanges,
+  modify_port_call: executeModifyPortCall,
 };
 
 /**

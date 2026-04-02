@@ -224,7 +224,8 @@ export async function executeCurrentStep(
     }
 
     // ── D-006: Check for executor config (CRUD / AI-with-tools) ──
-    const executorConfig = getExecutorConfig(instance.e2eFlowId, currentStepNum);
+    // Phase 4: getExecutorConfig is now async (DB-first, then static fallback)
+    const executorConfig = await getExecutorConfig(instance.e2eFlowId, currentStepNum, tenantId);
 
     if (executorConfig?.mode === "crud") {
       // CRUD step → create/update real entity via direct DB call

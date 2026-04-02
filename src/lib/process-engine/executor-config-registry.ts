@@ -4,10 +4,14 @@
  * Central registry that maps E2E flow IDs + step numbers to executor configs.
  * All 39 E2E flows registered — complete container shipping lifecycle.
  *
- * Flows without registered configs fall back to the legacy AI step executor.
+ * Resolution order (Phase 4 — DB-first):
+ * 1. Try resolveStepFromDb() — reads pe_flow_definitions + pe_task_definitions
+ * 2. Fall back to static FLOW_CONFIGS (TypeScript imports)
+ * 3. Return null → legacy AI step executor
  */
 
 import type { StepExecutorConfig } from "./executor-configs/e2e-01-lead-to-quote";
+import { resolveStepFromDb } from "./definition-resolver";
 import { E2E_01_STEP_CONFIGS } from "./executor-configs/e2e-01-lead-to-quote";
 import { E2E_02_STEP_CONFIGS } from "./executor-configs/e2e-02-quote-to-contract";
 import { E2E_03_STEP_CONFIGS } from "./executor-configs/e2e-03-customer-onboarding";
@@ -96,9 +100,43 @@ const FLOW_CONFIGS: Record<string, Record<number, StepExecutorConfig>> = {
 
 /**
  * Get the executor config for a specific step in a specific flow.
+ *
+ * Phase 4: Now async — tries DB resolution first (pe_flow_definitions +
+ * pe_task_definitions), then falls back to static TypeScript configs.
  * Returns null if no config is registered (flow uses legacy executor).
+ *
+ * @param e2eFlowId - Flow code (e.g., "E2E-01")
+ * @param stepNumber - 1-based step number
+ * @param tenantId - Optional tenant ID for tenant-specific overrides
  */
-export function getExecutorConfig(
+export async function getExecutorConfig(
+  e2eFlowId: string,
+  stepNumber: number,
+  tenantId?: string
+): Promise<StepExecutorConfig | null> {
+  // 1. Try DB-first resolution
+  try {
+    const dbResult = await resolveStepFromDb(e2eFlowId, stepNumber, tenantId);
+    if (dbResult?.executorConfig) {
+      return dbResult.executorConfig;
+    }
+  } catch (err) {
+    // Log but don't crash — fall through to TypeScript configs
+    console.error(
+      `[executor-config-registry] DB resolution failed for ${e2eFlowId}#${stepNumber}:`,
+      err
+    );
+  }
+
+  // 2. Fall back to static TypeScript configs
+  return getExecutorConfigSync(e2eFlowId, stepNumber);
+}
+
+/**
+ * Synchronous fallback — reads from static TypeScript FLOW_CONFIGS only.
+ * Used during migration and as the fallback when DB has no matching config.
+ */
+export function getExecutorConfigSync(
   e2eFlowId: string,
   stepNumber: number
 ): StepExecutorConfig | null {

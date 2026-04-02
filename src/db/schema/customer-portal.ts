@@ -25,6 +25,7 @@ export const cspPortalBookings = pgTable(
       .references(() => tenants.id, { onDelete: "cascade" }),
     bookingRef: varchar("booking_ref", { length: 50 }).notNull(),
     customerId: uuid("customer_id").notNull(),
+    customerUuid: uuid("customer_uuid"),
     customerName: varchar("customer_name", { length: 255 }).notNull(),
     originPort: varchar("origin_port", { length: 20 }).notNull(),
     destinationPort: varchar("destination_port", { length: 20 }).notNull(),

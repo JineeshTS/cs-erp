@@ -31,7 +31,15 @@ import {
   BarChart3,
   Settings,
   Activity,
+  ListChecks,
+  Workflow,
+  GitBranch,
+  Layers,
+  ExternalLink,
 } from "lucide-react";
+import { db } from "@/lib/db";
+import { peTaskInstances } from "@/db/schema";
+import { eq, and, isNull, desc } from "drizzle-orm";
 
 const CATEGORY_ICONS: Record<ProcessCategory, typeof Ship> = {
   core_operations: Ship,
@@ -57,7 +65,7 @@ export default async function ProcessHubPage({
   const domain = sp.domain ?? "";
   const automation = sp.automation ?? "";
   const trigger = sp.trigger ?? "";
-  const tab = sp.tab ?? "processes";
+  const tab = sp.tab ?? "mytasks";
 
   // ── Stats ──
   const totalProcesses = OPERATIONAL_PROCESSES.length;
@@ -86,6 +94,22 @@ export default async function ProcessHubPage({
   }
 
   const hasFilters = !!(search || categoryFilter || domain || automation || trigger);
+
+  // ── My Tasks (fetch assigned tasks for current user) ──
+  const myTasks = tab === "mytasks"
+    ? await db
+        .select()
+        .from(peTaskInstances)
+        .where(
+          and(
+            eq(peTaskInstances.tenantId, session.tenantId),
+            eq(peTaskInstances.assignedTo, session.id),
+            isNull(peTaskInstances.deletedAt)
+          )
+        )
+        .orderBy(desc(peTaskInstances.dueAt))
+        .limit(20)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -155,28 +179,172 @@ export default async function ProcessHubPage({
       {/* Tab Navigation */}
       <div className="flex gap-1 border-b">
         <Link
-          href={`/processes?tab=processes${search ? `&search=${search}` : ""}${categoryFilter ? `&category=${categoryFilter}` : ""}${domain ? `&domain=${domain}` : ""}${automation ? `&automation=${automation}` : ""}${trigger ? `&trigger=${trigger}` : ""}`}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "processes" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+          href="/processes?tab=mytasks"
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "mytasks" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
         >
-          All Processes ({filtered.length})
+          <ListChecks className="h-4 w-4" />
+          My Tasks
+        </Link>
+        <Link
+          href={`/processes?tab=processes${search ? `&search=${search}` : ""}${categoryFilter ? `&category=${categoryFilter}` : ""}${domain ? `&domain=${domain}` : ""}${automation ? `&automation=${automation}` : ""}${trigger ? `&trigger=${trigger}` : ""}`}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "processes" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+        >
+          <Workflow className="h-4 w-4" />
+          Processes ({filtered.length})
         </Link>
         <Link
           href="/processes?tab=e2e"
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "e2e" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "e2e" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
         >
+          <GitBranch className="h-4 w-4" />
           E2E Flows ({totalE2E})
         </Link>
         <Link
-          href="/processes?tab=categories"
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "categories" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+          href="/processes?tab=templates"
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === "templates" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
         >
-          By Category
+          <Layers className="h-4 w-4" />
+          Templates
         </Link>
       </div>
+
+      {/* ═══════════════ TAB 0: MY TASKS ═══════════════ */}
+      {tab === "mytasks" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Tasks assigned to you, ordered by due date
+            </p>
+            <Link
+              href="/tasks"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              View all tasks
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {myTasks.length === 0 ? (
+            <div className="rounded-lg border bg-white dark:bg-gray-900 px-8 py-12 text-center">
+              <ListChecks className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
+              <p className="mt-3 font-medium text-gray-900 dark:text-gray-100">No tasks assigned to you</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Tasks from running processes will appear here when assigned to you.
+              </p>
+              <Link
+                href="/tasks"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                Go to Task Manager
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-900">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Task</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Priority</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Due Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {myTasks.map((task) => {
+                    const isOverdue =
+                      task.dueAt &&
+                      new Date(task.dueAt) < new Date() &&
+                      task.status !== "completed" &&
+                      task.status !== "cancelled";
+
+                    return (
+                      <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/tasks/${task.id}`}
+                            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            {task.name}
+                          </Link>
+                          {task.taskCode && (
+                            <span className="ms-2 text-xs text-gray-400 dark:text-gray-500">
+                              {task.taskCode}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                              task.status === "completed"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                : task.status === "in_progress"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                : task.status === "failed"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                                : task.status === "blocked"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300"
+                            }`}
+                          >
+                            {task.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                              task.priority === "critical"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                                : task.priority === "high"
+                                ? "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
+                                : task.priority === "normal"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300"
+                            }`}
+                          >
+                            {task.priority.replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {task.dueAt ? (
+                            <span className={isOverdue ? "font-medium text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-300"}>
+                              {new Date(task.dueAt).toLocaleDateString()}
+                              {isOverdue && <span className="ms-1 text-xs">(overdue)</span>}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                          {new Date(task.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ═══════════════ TAB 1: ALL PROCESSES ═══════════════ */}
       {tab === "processes" && (
         <>
+          {/* Link to templates */}
+          <div className="flex items-center justify-between rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Looking for reusable process templates? Browse the template library.
+            </p>
+            <Link
+              href="/process-definitions"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Process Templates
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
           {/* Filters */}
           <form className="flex flex-wrap items-end gap-3 rounded-lg border bg-white dark:bg-gray-900 p-4">
             <div className="min-w-[200px] flex-1">
@@ -374,6 +542,32 @@ export default async function ProcessHubPage({
       {/* ═══════════════ TAB 2: E2E FLOWS ═══════════════ */}
       {tab === "e2e" && (
         <div className="space-y-6">
+          {/* Links to related pages */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link
+              href="/e2e-flows"
+              className="flex items-center gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950 p-4 hover:bg-purple-100 dark:hover:bg-purple-900 transition-colors"
+            >
+              <Activity className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <div>
+                <p className="font-medium text-purple-900 dark:text-purple-100">Running Instances</p>
+                <p className="text-sm text-purple-600 dark:text-purple-400">View active E2E flow instances and their progress</p>
+              </div>
+              <ExternalLink className="ms-auto h-4 w-4 text-purple-400" />
+            </Link>
+            <Link
+              href="/flow-definitions"
+              className="flex items-center gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 p-4 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+            >
+              <GitBranch className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <p className="font-medium text-emerald-900 dark:text-emerald-100">Flow Templates</p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">Browse and manage reusable flow definitions</p>
+              </div>
+              <ExternalLink className="ms-auto h-4 w-4 text-emerald-400" />
+            </Link>
+          </div>
+
           {E2E_PROCESS_FLOWS.map((flow) => (
             <div key={flow.id} className="rounded-lg border bg-white dark:bg-gray-900 p-6 space-y-4">
               <div className="flex items-center justify-between">
@@ -447,60 +641,117 @@ export default async function ProcessHubPage({
         </div>
       )}
 
-      {/* ═══════════════ TAB 3: BY CATEGORY ═══════════════ */}
-      {tab === "categories" && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(Object.keys(PROCESS_CATEGORY_LABELS) as ProcessCategory[]).map((cat) => {
-            const catInfo = PROCESS_CATEGORY_LABELS[cat];
-            const CatIcon = CATEGORY_ICONS[cat];
-            const catProcesses = OPERATIONAL_PROCESSES.filter((p) => DOMAIN_TO_CATEGORY[p.domain] === cat);
-            const auto = catProcesses.filter((p) => p.automationLevel === "full_auto").length;
-            const semi = catProcesses.filter((p) => p.automationLevel === "semi_auto").length;
-            const assisted = catProcesses.filter((p) => p.automationLevel === "ai_assisted").length;
-            const manual = catProcesses.filter((p) => p.automationLevel === "manual_ai_insights").length;
-            const agents = [...new Set(catProcesses.map((p) => p.agentName))];
+      {/* ═══════════════ TAB 3: TEMPLATES ═══════════════ */}
+      {tab === "templates" && (
+        <div className="space-y-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Browse template libraries for processes and E2E flows. Clone templates to create your own customized versions.
+          </p>
 
-            return (
-              <div key={cat} className="rounded-lg border bg-white dark:bg-gray-900 p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CatIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{catInfo.label}</h3>
-                  </div>
-                  <Badge variant="default">{catProcesses.length}</Badge>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Operational Processes Card */}
+            <Link
+              href="/process-definitions"
+              className="group rounded-lg border bg-white dark:bg-gray-900 p-6 space-y-4 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                  <Workflow className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{catInfo.description}</p>
-                <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                  <div className="rounded bg-green-50 dark:bg-green-950 p-2">
-                    <div className="font-bold text-green-700 dark:text-green-400">{auto}</div>
-                    <div className="text-green-600 dark:text-green-500">Auto</div>
-                  </div>
-                  <div className="rounded bg-yellow-50 dark:bg-yellow-950 p-2">
-                    <div className="font-bold text-yellow-700 dark:text-yellow-400">{semi}</div>
-                    <div className="text-yellow-600 dark:text-yellow-500">Semi</div>
-                  </div>
-                  <div className="rounded bg-blue-50 dark:bg-blue-950 p-2">
-                    <div className="font-bold text-blue-700 dark:text-blue-400">{assisted}</div>
-                    <div className="text-blue-600 dark:text-blue-500">Assist</div>
-                  </div>
-                  <div className="rounded bg-gray-50 dark:bg-gray-800 p-2">
-                    <div className="font-bold text-gray-700 dark:text-gray-300">{manual}</div>
-                    <div className="text-gray-600 dark:text-gray-400">Manual</div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-500 mb-1">AI Agents ({agents.length})</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {agents.slice(0, 6).map((a) => <Badge key={a} variant="outline" className="text-xs">{a}</Badge>)}
-                    {agents.length > 6 && <Badge variant="secondary" className="text-xs">+{agents.length - 6} more</Badge>}
-                  </div>
-                </div>
-                <Link href={`/processes?tab=processes&category=${cat}`} className="block text-xs text-blue-600 hover:underline">
-                  View all {catProcesses.length} processes →
-                </Link>
+                <ArrowRight className="h-5 w-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
               </div>
-            );
-          })}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {totalProcesses} Operational Processes
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  AI-powered process templates spanning {Object.keys(PROCESS_CATEGORY_LABELS).length} categories including operations, finance, compliance, and more.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-950 px-2.5 py-1 text-xs text-green-700 dark:text-green-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  {fullAuto} Full Auto
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 dark:bg-yellow-950 px-2.5 py-1 text-xs text-yellow-700 dark:text-yellow-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
+                  {semiAuto} Semi-Auto
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  {aiAssisted} AI-Assisted
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 dark:bg-gray-800 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                  {manualAi} Manual + AI
+                </span>
+              </div>
+            </Link>
+
+            {/* E2E Flows Card */}
+            <Link
+              href="/flow-definitions"
+              className="group rounded-lg border bg-white dark:bg-gray-900 p-6 space-y-4 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/50">
+                  <GitBranch className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <ArrowRight className="h-5 w-5 text-gray-300 group-hover:text-purple-500 transition-colors" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {totalE2E} E2E Flows
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  End-to-end flow templates that orchestrate multiple processes across modules with human gates and AI agents.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 dark:bg-purple-950 px-2.5 py-1 text-xs text-purple-700 dark:text-purple-300">
+                  <Zap className="h-3 w-3" />
+                  Multi-module orchestration
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 dark:bg-purple-950 px-2.5 py-1 text-xs text-purple-700 dark:text-purple-300">
+                  <Users className="h-3 w-3" />
+                  Human gates
+                </span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Category Quick Links */}
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Browse by Category
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {(Object.keys(PROCESS_CATEGORY_LABELS) as ProcessCategory[]).map((cat) => {
+                const catInfo = PROCESS_CATEGORY_LABELS[cat];
+                const CatIcon = CATEGORY_ICONS[cat];
+                const catCount = OPERATIONAL_PROCESSES.filter((p) => DOMAIN_TO_CATEGORY[p.domain] === cat).length;
+
+                return (
+                  <Link
+                    key={cat}
+                    href={`/processes?tab=processes&category=${cat}`}
+                    className="flex items-center gap-3 rounded-lg border bg-white dark:bg-gray-900 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <CatIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {catInfo.label}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {catCount} processes
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

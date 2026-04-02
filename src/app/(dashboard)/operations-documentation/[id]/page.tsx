@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, ArrowLeft, Trash2 } from "lucide-react";
+import { Pencil, ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { DeleteButton } from "@/components/ui/delete-button";
+import { PdfDownloadButton } from "@/components/ui/pdf-download-button";
 
 
 const TABS = [
@@ -158,6 +159,10 @@ export default async function BlDetailPage({
           {canDelete && (
             <DeleteButton apiPath={`/api/v1/operations-documentation/bills-of-lading/${id}`} />
           )}
+          <PdfDownloadButton
+            apiPath={`/api/v1/operations-documentation/bills-of-lading/${id}/pdf`}
+            filename={`bl-${record.blNumber}.pdf`}
+          />
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { getFreightInvoice } from "@/lib/freight-invoice-revenue-management/service";
 import { Badge } from "@/components/ui/badge";
+import { PdfDownloadButton } from "@/components/ui/pdf-download-button";
 
 export default async function FreightInvoiceDetailPage({
   params,
@@ -44,8 +45,8 @@ export default async function FreightInvoiceDetailPage({
             {invoice.invoiceType} &middot; {invoice.customerName}
           </p>
         </div>
-        {canEdit && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {canEdit && (
             <Link
               href={`/freight-invoice-revenue-management/freight-invoices/${id}/edit`}
               className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -53,8 +54,12 @@ export default async function FreightInvoiceDetailPage({
               <Pencil className="h-3.5 w-3.5" />
               Edit
             </Link>
-          </div>
-        )}
+          )}
+          <PdfDownloadButton
+            apiPath={`/api/v1/freight-invoice-revenue-management/freight-invoices/${id}/pdf`}
+            filename={`invoice-${invoice.invoiceNumber}.pdf`}
+          />
+        </div>
       </div>
 
       <div className="rounded-lg border bg-white p-6">

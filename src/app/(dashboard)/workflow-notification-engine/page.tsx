@@ -7,6 +7,7 @@ import {
   Route,
   Mail,
   Bell,
+  PenTool,
 } from "lucide-react";
 import { sql, eq, and, isNull } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
@@ -111,6 +112,16 @@ export default async function WorkflowNotificationEnginePage() {
   ]);
 
   const sections = [
+    {
+      title: "Process Studio",
+      description: "Visual BPMN workflow designer — drag and drop to build flows",
+      count: workflowCount,
+      href: "/workflow-notification-engine/workflows",
+      icon: PenTool,
+      color: "text-cyan-600",
+      bg: "bg-cyan-50",
+      permission: "workflows:read",
+    },
     {
       title: "Approval Workflows",
       description: "Build and manage multi-step approval workflows",

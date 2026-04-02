@@ -13,6 +13,8 @@ import {
   Workflow,
   MapPin,
   Calendar,
+  ListChecks,
+  GitBranch,
 } from "lucide-react";
 
 export interface ModuleCard {
@@ -39,6 +41,14 @@ export const CATEGORIES: NavCategory[] = [
     icon: LayoutDashboard,
     href: "/dashboard",
     permissionPrefixes: [],
+    modules: [],
+  },
+  {
+    slug: "tasks",
+    label: "Tasks",
+    icon: ListChecks,
+    href: "/tasks",
+    permissionPrefixes: ["tasks:"],
     modules: [],
   },
   {
@@ -77,6 +87,22 @@ export const CATEGORIES: NavCategory[] = [
         permissionPrefix: "workflows:",
       },
     ],
+  },
+  {
+    slug: "process-definitions",
+    label: "Process Templates",
+    icon: Workflow,
+    href: "/process-definitions",
+    permissionPrefixes: ["workflows:"],
+    modules: [],
+  },
+  {
+    slug: "flow-definitions",
+    label: "Flow Templates",
+    icon: GitBranch,
+    href: "/flow-definitions",
+    permissionPrefixes: ["workflows:"],
+    modules: [],
   },
   {
     slug: "tracking",

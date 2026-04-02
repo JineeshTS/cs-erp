@@ -6,6 +6,7 @@ import { metadataSchema } from "@/lib/validation";
 // ==========================================
 
 export const createBookingSchema = z.object({
+  customerId: z.string().uuid().optional(),
   customerName: z.string().min(1).max(255),
   originPort: z.string().min(1).max(20),
   destinationPort: z.string().min(1).max(20),

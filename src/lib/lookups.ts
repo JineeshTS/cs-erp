@@ -5,12 +5,12 @@ import { eq, and, isNull, asc } from "drizzle-orm";
 /** Active ports for tenant → select options. */
 export async function getPortOptions(tenantId: string) {
   const rows = await db
-    .select({ unLocode: ports.unLocode, name: ports.name })
+    .select({ id: ports.id, unLocode: ports.unLocode, name: ports.name })
     .from(ports)
     .where(and(eq(ports.tenantId, tenantId), eq(ports.status, "active"), isNull(ports.deletedAt)))
     .orderBy(asc(ports.name))
     .limit(50);
-  return rows.map((r) => ({ value: r.unLocode, label: `${r.name} (${r.unLocode})` }));
+  return rows.map((r) => ({ value: r.id, label: `${r.name} (${r.unLocode})` }));
 }
 
 /** Active customers for tenant → select options. */
@@ -21,18 +21,18 @@ export async function getCustomerOptions(tenantId: string) {
     .where(and(eq(customers.tenantId, tenantId), eq(customers.status, "active"), isNull(customers.deletedAt)))
     .orderBy(asc(customers.name))
     .limit(50);
-  return rows.map((r) => ({ value: r.name, label: r.shortName ? `${r.name} (${r.shortName})` : r.name }));
+  return rows.map((r) => ({ value: r.id, label: r.shortName ? `${r.name} (${r.shortName})` : r.name }));
 }
 
 /** Active vessels for tenant → select options. */
 export async function getVesselOptions(tenantId: string) {
   const rows = await db
-    .select({ name: vessels.name, imoNumber: vessels.imoNumber })
+    .select({ id: vessels.id, name: vessels.name, imoNumber: vessels.imoNumber })
     .from(vessels)
     .where(and(eq(vessels.tenantId, tenantId), eq(vessels.status, "active"), isNull(vessels.deletedAt)))
     .orderBy(asc(vessels.name))
     .limit(50);
-  return rows.map((r) => ({ value: r.name, label: `${r.name} (IMO ${r.imoNumber})` }));
+  return rows.map((r) => ({ value: r.id, label: `${r.name} (IMO ${r.imoNumber})` }));
 }
 
 /** Active container types for tenant → select options. */

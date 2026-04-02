@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, ArrowLeft, Trash2 } from "lucide-react";
+import { Pencil, ArrowLeft } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
@@ -8,6 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { odmManifests } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "@/components/ui/delete-button";
+import { PdfDownloadButton } from "@/components/ui/pdf-download-button";
 
 
 function fmtDate(d: Date | string | null): string {
@@ -65,6 +66,10 @@ export default async function ManifestDetailPage({
           {canDelete && (
             <DeleteButton apiPath={`/api/v1/operations-documentation/manifests/${id}`} />
           )}
+          <PdfDownloadButton
+            apiPath={`/api/v1/operations-documentation/manifests/${id}/pdf`}
+            filename={`manifest-${record.manifestNumber}.pdf`}
+          />
         </div>
       </div>
 

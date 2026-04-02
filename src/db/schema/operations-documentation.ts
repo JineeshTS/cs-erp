@@ -28,6 +28,7 @@ export const odmBillsOfLading = pgTable(
     blType: varchar("bl_type", { length: 30 }).notNull().default("original"),
     blStatus: varchar("bl_status", { length: 30 }).notNull().default("draft"),
     bookingReference: varchar("booking_reference", { length: 50 }),
+    bookingUuid: uuid("booking_uuid"),
     shipperId: uuid("shipper_id"),
     shipperName: varchar("shipper_name", { length: 255 }).notNull(),
     shipperAddress: text("shipper_address"),

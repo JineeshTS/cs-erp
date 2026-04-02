@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const [created] = await db.insert(cspPortalBookings).values({
       tenantId: user.tenantId,
-      customerId: user.id,
+      customerId: parsed.data.customerId || user.id,
       bookingRef,
       ...parsed.data,
     }).returning();
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date(),
       data: {
         bookingNumber: bookingRef,
-        customerId: user.id,
+        customerId: created.customerId,
         tradeRoute: `${parsed.data.originPort}-${parsed.data.destinationPort}`,
         cargoType: parsed.data.cargoType,
         containerCount: parsed.data.containerCount ?? 1,

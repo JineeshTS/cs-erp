@@ -76,12 +76,35 @@ function formatFieldLabel(key: string): string {
   return COLUMN_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).trim();
 }
 
-function inferFieldType(fieldName: string): "text" | "number" | "date" | "textarea" | "select" {
+function inferFieldType(fieldName: string): "text" | "number" | "date" | "datetime-local" | "textarea" | "select" {
   const lower = fieldName.toLowerCase();
-  if (lower.includes("date") || lower.includes("deadline") || lower.includes("valid from") || lower.includes("valid to")) return "date";
-  if (lower.includes("volume") || lower.includes("teu") || lower.includes("revenue") || lower.includes("amount") || lower.includes("score") || lower.includes("limit") || lower.includes("days")) return "number";
-  if (lower.includes("notes") || lower.includes("description") || lower.includes("strategy") || lower.includes("analysis") || lower.includes("brief")) return "textarea";
-  if (lower.includes("source") || lower.includes("channel") || lower.includes("type") || lower.includes("rating") || lower.includes("incoterm") || lower === "country" || lower === "industry" || lower.includes("cargo type")) return "select";
+  // Datetime-local for fields with time precision (ETA, ETD, cut-offs, effective dates, validity)
+  if (lower.includes("eta") || lower.includes("etd") || lower.includes("cut-off") || lower.includes("cutoff")
+    || lower.includes("effective from") || lower.includes("effective to")
+    || lower.includes("validity from") || lower.includes("validity to")
+    || lower.includes("published at") || lower.includes("gate open") || lower.includes("gate close")) return "datetime-local";
+  // Plain date
+  if (lower.includes("date") || lower.includes("deadline")) return "date";
+  // Numbers
+  if (lower.includes("volume") || lower.includes("teu") || lower.includes("revenue") || lower.includes("amount")
+    || lower.includes("score") || lower.includes("limit") || lower.includes("days") || lower.includes("(mt)")
+    || lower.includes("(nm)") || lower.includes("(knots)") || lower.includes("speed") || lower.includes("consumption")
+    || lower.includes("rob ") || lower.includes("wind force") || lower.includes("swell") || lower.includes("distance")
+    || lower.includes("latitude") || lower.includes("longitude") || lower.includes("heading")
+    || lower.includes("port count") || lower.includes("weight") || lower.includes("capacity")
+    || lower.includes("delay hours") || lower.includes("sequence") || lower.includes("beaufort")) return "number";
+  // Textareas
+  if (lower.includes("notes") || lower.includes("description") || lower.includes("strategy")
+    || lower.includes("analysis") || lower.includes("brief") || lower.includes("remarks")
+    || lower.includes("reason")) return "textarea";
+  // Selects (including voyage-specific fields)
+  if (lower.includes("source") || lower.includes("channel") || lower.includes("rating")
+    || lower.includes("incoterm") || lower === "country" || lower === "industry"
+    || lower.includes("cargo type") || lower.includes("schedule type") || lower.includes("report type")
+    || lower.includes("vessel name") || lower.includes("port code") || lower.includes("port name")
+    || lower.includes("ownership type") || lower.includes("frequency") || lower.includes("call purpose")
+    || lower.includes("modification type") || lower.includes("delay reason")
+    || lower.includes("wind direction") || lower.includes("sea state")) return "select";
   return "text";
 }
 
@@ -90,18 +113,35 @@ const FIELD_TO_OPTIONS_KEY: Record<string, string> = {
   "source": "source",
   "channel": "source",
   "cargo type": "cargo_type",
-  "type": "cargo_type",
   "rating": "rating",
   "incoterm": "incoterm",
   "country": "country",
   "industry": "industry",
+  // Voyage-specific options
+  "vessel name": "vessels",
+  "vessel imo": "vessels",
+  "port code": "ports",
+  "port name": "ports",
+  "schedule type": "schedule_type",
+  "ownership type": "vessel_ownership",
+  "frequency": "frequency",
+  "call purpose": "call_purpose",
+  "report type": "report_type",
+  "delay reason": "delay_reason",
+  "modification type": "modification_type",
+  "wind direction": "wind_direction",
+  "sea state": "sea_state",
 };
 
 interface SelectOption { value: string; label: string }
 
 function matchOptionsKey(fieldName: string): string | null {
   const lower = fieldName.toLowerCase();
-  for (const [pattern, key] of Object.entries(FIELD_TO_OPTIONS_KEY)) {
+  // Try exact/longer patterns first to avoid partial matches
+  // (e.g., "schedule type" must match before generic "type")
+  const sortedEntries = Object.entries(FIELD_TO_OPTIONS_KEY)
+    .sort((a, b) => b[0].length - a[0].length);
+  for (const [pattern, key] of sortedEntries) {
     if (lower.includes(pattern)) return key;
   }
   return null;
@@ -202,10 +242,12 @@ export function StepInputForm({
       const entityData: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(formValues)) {
         if (value.trim()) {
-          // Try to parse numbers
           const fieldType = inferFieldType(key);
           if (fieldType === "number") {
             entityData[key] = Number(value) || value;
+          } else if (fieldType === "datetime-local" && value) {
+            // Convert datetime-local to ISO string for DB storage
+            entityData[key] = new Date(value).toISOString();
           } else {
             entityData[key] = value;
           }
@@ -358,7 +400,8 @@ export function StepInputForm({
                     );
                   })() : (
                     <input
-                      type={fieldType === "date" ? "date" : fieldType === "number" ? "number" : "text"}
+                      type={fieldType === "datetime-local" ? "datetime-local" : fieldType === "date" ? "date" : fieldType === "number" ? "number" : "text"}
+                      step={fieldType === "number" && /latitude|longitude|speed|consumption|rob |swell/i.test(field.field) ? "0.01" : undefined}
                       value={value}
                       onChange={(e) => handleChange(field.field, e.target.value)}
                       className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"

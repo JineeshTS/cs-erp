@@ -13,7 +13,7 @@ export default async function ProcessStudioPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!(await hasPermission(session.id, session.tenantId, "workflow:read")))
+  if (!(await hasPermission(session.id, session.tenantId, "workflows:read")))
     redirect("/workflow-notification-engine");
 
   const { id } = await params;

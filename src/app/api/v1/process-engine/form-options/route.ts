@@ -8,8 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-auth";
 import { db } from "@/lib/db";
-import { scmCustomers, scmLeads } from "@/db/schema";
-import { eq, isNull, desc, sql } from "drizzle-orm";
+import { scmCustomers, scmLeads, vessels, ports } from "@/db/schema";
+import { eq, and, isNull, desc, asc } from "drizzle-orm";
 
 const STATIC_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
   source: [
@@ -83,6 +83,68 @@ const STATIC_OPTIONS: Record<string, Array<{ value: string; label: string }>> = 
     { value: "government", label: "Government" },
     { value: "other", label: "Other" },
   ],
+  schedule_type: [
+    { value: "liner_service", label: "Liner Service" },
+    { value: "feeder_service", label: "Feeder Service" },
+    { value: "relay_service", label: "Relay Service" },
+    { value: "pendulum_route", label: "Pendulum Route" },
+    { value: "round_trip", label: "Round Trip" },
+  ],
+  vessel_ownership: [
+    { value: "own", label: "Own Vessel" },
+    { value: "charter", label: "Charter" },
+    { value: "partner", label: "Partner / Cost Sharing" },
+    { value: "third_party", label: "3rd Party Vessel" },
+  ],
+  frequency: [
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" },
+    { value: "bi-weekly", label: "Bi-Weekly (14 days)" },
+    { value: "monthly", label: "Monthly" },
+  ],
+  call_purpose: [
+    { value: "loading", label: "Loading Only" },
+    { value: "discharge", label: "Discharge Only" },
+    { value: "both", label: "Loading & Discharge" },
+    { value: "bunkering", label: "Bunkering" },
+    { value: "transit", label: "Transit / Canal" },
+  ],
+  report_type: [
+    { value: "noon", label: "Noon Report" },
+    { value: "departure", label: "Departure Report" },
+    { value: "arrival", label: "Arrival Report" },
+    { value: "event", label: "Event Report" },
+    { value: "bunker", label: "Bunker Report" },
+  ],
+  delay_reason: [
+    { value: "weather", label: "Weather" },
+    { value: "congestion", label: "Port Congestion" },
+    { value: "eca_transit", label: "ECA Zone Transit" },
+    { value: "war_zone", label: "WAR Zone Deviation" },
+    { value: "mechanical", label: "Mechanical Issue" },
+    { value: "port_operations", label: "Port Operations" },
+    { value: "customs", label: "Customs Hold" },
+    { value: "other", label: "Other" },
+  ],
+  modification_type: [
+    { value: "skip", label: "Skip Port" },
+    { value: "add", label: "Add Port" },
+    { value: "swap", label: "Swap Port" },
+    { value: "delete", label: "Delete Port" },
+  ],
+  wind_direction: [
+    { value: "N", label: "North" }, { value: "NE", label: "North-East" },
+    { value: "E", label: "East" }, { value: "SE", label: "South-East" },
+    { value: "S", label: "South" }, { value: "SW", label: "South-West" },
+    { value: "W", label: "West" }, { value: "NW", label: "North-West" },
+    { value: "variable", label: "Variable" },
+  ],
+  sea_state: [
+    { value: "calm", label: "Calm (Glassy)" }, { value: "smooth", label: "Smooth" },
+    { value: "slight", label: "Slight" }, { value: "moderate", label: "Moderate" },
+    { value: "rough", label: "Rough" }, { value: "very_rough", label: "Very Rough" },
+    { value: "high", label: "High" }, { value: "very_high", label: "Very High" },
+  ],
 };
 
 export async function GET(request: NextRequest) {
@@ -133,6 +195,26 @@ export async function GET(request: NextRequest) {
         result.trade_lanes = lanes
           .filter((l) => l.lane)
           .map((l) => ({ value: l.lane!, label: l.lane! }));
+      }
+
+      if (field === "vessels") {
+        const rows = await db
+          .select({ name: vessels.name, imoNumber: vessels.imoNumber })
+          .from(vessels)
+          .where(and(eq(vessels.tenantId, user.tenantId), eq(vessels.status, "active"), isNull(vessels.deletedAt)))
+          .orderBy(asc(vessels.name))
+          .limit(100);
+        result.vessels = rows.map((r) => ({ value: r.name, label: `${r.name} (IMO ${r.imoNumber})` }));
+      }
+
+      if (field === "ports") {
+        const rows = await db
+          .select({ unLocode: ports.unLocode, name: ports.name })
+          .from(ports)
+          .where(and(eq(ports.tenantId, user.tenantId), eq(ports.status, "active"), isNull(ports.deletedAt)))
+          .orderBy(asc(ports.name))
+          .limit(200);
+        result.ports = rows.map((r) => ({ value: r.unLocode, label: `${r.name} (${r.unLocode})` }));
       }
     }
 

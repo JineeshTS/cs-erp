@@ -205,7 +205,7 @@ export async function executeAiToolStep(params: AiToolExecutionParams): Promise<
 const entityRefSchema = z.object({
   entityType: z.string().min(1).max(100),
   entityId: z.string().uuid().optional(),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
 });
 
 const toolInputSchemas: Record<string, z.ZodSchema> = {
@@ -220,21 +220,38 @@ const toolInputSchemas: Record<string, z.ZodSchema> = {
 
   // Operations tools
   check_credit: z.object({ customerId: z.string().uuid(), amount: z.number().optional() }),
-  generate_quote: z.object({ customerId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  allocate_space: z.object({ voyageId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  reserve_equipment: z.object({ data: z.record(z.unknown()).optional() }),
-  process_vgm: z.object({ containerId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  process_gate_in: z.object({ data: z.record(z.unknown()).optional() }),
+  generate_quote: z.object({ customerId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  allocate_space: z.object({ voyageId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  reserve_equipment: z.object({ data: z.record(z.string(), z.unknown()).optional() }),
+  process_vgm: z.object({ containerId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  process_gate_in: z.object({ data: z.record(z.string(), z.unknown()).optional() }),
 
   // Documentation tools
-  generate_bill_of_lading: z.object({ bookingId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  compile_manifest: z.object({ voyageId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
+  generate_bill_of_lading: z.object({ bookingId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  compile_manifest: z.object({ voyageId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
 
   // Finance tools
-  generate_freight_invoice: z.object({ bookingId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  calculate_tax: z.object({ invoiceId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  apply_cash: z.object({ paymentId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
-  recognize_revenue: z.object({ invoiceId: z.string().uuid().optional(), data: z.record(z.unknown()).optional() }),
+  generate_freight_invoice: z.object({ bookingId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  calculate_tax: z.object({ invoiceId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  apply_cash: z.object({ paymentId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+  recognize_revenue: z.object({ invoiceId: z.string().uuid().optional(), data: z.record(z.string(), z.unknown()).optional() }),
+
+  // Voyage tools (E2E-18)
+  get_service_schedule: z.object({ serviceScheduleId: z.string().uuid().optional() }),
+  get_port_rotation: z.object({ vesselScheduleId: z.string().uuid().optional() }),
+  get_vessel_capacity: z.object({ vesselScheduleId: z.string().uuid().optional() }),
+  get_vessel_position: z.object({ vesselName: z.string().max(255).optional() }),
+  create_port_rotation: z.object({ vesselScheduleId: z.string().uuid().optional(), ports: z.array(z.record(z.string(), z.unknown())).optional() }),
+  generate_voyage_number: z.object({ serviceCode: z.string().max(20), vesselName: z.string().max(255) }),
+  allocate_trade_capacity: z.object({ tradeLane: z.string().max(100), allocatedTeu: z.number().int().positive() }),
+  generate_lts_report: z.object({ serviceScheduleId: z.string().uuid().optional() }),
+  create_eta_records: z.object({}),
+  update_speed_consumption: z.object({ vesselName: z.string().max(255) }),
+  update_voyage_tracking: z.object({ vesselName: z.string().max(255) }),
+  analyze_noon_report: z.object({ noonReportId: z.string().uuid().optional() }),
+  calculate_delay_impact: z.object({ portCode: z.string().max(10), delayHours: z.number() }),
+  cascade_eta_changes: z.object({ delayHours: z.number(), afterSequenceNumber: z.number().int() }),
+  modify_port_call: z.object({ modificationType: z.enum(["skip", "add", "swap", "delete"]), portCode: z.string().max(10) }),
 
   // Generic entity operations
   create_entity: entityRefSchema,

@@ -23,6 +23,16 @@ import {
   vessels,
   customers,
   exchangeRates,
+  svpServiceSchedules,
+  svpDeploymentPlans,
+  svpEtaManagements,
+  capVesselSchedules,
+  capPortRotations,
+  capTradeAllocations,
+  capLoadingLists,
+  vpeNoonReports,
+  vpeSpeedConsumptions,
+  vpeVoyagePerformances,
 } from "@/db/schema";
 import { eq, and, ilike, isNull } from "drizzle-orm";
 import type { StepExecutorConfig } from "./executor-configs/e2e-01-lead-to-quote";
@@ -76,6 +86,18 @@ const TABLE_REGISTRY: Record<string, {
   mdm_vessels: { table: vessels, idColumn: "id" },
   mdm_customers: { table: customers, idColumn: "id" },
   mdm_exchange_rates: { table: exchangeRates, idColumn: "id" },
+
+  // Voyage tables (E2E-18)
+  svp_service_schedules: { table: svpServiceSchedules, idColumn: "id" },
+  svp_deployment_plans: { table: svpDeploymentPlans, idColumn: "id" },
+  svp_eta_managements: { table: svpEtaManagements, idColumn: "id" },
+  cap_vessel_schedules: { table: capVesselSchedules, idColumn: "id" },
+  cap_port_rotations: { table: capPortRotations, idColumn: "id" },
+  cap_trade_allocations: { table: capTradeAllocations, idColumn: "id" },
+  cap_loading_lists: { table: capLoadingLists, idColumn: "id" },
+  vpe_noon_reports: { table: vpeNoonReports, idColumn: "id" },
+  vpe_speed_consumptions: { table: vpeSpeedConsumptions, idColumn: "id" },
+  vpe_voyage_performances: { table: vpeVoyagePerformances, idColumn: "id" },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -431,36 +453,106 @@ export async function insertEntityForHumanFormStep(params: {
   // Map human-friendly field names to DB column names
   const dbValues: Record<string, unknown> = { tenantId };
 
-  // Field name → column name mapping for scm_leads
-  const LEAD_FIELD_MAP: Record<string, string> = {
-    "Company Name": "companyName",
-    "Contact Person & Email": "contactName",
-    "Contact Person": "contactName",
-    "Contact Name": "contactName",
-    "Contact Email": "contactEmail",
-    "Contact Phone": "contactPhone",
-    "Email": "contactEmail",
-    "Phone": "contactPhone",
-    "Trade Lanes of Interest": "tradeLane",
-    "Trade Lane": "tradeLane",
-    "Estimated Annual TEU Volume": "estimatedTeu",
-    "Estimated TEU": "estimatedTeu",
-    "Cargo Types (dry/reefer/DG/OOG)": "notes",
-    "Current Carrier(s)": "notes",
-    "Source Channel": "source",
-    "Source": "source",
-    "Country": "country",
-    "City": "city",
-    "Industry": "industry",
-    "Job Title": "jobTitle",
-    "Notes": "notes",
+  // Table-specific field name → column name mappings
+  const TABLE_FIELD_MAPS: Record<string, Record<string, string>> = {
+    scm_leads: {
+      "Company Name": "companyName",
+      "Contact Person & Email": "contactName",
+      "Contact Person": "contactName",
+      "Contact Name": "contactName",
+      "Contact Email": "contactEmail",
+      "Contact Phone": "contactPhone",
+      "Email": "contactEmail",
+      "Phone": "contactPhone",
+      "Trade Lanes of Interest": "tradeLane",
+      "Trade Lane": "tradeLane",
+      "Estimated Annual TEU Volume": "estimatedTeu",
+      "Estimated TEU": "estimatedTeu",
+      "Cargo Types (dry/reefer/DG/OOG)": "notes",
+      "Current Carrier(s)": "notes",
+      "Source Channel": "source",
+      "Source": "source",
+      "Country": "country",
+      "City": "city",
+      "Industry": "industry",
+      "Job Title": "jobTitle",
+      "Notes": "notes",
+    },
+    svp_service_schedules: {
+      "Service Name": "serviceName",
+      "Service Code": "serviceCode",
+      "Schedule Type": "scheduleType",
+      "Trade Route": "tradeRoute",
+      "Vessel Name": "vesselName",
+      "Frequency (Days)": "frequencyDays",
+      "Port Count": "portCount",
+      "Transit Time (Days)": "transitTimeDays",
+      "Effective From": "effectiveFrom",
+      "Effective To": "effectiveTo",
+      "Notes": "notes",
+    },
+    cap_vessel_schedules: {
+      "Vessel Name": "vesselName",
+      "Vessel IMO": "vesselImo",
+      "Service Name": "serviceName",
+      "Trade Lane": "tradeLane",
+      "Schedule Type": "scheduleType",
+      "Validity From": "validityFrom",
+      "Validity To": "validityTo",
+      "Frequency": "frequency",
+      "Total Capacity (TEU)": "totalCapacityTeu",
+      "Total Weight (MT)": "totalWeightMt",
+      "Operator Name": "operatorName",
+      "Cycle Number": "metadata",
+      "Notes": "notes",
+    },
+    cap_port_rotations: {
+      "Port Code": "portCode",
+      "Port Name": "portName",
+      "Terminal Name": "terminalName",
+      "Cargo Cut-off": "notes",
+      "Documentation Cut-off": "notes",
+      "VGM Cut-off": "notes",
+      "Gate Open": "notes",
+      "Gate Close": "notes",
+      "Rotation Number": "notes",
+      "IGM Number": "notes",
+      "EGM Number": "notes",
+      "Notes": "notes",
+    },
+    vpe_noon_reports: {
+      "Vessel Name": "vesselName",
+      "Voyage ID": "voyageId",
+      "Report Type": "reportType",
+      "Latitude": "latitude",
+      "Longitude": "longitude",
+      "Course Heading": "courseHeading",
+      "Distance Since Last Report": "distanceSinceLastReport",
+      "Distance To Go": "distanceToGo",
+      "Average Speed": "avgSpeed",
+      "Wind Direction": "windDirection",
+      "Wind Force": "windForce",
+      "Sea State": "seaState",
+      "Swell Height": "swellHeight",
+      "ROB FO": "robFo",
+      "ROB DO": "robDo",
+      "ROB LO": "robLo",
+      "ME Consumption": "meConsumption",
+      "AE Consumption": "aeConsumption",
+      "Boiler Consumption": "boilerConsumption",
+      "ETA": "eta",
+      "Master Remarks": "masterRemarks",
+      "Notes": "notes",
+    },
   };
+
+  const fieldMap = TABLE_FIELD_MAPS[entityTable] ?? {};
 
   for (const [key, value] of Object.entries(entityData)) {
     if (value === undefined || value === null || value === "") continue;
 
     // Try mapped name first
-    const mapped = LEAD_FIELD_MAP[key];
+    const mapped = fieldMap[key];
     if (mapped) {
       // For notes-type fields, concatenate if already set
       if (mapped === "notes" && dbValues.notes) {
@@ -475,28 +567,78 @@ export async function insertEntityForHumanFormStep(params: {
     }
   }
 
-  // Parse "Contact Person & Email" into separate fields if it contains @
-  if (dbValues.contactName && typeof dbValues.contactName === "string") {
-    const val = dbValues.contactName;
-    const emailMatch = val.match(/[\w.-]+@[\w.-]+\.\w+/);
-    if (emailMatch && !dbValues.contactEmail) {
-      dbValues.contactEmail = emailMatch[0];
-      dbValues.contactName = val.replace(emailMatch[0], "").replace(/[,;/|]+/g, "").trim() || val;
+  // Lead-specific: parse "Contact Person & Email" into separate fields
+  if (entityTable === "scm_leads") {
+    if (dbValues.contactName && typeof dbValues.contactName === "string") {
+      const val = dbValues.contactName;
+      const emailMatch = val.match(/[\w.-]+@[\w.-]+\.\w+/);
+      if (emailMatch && !dbValues.contactEmail) {
+        dbValues.contactEmail = emailMatch[0];
+        dbValues.contactName = val.replace(emailMatch[0], "").replace(/[,;/|]+/g, "").trim() || val;
+      }
     }
   }
 
-  // Ensure required fields have defaults
-  if (!dbValues.source) dbValues.source = "manual_entry";
-  if (!dbValues.companyName) dbValues.companyName = "Unknown";
-  if (!dbValues.contactName) dbValues.contactName = "Unknown";
-  if (!dbValues.status) dbValues.status = "new";
-
-  // Set assigned user
-  dbValues.assignedTo = userId;
+  // Table-specific defaults
+  if (entityTable === "scm_leads") {
+    if (!dbValues.source) dbValues.source = "manual_entry";
+    if (!dbValues.companyName) dbValues.companyName = "Unknown";
+    if (!dbValues.contactName) dbValues.contactName = "Unknown";
+    if (!dbValues.status) dbValues.status = "new";
+    dbValues.assignedTo = userId;
+  } else if (entityTable === "svp_service_schedules") {
+    if (!dbValues.scheduleType) dbValues.scheduleType = "liner_service";
+    if (!dbValues.scheduleRef) dbValues.scheduleRef = `SVC-${Date.now().toString(36).toUpperCase()}`;
+    if (!dbValues.status) dbValues.status = "draft";
+    dbValues.createdBy = userId;
+  } else if (entityTable === "cap_vessel_schedules") {
+    if (!dbValues.validityFrom) dbValues.validityFrom = new Date();
+    if (!dbValues.status) dbValues.status = "draft";
+    dbValues.createdBy = userId;
+  } else if (entityTable === "cap_port_rotations") {
+    if (!dbValues.callPurpose) dbValues.callPurpose = "both";
+    if (!dbValues.status) dbValues.status = "scheduled";
+    dbValues.createdBy = userId;
+  } else if (entityTable === "vpe_noon_reports") {
+    if (!dbValues.reportRef) dbValues.reportRef = `NR-${Date.now().toString(36).toUpperCase()}`;
+    if (!dbValues.reportType) dbValues.reportType = "noon";
+    if (!dbValues.reportDatetime) dbValues.reportDatetime = new Date();
+    if (!dbValues.status) dbValues.status = "active";
+    dbValues.createdBy = userId;
+  } else {
+    // Generic defaults for other tables
+    if (!dbValues.status) dbValues.status = "draft";
+    dbValues.createdBy = userId;
+  }
 
   // Convert TEU to integer
   if (dbValues.estimatedTeu && typeof dbValues.estimatedTeu === "string") {
     dbValues.estimatedTeu = parseInt(dbValues.estimatedTeu, 10) || null;
+  }
+
+  // Convert date strings to Date objects for timestamp columns
+  const dateColumns = [
+    "validityFrom", "validityTo", "effectiveFrom", "effectiveTo",
+    "deploymentStart", "deploymentEnd", "reportDatetime", "eta",
+    "arrivalEta", "departureEtd", "publishedAt", "scheduledDate",
+    "cutOffCargo", "cutOffDocumentation", "cutOffVgm",
+  ];
+  for (const col of dateColumns) {
+    if (dbValues[col] && typeof dbValues[col] === "string") {
+      const parsed = new Date(dbValues[col] as string);
+      dbValues[col] = isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
+  // Convert numeric strings to numbers for integer/decimal columns
+  const intColumns = [
+    "totalCapacityTeu", "totalWeightMt", "frequencyDays", "portCount",
+    "transitTimeDays", "sequenceNumber", "windForce",
+  ];
+  for (const col of intColumns) {
+    if (dbValues[col] && typeof dbValues[col] === "string") {
+      dbValues[col] = parseInt(dbValues[col] as string, 10) || null;
+    }
   }
 
   try {

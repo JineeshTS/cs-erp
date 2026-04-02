@@ -54,8 +54,8 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (res.status === 422 && data.details) {
-          setFieldErrors(data.details);
+        if (res.status === 422 && data.error?.details) {
+          setFieldErrors(data.error.details);
         } else if (res.status === 429 || res.status === 423) {
           const seconds = data.retryAfter || 60;
           setRetryAfter(seconds);
@@ -63,7 +63,7 @@ export default function LoginPage() {
             `Too many attempts. Please try again in ${Math.ceil(seconds / 60)} minute(s).`
           );
         } else {
-          setError(data.error || "Login failed");
+          setError(data.error?.message || "Login failed");
         }
         return;
       }
