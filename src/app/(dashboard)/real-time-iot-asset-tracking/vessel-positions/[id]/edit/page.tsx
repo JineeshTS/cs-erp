@@ -1,0 +1,94 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { redirect, notFound } from "next/navigation";
+import { hasPermission } from "@/lib/rbac";
+import { getVesselPosition } from "@/lib/real-time-iot-asset-tracking/service";
+import { IotForm, type FieldConfig } from "@/components/real-time-iot-asset-tracking/iot-form";
+import { getVesselOptions } from "@/lib/lookups";
+
+export default async function EditVesselPositionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!(await hasPermission(session.id, session.tenantId, "iot:edit")))
+    redirect("/real-time-iot-asset-tracking/vessel-positions");
+
+  const vesselOpts = await getVesselOptions(session.tenantId);
+
+  const VESSEL_POSITION_FIELDS: FieldConfig[] = [
+    {
+      name: "positionType",
+      label: "Position Type",
+      type: "select",
+      required: true,
+      options: [
+        { value: "ais_report", label: "AIS Report" },
+        { value: "manual_position", label: "Manual Position" },
+        { value: "satellite_fix", label: "Satellite Fix" },
+        { value: "port_arrival", label: "Port Arrival" },
+        { value: "port_departure", label: "Port Departure" },
+      ],
+    },
+    { name: "vesselName", label: "Vessel Name", type: "select", options: vesselOpts },
+    { name: "vesselImo", label: "Vessel IMO", type: "text" },
+    { name: "mmsi", label: "MMSI", type: "text" },
+    { name: "latitude", label: "Latitude", type: "text" },
+    { name: "longitude", label: "Longitude", type: "text" },
+    { name: "courseOverGround", label: "Course Over Ground", type: "text" },
+    { name: "speedOverGround", label: "Speed Over Ground", type: "text" },
+    { name: "navStatus", label: "Nav Status", type: "text" },
+    { name: "destination", label: "Destination", type: "text" },
+    { name: "eta", label: "ETA", type: "datetime-local" },
+    { name: "draught", label: "Draught", type: "text" },
+    { name: "notes", label: "Notes", type: "textarea" },
+  ];
+  const { id } = await params;
+
+  const record = await getVesselPosition(id, session.tenantId);
+  if (!record) notFound();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href={`/real-time-iot-asset-tracking/vessel-positions/${id}`}
+          className="rounded-md p-1 hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-500" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Edit Vessel Position
+        </h1>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6">
+        <IotForm
+          entityType="Vessel Position"
+          apiPath={`/api/v1/real-time-iot-asset-tracking/vessel-positions/${id}`}
+          fields={VESSEL_POSITION_FIELDS}
+          initialData={{
+            positionType: record.positionType,
+            vesselName: record.vesselName ?? "",
+            vesselImo: record.vesselImo ?? "",
+            mmsi: record.mmsi ?? "",
+            latitude: record.latitude ?? "",
+            longitude: record.longitude ?? "",
+            courseOverGround: record.courseOverGround ?? "",
+            speedOverGround: record.speedOverGround ?? "",
+            navStatus: record.navStatus ?? "",
+            destination: record.destination ?? "",
+            eta: record.eta ? record.eta.toISOString() : "",
+            draught: record.draught ?? "",
+            notes: record.notes ?? "",
+          }}
+          isEdit
+          returnPath={`/real-time-iot-asset-tracking/vessel-positions/${id}`}
+        />
+      </div>
+    </div>
+  );
+}

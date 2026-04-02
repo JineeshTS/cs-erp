@@ -1,0 +1,89 @@
+{
+  "node_type": "feature",
+  "id": "F-012",
+  "name": "Dashboard Financial Summary",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-009", "relationship_type": "depends_on" },
+    { "target_id": "F-011", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Command Center Dashboard",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Two-column financial summary section on the dashboard showing Revenue (left) and Costs (right). Revenue column: Invoiced This Month (sum firmFreightInvoices.totalAmount where issuedAt >= month start, status in issued/dispatched/paid), Collected (sum paidAmount same filter), Outstanding (sum outstandingAmount). Costs column: Port Disbursements (sum pdaProformaEstimates.totalEstimate where status in approved/submitted, estimateDate >= month start), Bunker Costs (sum bfmBunkerOrders.totalAmount where status in confirmed/delivered, deliveryDate >= month start). All amounts in cents (integer), formatted with formatCompactCurrency. Positioned between Vessel Schedule Timeline and Activity Feed grid.",
+
+    "data_sources": {
+      "revenue_invoiced": "firmFreightInvoices — SUM(totalAmount) WHERE tenantId=tid AND issuedAt >= thisMonthStart AND status IN ('issued','dispatched','paid') AND deletedAt IS NULL",
+      "revenue_collected": "firmFreightInvoices — SUM(paidAmount) WHERE tenantId=tid AND issuedAt >= thisMonthStart AND status IN ('issued','dispatched','paid') AND deletedAt IS NULL",
+      "revenue_outstanding": "firmFreightInvoices — SUM(outstandingAmount) WHERE tenantId=tid AND status IN ('issued','dispatched') AND deletedAt IS NULL",
+      "cost_port_disbursements": "pdaProformaEstimates — SUM(totalEstimate) WHERE tenantId=tid AND estimateDate >= thisMonthStart AND status IN ('approved','submitted','final') AND deletedAt IS NULL",
+      "cost_bunker": "bfmBunkerOrders — SUM(totalAmount) WHERE tenantId=tid AND deliveryDate >= thisMonthStart AND status IN ('confirmed','delivered') AND deletedAt IS NULL",
+      "note": "All amount columns are integer (cents). Use existing formatCompactCurrency() helper."
+    },
+
+    "layout": {
+      "container": "Same rounded-xl card style as other dashboard sections",
+      "columns": "Two columns on lg, stacked on mobile. Left = Revenue, Right = Costs",
+      "row_format": "Each metric: label (text-xs text-slate-500) + value (text-lg font-semibold) on same line",
+      "column_header": "Revenue (with DollarSign icon) and Costs (with TrendingDown icon)"
+    },
+
+    "acceptance_criteria": [
+      "Dashboard shows a 'Financial Summary' section below the Vessel Schedule Timeline",
+      "Section has two columns: Revenue (left) and Costs (right) on desktop, stacked on mobile",
+      "Revenue column shows: Invoiced MTD, Collected MTD, Outstanding — each with formatted currency value",
+      "Costs column shows: Port Disbursements MTD, Bunker Costs MTD — each with formatted currency value",
+      "All amounts queried with tenantId filter and deletedAt IS NULL",
+      "Revenue Invoiced = SUM(firmFreightInvoices.totalAmount) for current month issued/dispatched/paid invoices",
+      "Revenue Collected = SUM(firmFreightInvoices.paidAmount) for current month",
+      "Revenue Outstanding = SUM(firmFreightInvoices.outstandingAmount) for all open invoices",
+      "Port Disbursements = SUM(pdaProformaEstimates.totalEstimate) for current month approved/submitted",
+      "Bunker Costs = SUM(bfmBunkerOrders.totalAmount) for current month confirmed/delivered",
+      "Empty state: if all values are zero, show 'No financial activity this month' with link to invoicing hub",
+      "Currency formatting uses tenant's currency from existing tenantRow query",
+      "Dark mode support on all elements",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ],
+
+    "edge_cases": [
+      "All financial values are zero — show empty state",
+      "Only revenue exists, no costs — costs column shows $0 values (not hidden)",
+      "Very large amounts (millions) — compact format handles this (e.g., $1.2M)",
+      "Null sum results (no matching rows) — fallback to 0",
+      "Missing pdaProformaEstimates or bfmBunkerOrders data — individual sums default to 0"
+    ],
+
+    "error_handling": [
+      "Any query failure — val() fallback returns 0, component shows $0 values gracefully",
+      "Auth failure — handled by parent page redirect"
+    ],
+
+    "security_considerations": [
+      "tenantId filter mandatory on ALL queries",
+      "Read-only — no mutations"
+    ],
+
+    "implementation_notes": "Add 3 new queries to Promise.allSettled (indexes 20-22): revenue collected MTD (paidAmount sum), port disbursements MTD, bunker costs MTD. Revenue invoiced MTD already exists as query index 8. Revenue outstanding already exists as query index 10. Import pdaProformaEstimates from port-disbursement-accounting schema and bfmBunkerOrders from bunker-fuel-management schema. Create FinancialSummary client component at src/components/dashboard/financial-summary.tsx. Component receives: invoicedMtd, collectedMtd, outstanding, portDisbursements, bunkerCosts, currency.",
+
+    "affected_files": [
+      "src/app/(dashboard)/page.tsx — import pdaProformaEstimates + bfmBunkerOrders, add 3 queries, extract data, render FinancialSummary",
+      "src/components/dashboard/financial-summary.tsx — NEW: two-column financial summary component"
+    ],
+
+    "testing_requirements": [
+      "Financial summary renders with correct formatted values",
+      "Two-column layout on desktop, stacked on mobile",
+      "Empty state renders when all values are zero",
+      "Currency formatting matches tenant currency",
+      "Dark mode renders correctly",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ]
+  }
+}

@@ -1,0 +1,152 @@
+import Link from "next/link";
+import { Pencil, ArrowLeft } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { redirect, notFound } from "next/navigation";
+import { hasPermission } from "@/lib/rbac";
+import { getTrainingCompletion } from "@/lib/implementation-change-management/service";
+import { Badge } from "@/components/ui/badge";
+
+const statusVariant = {
+  draft: "secondary",
+  in_progress: "warning",
+  completed: "success",
+  verified: "success",
+  rejected: "destructive",
+} as const;
+
+export default async function TrainingCompletionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!(await hasPermission(session.id, session.tenantId, "icm:read")))
+    redirect("/implementation-change-management");
+
+  const { id } = await params;
+
+  const record = await getTrainingCompletion(id, session.tenantId);
+  if (!record) notFound();
+
+  const canEdit = await hasPermission(
+    session.id,
+    session.tenantId,
+    "icm:edit"
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/implementation-change-management/training-completions"
+          className="rounded-md p-1 hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-500" />
+        </Link>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {record.completionRef}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {record.completionType?.replace(/_/g, " ")} &middot; {record.employeeName || "No employee"}
+          </p>
+        </div>
+        {canEdit && (
+          <div className="flex gap-2">
+            <Link
+              href={`/implementation-change-management/training-completions/${id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Link>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border bg-white p-6">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Completion Ref</dt>
+            <dd className="mt-1 text-gray-900">{record.completionRef}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Completion Type</dt>
+            <dd className="mt-1 text-gray-900 capitalize">{record.completionType?.replace(/_/g, " ")}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Employee Name</dt>
+            <dd className="mt-1 text-gray-900">{record.employeeName || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Employee ID</dt>
+            <dd className="mt-1 text-gray-900">{record.employeeId || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Department</dt>
+            <dd className="mt-1 text-gray-900">{record.department || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Training Module</dt>
+            <dd className="mt-1 text-gray-900">{record.trainingModule || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Completion Date</dt>
+            <dd className="mt-1 text-gray-900">
+              {record.completionDate ? record.completionDate.toLocaleDateString() : "-"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Score (%)</dt>
+            <dd className="mt-1 text-gray-900">{record.scorePct ?? "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Passed</dt>
+            <dd className="mt-1 text-gray-900">{record.passed ? "Yes" : "No"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Certificate URL</dt>
+            <dd className="mt-1 text-gray-900">{record.certificateUrl || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Valid Until</dt>
+            <dd className="mt-1 text-gray-900">
+              {record.validUntil ? record.validUntil.toLocaleDateString() : "-"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Status</dt>
+            <dd className="mt-1">
+              <Badge
+                variant={
+                  statusVariant[
+                    record.status as keyof typeof statusVariant
+                  ] ?? "secondary"
+                }
+              >
+                {record.status}
+              </Badge>
+            </dd>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <dt className="text-sm font-medium text-gray-500">Notes</dt>
+            <dd className="mt-1 text-gray-900">{record.notes || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Created At</dt>
+            <dd className="mt-1 text-gray-900">
+              {record.createdAt.toLocaleDateString()}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Updated At</dt>
+            <dd className="mt-1 text-gray-900">
+              {record.updatedAt.toLocaleDateString()}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,32 @@
+# F-016: BullMQ Worker Docker Service
+# Lightweight image — no Next.js build, just tsx + BullMQ
+
+# Stage 1: Dependencies
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts && npm rebuild bcrypt
+
+# Stage 2: Runner
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy only what the worker needs
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs src/lib/jobs/ ./src/lib/jobs/
+COPY --chown=nextjs:nodejs package.json ./
+
+USER nextjs
+
+EXPOSE 3101
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=15s \
+  CMD wget --spider -q -T 5 http://127.0.0.1:3101/health || exit 1
+
+CMD ["npx", "tsx", "src/lib/jobs/worker-entry.ts"]

@@ -1,0 +1,251 @@
+export type AutomationLevel = "full_auto" | "semi_auto" | "ai_assisted" | "manual_ai_insights";
+export type TriggerType = "event" | "scheduled" | "manual" | "api";
+export type ProcessDomain =
+  | "sales_customer"
+  | "booking_documentation"
+  | "vessel_voyage"
+  | "equipment_container"
+  | "port_terminal"
+  | "trade_route"
+  | "financial"
+  | "hr_procurement"
+  | "compliance_risk"
+  | "analytics_intelligence"
+  | "platform_admin";
+
+export interface OperationalProcess {
+  id: string;
+  name: string;
+  description: string;
+  domain: ProcessDomain;
+  agentName: string;
+  agentType: string;
+  automationLevel: AutomationLevel;
+  trigger: TriggerType;
+  input: string;
+  aiProcessingSteps: string[];
+  output: string;
+  humanTouchpoints: string[];
+  connectedModules: string[];
+  sla: string;
+  crossDependencies: string[];
+}
+
+export type ExecutorType = "ai_agent" | "human" | "system" | "external";
+export type GateType = "approval" | "decision" | "input" | "exception";
+export type FlowCategory =
+  | "revenue_cycle"
+  | "vessel_operations"
+  | "container_operations"
+  | "finance"
+  | "compliance_safety"
+  | "commercial_strategy"
+  | "platform";
+
+// ── Rich Step Metadata Types ──
+
+/** A single data field required by a step to execute */
+export interface StepDataField {
+  /** Field name, e.g., "Origin Port Code" */
+  field: string;
+  /** Where this data comes from, e.g., "Booking Request", "AR Module", "Step 2 output" */
+  source: string;
+  /** Is this field mandatory to proceed? */
+  required: boolean;
+  /** Which earlier step or external system provides this, e.g., "step:1", "CRM", "E2E-36" */
+  providedBy?: string;
+}
+
+/** A dependency that must be satisfied before the step can execute */
+export interface StepDependency {
+  /** Reference to the dependency, e.g., "step:2", "E2E-36:completed", "booking.confirmed" */
+  ref: string;
+  /** hard = must complete, soft = should complete, data = only need its output data */
+  type: "hard" | "soft" | "data";
+  /** Human-readable explanation */
+  label: string;
+}
+
+/** A granular sub-task within a step */
+export interface StepSubTask {
+  /** Sub-task description */
+  task: string;
+  /** Who does it */
+  type: "ai" | "human" | "system";
+  /** Role responsible, e.g., "Documentation Clerk", "Routing Engine AI" */
+  role?: string;
+}
+
+export interface E2EFlowStep {
+  module: string;
+  step: string;
+  type: "ai" | "human" | "system";
+  processRef?: string;
+  executorType?: ExecutorType;
+  gateType?: GateType;
+  /** When true, this step can be executed by AI even if it's a human/manual step. Defaults to true for all steps. */
+  aiAssistable?: boolean;
+  /** URL path to the existing module page where this step's work is done. Enables "Open in Module" button. */
+  moduleUrl?: string;
+  /** Phase grouping within the flow (e.g., "Market Analysis", "Service Design") */
+  phase?: string;
+  /** Condition for this step to execute — if falsy, step can be skipped */
+  condition?: string;
+
+  // ── D-006: Entity Binding Metadata ──
+
+  /** DB table this step creates/updates (e.g. "scm_leads", "scm_opportunities") */
+  entityTable?: string;
+  /** What this step does to the entity: create, update, or read */
+  entityAction?: "create" | "update" | "read";
+  /** Executor mode: crud (direct DB), ai_with_tools (Claude + function calling), gate, human_form */
+  executorMode?: "crud" | "ai_with_tools" | "gate" | "human_form";
+
+  // ── Rich Step Definition (optional — enriched flows have these) ──
+
+  /** Detailed description of what this step does and why */
+  description?: string;
+  /** Role/team responsible for executing this step */
+  assignedRole?: string;
+  /** Expected SLA in hours (e.g., 0.5 = 30 min, 24 = 1 day) */
+  slaHours?: number;
+  /** Data fields/documents required to execute this step */
+  inputFields?: StepDataField[];
+  /** Data/documents this step produces for downstream consumption */
+  outputFields?: string[];
+  /** Steps or events that must complete before this step */
+  dependencies?: StepDependency[];
+  /** Granular sub-tasks that make up this step */
+  subTasks?: StepSubTask[];
+  /** Validation checks that must pass before step can be marked complete */
+  validations?: string[];
+}
+
+export interface E2EProcessFlow {
+  id: string;
+  name: string;
+  description: string;
+  steps: E2EFlowStep[];
+  participatingModules: string[];
+  aiAgents: string[];
+  handoffPoints: string[];
+  typicalTimeline: string;
+  kpis: string[];
+  triggerEvent?: string;
+  entityType?: string;
+  category?: FlowCategory;
+  humanGates?: string[];
+  conditionalBranches?: string[];
+  childFlows?: string[];
+}
+
+export const FLOW_CATEGORY_LABELS: Record<FlowCategory, string> = {
+  revenue_cycle: "Revenue Cycle",
+  vessel_operations: "Vessel Operations",
+  container_operations: "Container Operations",
+  finance: "Finance",
+  compliance_safety: "Compliance & Safety",
+  commercial_strategy: "Commercial Strategy",
+  platform: "Platform",
+};
+
+export const GATE_TYPE_LABELS: Record<GateType, { label: string; color: string }> = {
+  approval: { label: "Approval", color: "yellow" },
+  decision: { label: "Decision", color: "orange" },
+  input: { label: "Input Required", color: "blue" },
+  exception: { label: "Exception", color: "red" },
+};
+
+export const DOMAIN_LABELS: Record<ProcessDomain, string> = {
+  sales_customer: "Sales & Customer Management",
+  booking_documentation: "Booking & Documentation",
+  vessel_voyage: "Vessel & Voyage Operations",
+  equipment_container: "Equipment & Container",
+  port_terminal: "Port & Terminal",
+  trade_route: "Trade & Route Management",
+  financial: "Financial Management",
+  hr_procurement: "HR & Procurement",
+  compliance_risk: "Compliance & Risk",
+  analytics_intelligence: "Analytics & Intelligence",
+  platform_admin: "Platform & Administration",
+};
+
+export const AUTOMATION_LABELS: Record<AutomationLevel, { label: string; emoji: string; color: string }> = {
+  full_auto: { label: "Full Auto", emoji: "🟢", color: "green" },
+  semi_auto: { label: "Semi-Auto", emoji: "🟡", color: "yellow" },
+  ai_assisted: { label: "AI-Assisted", emoji: "🔵", color: "blue" },
+  manual_ai_insights: { label: "Manual + AI", emoji: "⚪", color: "gray" },
+};
+
+export const TRIGGER_LABELS: Record<TriggerType, string> = {
+  event: "Event-Driven",
+  scheduled: "Scheduled",
+  manual: "Manual",
+  api: "API",
+};
+
+// ── Process Categories (functional grouping of domains) ──
+
+export type ProcessCategory =
+  | "core_operations"
+  | "commercial_pricing"
+  | "financial_accounting"
+  | "compliance_regulatory"
+  | "fleet_asset"
+  | "analytics_intelligence"
+  | "platform_admin";
+
+export const PROCESS_CATEGORY_LABELS: Record<
+  ProcessCategory,
+  { label: string; description: string; icon: string }
+> = {
+  core_operations: {
+    label: "Core Operations",
+    description: "Booking, documentation, vessel scheduling, container handling, and port operations",
+    icon: "Ship",
+  },
+  commercial_pricing: {
+    label: "Commercial & Pricing",
+    description: "Sales pipeline, rate management, revenue optimization, and customer relationships",
+    icon: "BadgeDollarSign",
+  },
+  financial_accounting: {
+    label: "Financial & Accounting",
+    description: "Invoicing, receivables, payables, treasury, and general ledger operations",
+    icon: "DollarSign",
+  },
+  compliance_regulatory: {
+    label: "Compliance & Regulatory",
+    description: "Customs, MARPOL, insurance, audits, risk management, and regulatory filings",
+    icon: "ShieldCheck",
+  },
+  fleet_asset: {
+    label: "Fleet & Asset Management",
+    description: "Crew management, vessel maintenance, surveys, and HR/procurement operations",
+    icon: "Users",
+  },
+  analytics_intelligence: {
+    label: "Analytics & Intelligence",
+    description: "KPI dashboards, market intelligence, ESG reporting, and predictive analytics",
+    icon: "BarChart3",
+  },
+  platform_admin: {
+    label: "Platform Administration",
+    description: "Tenant setup, user management, workflows, integrations, and system operations",
+    icon: "Settings",
+  },
+};
+
+export const DOMAIN_TO_CATEGORY: Record<ProcessDomain, ProcessCategory> = {
+  booking_documentation: "core_operations",
+  vessel_voyage: "core_operations",
+  equipment_container: "core_operations",
+  port_terminal: "core_operations",
+  trade_route: "core_operations",
+  sales_customer: "commercial_pricing",
+  financial: "financial_accounting",
+  compliance_risk: "compliance_regulatory",
+  hr_procurement: "fleet_asset",
+  analytics_intelligence: "analytics_intelligence",
+  platform_admin: "platform_admin",
+};

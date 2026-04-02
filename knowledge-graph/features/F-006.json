@@ -1,0 +1,67 @@
+{
+  "node_type": "feature",
+  "id": "F-006",
+  "name": "Phase 2 — AIS Vessel Position Polling",
+  "created_at": "2026-03-09",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-003", "relationship_type": "implements" },
+    { "target_id": "F-005", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Real-Time IoT & Asset Tracking",
+    "priority": "must_have",
+    "complexity": "high",
+    "description": "API endpoint that polls an external AIS provider (VesselFinder, Datalastic, or MarineTraffic) for vessel positions by IMO numbers from the tenant's fleet, upserts results into iot_vessel_positions table. Tenant-configurable API key stored in tenant metadata. Designed to be called by a cron job or manual trigger.",
+    "capabilities": [
+      "POST /api/v1/tracking/ais-poll — triggers AIS data fetch for tenant's fleet",
+      "Reads vessel IMO numbers from chartering_vessel_management or capacity_voyage_management tables",
+      "Calls external AIS API with tenant's configured API key",
+      "Upserts position data into iot_vessel_positions (positionType: 'ais_report')",
+      "Supports VesselFinder API as primary provider (free tier: 200 calls/month)",
+      "Falls back gracefully if API key not configured — returns instruction message",
+      "Rate limiting: max 1 poll per 5 minutes per tenant"
+    ],
+    "acceptance_criteria": [
+      "POST /api/v1/tracking/ais-poll returns 200 with count of vessels updated",
+      "Vessels positions appear on map after poll + refresh",
+      "If no AIS API key configured, returns 422 with helpful setup message",
+      "Rate limited: returns 429 if called within 5 minutes of last poll",
+      "Each poll creates new iot_vessel_positions rows (not updates — keeps history)",
+      "Position ref auto-generated: AIS-{vesselImo}-{timestamp}",
+      "Auth: requires iot:read permission",
+      "Works with VesselFinder API v2 format",
+      "npx tsc --noEmit passes"
+    ],
+    "edge_cases": [
+      "Tenant has no vessels in system — returns 200 with 0 vessels polled",
+      "AIS API returns partial data (some vessels not found) — upsert found ones, skip missing",
+      "AIS API timeout (>10s) — abort and return partial results",
+      "AIS API returns 429 (rate limited) — return error with retry-after info",
+      "Vessel IMO not in AIS database (e.g., small vessel) — skip silently",
+      "Duplicate poll within 5 minutes — return 429 with remaining cooldown time"
+    ],
+    "error_handling": [
+      "AIS API network error — return 502 with 'AIS provider unavailable' message",
+      "AIS API auth error (invalid key) — return 502 with 'Invalid AIS API key' message",
+      "DB insert error — log server-side, return 500 generic message",
+      "No auth — return 401",
+      "No permission — return 403"
+    ],
+    "affected_files": [
+      "src/app/api/v1/tracking/ais-poll/route.ts — POST endpoint",
+      "src/lib/tracking/ais-service.ts — AIS provider abstraction (VesselFinder/Datalastic)"
+    ],
+    "api_spec": {
+      "POST /api/v1/tracking/ais-poll": {
+        "auth": "required (iot:read)",
+        "body": {},
+        "response_success": { "data": { "polled": 5, "updated": 4, "provider": "vesselfinder" } },
+        "response_no_key": { "error": { "code": "AIS_NOT_CONFIGURED", "message": "AIS API key not configured. Set it in tenant settings." } },
+        "response_rate_limit": { "error": { "code": "RATE_LIMITED", "message": "AIS poll cooldown: 3m 24s remaining" } }
+      }
+    }
+  }
+}

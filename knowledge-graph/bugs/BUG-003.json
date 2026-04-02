@@ -1,0 +1,79 @@
+{
+  "node_type": "bug",
+  "id": "BUG-003",
+  "name": "CSERP-003→022: Critical pipeline, security, auth, and UX fixes batch",
+  "created_at": "2026-03-20",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "severity": "critical",
+  "relationships": [
+    { "target_id": "BUG-002", "relationship_type": "depends_on" },
+    { "target_id": "D-005", "relationship_type": "fixes" }
+  ],
+  "content": {
+    "reported_by": "Full CS ERP audit 2026-03-20",
+    "sub_issues": [
+      {
+        "id": "CSERP-003", "severity": "critical",
+        "title": "PATCH route bypasses human gates",
+        "acceptance_criteria": ["advanceFlowStep blocks paused_at_gate and cancelled statuses", "Only active flows can be advanced via PATCH"],
+        "fix": "Add paused_at_gate and cancelled to the blocked status list in advanceFlowStep line 223"
+      },
+      {
+        "id": "CSERP-004", "severity": "critical",
+        "title": "FOR UPDATE without transaction in executeCurrentStep",
+        "acceptance_criteria": ["executeCurrentStep wraps the read-execute-advance loop in db.transaction()", "FOR UPDATE lock persists through the full step execution"],
+        "fix": "Wrap the loop body in db.transaction(async (tx) => ...) and use tx for all queries"
+      },
+      {
+        "id": "CSERP-005", "severity": "critical",
+        "title": "AI Assist missing stepNumber",
+        "acceptance_criteria": ["handleAiAssist sends {action, stepNumber: flow.currentStepNumber}", "All 3 buttons (generate/accept/reject) pass validation"],
+        "fix": "Add stepNumber from flow state to the fetch body"
+      },
+      {
+        "id": "CSERP-006", "severity": "critical",
+        "title": "set_config session-scope with PgBouncer",
+        "acceptance_criteria": ["setTenantRLS uses set_config(..., true) for transaction-local scope", "clearTenantRLS also uses true"],
+        "fix": "Change false to true in both set_config calls in db.ts"
+      },
+      {
+        "id": "CSERP-007", "severity": "critical",
+        "title": "INTERNAL_API_KEY not set",
+        "acceptance_criteria": ["INTERNAL_API_KEY added to .env.example with documentation", ".env.local has a generated key value"],
+        "fix": "Generate a key, add to .env.local and .env.example"
+      },
+      {
+        "id": "CSERP-009", "severity": "high",
+        "title": "Register missing CSRF cookie",
+        "acceptance_criteria": ["Register route calls setCsrfCookie(response, generateCsrfToken()) before returning"],
+        "fix": "Add setCsrfCookie call after setAuthCookies in register route"
+      },
+      {
+        "id": "CSERP-013", "severity": "high",
+        "title": "Dashboard sidebar links to / instead of /dashboard",
+        "acceptance_criteria": ["Dashboard href is /dashboard not /"],
+        "fix": "Change href in categories.ts"
+      },
+      {
+        "id": "CSERP-015", "severity": "medium",
+        "title": "startedAt never set on flow creation",
+        "acceptance_criteria": ["createFlowInstance sets startedAt: new Date()"],
+        "fix": "Add startedAt to the insert values"
+      },
+      {
+        "id": "CSERP-016", "severity": "medium",
+        "title": "Gate resolution resurrects cancelled flows",
+        "acceptance_criteria": ["resolveHumanGate checks flow status before setting to active", "Cancelled/failed flows are not resurrected"],
+        "fix": "Add status guard in resolveHumanGate"
+      },
+      {
+        "id": "CSERP-017", "severity": "medium",
+        "title": "Notification links wrong route",
+        "acceptance_criteria": ["actionUrl uses /e2e-flows/gates not /processes/gates"],
+        "fix": "Update all 3 actionUrl references in human-gate-manager.ts"
+      }
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "node_type": "feature",
+  "id": "F-016",
+  "name": "BullMQ Worker Docker Service — Dedicated Background Job Container",
+  "created_at": "2026-03-26",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-015", "relationship_type": "follows" }
+  ],
+  "content": {
+    "category": "Infrastructure",
+    "priority": "must_have",
+    "complexity": "medium",
+    "issue_tracker_refs": ["ERP-023", "ERP-024", "ERP-025"],
+
+    "description": "Create a dedicated Docker service (cs-erp-worker) that runs BullMQ workers and cron schedules in an isolated container, separate from the Next.js web server. The worker reuses the same Docker image but with a different CMD entrypoint that calls startWorkers() and setupCronSchedules(). This ensures cron jobs (SLA check, session cleanup, overdue invoices, retention, FX refresh, certificate expiry, notification digest) actually run in production, worker lifecycle is independent from web restarts, and heavy background jobs (CSV import, PDF report, Excel export) don't block the web server event loop.",
+
+    "acceptance_criteria": [
+      "New file: src/lib/jobs/worker-entry.ts — standalone Node.js entrypoint that imports and calls startWorkers() + setupCronSchedules(), handles SIGTERM/SIGINT for graceful shutdown",
+      "worker-entry.ts must import queue.ts and worker.ts correctly (relative paths work in standalone build context)",
+      "worker-entry.ts sets up a minimal HTTP health check server on port 3101 (responds 200 on GET /health)",
+      "worker-entry.ts logs startup confirmation: queue names, worker concurrency, cron schedule count",
+      "Dockerfile.worker — multi-stage build: deps + builder + runner, copies only what the worker needs (no .next/standalone, no public/), installs tsx for TS execution",
+      "OR: reuse existing Dockerfile by adding worker-entry.ts to the standalone output and using a different CMD",
+      "docker-compose.cs-erp.yml updated: new cs-erp-worker service with same env_file (.env.cs-erp.prod), connected to internal network",
+      "cs-erp-worker service has: restart: unless-stopped, memory limit 512M, health check on port 3101",
+      "cs-erp-worker depends_on cs-erp-web (ensures DB migrations run first via web startup)",
+      "Worker connects to Redis at REDIS_URL from .env.cs-erp.prod (redis://:password@redis:6379/1)",
+      "Worker calls internal API endpoints via http://cs-erp-web:3100/api/internal/cron/* with INTERNAL_API_KEY header",
+      "NEXT_PUBLIC_APP_URL in worker env set to http://cs-erp-web:3100 (internal Docker DNS)",
+      "All 7 cron schedules register successfully (verified via worker startup logs)",
+      "session-cleanup cron fires and successfully calls internal API endpoint",
+      "overdue-invoices cron fires and successfully calls internal API endpoint",
+      "Graceful shutdown: worker.close() called on SIGTERM, all in-progress jobs complete before exit",
+      "docker compose up -d builds and starts both cs-erp-web and cs-erp-worker as healthy",
+      "TypeScript compiles cleanly: ./node_modules/.bin/tsc --noEmit passes",
+      "npm run build succeeds (worker-entry.ts is outside Next.js build but must compile)"
+    ],
+
+    "edge_cases": [
+      "Redis not available at startup — worker should retry connection with exponential backoff (BullMQ handles this natively)",
+      "Redis goes down mid-operation — workers should auto-reconnect (BullMQ handles this natively)",
+      "Web container restarts while worker is calling internal API — worker's HTTP call fails, BullMQ retries per job config (3 attempts with exponential backoff)",
+      "Worker container restarts — repeatable cron jobs survive in Redis, setupCronSchedules() is idempotent (removes existing before re-adding)",
+      "Multiple worker containers started accidentally — BullMQ distributes jobs across workers, cron dedup handled by Redis (only one fires)",
+      "INTERNAL_API_KEY mismatch between web and worker — worker logs 401 errors on cron calls, does not crash",
+      "Worker entrypoint file not found in Docker context — build fails clearly with ENOENT",
+      "Database URL not needed by worker directly (all DB access via internal API to web) — but may be needed if future jobs do direct DB queries"
+    ],
+
+    "error_handling": [
+      "Startup: if Redis connection fails, log error and exit with code 1 (Docker will restart via unless-stopped)",
+      "Cron job failure: BullMQ retry policy handles retries (exponential backoff), failed jobs retained in Redis for inspection",
+      "Internal API call timeout: set 30s timeout on all fetch calls to internal API",
+      "Unhandled rejection: process.on('unhandledRejection') logs and does NOT crash (worker continues processing other jobs)",
+      "Health check: if no workers are active (all errored), health endpoint returns 503"
+    ],
+
+    "security_considerations": [
+      "Worker runs as non-root user (uid 1001 nextjs) — same as web container",
+      "INTERNAL_API_KEY is the only secret the worker needs for cron jobs — never exposed externally",
+      "Worker health check port 3101 is only exposed internally (127.0.0.1 binding in compose)",
+      "Worker does NOT serve any HTTP routes besides /health — no attack surface",
+      "Redis password transmitted via REDIS_URL — never logged"
+    ],
+
+    "implementation_notes": "The simplest approach: create a standalone worker-entry.ts that uses tsx to execute TypeScript directly (no need for a separate build step). The Dockerfile.worker installs tsx + bullmq + ioredis as production deps, copies only src/lib/jobs/* and runs `npx tsx src/lib/jobs/worker-entry.ts`. This avoids the complexity of the Next.js build pipeline entirely. The worker-entry.ts creates a tiny HTTP server for health checks (Node.js built-in http module, no Express needed). For the compose file, add cs-erp-worker alongside cs-erp-web with shared env_file but different ports and memory limits.",
+
+    "affected_files": [
+      "src/lib/jobs/worker-entry.ts — NEW: standalone entrypoint for Docker worker service",
+      "Dockerfile.worker — NEW: lightweight Docker image for BullMQ worker (no Next.js build)",
+      "docker-compose.cs-erp.yml — ADD: cs-erp-worker service definition",
+      "src/lib/jobs/worker.ts — MODIFY: add graceful shutdown export, ensure startWorkers returns closeable handles",
+      "src/lib/jobs/queue.ts — NO CHANGES (already complete)"
+    ],
+
+    "testing_requirements": [
+      "docker compose build cs-erp-worker succeeds",
+      "docker compose up cs-erp-worker starts and shows 'Workers started' + 'Cron schedules configured' in logs",
+      "Health check: curl http://127.0.0.1:3101/health returns 200 with JSON status",
+      "docker compose ps shows cs-erp-worker as healthy",
+      "Worker logs show cron job execution (session-cleanup fires on schedule)",
+      "Kill worker container: docker compose restart cs-erp-worker — reconnects to Redis, re-registers cron schedules",
+      "TypeScript: ./node_modules/.bin/tsc --noEmit passes",
+      "npm run build succeeds (worker-entry.ts outside Next.js build scope)"
+    ]
+  }
+}

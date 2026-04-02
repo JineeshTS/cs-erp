@@ -1,0 +1,88 @@
+{
+  "node_type": "feature",
+  "id": "F-005",
+  "name": "Phase 1 — Interactive Map UI + Asset Plotting",
+  "created_at": "2026-03-09",
+  "created_by": "claude_code",
+  "phase": "build",
+  "status": "final",
+  "relationships": [
+    { "target_id": "D-003", "relationship_type": "implements" }
+  ],
+  "content": {
+    "category": "Real-Time IoT & Asset Tracking",
+    "priority": "must_have",
+    "complexity": "high",
+    "description": "Build Leaflet-based interactive map page at /tracking that plots ports (from mdm_ports), vessels (from iot_vessel_positions), and containers (from iot_container_gps_trackings). Includes layer filters, side panel asset list, detail view on click, refresh button, and leaflet CSS loading.",
+    "capabilities": [
+      "Full-screen Leaflet map with OpenStreetMap tiles centered on Qatar (25.3°N, 51.5°E)",
+      "Port markers (slate anchor icons) from mdm_ports with lat/lng",
+      "Vessel markers (blue ship icons) from iot_vessel_positions with popups showing name/IMO/speed/course/destination/ETA",
+      "Container markers (green box icons) from iot_container_gps_trackings with popups showing number/type/speed/device/battery",
+      "Layer filter toggle bar: All | Vessels | Containers | Ports — with counts",
+      "Right side panel: asset list grouped by type, click to select and fly-to on map",
+      "Detail panel: click marker or list item to see full details with close button",
+      "Refresh button: client-side fetch to /api/v1/tracking/map-data to update positions",
+      "Status bar showing live tracking status and asset counts",
+      "Loading skeleton while page data loads",
+      "Leaflet CSS loaded properly (link tag or import)"
+    ],
+    "acceptance_criteria": [
+      "GET /tracking shows full-screen map with proper Leaflet tiles rendering",
+      "Ports with lat/lng from mdm_ports appear as slate markers on map with popup on click",
+      "Vessels from iot_vessel_positions appear as blue markers with popup showing name, IMO, MMSI, speed, course, nav status, destination, ETA",
+      "Containers from iot_container_gps_trackings appear as green markers with popup showing number, type, speed, device ID, battery level",
+      "Layer filter buttons toggle which markers are visible",
+      "Side panel lists all assets grouped by type with click-to-select behavior",
+      "Clicking a marker or list item shows detail panel and flies map to that position",
+      "Refresh button calls GET /api/v1/tracking/map-data and updates markers without page reload",
+      "CSP in next.config.ts updated: img-src includes *.tile.openstreetmap.org, connect-src includes *.tile.openstreetmap.org",
+      "Leaflet CSS loads correctly — no broken tile layout or missing marker styles",
+      "'Live Tracking' appears in sidebar navigation (categories.ts)",
+      "Auth check: requires iot:read permission, redirects to / if denied",
+      "Server Component page fetches data, passes to client TrackingDashboard",
+      "Map component uses dynamic import with ssr:false (Leaflet needs window/document)",
+      "npx tsc --noEmit passes with 0 errors",
+      "npm run build succeeds"
+    ],
+    "edge_cases": [
+      "No ports have lat/lng — map shows no port markers, empty port section in side panel",
+      "No vessel positions exist — vessels section shows 0 count, no vessel markers",
+      "No container GPS data — containers section shows 0 count, no container markers",
+      "All three empty — side panel shows 'No tracking data' empty state with configuration hint",
+      "Port with lat but no lng — filtered out (both required)",
+      "Very large number of markers (200+ limit applied server-side)",
+      "Map resize on window resize — invalidateSize() called",
+      "Selected marker that disappears after refresh — deselect gracefully"
+    ],
+    "error_handling": [
+      "Leaflet fails to load — show 'Loading map...' fallback indefinitely",
+      "Refresh API call fails — silently ignore, keep existing data displayed",
+      "User without iot:read permission — redirect to / (not 403 page)",
+      "No session — redirect to /login",
+      "Database query timeout — Next.js error boundary handles it"
+    ],
+    "affected_files": [
+      "src/components/tracking/tracking-map.tsx — Leaflet map component (client, dynamic import)",
+      "src/app/(dashboard)/tracking/page.tsx — Server Component, fetches data, renders TrackingDashboard",
+      "src/app/(dashboard)/tracking/tracking-dashboard.tsx — Client component with filters, side panel, map",
+      "src/app/(dashboard)/tracking/loading.tsx — Loading skeleton",
+      "src/app/api/v1/tracking/map-data/route.ts — GET endpoint returning ports+vessels+containers",
+      "src/lib/navigation/categories.ts — Add Live Tracking entry",
+      "next.config.ts — Update CSP for OpenStreetMap tiles",
+      "src/app/layout.tsx — Add Leaflet CSS link tag"
+    ],
+    "api_spec": {
+      "GET /api/v1/tracking/map-data": {
+        "auth": "required (iot:read)",
+        "response": {
+          "data": {
+            "ports": [{"id":"uuid","name":"str","unLocode":"str","country":"str","lat":0.0,"lng":0.0,"portType":"str"}],
+            "vessels": [{"id":"uuid","name":"str","imo":"str","mmsi":"str","lat":0.0,"lng":0.0,"course":0.0,"speed":0.0,"navStatus":"str","destination":"str","eta":"iso|null","updatedAt":"iso"}],
+            "containers": [{"id":"uuid","containerNumber":"str","containerType":"str","lat":0.0,"lng":0.0,"speed":0.0,"heading":0.0,"locationName":"str","deviceId":"str","batteryLevel":0.0,"trackingType":"str","updatedAt":"iso"}]
+          }
+        }
+      }
+    }
+  }
+}

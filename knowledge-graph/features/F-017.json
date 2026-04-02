@@ -1,0 +1,63 @@
+{
+  "node_type": "feature",
+  "id": "F-017",
+  "name": "Liner Trade Schedule Gantt View — Visual Voyage Timeline",
+  "created_at": "2026-03-26",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "F-016", "relationship_type": "follows" },
+    { "target_id": "D-004", "relationship_type": "implements" }
+  ],
+  "content": {
+    "category": "UI — Schedule Engine",
+    "priority": "must_have",
+    "complexity": "medium",
+
+    "description": "Add a visual Gantt-style timeline to the schedule engine dashboard that shows all generated voyages as horizontal bars across a date axis. Each voyage row shows port call segments color-coded by status. Operations teams use this to visualize vessel utilization, identify scheduling gaps, and spot delays at a glance. Uses pure CSS/div positioning (no recharts — Gantt is not a chart type recharts supports natively).",
+
+    "acceptance_criteria": [
+      "New component: ScheduleGantt.tsx — client component ('use client') rendering voyage timeline",
+      "Component receives voyages array from server component (no client-side fetching)",
+      "X-axis shows date range with day markers, auto-scales to fit all voyages (min 14 days, max 90 days)",
+      "Each voyage = one horizontal row with voyage number label on left",
+      "Port call segments within each voyage bar show: port code label, colored by status (scheduled=blue, arrived=amber, departed=green, completed=gray)",
+      "Hover tooltip on each port segment shows: port name, planned arrival, planned departure, cargo cutoff, delay hours if any",
+      "Today marker: vertical red dashed line showing current date",
+      "Row height: 40px per voyage, scrollable if >10 voyages",
+      "Responsive: horizontal scroll on small screens, min-width 800px for the timeline area",
+      "Empty state: 'No voyages generated yet' message with link to templates page",
+      "Loading skeleton while data fetches (Suspense boundary in parent)",
+      "Integrated into existing schedule-engine/page.tsx below the KPI cards, replacing or supplementing the voyages table",
+      "API: Reuse existing GET /api/v1/schedule-engine/voyages + per-voyage port calls, OR add a single endpoint that returns voyages with embedded port calls"
+    ],
+
+    "edge_cases": [
+      "Voyage with only 1 port call — renders as single dot/narrow bar",
+      "Voyages spanning different date ranges — auto-calculate min/max dates from all voyages",
+      "Port calls with actual times filled — show actual arrival/departure in tooltip alongside planned",
+      "Delayed port calls (delayHours > 0) — show warning icon or red border on segment",
+      "Blank sailing voyages (isBlankSailing=true) — show striped/hashed bar pattern",
+      "Extra loader voyages (isExtraLoader=true) — show dashed border",
+      "No voyages at all — empty state",
+      "100+ voyages — virtual scrolling not needed (max ~52 per year per service), just overflow-y scroll",
+      "Timezone: all dates displayed in UTC (server timestamps are timestamptz)"
+    ],
+
+    "error_handling": [
+      "API fetch failure: show error alert with retry button (server component error boundary)",
+      "Invalid date range: clamp to reasonable bounds (no negative widths)",
+      "Port calls without planned arrival: skip segment, don't crash",
+      "Division by zero on date range: guard with Math.max(range, 1)"
+    ],
+
+    "affected_files": [
+      "src/app/(dashboard)/schedule-engine/schedule-gantt.tsx — NEW: Gantt timeline component",
+      "src/app/(dashboard)/schedule-engine/page.tsx — MODIFY: add Gantt below KPI cards",
+      "src/app/api/v1/schedule-engine/voyages/route.ts — MODIFY: add ?include=portCalls query param to embed port calls in voyage response"
+    ],
+
+    "implementation_notes": "Pure div-based Gantt with absolute positioning. Each port call segment is positioned as: left = (arrivalDate - rangeStart) / totalRange * 100%, width = (departureDate - arrivalDate) / totalRange * 100%. Color via Tailwind classes. No external charting library needed — simpler, smaller bundle, more control over shipping-specific display."
+  }
+}

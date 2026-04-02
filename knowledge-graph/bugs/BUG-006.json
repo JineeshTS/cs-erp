@@ -1,0 +1,22 @@
+{
+  "node_type": "bug",
+  "id": "BUG-006",
+  "name": "CSERP-010: No JWT revocation — add Redis blacklist + jti claim",
+  "created_at": "2026-03-20",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "severity": "high",
+  "relationships": [{ "target_id": "BUG-003", "relationship_type": "depends_on" }],
+  "content": {
+    "acceptance_criteria": [
+      "AC-1: signAccessToken adds a jti (UUID) claim to every JWT",
+      "AC-2: verifyAccessToken extracts and validates the jti claim",
+      "AC-3: Logout route blacklists the access token jti in Redis with 15-min TTL",
+      "AC-4: getApiUser checks Redis blacklist before accepting a token",
+      "AC-5: Blacklist entries auto-expire after 15 minutes (matching access token lifetime)",
+      "AC-6: If Redis is unavailable, token validation falls through (fail-open for availability)"
+    ],
+    "fix": "Add jti to JWT, create blacklistToken/isTokenBlacklisted functions, wire into logout + getApiUser"
+  }
+}

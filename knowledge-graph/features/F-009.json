@@ -1,0 +1,186 @@
+{
+  "node_type": "feature",
+  "id": "F-009",
+  "name": "Dashboard KPI Cards — 8 Operational Metrics with Trends",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "BUG-001", "relationship_type": "fixes" },
+    { "target_id": "D-001", "relationship_type": "enhances" }
+  ],
+  "content": {
+    "category": "Command Center Dashboard",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Replace the current 4 basic stat cards on the dashboard with 8 rich KPI cards that query live DB data. The current dashboard (src/app/(dashboard)/page.tsx) shows: Active Vessels, Open Bookings, Containers in Transit, Pending Customs — all as simple counts. This feature expands to 8 KPIs organized in a 2-row grid (4 per row on desktop, 2 per row on tablet, 1 per row on mobile). Each card shows: title, current value, trend indicator (up/down arrow with % change vs previous month), and a navigable link to the relevant module page. The 4 new KPIs are: Revenue MTD, Outstanding AR, Active Processes, and Pending Approvals.",
+
+    "kpi_specifications": [
+      {
+        "position": 1,
+        "title": "Active Vessels",
+        "icon": "Ship",
+        "query_table": "vessels",
+        "query_logic": "COUNT(*) WHERE status='active' AND deletedAt IS NULL",
+        "trend_logic": "Compare current count to count at start of previous month (use createdAt for new entries)",
+        "navigate_to": "/vessels-hub",
+        "status": "existing — keep but add trend"
+      },
+      {
+        "position": 2,
+        "title": "Open Bookings",
+        "icon": "FileText",
+        "query_table": "cspPortalBookings",
+        "query_logic": "COUNT(*) WHERE status NOT IN ('cancelled','completed') AND deletedAt IS NULL",
+        "trend_logic": "Compare to same count 30 days ago",
+        "navigate_to": "/bookings-hub",
+        "status": "existing — keep but add trend"
+      },
+      {
+        "position": 3,
+        "title": "Containers in Transit",
+        "icon": "Container",
+        "query_table": "cspShipmentTracking",
+        "query_logic": "COUNT(*) WHERE currentStatus='in_transit' AND deletedAt IS NULL",
+        "trend_logic": "Compare to same count 30 days ago",
+        "navigate_to": "/tracking",
+        "status": "existing — keep but add trend + link to tracking page"
+      },
+      {
+        "position": 4,
+        "title": "Pending Customs",
+        "icon": "FileArchive",
+        "query_table": "ccrImportClearances",
+        "query_logic": "COUNT(*) WHERE status NOT IN ('cleared','released') AND deletedAt IS NULL",
+        "trend_logic": "Compare to same count 30 days ago",
+        "navigate_to": "/customs-hub",
+        "status": "existing — keep but add trend"
+      },
+      {
+        "position": 5,
+        "title": "Revenue MTD",
+        "icon": "DollarSign",
+        "query_table": "firmFreightInvoices",
+        "query_logic": "SUM(totalAmount) WHERE status IN ('issued','dispatched','paid') AND issuedAt >= first day of current month AND deletedAt IS NULL. Amounts stored as integers (cents) — divide by 100 for display.",
+        "trend_logic": "Compare to SUM(totalAmount) for same date range in previous month",
+        "format": "currency — e.g., '$125,430' or 'QAR 456,200'",
+        "navigate_to": "/invoicing-hub",
+        "status": "NEW"
+      },
+      {
+        "position": 6,
+        "title": "Outstanding AR",
+        "icon": "CreditCard",
+        "query_table": "arccCustomerAccounts",
+        "query_logic": "SUM(totalOutstanding) WHERE accountStatus='active' AND deletedAt IS NULL. Integer (cents) — divide by 100.",
+        "trend_logic": "Compare to SUM(totalOutstanding) from 30 days ago snapshot. Since no historical snapshot exists, compare to SUM(totalOverdue) change direction — if overdue is increasing, trend is negative.",
+        "format": "currency",
+        "navigate_to": "/receivables-hub",
+        "status": "NEW"
+      },
+      {
+        "position": 7,
+        "title": "Active Processes",
+        "icon": "Workflow",
+        "query_table": "peProcessInstances",
+        "query_logic": "COUNT(*) WHERE status IN ('pending','in_progress','waiting_approval') AND deletedAt IS NULL",
+        "trend_logic": "Compare to count of processes started this month vs last month (createdAt filter)",
+        "navigate_to": "/processes",
+        "status": "NEW"
+      },
+      {
+        "position": 8,
+        "title": "Pending Approvals",
+        "icon": "ClipboardCheck",
+        "query_table": "peApprovals",
+        "query_logic": "COUNT(*) WHERE decision IS NULL AND deletedAt IS NULL",
+        "trend_logic": "Compare to count of pending approvals 7 days ago — shorter window because approvals are time-sensitive",
+        "navigate_to": "/processes/approvals",
+        "status": "NEW"
+      }
+    ],
+
+    "acceptance_criteria": [
+      "Dashboard shows 8 KPI cards in a 2-row grid: 4 cards per row on lg+ screens, 2 per row on sm-md, 1 per row on mobile",
+      "All 8 KPIs display live data from DB — no hardcoded values",
+      "Each card shows a trend indicator: green up-arrow with +X% for positive trends, red down-arrow with -X% for negative trends, gray dash for no change",
+      "Revenue MTD and Outstanding AR display formatted currency values (e.g., '$125.4K' for amounts over 1000, full amount for smaller values) with the tenant's default currency from tenants.settings",
+      "Each KPI card is wrapped in a Link that navigates to the relevant module page",
+      "Trend calculation compares current period to previous period (month-over-month for counts, MTD comparison for revenue)",
+      "All queries include tenantId filter and deletedAt IS NULL (soft delete awareness)",
+      "All 8 queries run in parallel using Promise.all — page load time should not increase proportionally",
+      "The StatsCard component is enhanced to accept optional 'trend' prop: { value: number, direction: 'up' | 'down' | 'neutral' }",
+      "Loading state shows 8 skeleton cards using the existing loading.tsx pattern (Suspense boundary)",
+      "Dark mode support: all card backgrounds, text colors, and borders use CSS variables or dark: prefixes",
+      "npx tsc --noEmit passes with zero errors"
+    ],
+
+    "edge_cases": [
+      "No data in a table (e.g., zero invoices) — card shows '0' with no trend indicator",
+      "Previous month has zero values — trend shows 'New' badge instead of infinity%",
+      "Financial amounts overflow display — use compact notation: $1.2M, $456K, etc.",
+      "Tenant has no currency configured in settings — default to 'USD'",
+      "peProcessInstances or peApprovals tables are empty (no processes ever run) — show '0' with 'No data yet' subtitle",
+      "Database query timeout on one KPI — other 7 should still render; failed KPI shows '--' with error tooltip",
+      "Very large counts (>999,999) — use compact number format: '1.2M', '456K'"
+    ],
+
+    "error_handling": [
+      "Individual query failure: catch per-query, show '--' for that KPI, log error server-side, do not crash entire dashboard",
+      "Full DB connection failure: show all 8 cards with '--' and a banner 'Unable to load dashboard data'",
+      "Auth failure (no session): redirect to /login (existing behavior, preserve it)",
+      "Permission check: dashboard is accessible to all authenticated users — no specific permission needed"
+    ],
+
+    "security_considerations": [
+      "All queries MUST include eq(table.tenantId, tid) — multi-tenant isolation is mandatory",
+      "Financial data (revenue, AR) must not leak between tenants under any circumstance",
+      "No raw SQL — all queries via Drizzle ORM parameterized queries",
+      "Dashboard is read-only — no mutations, no CSRF needed"
+    ],
+
+    "implementation_notes": "Modify the existing Server Component at src/app/(dashboard)/page.tsx. Keep it as a Server Component — all 8 queries run server-side. Use Promise.allSettled (not Promise.all) so individual query failures don't crash the page. Enhance the existing StatsCard component to accept an optional trend prop. Import the 4 new icons from lucide-react: DollarSign, CreditCard, Workflow (or Activity), ClipboardCheck. For currency formatting, read the tenant's default currency from the session or tenants.settings. Financial amounts are stored as integers (cents) in firmFreightInvoices.totalAmount and arccCustomerAccounts.totalOutstanding — divide by 100 for display. Use Intl.NumberFormat for currency and compact number formatting. The grid changes from lg:grid-cols-4 (single row) to two rows: keep grid-cols-4 but now with 8 cards it naturally wraps to 2 rows. Add the navigable Link wrapper around each StatsCard.",
+
+    "affected_files": [
+      "src/app/(dashboard)/page.tsx — main dashboard Server Component (MODIFY: add 4 new queries, update grid, wrap cards in Links)",
+      "src/components/dashboard/stats-card.tsx — StatsCard component (MODIFY: add optional trend prop with arrow indicator)",
+      "src/app/(dashboard)/loading.tsx — loading skeleton (MODIFY: show 8 skeleton cards instead of 4)"
+    ],
+
+    "data_dependencies": {
+      "existing_tables_already_imported": [
+        "vessels — active vessel count",
+        "cspPortalBookings — open booking count + activity feed",
+        "cspShipmentTracking — containers in transit count",
+        "ccrImportClearances — pending customs count + activity feed"
+      ],
+      "new_tables_to_import": [
+        "firmFreightInvoices — SUM(totalAmount) for Revenue MTD, filtered by issuedAt in current month",
+        "arccCustomerAccounts — SUM(totalOutstanding) for Outstanding AR",
+        "peProcessInstances — COUNT for Active Processes where status in active states",
+        "peApprovals — COUNT for Pending Approvals where decision IS NULL"
+      ],
+      "all_from_barrel_import": "import { vessels, cspPortalBookings, cspShipmentTracking, ccrImportClearances, firmFreightInvoices, arccCustomerAccounts, peProcessInstances, peApprovals } from '@/db/schema'"
+    },
+
+    "trend_calculation_approach": {
+      "method": "For each KPI, run TWO queries: current value and previous-period value. Previous period = same metric calculated for the prior month (or prior 30-day window for point-in-time counts). Trend % = ((current - previous) / previous) * 100, rounded to 1 decimal. If previous = 0 and current > 0, show 'New' instead of Infinity%.",
+      "optimization": "Bundle current + previous queries into the same Promise.allSettled call — total of 16 queries, all in parallel. Each query is simple COUNT or SUM with WHERE clause — should be fast with existing indexes."
+    },
+
+    "testing_requirements": [
+      "Verify all 8 KPI cards render with correct titles and icons",
+      "Verify trend indicators show correct direction (up/down/neutral)",
+      "Verify currency formatting for Revenue MTD and Outstanding AR",
+      "Verify compact number formatting for large values (K, M notation)",
+      "Verify individual query failure doesn't crash other cards (Promise.allSettled resilience)",
+      "Verify responsive grid: 4 cols on lg, 2 on sm, 1 on xs",
+      "Verify dark mode rendering",
+      "Verify tenant isolation — each query includes tenantId filter",
+      "Verify Link navigation on each card works correctly",
+      "npx tsc --noEmit — zero TypeScript errors"
+    ]
+  }
+}

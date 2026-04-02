@@ -1,0 +1,94 @@
+{
+  "node_type": "feature",
+  "id": "F-014",
+  "name": "Process Execution — Run Now Button + Manual Trigger",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-013", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Process Execution",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Add a 'Run Now' button to each process in the Process Hub. Clicking opens a modal with optional entity type, entity ID, and context JSON fields. Submitting calls POST /api/v1/process-engine/instances to create a process instance with steps derived from the process's aiProcessingSteps + humanTouchpoints. Shows confirmation with instance ID and link to process monitor page. Also add 'Execute Flow' button on E2E flows.",
+
+    "run_now_modal": {
+      "trigger": "Play/Run button on each process detail panel in the Process Hub",
+      "fields": [
+        { "name": "entityType", "type": "select", "options": ["booking", "vessel", "container", "invoice", "customs_clearance", "other"], "required": false },
+        { "name": "entityId", "type": "text", "placeholder": "Entity UUID (optional)", "required": false },
+        { "name": "contextJson", "type": "textarea", "placeholder": "Additional context JSON (optional)", "required": false }
+      ],
+      "submit_action": "POST /api/v1/process-engine/instances with processId, processName, triggerType='manual', steps derived from process data",
+      "success": "Show toast 'Process started' with instance ID, link to /processes/monitor",
+      "steps_derivation": "Map aiProcessingSteps to stepName with executorType='ai', then append humanTouchpoints as executorType='human' steps"
+    },
+
+    "e2e_run_button": {
+      "description": "Add 'Execute Flow' button on each E2E flow card. Creates parent process instance with steps from flow.steps array. Each step gets executorType from step.type (ai/human/system)."
+    },
+
+    "acceptance_criteria": [
+      "Each process in Process Hub has a 'Run' button visible in the summary row",
+      "Clicking 'Run' opens a modal with optional entity type (select), entity ID (text), and context (textarea)",
+      "Submitting the modal calls POST /api/v1/process-engine/instances with correct payload",
+      "Steps are derived from process aiProcessingSteps (executorType='ai') + humanTouchpoints (executorType='human')",
+      "triggerType is set to 'manual' for all Run Now executions",
+      "processId and processName match the clicked process",
+      "On success: modal closes, toast shows 'Process {processName} started' with link to monitor",
+      "On error: modal shows error message, does not close",
+      "E2E flows have 'Execute Flow' button that creates instance with flow steps",
+      "Modal includes CSRF token in request headers",
+      "Modal validates entityId as UUID format if provided",
+      "Dark mode support on modal and button",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ],
+
+    "edge_cases": [
+      "Process with zero aiProcessingSteps — should not happen (all 227 have steps), but show error if so",
+      "Invalid UUID for entityId — show validation error in modal",
+      "Invalid JSON in contextJson textarea — show parse error",
+      "API returns 429 rate limit — show 'Too many requests, try again later'",
+      "API returns 403 no permission — show 'You do not have permission to run processes'",
+      "Network error — show generic error message",
+      "User clicks Run while another process is starting — disable button during submission"
+    ],
+
+    "error_handling": [
+      "API errors: parse error response and display message in modal",
+      "Network errors: show 'Unable to connect. Please try again.'",
+      "Validation errors: highlight invalid fields with red border and message"
+    ],
+
+    "security_considerations": [
+      "CSRF token required on POST request (X-CSRF-Token header)",
+      "Auth required — API route checks session",
+      "Permission check: 'workflows:create' required",
+      "Input sanitized via Zod on API side"
+    ],
+
+    "implementation_notes": "Create a RunProcessButton client component at src/components/processes/run-process-button.tsx. It renders a small Play icon button in the process summary row. On click, opens a dialog/modal. Modal form submits via fetch() to /api/v1/process-engine/instances. The component receives processId, processName, aiProcessingSteps, humanTouchpoints as props. Steps are built client-side: aiProcessingSteps.map((s,i) => ({stepNumber: i+1, stepName: s, executorType: 'ai'})) then append humanTouchpoints. Import this component into processes/page.tsx. For the E2E Execute Flow, create a similar RunE2EFlowButton. Use the existing Dialog/Modal from Radix UI if available, otherwise a simple fixed overlay.",
+
+    "affected_files": [
+      "src/components/processes/run-process-button.tsx — NEW: Run Now button + modal component",
+      "src/components/processes/run-e2e-flow-button.tsx — NEW: Execute Flow button for E2E flows",
+      "src/app/(dashboard)/processes/page.tsx — add Run buttons to process rows and E2E cards"
+    ],
+
+    "testing_requirements": [
+      "Run button appears on each process detail summary",
+      "Modal opens with correct fields",
+      "Successful submission creates process instance",
+      "Error states display correctly",
+      "E2E Execute Flow button creates instance with correct steps",
+      "Dark mode renders correctly",
+      "npx tsc --noEmit passes",
+      "npm run build succeeds"
+    ]
+  }
+}

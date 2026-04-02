@@ -1,0 +1,72 @@
+{
+  "node_type": "feature",
+  "id": "F-010",
+  "name": "Dashboard Booking Pipeline Funnel",
+  "created_at": "2026-03-09",
+  "created_by": "claude",
+  "phase": "build",
+  "status": "draft",
+  "relationships": [
+    { "target_id": "D-004", "relationship_type": "implements" },
+    { "target_id": "F-009", "relationship_type": "depends_on" }
+  ],
+  "content": {
+    "category": "Command Center Dashboard",
+    "priority": "must_have",
+    "complexity": "medium",
+    "description": "Visual funnel showing booking lifecycle stages with counts at each stage. Stages based on actual cspPortalBookings.status values: Draft → Confirmed → In Progress → Completed. Cancelled shown separately as a note. Each stage is a horizontal bar with count, colored by stage. Clickable stages link to filtered booking list at /customer-portal/bookings?status=X. Shows conversion rate between adjacent stages. Rendered as a Server Component section on the dashboard page below the KPI cards.",
+
+    "funnel_stages": [
+      { "label": "Draft", "status_value": "draft", "color": "slate" },
+      { "label": "Confirmed", "status_value": "confirmed", "color": "blue" },
+      { "label": "In Progress", "status_value": "in_progress", "color": "amber" },
+      { "label": "Completed", "status_value": "completed", "color": "emerald" }
+    ],
+
+    "acceptance_criteria": [
+      "Dashboard shows a 'Booking Pipeline' section below the KPI cards grid",
+      "Funnel displays 4 stages: Draft → Confirmed → In Progress → Completed with counts from cspPortalBookings grouped by status",
+      "Each stage is a horizontal bar whose width is proportional to the count (widest = max count, narrowest = min count)",
+      "Each stage shows: stage label, count, and conversion rate from previous stage (e.g., '75% from Draft')",
+      "Cancelled bookings shown as a separate small note below the funnel (not part of the main flow)",
+      "Clicking any stage navigates to /customer-portal/bookings?status={status_value}",
+      "Query includes tenantId filter and deletedAt IS NULL",
+      "Empty state: if zero bookings, show 'No bookings yet' with link to create one",
+      "Dark mode support on all elements",
+      "npx tsc --noEmit passes"
+    ],
+
+    "edge_cases": [
+      "All bookings in one stage (e.g., all draft) — that stage bar is full width, others show '0'",
+      "Zero bookings — show empty state message",
+      "Very large counts — use compact number format",
+      "Conversion rate from 0 to N — show 'New' instead of infinity%"
+    ],
+
+    "error_handling": [
+      "Query failure — show 'Unable to load pipeline data' message in the section",
+      "Auth failure — handled by parent page redirect"
+    ],
+
+    "security_considerations": [
+      "tenantId filter mandatory on all queries",
+      "Read-only — no mutations"
+    ],
+
+    "implementation_notes": "Add a new section to src/app/(dashboard)/page.tsx between the KPI cards and the activity feed grid. Use a single GROUP BY query on cspPortalBookings.status to get all counts in one query. Create a BookingPipelineFunnel client component at src/components/dashboard/booking-pipeline.tsx for the visual funnel. The funnel is purely visual — horizontal bars with Tailwind, no chart library needed.",
+
+    "affected_files": [
+      "src/app/(dashboard)/page.tsx — add pipeline query and render BookingPipelineFunnel",
+      "src/components/dashboard/booking-pipeline.tsx — NEW: funnel visualization component"
+    ],
+
+    "testing_requirements": [
+      "Funnel renders with correct counts per stage",
+      "Conversion rates calculate correctly",
+      "Click navigation works to filtered booking list",
+      "Empty state renders when no bookings exist",
+      "Dark mode renders correctly",
+      "npx tsc --noEmit passes"
+    ]
+  }
+}

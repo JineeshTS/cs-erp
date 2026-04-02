@@ -1,0 +1,30 @@
+{
+  "project": "cs-erp",
+  "last_updated": "2026-03-09",
+  "total_nodes": 23,
+  "nodes": [
+    { "id": "D-001", "node_type": "decision", "name": "Simplified Category Sidebar + Hub Pages", "file": "decisions/D-001.json", "status": "final" },
+    { "id": "D-002", "node_type": "decision", "name": "Master Data Wiring Strategy for All Forms", "file": "decisions/D-002.json", "status": "final" },
+    { "id": "D-003", "node_type": "decision", "name": "Live GPS & AIS Tracking Architecture", "file": "decisions/D-003.json", "status": "final" },
+    { "id": "F-001", "node_type": "feature", "name": "Category Sidebar + Hub Pages", "file": "features/F-001.json", "status": "final" },
+    { "id": "F-002", "node_type": "feature", "name": "Booking Form Master Data Wiring", "file": "features/F-002.json", "status": "final" },
+    { "id": "F-003", "node_type": "feature", "name": "Global Master Data Wiring — All Form Pages", "file": "features/F-003.json", "status": "final" },
+    { "id": "F-004", "node_type": "feature", "name": "Remaining Master Data Lookup Wiring", "file": "features/F-004.json", "status": "final" },
+    { "id": "F-005", "node_type": "feature", "name": "Phase 1 — Interactive Map UI + Asset Plotting", "file": "features/F-005.json", "status": "final" },
+    { "id": "F-006", "node_type": "feature", "name": "Phase 2 — AIS Vessel Position Polling", "file": "features/F-006.json", "status": "final" },
+    { "id": "F-007", "node_type": "feature", "name": "Phase 3 — Container Event Tracking Webhook", "file": "features/F-007.json", "status": "final" },
+    { "id": "F-008", "node_type": "feature", "name": "Phase 4 — GPS Device Data Ingestion Webhook", "file": "features/F-008.json", "status": "final" },
+    { "id": "BUG-001", "node_type": "bug", "name": "Dashboard shows hardcoded zeros and empty activity feed", "file": "bugs/BUG-001.json", "status": "final" },
+    { "id": "D-004", "node_type": "decision", "name": "CS ERP Operational Dashboard & Process Execution Platform", "file": "decisions/D-004.json", "status": "draft" },
+    { "id": "F-009", "node_type": "feature", "name": "Dashboard KPI Cards — 8 Operational Metrics with Trends", "file": "features/F-009.json", "status": "draft" },
+    { "id": "F-010", "node_type": "feature", "name": "Dashboard Booking Pipeline Funnel", "file": "features/F-010.json", "status": "draft" },
+    { "id": "F-011", "node_type": "feature", "name": "Dashboard Vessel Schedule Timeline", "file": "features/F-011.json", "status": "draft" },
+    { "id": "F-012", "node_type": "feature", "name": "Dashboard Financial Summary", "file": "features/F-012.json", "status": "draft" },
+    { "id": "F-013", "node_type": "feature", "name": "Dashboard Enhanced Activity Feed + Quick Actions", "file": "features/F-013.json", "status": "draft" },
+    { "id": "F-014", "node_type": "feature", "name": "Process Execution — Run Now Button + Manual Trigger", "file": "features/F-014.json", "status": "draft" },
+    { "id": "F-015", "node_type": "feature", "name": "Process Instance Monitor — Live Dashboard", "file": "features/F-015.json", "status": "draft" },
+    { "id": "D-005", "node_type": "decision", "name": "AI-First Process Orchestration — Complete Process & E2E Flow Redesign", "file": "decisions/D-005.json", "status": "draft" },
+    { "id": "F-016", "node_type": "feature", "name": "BullMQ Worker Docker Service — Dedicated Background Job Container", "file": "features/F-016.json", "status": "draft" },
+    { "id": "F-017", "node_type": "feature", "name": "Liner Trade Schedule Gantt View — Visual Voyage Timeline", "file": "features/F-017.json", "status": "draft" }
+  ]
+}
