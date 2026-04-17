@@ -64,31 +64,21 @@ export const E2E_01_STEP_CONFIGS: Record<number, StepExecutorConfig> = {
     mode: "ai_with_tools",
     entityTable: "scm_leads",
     entityAction: "update",
-    systemPromptExtra: `You are a Lead Scoring Agent for a container shipping company.
-Score the lead on 5 factors (0-100 each, weighted):
-- Trade lane coverage fit (30%): Do we serve their routes?
-- Volume potential (25%): Estimated annual TEU value
-- Cargo type compatibility (20%): Can we handle their cargo?
-- Competitive win probability (15%): Our position vs competitors
-- Credit indicators (10%): Company size, country risk
-
-Use the score_lead tool to calculate and persist the score.
-Auto-qualify if score >= 70, flag for review if 40-69, nurture if < 40.`,
+    systemPromptExtra: `You are a Lead Qualification Agent using the BANT-S framework (Budget, Authority, Need, Timeline, Shipping-Fit).
+The scoring engine computes each factor deterministically from real tariff data and trade lane coverage.
+First fetch the lead details using get_lead_details, then call score_lead with the leadId.
+After receiving the BANT-S breakdown, explain each factor's score and reasoning to the user in clear business terms.
+Do NOT invent or override scores — the engine computes them from reference data.`,
     tools: [
       {
         name: "score_lead",
-        description: "Calculate a composite lead score (0-100) based on 5 weighted factors and update the lead record",
+        description: "Score a lead using the BANT-S framework. Scores are computed server-side from tariff data, trade lane coverage, job title analysis, and lead completeness. Returns detailed breakdown with reasoning.",
         input_schema: {
           type: "object" as const,
           properties: {
             leadId: { type: "string", description: "UUID of the lead to score" },
-            tradeLaneFit: { type: "number", description: "Score 0-100 for trade lane coverage" },
-            volumePotential: { type: "number", description: "Score 0-100 for volume potential" },
-            cargoCompatibility: { type: "number", description: "Score 0-100 for cargo type fit" },
-            winProbability: { type: "number", description: "Score 0-100 for competitive win chance" },
-            creditIndicators: { type: "number", description: "Score 0-100 for credit quality signals" },
           },
-          required: ["leadId", "tradeLaneFit", "volumePotential", "cargoCompatibility", "winProbability", "creditIndicators"],
+          required: ["leadId"],
         },
       },
       {
@@ -143,29 +133,25 @@ Auto-qualify if score >= 70, flag for review if 40-69, nurture if < 40.`,
     mode: "ai_with_tools",
     entityTable: "scm_leads",
     entityAction: "update",
-    systemPromptExtra: `You are a Credit Risk Assessment Agent for a container shipping company.
-Perform a preliminary credit assessment:
-1. Review company details (name, country, estimated volume)
-2. Calculate a credit score based on company indicators
-3. Suggest a credit limit and payment terms
-4. Rate the risk: green (auto-approve), amber (needs review), red (decline/cash-only)
+    systemPromptExtra: `You are a Credit Risk Assessment Agent. The credit engine uses a deterministic 4-factor model:
+1. Country Risk (30%) — sovereign credit rating of the company's country
+2. Volume Commitment (25%) — monthly TEU commitment reliability
+3. Industry Risk (20%) — sector-specific risk profile
+4. Information Quality (25%) — completeness of lead data
 
-Use the calculate_credit_score tool to persist the assessment.`,
+Call calculate_credit_score with the leadId. The engine computes everything from the lead record.
+After receiving results, explain the risk rating, suggested credit limit, and payment terms.
+Do NOT invent scores — the engine is deterministic.`,
     tools: [
       {
         name: "calculate_credit_score",
-        description: "Calculate preliminary credit score and suggest credit limit for a lead/prospect",
+        description: "Run deterministic 4-factor credit assessment. Computes country risk, volume commitment, industry risk, and info quality from the lead record. Returns composite score, risk rating (green/amber/red), suggested credit limit, and payment terms.",
         input_schema: {
           type: "object" as const,
           properties: {
             leadId: { type: "string", description: "UUID of the lead" },
-            creditScore: { type: "number", description: "Preliminary credit score 0-100" },
-            suggestedCreditLimit: { type: "number", description: "Suggested credit limit in USD" },
-            riskRating: { type: "string", enum: ["green", "amber", "red"], description: "Risk rating" },
-            paymentTermsDays: { type: "number", description: "Recommended payment terms in days" },
-            assessmentNotes: { type: "string", description: "Brief assessment summary" },
           },
-          required: ["leadId", "creditScore", "suggestedCreditLimit", "riskRating", "paymentTermsDays"],
+          required: ["leadId"],
         },
       },
     ],
@@ -176,32 +162,23 @@ Use the calculate_credit_score tool to persist the assessment.`,
     mode: "ai_with_tools",
     entityTable: "scm_leads",
     entityAction: "update",
-    systemPromptExtra: `You are a Sanctions & Compliance Screening Agent.
-Screen the company and its beneficial owners against:
-- OFAC SDN list (US)
-- EU consolidated sanctions
-- UN Security Council list
-- UK sanctions list
+    systemPromptExtra: `You are a Sanctions Pre-Screening Agent. The screening engine checks the company name and country against:
+- Known sanctioned entity patterns (IRISL, IRGC, etc.)
+- Sanctioned jurisdictions (Iran, North Korea, Syria, Cuba)
+- Elevated-risk jurisdictions (Russia, Iraq, Yemen, etc.)
 
-Use the screen_sanctions tool to record the screening result.
-Result must be: CLEAR, HIT, or POSSIBLE_MATCH.
-For CLEAR: flow proceeds. For HIT/POSSIBLE_MATCH: compliance gate triggers.`,
+Call screen_sanctions with the leadId. The engine fetches the company name and country from the lead record and runs deterministic pattern matching.
+Report the result transparently — this is a local pre-screening, not a full OFAC/EU check.`,
     tools: [
       {
         name: "screen_sanctions",
-        description: "Screen a company against sanctions lists and record the result",
+        description: "Pre-screen a lead against local sanctions reference list. Checks company name patterns and country jurisdiction. Returns CLEAR, HIT, or POSSIBLE_MATCH with screening source transparency.",
         input_schema: {
           type: "object" as const,
           properties: {
-            leadId: { type: "string", description: "UUID of the lead being screened" },
-            companyName: { type: "string", description: "Company name to screen" },
-            country: { type: "string", description: "Country of incorporation" },
-            screeningResult: { type: "string", enum: ["CLEAR", "HIT", "POSSIBLE_MATCH"], description: "Overall screening result" },
-            matchedLists: { type: "array", items: { type: "string" }, description: "Which lists had matches (if any)" },
-            matchConfidence: { type: "number", description: "Match confidence 0-100 (only if HIT/POSSIBLE_MATCH)" },
-            screeningNotes: { type: "string", description: "Screening analysis notes" },
+            leadId: { type: "string", description: "UUID of the lead to screen" },
           },
-          required: ["leadId", "companyName", "country", "screeningResult"],
+          required: ["leadId"],
         },
       },
     ],
@@ -217,47 +194,39 @@ For CLEAR: flow proceeds. For HIT/POSSIBLE_MATCH: compliance gate triggers.`,
     mode: "ai_with_tools",
     entityTable: "scm_rate_quotations",
     entityAction: "create",
-    systemPromptExtra: `You are a Rate Optimizer Agent for a container shipping company.
-Calculate optimal freight rates based on:
-- Base tariff for the trade lane
-- Applicable surcharges (BAF, CAF, THC, BL fee, seal fee, VGM, ISPS, LSS)
-- Customer volume commitment level
-- Market rate benchmarks
-
-Use the calculate_rate tool to create a rate quotation record.
-The rate should be competitive but maintain minimum margin.`,
+    systemPromptExtra: `You are a Rate Calculation Agent. Freight rates are computed from the company's tariff database — do NOT invent rates.
+First call lookup_tariff_rates to preview the rate breakdown for the trade lane.
+Then call calculate_rate to create the formal quotation with line items.
+The origin/destination ports come from the lead's trade lane. Get them from the opportunity or lead data.
+After the quotation is created, summarize the rate breakdown and total per container.`,
     tools: [
       {
-        name: "calculate_rate",
-        description: "Calculate freight rate components and create a rate quotation",
+        name: "lookup_tariff_rates",
+        description: "Preview freight rates from the tariff database for a port pair. Returns base ocean freight + all applicable surcharges. Read-only — does not create a quotation.",
         input_schema: {
           type: "object" as const,
           properties: {
-            originPort: { type: "string", description: "Origin port code (e.g., AEJEA)" },
-            destinationPort: { type: "string", description: "Destination port code (e.g., CNSHA)" },
-            containerType: { type: "string", description: "Container type (dry/reefer/tank)" },
-            containerSize: { type: "string", description: "Container size (20/40/40HC/45)" },
-            baseRate: { type: "number", description: "Base ocean freight rate per unit in USD" },
-            surcharges: {
-              type: "object",
-              properties: {
-                baf: { type: "number" },
-                caf: { type: "number" },
-                thc: { type: "number" },
-                blFee: { type: "number" },
-                sealFee: { type: "number" },
-                vgm: { type: "number" },
-                isps: { type: "number" },
-                lss: { type: "number" },
-              },
-              description: "Surcharge components in USD",
-            },
-            totalRate: { type: "number", description: "All-in rate per unit in USD" },
-            estimatedTeu: { type: "number", description: "Estimated TEU volume" },
-            validityDays: { type: "number", description: "Quote validity in days (14/30/60)" },
-            transitTimeDays: { type: "number", description: "Estimated transit time in days" },
+            originPort: { type: "string", description: "Origin port UN/LOCODE (e.g., AEJEA)" },
+            destinationPort: { type: "string", description: "Destination port code (e.g., INMUN)" },
+            containerSize: { type: "string", description: "Container size: 20, 40, or 40HC" },
           },
-          required: ["originPort", "destinationPort", "baseRate", "totalRate", "estimatedTeu", "validityDays"],
+          required: ["originPort", "destinationPort", "containerSize"],
+        },
+      },
+      {
+        name: "calculate_rate",
+        description: "Create a rate quotation from tariff database rates. Fetches base rates and surcharges, creates quotation header and line items.",
+        input_schema: {
+          type: "object" as const,
+          properties: {
+            originPort: { type: "string", description: "Origin port UN/LOCODE (e.g., AEJEA)" },
+            destinationPort: { type: "string", description: "Destination port code (e.g., INMUN)" },
+            containerType: { type: "string", description: "Container type (dry/reefer)" },
+            containerSize: { type: "string", description: "Container size: 20, 40, or 40HC" },
+            estimatedTeu: { type: "number", description: "Estimated TEU volume for this customer" },
+            validityDays: { type: "number", description: "Quote validity in days (14/30/60)" },
+          },
+          required: ["originPort", "destinationPort", "estimatedTeu", "validityDays"],
         },
       },
     ],

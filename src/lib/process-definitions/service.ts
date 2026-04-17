@@ -1,4 +1,4 @@
-import { and, eq, isNull, desc, or, sql, count, ilike } from "drizzle-orm";
+import { and, eq, isNull, desc, or, sql, count, ilike, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   peProcessDefinitions,
@@ -588,7 +588,7 @@ export async function getTaskCountsByProcess(
     .from(peProcessTaskLinks)
     .where(
       and(
-        sql`${peProcessTaskLinks.processDefinitionId} = ANY(${processIds})`,
+        inArray(peProcessTaskLinks.processDefinitionId, processIds),
         isNull(peProcessTaskLinks.deletedAt)
       )
     )

@@ -56,15 +56,15 @@ export const E2E_18_STEP_CONFIGS: Record<number, StepExecutorConfig> = {
     mode: "ai_with_tools",
     entityTable: "cap_port_rotations",
     entityAction: "create",
-    systemPromptExtra: `You are a Voyage Planning Agent for a container shipping line.
-Your job is to create the voyage plan by:
-1. First, use get_service_schedule to fetch the service definition (trade route, ports, frequency).
-2. Use generate_voyage_number to create a unique voyage reference.
-3. Use create_port_rotation to create the port rotation sequence with ETAs/ETDs for each port.
+    systemPromptExtra: `You are a Voyage Planning Agent. The port rotation engine calculates ETAs automatically from nautical distances and vessel speed (14 knots economical).
 
-Use the service schedule's port count, transit days, and frequency to calculate realistic ETAs.
-Each port should have arrival ETA and departure ETD based on transit time between ports and berthing hours.
-You MUST call the tools — do not generate data without using them.`,
+Steps:
+1. Call get_service_schedule to fetch the service definition.
+2. Call generate_voyage_number to create the voyage reference.
+3. Call create_port_rotation with the port sequence. Provide portCode and callPurpose for each port — ETAs are COMPUTED from reference distance data, not invented.
+
+Port codes must be valid UN/LOCODEs. The engine validates all codes against the port master database.
+Do NOT provide arrivalEta or departureEtd — the engine calculates them from port-to-port distances.`,
     tools: [
       {
         name: "get_service_schedule",
@@ -135,16 +135,15 @@ You MUST call the tools — do not generate data without using them.`,
     mode: "ai_with_tools",
     entityTable: "cap_trade_allocations",
     entityAction: "create",
-    systemPromptExtra: `You are a Capacity Control Agent for a container shipping line.
-Your job is to regulate slot allocation for the voyage:
-1. Use get_vessel_capacity to check the vessel's total TEU capacity and current allocations.
-2. Use get_port_rotation to understand the port sequence and trade lanes.
-3. Use allocate_trade_capacity to create capacity allocations per trade lane.
+    systemPromptExtra: `You are a Capacity Control Agent. The allocation engine validates against vessel capacity — over-allocation is automatically rejected.
 
-Consider: own slots, partner commitments (VSA), DF (direct feed) customers.
-SOC (Shipper Owned Container) and COC (Carrier Owned Container) allocations should be separate.
-If capacity is exceeded, flag it — do not over-allocate beyond vessel effective capacity.
-You MUST call the tools — do not generate allocation data without using them.`,
+Steps:
+1. Call get_vessel_capacity to check total TEU, allocated TEU, and remaining capacity.
+2. Call get_port_rotation to understand the port sequence.
+3. Call allocate_trade_capacity for each trade lane allocation. The engine checks remaining capacity and rejects if exceeded.
+
+Allocation types: contract (committed customers), spot (ad-hoc bookings), vsa (vessel sharing agreement), soc (shipper-owned containers).
+Always check remaining capacity before allocating. The engine enforces hard capacity limits.`,
     tools: [
       {
         name: "get_vessel_capacity",
@@ -305,14 +304,20 @@ You MUST call the tools — do not generate ETA data without using them.`,
     mode: "ai_with_tools",
     entityTable: "vpe_speed_consumptions",
     entityAction: "create",
-    systemPromptExtra: `You are a Vessel Performance Analyst for a container shipping line.
-Analyze the noon report and record speed/consumption data:
-1. Use analyze_noon_report to get the full noon report analysis (position, speed, consumption, weather).
-2. Use update_speed_consumption to create a speed/consumption record from the analysis.
+    systemPromptExtra: `You are a Vessel Performance Analyst. The performance engine validates all values against vessel physics.
 
-Compare actual performance vs planned. Flag deviations in speed or consumption.
-Calculate the performance index (distance per unit fuel).
-You MUST call the tools — do not generate performance data without using them.`,
+Steps:
+1. Call analyze_noon_report to get the full report (position, speed, consumption, weather).
+2. Call update_speed_consumption with the values from the noon report.
+
+The engine automatically:
+- Validates speed is within vessel class range (container: 10-22 knots)
+- Validates fuel consumption is plausible for the vessel type
+- Checks distance/speed/time consistency
+- Calculates performance index (distance per MT fuel)
+- Returns warnings if any values are outside expected bounds
+
+Use the ACTUAL values from the noon report — do not adjust or round them.`,
     tools: [
       {
         name: "analyze_noon_report",
@@ -396,14 +401,19 @@ You MUST call the tools — do not calculate delays without using them.`,
     mode: "ai_with_tools",
     entityTable: "vpe_voyage_performances",
     entityAction: "create",
-    systemPromptExtra: `You are a Marine Traffic Integration Agent for a container shipping line.
-Track the vessel's real-time position and check zone compliance:
-1. Use get_vessel_position to fetch the latest position from noon reports.
-2. Use update_voyage_tracking to create a voyage performance record with position and zone data.
+    systemPromptExtra: `You are a Marine Traffic Agent. The geofencing engine automatically determines ECA and WAR zone status from vessel coordinates.
 
-Check if the vessel is in an ECA (Emission Control Area) — requires 0.1% sulphur fuel.
-Check if the vessel is in a WAR risk zone — affects insurance and routing.
-You MUST call the tools — do not generate position data without using them.`,
+Steps:
+1. Call get_vessel_position to fetch the latest position from noon reports.
+2. Call update_voyage_tracking with vesselName, latitude, and longitude.
+
+The engine automatically:
+- Checks position against ECA zone boundaries (North Sea, Baltic, North American, Singapore Strait, China Domestic)
+- Checks position against War Risk zones (Red Sea/Houthi, Black Sea, Persian Gulf elevated)
+- Determines fuel requirement (0.1% sulphur if in ECA, standard otherwise)
+- Assesses insurance impact for war zones
+
+Do NOT guess inEcaZone or inWarZone — the geofencing engine computes them from coordinates.`,
     tools: [
       {
         name: "get_vessel_position",
@@ -418,18 +428,16 @@ You MUST call the tools — do not generate position data without using them.`,
       },
       {
         name: "update_voyage_tracking",
-        description: "Create a voyage performance tracking record with position and zone compliance data",
+        description: "Create a voyage tracking record. ECA and WAR zone status is automatically computed from coordinates by the geofencing engine.",
         input_schema: {
           type: "object" as const,
           properties: {
             vesselName: { type: "string", description: "Vessel name" },
             voyageId: { type: "string", description: "Voyage reference" },
-            latitude: { type: "number", description: "Current latitude" },
-            longitude: { type: "number", description: "Current longitude" },
-            inEcaZone: { type: "boolean", description: "Whether vessel is in ECA zone" },
-            inWarZone: { type: "boolean", description: "Whether vessel is in WAR risk zone" },
+            latitude: { type: "number", description: "Current latitude from noon report" },
+            longitude: { type: "number", description: "Current longitude from noon report" },
           },
-          required: ["vesselName"],
+          required: ["vesselName", "latitude", "longitude"],
         },
       },
     ],

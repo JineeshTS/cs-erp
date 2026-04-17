@@ -14,7 +14,7 @@ import {
   peProcessTaskLinks,
   peTaskDefinitions,
 } from "@/db/schema";
-import { eq, and, or, isNull, ilike, sql, asc, gt, desc } from "drizzle-orm";
+import { eq, and, or, isNull, ilike, sql, asc, gt, desc, inArray } from "drizzle-orm";
 
 // ── Types ──
 
@@ -270,7 +270,7 @@ export async function getFlowDefinition(
           .from(peProcessDefinitions)
           .where(
             and(
-              sql`${peProcessDefinitions.id} = ANY(${processIds})`,
+              inArray(peProcessDefinitions.id, processIds),
               isNull(peProcessDefinitions.deletedAt)
             )
           )
@@ -285,7 +285,7 @@ export async function getFlowDefinition(
           .from(peProcessTaskLinks)
           .where(
             and(
-              sql`${peProcessTaskLinks.processDefinitionId} = ANY(${processIds})`,
+              inArray(peProcessTaskLinks.processDefinitionId, processIds),
               isNull(peProcessTaskLinks.deletedAt)
             )
           )
@@ -310,7 +310,7 @@ export async function getFlowDefinition(
           .from(peTaskDefinitions)
           .where(
             and(
-              sql`${peTaskDefinitions.id} = ANY(${uniqueTaskIds})`,
+              inArray(peTaskDefinitions.id, uniqueTaskIds),
               isNull(peTaskDefinitions.deletedAt)
             )
           )

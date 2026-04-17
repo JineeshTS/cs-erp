@@ -17,7 +17,7 @@ import {
   peProcessDefinitions,
   peProcessTaskLinks,
 } from "@/db/schema";
-import { eq, and, isNull, desc, or, ilike, count, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, or, ilike, count, sql, inArray } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 
 // ── Domain display config ──
@@ -183,7 +183,7 @@ export default async function ProcessDefinitionsPage({
       .from(peProcessTaskLinks)
       .where(
         and(
-          sql`${peProcessTaskLinks.processDefinitionId} = ANY(${allProcessIds})`,
+          inArray(peProcessTaskLinks.processDefinitionId, allProcessIds),
           isNull(peProcessTaskLinks.deletedAt)
         )
       )

@@ -8,6 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { scmRateQuotations } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "@/components/ui/delete-button";
+import { PdfDownloadButton } from "@/components/ui/pdf-download-button";
 
 
 export default async function RateQuotationDetailPage({
@@ -72,6 +73,10 @@ export default async function RateQuotationDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PdfDownloadButton
+            apiPath={`/api/v1/sales-crm/rate-quotations/${id}/pdf`}
+            filename={`Quotation-${record.quotationNumber}.pdf`}
+          />
           {canEdit && (
             <Link
               href={`/sales-crm/rate-quotations/${id}/edit`}

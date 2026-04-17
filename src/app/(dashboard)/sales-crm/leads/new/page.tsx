@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { ScmForm } from "@/components/sales-crm/scm-form";
 import type { FieldConfig } from "@/components/sales-crm/scm-form";
 import { getCountryOptions } from "@/lib/lookups";
+import { LeadIntake } from "@/components/sales-crm/lead-intake";
 
 export default async function NewLeadPage() {
   const session = await getSession();
@@ -63,6 +64,8 @@ export default async function NewLeadPage() {
           New Lead
         </h1>
       </div>
+
+      <LeadIntake />
 
       <div className="rounded-lg border bg-white p-6">
         <ScmForm

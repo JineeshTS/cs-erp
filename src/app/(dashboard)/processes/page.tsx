@@ -14,6 +14,7 @@ import type { ProcessDomain, ProcessCategory } from "@/types/processes";
 import { Badge } from "@/components/ui/badge";
 import { RunProcessButton } from "@/components/processes/run-process-button";
 import { RunE2EFlowButton } from "@/components/processes/run-e2e-flow-button";
+import { E2EFlowDiagramToggle } from "@/components/processes/e2e-flow-section";
 import Link from "next/link";
 import {
   Search,
@@ -612,10 +613,13 @@ export default async function ProcessHubPage({
                 </div>
               </div>
 
-              <div className="flex gap-3 text-xs">
-                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-blue-400" /> AI Step</span>
-                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-green-400" /> Human Step</span>
-                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-gray-400" /> System Step</span>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-3 text-xs">
+                  <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-blue-400" /> AI Step</span>
+                  <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-green-400" /> Human Step</span>
+                  <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-gray-400" /> System Step</span>
+                </div>
+                <E2EFlowDiagramToggle flowCode={flow.id} flowName={flow.name} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">

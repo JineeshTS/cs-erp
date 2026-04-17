@@ -30,6 +30,14 @@ import {
   resolveEntityInFlow,
 } from "../entity-binding-service";
 import type { ToolCallContext, ToolCallResult } from "./types";
+import {
+  calculatePortRotationETAs,
+  validatePortCode,
+  checkPositionInZones,
+  validateVesselPhysics,
+  getPortDistance,
+  KNOWN_PORTS,
+} from "@/lib/shipping-reference-data";
 
 // ═══════════════════════════════════════════════════════════
 // READ-ONLY TOOLS
@@ -293,25 +301,51 @@ export async function executeCreatePortRotation(
     return { result: { error: "No ports provided for rotation. Provide at least 2 ports." } };
   }
 
+  // Validate all port codes first
+  for (const port of ports) {
+    const check = validatePortCode((port.portCode as string) ?? "");
+    if (!check.valid) {
+      return { result: { error: check.error } };
+    }
+  }
+
+  // Calculate ETAs from port distances and vessel speed (14 knots economical)
+  const departureDate = input.departureDate
+    ? new Date(input.departureDate as string)
+    : new Date(Date.now() + 3 * 86400000); // default: 3 days from now
+  const vesselSpeed = (input.vesselSpeedKnots as number) ?? 14;
+
+  const calculatedETAs = calculatePortRotationETAs(
+    departureDate,
+    ports.map((p) => ({
+      portCode: (p.portCode as string) ?? "",
+      portName: (p.portName as string) ?? KNOWN_PORTS[(p.portCode as string) ?? ""] ?? "",
+      callPurpose: (p.callPurpose as string) ?? "both",
+    })),
+    vesselSpeed
+  );
+
   const createdRotations: Array<Record<string, unknown>> = [];
 
-  for (let i = 0; i < ports.length; i++) {
+  for (let i = 0; i < calculatedETAs.length; i++) {
+    const eta = calculatedETAs[i];
     const port = ports[i];
     const [rotation] = await db
       .insert(capPortRotations)
       .values({
         tenantId,
         vesselScheduleId,
-        portCode: (port.portCode as string) ?? "",
-        portName: (port.portName as string) ?? "",
+        portCode: eta.portCode,
+        portName: eta.portName || KNOWN_PORTS[eta.portCode] || eta.portCode,
         sequenceNumber: i + 1,
-        arrivalEta: port.arrivalEta ? new Date(port.arrivalEta as string) : null,
-        departureEtd: port.departureEtd ? new Date(port.departureEtd as string) : null,
+        arrivalEta: eta.arrivalEta,
+        departureEtd: eta.departureEtd,
         terminalName: (port.terminalName as string) ?? null,
-        callPurpose: (port.callPurpose as string) ?? "both",
-        timeZone: (port.timeZone as string) ?? null,
+        callPurpose: eta.callPurpose,
         status: "scheduled",
-        notes: (port.notes as string) ?? null,
+        notes: eta.transitFromPrevNm
+          ? `Transit: ${eta.transitFromPrevNm} NM, ${eta.transitHours}h at ${vesselSpeed} kn. Turnaround: ${eta.turnaroundHours}h.`
+          : `First port of call. Turnaround: ${eta.turnaroundHours}h.`,
         createdBy: ctx.userId,
       })
       .returning();
@@ -324,6 +358,9 @@ export async function executeCreatePortRotation(
         sequenceNumber: rotation.sequenceNumber,
         arrivalEta: rotation.arrivalEta?.toISOString() ?? null,
         departureEtd: rotation.departureEtd?.toISOString() ?? null,
+        transitNm: eta.transitFromPrevNm,
+        transitHours: eta.transitHours,
+        turnaroundHours: eta.turnaroundHours,
       });
     }
   }
@@ -415,6 +452,40 @@ export async function executeAllocateTradeCapacity(
 
   if (!tradeLane || allocatedTeu <= 0) {
     return { result: { error: "tradeLane and allocatedTeu (> 0) are required" } };
+  }
+
+  // Capacity validation: check against vessel total
+  const [vesselSchedule] = await db
+    .select({ totalCapacityTeu: capVesselSchedules.totalCapacityTeu })
+    .from(capVesselSchedules)
+    .where(and(eq(capVesselSchedules.id, vesselScheduleId), eq(capVesselSchedules.tenantId, tenantId)))
+    .limit(1);
+
+  if (vesselSchedule) {
+    const existingAllocations = await db
+      .select({ allocatedTeu: capTradeAllocations.allocatedTeu })
+      .from(capTradeAllocations)
+      .where(and(
+        eq(capTradeAllocations.vesselScheduleId, vesselScheduleId),
+        eq(capTradeAllocations.tenantId, tenantId),
+        isNull(capTradeAllocations.deletedAt)
+      ));
+
+    const totalAllocated = existingAllocations.reduce((sum, a) => sum + (a.allocatedTeu ?? 0), 0);
+    const totalCapacity = vesselSchedule.totalCapacityTeu ?? 0;
+    const remaining = totalCapacity - totalAllocated;
+
+    if (allocatedTeu > remaining) {
+      return {
+        result: {
+          error: `Capacity exceeded. Vessel has ${totalCapacity} TEU total, ${totalAllocated} TEU already allocated, ${remaining} TEU remaining. Cannot allocate ${allocatedTeu} TEU.`,
+          totalCapacity,
+          allocated: totalAllocated,
+          remaining,
+          requested: allocatedTeu,
+        },
+      };
+    }
   }
 
   const [allocation] = await db
@@ -737,6 +808,11 @@ export async function executeUpdateSpeedConsumption(
   const windForce = (input.windForce as number) ?? null;
   const consumptionType = (input.consumptionType as string) ?? "laden";
 
+  // Physics validation
+  const physicsCheck = (speedActual && fuelConsumedMt && distanceTraveled)
+    ? validateVesselPhysics("container", speedActual, fuelConsumedMt, distanceTraveled)
+    : null;
+
   // Calculate performance index (actual vs planned efficiency)
   const performanceIndex = speedActual && fuelConsumedMt && distanceTraveled && distanceTraveled > 0
     ? Math.round(((distanceTraveled / fuelConsumedMt) * 100)) / 100
@@ -760,8 +836,9 @@ export async function executeUpdateSpeedConsumption(
       performanceIndex: performanceIndex?.toString() ?? null,
       status: "active",
       metadata: {
-        recordedBy: "ai_performance_agent",
+        recordedBy: "grounded_performance_engine",
         recordedAt: new Date().toISOString(),
+        physicsValidation: physicsCheck ?? "not_validated",
       },
       createdBy: ctx.userId,
     })
@@ -791,6 +868,14 @@ export async function executeUpdateSpeedConsumption(
       performanceIndex,
       seaState,
       windForce,
+      physicsValidation: physicsCheck
+        ? {
+            speedValid: physicsCheck.speedValid,
+            consumptionValid: physicsCheck.consumptionValid,
+            distanceSpeedConsistent: physicsCheck.distanceSpeedConsistent,
+            warnings: physicsCheck.warnings,
+          }
+        : null,
     },
     entityTable: "vpe_speed_consumptions",
     entityId: consumption?.id ?? "",
@@ -814,8 +899,11 @@ export async function executeUpdateVoyageTracking(
   const voyageId = (input.voyageId as string) ?? null;
   const latitude = (input.latitude as number) ?? null;
   const longitude = (input.longitude as number) ?? null;
-  const inEcaZone = (input.inEcaZone as boolean) ?? false;
-  const inWarZone = (input.inWarZone as boolean) ?? false;
+
+  // Deterministic geofencing — ignore Claude's guesses, compute from coordinates
+  const zoneCheck = (latitude !== null && longitude !== null)
+    ? checkPositionInZones(latitude, longitude)
+    : { inEcaZone: false, ecaZoneName: null, fuelRequirement: "Standard (0.5% sulphur VLSFO)", inWarZone: false, warZoneName: null, insuranceImpact: "Standard P&I cover" };
 
   const [performance] = await db
     .insert(vpeVoyagePerformances)
@@ -826,16 +914,19 @@ export async function executeUpdateVoyageTracking(
       vesselName,
       voyageId,
       status: "active",
-      notes: `Position update: ${latitude}, ${longitude}`,
+      notes: `Position: ${latitude}°N, ${longitude}°E${zoneCheck.ecaZoneName ? ` | ECA: ${zoneCheck.ecaZoneName}` : ""}${zoneCheck.warZoneName ? ` | WAR ZONE: ${zoneCheck.warZoneName}` : ""}`,
       metadata: {
         vesselScheduleId: vsBinding?.entityId,
         latitude,
         longitude,
-        inEcaZone,
-        inWarZone,
-        fuelRequirement: inEcaZone ? "0.1% sulphur (ECA compliance)" : "standard",
+        inEcaZone: zoneCheck.inEcaZone,
+        ecaZoneName: zoneCheck.ecaZoneName,
+        inWarZone: zoneCheck.inWarZone,
+        warZoneName: zoneCheck.warZoneName,
+        fuelRequirement: zoneCheck.fuelRequirement,
+        insuranceImpact: zoneCheck.insuranceImpact,
         trackedAt: new Date().toISOString(),
-        trackedBy: "ai_marine_traffic_agent",
+        trackedBy: "geofencing_engine",
       },
       createdBy: ctx.userId,
     })
@@ -860,9 +951,13 @@ export async function executeUpdateVoyageTracking(
       vesselName,
       latitude,
       longitude,
-      inEcaZone,
-      inWarZone,
-      fuelRequirement: inEcaZone ? "0.1% sulphur (ECA compliance)" : "standard",
+      inEcaZone: zoneCheck.inEcaZone,
+      ecaZoneName: zoneCheck.ecaZoneName,
+      inWarZone: zoneCheck.inWarZone,
+      warZoneName: zoneCheck.warZoneName,
+      fuelRequirement: zoneCheck.fuelRequirement,
+      insuranceImpact: zoneCheck.insuranceImpact,
+      source: "deterministic_geofencing",
     },
     entityTable: "vpe_voyage_performances",
     entityId: performance?.id ?? "",
@@ -974,6 +1069,21 @@ export async function executeCalculateDelayImpact(
 
   if (!portCode || delayHours === 0) {
     return { result: { error: "portCode and delayHours are required" } };
+  }
+
+  // Bounds validation
+  if (delayHours < 0 || delayHours > 168) {
+    return { result: { error: `delayHours must be 0-168 (1 week max). Got: ${delayHours}` } };
+  }
+  if (delayHours > 48) {
+    // Warn but don't block
+    // (result will include warning)
+  }
+
+  // Validate port code
+  const portCheck = validatePortCode(portCode);
+  if (!portCheck.valid) {
+    return { result: { error: portCheck.error } };
   }
 
   // Find the original ETA for this port
@@ -1157,6 +1267,15 @@ export async function executeModifyPortCall(
 
   if (!modificationType || !portCode) {
     return { result: { error: "modificationType and portCode are required" } };
+  }
+
+  // Validate port codes against reference data
+  if (modificationType === "add" || modificationType === "swap") {
+    const targetPort = modificationType === "add" ? portCode : (newPortCode ?? "");
+    const check = validatePortCode(targetPort);
+    if (!check.valid) {
+      return { result: { error: `${check.error} Cannot ${modificationType} with unknown port.` } };
+    }
   }
 
   let resultData: Record<string, unknown> = {};

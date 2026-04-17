@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import {
   scmLeads,
   scmRateQuotations,
+  scmQuotationLineItems,
   scmContracts,
   scmCustomers,
   scmOpportunities,
@@ -20,6 +21,12 @@ import {
   acmSanctionsScreenings,
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import {
+  computeGroundedLeadScore,
+  computeGroundedCreditScore,
+  calculateGroundedRate,
+  screenSanctionsLocal,
+} from "@/lib/shipping-reference-data";
 import {
   createEntityBinding,
   resolveEntityInFlow,
@@ -47,49 +54,47 @@ export async function executeScoreLead(
     return { result: { error: "No lead found in flow to score" } };
   }
 
-  const tradeLaneFit = (input.tradeLaneFit as number) ?? 50;
-  const volumePotential = (input.volumePotential as number) ?? 50;
-  const cargoCompatibility = (input.cargoCompatibility as number) ?? 50;
-  const winProbability = (input.winProbability as number) ?? 50;
-  const creditIndicators = (input.creditIndicators as number) ?? 50;
+  // Fetch lead record
+  const [lead] = await db
+    .select()
+    .from(scmLeads)
+    .where(and(eq(scmLeads.id, leadId), eq(scmLeads.tenantId, tenantId)))
+    .limit(1);
 
-  const compositeScore = Math.round(
-    tradeLaneFit * 0.3 +
-      volumePotential * 0.25 +
-      cargoCompatibility * 0.2 +
-      winProbability * 0.15 +
-      creditIndicators * 0.1
-  );
+  if (!lead) {
+    return { result: { error: "Lead not found in database" } };
+  }
 
-  const qualification =
-    compositeScore >= 70
-      ? "auto_qualified"
-      : compositeScore >= 40
-        ? "review"
-        : "nurture";
+  // Compute grounded BANT-S score
+  const breakdown = await computeGroundedLeadScore(lead, tenantId);
+
   const newStatus =
-    compositeScore >= 70
+    breakdown.composite >= 70
       ? "qualified"
-      : compositeScore >= 40
+      : breakdown.composite >= 40
         ? "contacted"
         : "new";
+
+  const existingMeta = (lead.metadata as Record<string, unknown>) ?? {};
 
   const [updated] = await db
     .update(scmLeads)
     .set({
-      qualificationScore: compositeScore,
+      qualificationScore: breakdown.composite,
       status: newStatus,
       metadata: {
+        ...existingMeta,
         scoreBreakdown: {
-          tradeLaneFit,
-          volumePotential,
-          cargoCompatibility,
-          winProbability,
-          creditIndicators,
+          budget: breakdown.budget,
+          authority: breakdown.authority,
+          need: breakdown.need,
+          timeline: breakdown.timeline,
+          shippingFit: breakdown.shippingFit,
         },
-        qualification,
+        qualification: breakdown.qualification,
+        methodology: breakdown.methodology,
         scoredAt: new Date().toISOString(),
-        scoredBy: "ai_scoring_agent",
+        scoredBy: "bants_scoring_engine",
       },
     })
     .where(and(eq(scmLeads.id, leadId), eq(scmLeads.tenantId, tenantId)))
@@ -98,15 +103,16 @@ export async function executeScoreLead(
   return {
     result: {
       leadId,
-      compositeScore,
-      scoreBreakdown: {
-        tradeLaneFit,
-        volumePotential,
-        cargoCompatibility,
-        winProbability,
-        creditIndicators,
+      compositeScore: breakdown.composite,
+      methodology: "BANT-S",
+      breakdown: {
+        budget: `${breakdown.budget.score}/100 — ${breakdown.budget.reasoning}`,
+        authority: `${breakdown.authority.score}/100 — ${breakdown.authority.reasoning}`,
+        need: `${breakdown.need.score}/100 — ${breakdown.need.reasoning}`,
+        timeline: `${breakdown.timeline.score}/100 — ${breakdown.timeline.reasoning}`,
+        shippingFit: `${breakdown.shippingFit.score}/100 — ${breakdown.shippingFit.reasoning}`,
       },
-      qualification,
+      qualification: breakdown.qualification,
       status: newStatus,
     },
     entityTable: "scm_leads",
@@ -163,29 +169,45 @@ export async function executeCalculateCreditScore(
     return { result: { error: "No lead found for credit assessment" } };
   }
 
-  const creditScore = (input.creditScore as number) ?? 60;
-  const suggestedCreditLimit = (input.suggestedCreditLimit as number) ?? 50000;
-  const riskRating = (input.riskRating as string) ?? "amber";
-  const paymentTermsDays = (input.paymentTermsDays as number) ?? 30;
-  const assessmentNotes = (input.assessmentNotes as string) ?? "";
+  // Fetch lead record
+  const [lead] = await db
+    .select()
+    .from(scmLeads)
+    .where(and(eq(scmLeads.id, leadId), eq(scmLeads.tenantId, tenantId)))
+    .limit(1);
 
-  const existingLead = leadBinding?.entityData as Record<string, unknown> | null;
-  const existingMeta = (existingLead?.metadata as Record<string, unknown>) ?? {};
+  if (!lead) {
+    return { result: { error: "Lead not found in database" } };
+  }
+
+  // Estimate annual revenue from TEU and base rate ($750 * 12 months)
+  const teu = lead.estimatedTeu ?? 0;
+  const annualEstRevenue = teu * 12 * 75000; // cents
+
+  // Compute grounded credit score
+  const assessment = computeGroundedCreditScore(lead, annualEstRevenue);
+
+  const existingMeta = (lead.metadata as Record<string, unknown>) ?? {};
 
   const [updated] = await db
     .update(scmLeads)
     .set({
-      estimatedRevenue: suggestedCreditLimit,
       metadata: {
         ...existingMeta,
         creditAssessment: {
-          creditScore,
-          suggestedCreditLimit,
-          riskRating,
-          paymentTermsDays,
-          assessmentNotes,
+          composite: assessment.composite,
+          riskRating: assessment.riskRating,
+          suggestedCreditLimit: assessment.suggestedCreditLimit,
+          paymentTermsDays: assessment.paymentTermsDays,
+          methodology: assessment.methodology,
+          breakdown: {
+            countryRisk: assessment.countryRisk,
+            volumeCommitment: assessment.volumeCommitment,
+            industryRisk: assessment.industryRisk,
+            infoQuality: assessment.infoQuality,
+          },
           assessedAt: new Date().toISOString(),
-          assessedBy: "ai_credit_agent",
+          assessedBy: "deterministic_credit_engine",
         },
       },
     })
@@ -195,11 +217,17 @@ export async function executeCalculateCreditScore(
   return {
     result: {
       leadId,
-      creditScore,
-      suggestedCreditLimit,
-      riskRating,
-      paymentTermsDays,
-      assessmentNotes,
+      creditScore: assessment.composite,
+      riskRating: assessment.riskRating,
+      suggestedCreditLimit: `$${(assessment.suggestedCreditLimit / 100).toLocaleString()}`,
+      paymentTermsDays: assessment.paymentTermsDays,
+      methodology: assessment.methodology,
+      breakdown: {
+        countryRisk: `${assessment.countryRisk.score}/100 — ${assessment.countryRisk.reasoning}`,
+        volumeCommitment: `${assessment.volumeCommitment.score}/100 — ${assessment.volumeCommitment.reasoning}`,
+        industryRisk: `${assessment.industryRisk.score}/100 — ${assessment.industryRisk.reasoning}`,
+        infoQuality: `${assessment.infoQuality.score}/100 — ${assessment.infoQuality.reasoning}`,
+      },
     },
     entityTable: "scm_leads",
     entityId: leadId,
@@ -225,13 +253,24 @@ export async function executeScreenSanctions(
     return { result: { error: "No lead found for sanctions screening" } };
   }
 
-  const screeningResult = (input.screeningResult as string) ?? "CLEAR";
-  const matchedLists = (input.matchedLists as string[]) ?? [];
-  const matchConfidence = (input.matchConfidence as number) ?? 0;
-  const screeningNotes = (input.screeningNotes as string) ?? "";
+  // Fetch lead record
+  const [lead] = await db
+    .select()
+    .from(scmLeads)
+    .where(and(eq(scmLeads.id, leadId), eq(scmLeads.tenantId, tenantId)))
+    .limit(1);
 
-  const existingLead = leadBinding?.entityData as Record<string, unknown> | null;
-  const existingMeta = (existingLead?.metadata as Record<string, unknown>) ?? {};
+  if (!lead) {
+    return { result: { error: "Lead not found in database" } };
+  }
+
+  // Run grounded sanctions pre-screening
+  const screening = screenSanctionsLocal(
+    lead.companyName,
+    lead.country ?? ""
+  );
+
+  const existingMeta = (lead.metadata as Record<string, unknown>) ?? {};
 
   const [updated] = await db
     .update(scmLeads)
@@ -239,13 +278,14 @@ export async function executeScreenSanctions(
       metadata: {
         ...existingMeta,
         sanctionsScreening: {
-          result: screeningResult,
-          matchedLists,
-          matchConfidence,
-          screeningNotes,
+          result: screening.result,
+          matchedLists: screening.matchedLists,
+          matchConfidence: screening.matchConfidence,
+          screeningNotes: screening.screeningNotes,
+          screeningSource: screening.screeningSource,
+          screeningId: screening.screeningId,
           screenedAt: new Date().toISOString(),
-          screenedBy: "ai_sanctions_agent",
-          screeningId: `SCR-${Date.now().toString(36).toUpperCase()}`,
+          screenedBy: "local_sanctions_engine",
         },
       },
     })
@@ -255,10 +295,11 @@ export async function executeScreenSanctions(
   return {
     result: {
       leadId,
-      screeningResult,
-      matchedLists,
-      matchConfidence,
-      screeningNotes,
+      screeningResult: screening.result,
+      matchedLists: screening.matchedLists,
+      matchConfidence: screening.matchConfidence,
+      screeningNotes: screening.screeningNotes,
+      screeningSource: screening.screeningSource,
     },
     entityTable: "scm_leads",
     entityId: leadId,
@@ -274,22 +315,31 @@ export async function executeCalculateRate(
   const { tenantId, flowInstanceId, userId } = ctx;
 
   const originPort = (input.originPort as string) ?? "AEJEA";
-  const destinationPort = (input.destinationPort as string) ?? "CNSHA";
-  const totalRate = (input.totalRate as number) ?? 0;
+  const destinationPort = (input.destinationPort as string) ?? "INMUN";
+  const containerSize = (input.containerSize as string) ?? "40";
+  const containerType = (input.containerType as string) ?? "dry";
   const estimatedTeu = (input.estimatedTeu as number) ?? 1;
   const validityDays = (input.validityDays as number) ?? 30;
+
+  // Calculate grounded rate from tariff DB
+  const rateResult = await calculateGroundedRate(
+    tenantId, originPort, destinationPort, containerSize, containerType
+  );
+
+  if (!rateResult || rateResult.lineItems.length === 0) {
+    return { result: { error: `No tariff data found for ${originPort} → ${destinationPort} (${containerSize}')` } };
+  }
 
   const validFrom = new Date();
   const validTo = new Date();
   validTo.setDate(validTo.getDate() + validityDays);
 
   const oppBinding = await resolveEntityInFlow(
-    flowInstanceId,
-    tenantId,
-    "scm_opportunities"
+    flowInstanceId, tenantId, "scm_opportunities"
   );
   const oppData = oppBinding?.entityData as Record<string, unknown> | null;
 
+  // Create quotation header
   const [quotation] = await db
     .insert(scmRateQuotations)
     .values({
@@ -300,36 +350,65 @@ export async function executeCalculateRate(
       salesRepId: userId,
       originPort,
       destinationPort,
-      tradeLane: `${originPort}-${destinationPort}`,
-      containerType: (input.containerType as string) ?? "dry",
-      containerSize: (input.containerSize as string) ?? "40",
+      tradeLane: rateResult.tradeLaneName,
+      containerType,
+      containerSize,
       estimatedTeu,
-      totalAmount: totalRate * estimatedTeu,
-      currency: "USD",
+      totalAmount: rateResult.totalPerContainer,
+      currency: rateResult.currency,
       validFrom,
       validTo,
-      transitTimeDays: (input.transitTimeDays as number) ?? null,
+      transitTimeDays: rateResult.transitTimeDays,
       status: "draft",
       metadata: {
-        rateBreakdown: {
-          baseRate: input.baseRate,
-          surcharges: input.surcharges,
-          totalRate,
-        },
-        calculatedBy: "ai_rate_optimizer",
+        rateBreakdown: rateResult.lineItems.map(li => ({
+          code: li.chargeCode,
+          name: li.chargeName,
+          amount: li.unitPrice,
+        })),
+        totalPerContainer: rateResult.totalPerContainer,
+        tradeLane: rateResult.tradeLane,
+        source: rateResult.source,
+        calculatedBy: "tariff_rate_engine",
         calculatedAt: new Date().toISOString(),
       },
     })
     .returning();
 
+  // Create line items
+  if (quotation) {
+    const lineItemValues = rateResult.lineItems.map(li => ({
+      tenantId,
+      quotationId: quotation.id,
+      chargeCode: li.chargeCode,
+      chargeName: li.chargeName,
+      chargeType: li.chargeType,
+      basis: li.basis,
+      unitPrice: li.unitPrice,
+      quantity: li.quantity,
+      totalPrice: li.totalPrice,
+      currency: li.currency,
+      isMandatory: true,
+      createdBy: userId,
+      updatedBy: userId,
+    }));
+
+    await db.insert(scmQuotationLineItems).values(lineItemValues);
+  }
+
   return {
     result: {
       quotationId: quotation.id,
       quotationNumber: quotation.quotationNumber,
-      totalRate,
-      totalAmount: totalRate * estimatedTeu,
-      originPort,
-      destinationPort,
+      tradeLane: rateResult.tradeLaneName,
+      transitTimeDays: rateResult.transitTimeDays,
+      rateBreakdown: rateResult.lineItems.map(li => ({
+        charge: li.chargeName,
+        amount: `$${(li.unitPrice / 100).toFixed(2)}`,
+      })),
+      totalPerContainer: `$${(rateResult.totalPerContainer / 100).toFixed(2)}`,
+      totalForVolume: `$${((rateResult.totalPerContainer * estimatedTeu) / 100).toFixed(2)}`,
+      source: rateResult.source,
       validFrom: validFrom.toISOString(),
       validTo: validTo.toISOString(),
     },
@@ -337,6 +416,40 @@ export async function executeCalculateRate(
     entityId: quotation.id,
     entityAction: "create",
     entityData: quotation as unknown as Record<string, unknown>,
+  };
+}
+
+export async function executeLookupTariffRates(
+  input: Record<string, unknown>,
+  ctx: ToolCallContext
+): Promise<ToolCallResult> {
+  const { tenantId } = ctx;
+  const originPort = (input.originPort as string) ?? "AEJEA";
+  const destinationPort = (input.destinationPort as string) ?? "INMUN";
+  const containerSize = (input.containerSize as string) ?? "40";
+
+  const rateResult = await calculateGroundedRate(
+    tenantId, originPort, destinationPort, containerSize, "dry"
+  );
+
+  if (!rateResult) {
+    return { result: { error: `No tariff data for ${originPort} → ${destinationPort}` } };
+  }
+
+  return {
+    result: {
+      tradeLane: rateResult.tradeLaneName,
+      transitTimeDays: rateResult.transitTimeDays,
+      lineItems: rateResult.lineItems.map(li => ({
+        charge: li.chargeName,
+        code: li.chargeCode,
+        type: li.chargeType,
+        amount: `$${(li.unitPrice / 100).toFixed(2)}`,
+      })),
+      totalPerContainer: `$${(rateResult.totalPerContainer / 100).toFixed(2)}`,
+      currency: rateResult.currency,
+      source: rateResult.source,
+    },
   };
 }
 
